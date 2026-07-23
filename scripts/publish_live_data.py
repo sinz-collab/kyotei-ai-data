@@ -19,7 +19,7 @@ def main() -> int:
     config = load_config()
     live_root = resolve_root(config, "live_output_root")
     relative = live_root.relative_to(ROOT)
-    run(["git", "add", str(relative)])
+    run(["git", "add", "-f", str(relative)])
     if run(["git", "diff", "--cached", "--quiet"]).returncode == 0:
         print("No live data changes.")
         return 0

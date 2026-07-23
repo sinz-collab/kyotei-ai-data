@@ -9,16 +9,30 @@ User=sinz-edge
 Group=sinz-edge
 WorkingDirectory=/opt/sinz-edge
 Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/sinz-edge/.playwright
+EnvironmentFile=-/etc/sinz-edge/live-fetch.env
+ExecStartPre=/usr/bin/test -r /opt/sinz-edge/config/live_fetch_config.json
 ExecStart=/opt/sinz-edge/.venv/bin/python /opt/sinz-edge/scripts/live_fetch_daemon.py
 Restart=on-failure
 RestartSec=20
 TimeoutStopSec=180
 KillMode=mixed
+KillSignal=SIGTERM
+SendSIGKILL=true
+UMask=0027
+LimitNOFILE=4096
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/opt/sinz-edge/data/live /opt/sinz-edge/logs /opt/sinz-edge/run
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/opt/sinz-edge/data/live /opt/sinz-edge/runtime/morning /opt/sinz-edge/logs /opt/sinz-edge/run
 
 [Install]
 WantedBy=multi-user.target

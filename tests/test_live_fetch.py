@@ -8,6 +8,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from unittest.mock import Mock, patch
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -19,6 +20,7 @@ from fetch_odds import parse_odds
 from live_common import is_fetch_window, load_config, process_lock
 from live_data_hash import content_hash
 from select_target_races import select_target_races
+from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
 
 
@@ -117,6 +119,53 @@ class VenueAndRaceTests(unittest.TestCase):
         }
         targets = select_target_races(venue, at("08:20"), CONFIG)
         self.assertEqual([target["race_no"] for target in targets], [1])
+
+    def test_current_morning_data_does_not_use_network(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            payload_path = root / "venues" / "a" / "20260724.json"
+            payload_path.parent.mkdir(parents=True)
+            payload = {
+                "date": "2026-07-24",
+                "races": [
+                    {"race": race, "deadline": "09:00", "racers": racers()}
+                    for race in range(1, 13)
+                ],
+            }
+            payload_path.write_text(json.dumps(payload), encoding="utf-8")
+            manifest = {
+                "date": "2026-07-24",
+                "venues": [
+                    {
+                        "slug": "a",
+                        "open": True,
+                        "date": "2026-07-24",
+                        "entryCount": 12,
+                        "dataPath": "venues/a/20260724.json",
+                    }
+                ],
+            }
+            (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+            config = {**CONFIG, "morning_data_root": str(root)}
+            with patch("sync_morning_data._request_json", side_effect=AssertionError("network used")):
+                path = ensure_current_morning_data(config, "2026-07-24", Mock())
+            self.assertEqual(path, root / "manifest.json")
+
+    def test_stale_remote_manifest_preserves_local_data(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            old_manifest = {"date": "2026-07-23", "venues": []}
+            manifest_path = root / "manifest.json"
+            root.mkdir(parents=True, exist_ok=True)
+            manifest_path.write_text(json.dumps(old_manifest), encoding="utf-8")
+            config = {**CONFIG, "morning_data_root": str(root)}
+            with patch(
+                "sync_morning_data._request_json",
+                return_value={"date": "2026-07-23", "venues": []},
+            ):
+                with self.assertRaises(RuntimeError):
+                    ensure_current_morning_data(config, "2026-07-24", Mock())
+            self.assertEqual(json.loads(manifest_path.read_text()), old_manifest)
 
 
 class OddsHashAndStorageTests(unittest.TestCase):

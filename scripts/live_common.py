@@ -32,6 +32,11 @@ REQUIRED_CONFIG = {
     "update_only_when_changed",
     "open" + "ai_enabled",
     "ll" + "m_enabled",
+    "morning_data_base_url",
+    "morning_data_root",
+    "live_output_root",
+    "log_path",
+    "lock_path",
 }
 
 

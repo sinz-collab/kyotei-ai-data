@@ -23,6 +23,7 @@ from live_common import (
     resolve_root,
 )
 from select_target_races import select_target_races
+from sync_morning_data import ensure_current_morning_data
 
 
 async def _launch_browser(playwright: Any, config: dict[str, Any], logger: Any) -> Any:
@@ -52,7 +53,7 @@ async def run_once(
     if not is_fetch_window(current, config):
         return {"status": "outside_window", "changed": False, "targets": []}
     today = current.date().isoformat()
-    manifest = manifest_path or ROOT / "data" / "manifest.json"
+    manifest = manifest_path or ensure_current_morning_data(config, today, logger)
     active = detect_active_venues(manifest, today)
     targets = []
     for venue in active:
