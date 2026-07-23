@@ -18,24 +18,45 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      target_date: ${{ steps.target.outputs.target_date }}
+    steps:
+      - id: target
+        name: Fix target date
+        shell: bash
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          if [ -n "$INPUT_DATE" ]; then
+            target_date="$INPUT_DATE"
+          else
+            target_date="$(TZ=Asia/Tokyo date +%F)"
+          fi
+          if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || [ "$(date -d "$target_date" +%F 2>/dev/null)" != "$target_date" ]; then
+            echo "Invalid target date: $target_date" >&2
+            exit 1
+          fi
+          echo "target_date=$target_date" >> "$GITHUB_OUTPUT"
+          echo "Target date: $target_date" >> "$GITHUB_STEP_SUMMARY"
+
   fetch:
+    needs: prepare
     strategy:
       fail-fast: false
-      max-parallel: 5
+      max-parallel: 2
       matrix:
-        venue:
-          - ashiya
-          - shimonoseki
-          - toda
-          - edogawa
-          - wakamatsu
-          - tokoname
-          - omura
-          - karatsu
-          - fukuoka
-          - heiwajima
+        include:
+          - shard: east
+            venues: "ashiya shimonoseki toda edogawa wakamatsu"
+          - shard: west
+            venues: "tokoname omura karatsu fukuoka heiwajima"
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 120
+    env:
+      TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,63 +64,81 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: automation/requirements.txt
-      - name: Install runtime
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r automation/requirements.txt
-          python -m playwright install --with-deps chromium
-      - name: Set target date
+      - name: Install runtime with retry
         shell: bash
-        env:
-          INPUT_DATE: ${{ inputs.date }}
         run: |
-          if [ -n "$INPUT_DATE" ]; then
-            echo "TARGET_DATE=$INPUT_DATE" >> "$GITHUB_ENV"
-          else
-            echo "TARGET_DATE=$(TZ=Asia/Tokyo date +%F)" >> "$GITHUB_ENV"
-          fi
-      - name: Fetch venue
-        run: python automation/fetch_one.py --venue "${{ matrix.venue }}" --date "$TARGET_DATE"
-      - uses: actions/upload-artifact@v4
+          retry() {
+            local attempt
+            for attempt in 1 2 3; do
+              echo "Attempt ${attempt}: $*"
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                sleep $((attempt * 20))
+              fi
+            done
+            return 1
+          }
+          retry python -m pip install -r automation/requirements.txt
+          retry python -m playwright install --with-deps chromium
+      - name: Fetch shard
+        shell: bash
+        run: |
+          failed=0
+          for venue in ${{ matrix.venues }}; do
+            echo "::group::Fetch ${venue} ${TARGET_DATE}"
+            if ! python automation/fetch_one.py --venue "$venue" --date "$TARGET_DATE"; then
+              failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit "$failed"
+      - name: Upload shard data
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          name: morning-${{ matrix.venue }}
+          name: morning-${{ matrix.shard }}-${{ needs.prepare.outputs.target_date }}
           path: |
             work/races/**/fetch_status.json
             work/races/**/tide_today.json
             work/races/**/races/*_entry.txt
             work/races/**/races/*_data.txt
             work/races/**/races/*_motor.txt
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 2
 
   publish:
-    needs: fetch
-    if: always()
+    needs: [prepare, fetch]
+    if: always() && needs.prepare.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: actions/download-artifact@v4
+      - name: Download current run artifacts
+        uses: actions/download-artifact@v4
         with:
-          pattern: morning-*
+          pattern: morning-*-${{ needs.prepare.outputs.target_date }}
           path: work/races
           merge-multiple: true
-      - name: Set target date
-        shell: bash
-        env:
-          INPUT_DATE: ${{ inputs.date }}
-        run: |
-          if [ -n "$INPUT_DATE" ]; then
-            echo "TARGET_DATE=$INPUT_DATE" >> "$GITHUB_ENV"
-          else
-            echo "TARGET_DATE=$(TZ=Asia/Tokyo date +%F)" >> "$GITHUB_ENV"
-          fi
       - name: Build and validate public data
-        run: python automation/build_site_data.py --date "$TARGET_DATE"
-      - name: Commit public data
+        shell: bash
+        run: |
+          python automation/build_site_data.py --date "$TARGET_DATE" | tee build.log
+          {
+            echo "## Morning data report"
+            echo '```json'
+            cat data/morning_report.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Commit and push public data
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -110,4 +149,28 @@ jobs:
             exit 0
           fi
           git commit -m "Update morning race data ${TARGET_DATE}"
-          git push
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 3 ]; then
+              echo "git push failed after 3 attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 15))
+            if ! git pull --rebase origin main; then
+              echo "git rebase failed; manual conflict resolution is required" >&2
+              exit 1
+            fi
+          done
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-report-${{ needs.prepare.outputs.target_date }}
+          path: |
+            build.log
+            data/morning_report.json
+            work/races/**/fetch_status.json
+          if-no-files-found: warn
+          retention-days: 2

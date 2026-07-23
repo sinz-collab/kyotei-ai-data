@@ -5,6 +5,7 @@ import json
 import re
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from datetime import datetime
@@ -31,22 +32,31 @@ def load_venue(slug: str) -> dict:
     raise ValueError(f"unknown venue: {slug}")
 
 
-def request_text(url: str, timeout: int = 30) -> tuple[str, str]:
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36"
-        },
-    )
-    with urllib.request.urlopen(request, timeout=timeout) as response:
-        return response.geturl(), response.read().decode("utf-8", errors="replace")
+def request_text(url: str, timeout: int = 30, attempts: int = 3) -> tuple[str, str]:
+    errors = []
+    for attempt in range(1, attempts + 1):
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/126 Safari/537.36"
+            },
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                return response.geturl(), response.read().decode("utf-8", errors="replace")
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            errors.append(f"attempt={attempt}:{type(exc).__name__}:{exc}")
+            print(f"[http retry] url={url} {errors[-1]}", flush=True)
+            if attempt < attempts:
+                time.sleep(5 * attempt)
+    raise RuntimeError("; ".join(errors))
 
 
 def venue_is_open(slug: str, date: str) -> dict:
     url = f"https://boaters-boatrace.com/race/{slug}/{date}/1R/data"
     try:
         final_url, html = request_text(url)
-    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+    except Exception as exc:
         return {"open": False, "reason": f"precheck_failed:{type(exc).__name__}", "url": url}
     expected = f"/race/{slug}/{date}/1R/"
     body_markers = ("出走表", "レーサー", "全国勝率")
@@ -131,6 +141,7 @@ def main() -> int:
         "date": args.date,
         "open": False,
         "entryCount": 0,
+        "fetchAttempts": [],
     }
 
     precheck = venue_is_open(venue["slug"], args.date)
@@ -157,13 +168,45 @@ def main() -> int:
         "--click-wait",
         "1.2",
     ]
-    process = subprocess.run(command, text=True, encoding="utf-8", errors="replace")
-    entry_count = count_entries(output_dir)
+    entry_count = 0
+    return_code = 1
+    for attempt in range(1, 3):
+        print(f"[fetch start] venue={venue['slug']} date={args.date} attempt={attempt}", flush=True)
+        try:
+            process = subprocess.run(
+                command,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=900,
+            )
+            return_code = process.returncode
+            error = ""
+        except subprocess.TimeoutExpired:
+            return_code = 124
+            error = "timeout_after_900_seconds"
+        except Exception as exc:
+            return_code = 1
+            error = f"{type(exc).__name__}:{exc}"
+        entry_count = count_entries(output_dir)
+        attempt_result = {
+            "attempt": attempt,
+            "returnCode": return_code,
+            "entryCount": entry_count,
+            "error": error,
+        }
+        status["fetchAttempts"].append(attempt_result)
+        print(f"[fetch result] {json.dumps(attempt_result, ensure_ascii=False)}", flush=True)
+        if return_code == 0 and entry_count == 12:
+            break
+        if attempt < 2:
+            time.sleep(20)
+
     status.update(
         {
-            "open": process.returncode == 0 and entry_count == 12,
+            "open": return_code == 0 and entry_count == 12,
             "entryCount": entry_count,
-            "fetchReturnCode": process.returncode,
+            "fetchReturnCode": return_code,
             "tide": fetch_tide(venue, args.date, output_dir),
         }
     )

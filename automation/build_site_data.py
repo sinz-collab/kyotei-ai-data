@@ -69,6 +69,13 @@ def entry_lines(path: Path) -> list[str]:
     ]
 
 
+def write_text_atomic(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(content, encoding="utf-8")
+    temporary.replace(path)
+
+
 def parse_deadline(lines: list[str], race_no: int) -> str:
     text = "\n".join(lines)
     match = re.search(r"締切\s*([0-9]{1,2}:[0-9]{2})", text)
@@ -216,7 +223,9 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
     tide_path = source_dir / "tide_today.json"
     tide = {}
     if tide_path.exists():
-        tide = json.loads(tide_path.read_text(encoding="utf-8"))
+        candidate = json.loads(tide_path.read_text(encoding="utf-8"))
+        if candidate.get("date") == date:
+            tide = candidate
     return (
         {
             "venue": venue["name"],
@@ -241,28 +250,43 @@ def main() -> int:
     parser.add_argument("--data-root", default="data")
     args = parser.parse_args()
 
+    datetime.strptime(args.date, "%Y-%m-%d")
     source_root = Path(args.source_root)
     data_root = Path(args.data_root)
     date_dir = args.date.replace("-", "")
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     configured = {venue["slug"]: venue for venue in config["venues"]}
     statuses = {}
-    status_files = list(source_root.glob(f"*/{date_dir}/fetch_status.json"))
-    if len(status_files) != len(configured):
-        raise RuntimeError(
-            f"fetch status files are incomplete: expected={len(configured)} actual={len(status_files)}"
-        )
+    expected_status_paths = {
+        source_root / venue["name"] / date_dir / "fetch_status.json"
+        for venue in configured.values()
+    }
+    actual_status_paths = set(source_root.glob(f"*/{date_dir}/fetch_status.json"))
+    if actual_status_paths != expected_status_paths:
+        missing = sorted(str(path) for path in expected_status_paths - actual_status_paths)
+        unexpected = sorted(str(path) for path in actual_status_paths - expected_status_paths)
+        raise RuntimeError(f"fetch status mismatch: missing={missing} unexpected={unexpected}")
 
     for slug, venue in configured.items():
         source_dir = source_root / venue["name"] / date_dir
         status_path = source_dir / "fetch_status.json"
-        fetch_status = (
-            json.loads(status_path.read_text(encoding="utf-8"))
-            if status_path.exists()
-            else {"open": False, "entryCount": 0}
-        )
+        fetch_status = json.loads(status_path.read_text(encoding="utf-8"))
+        if (
+            fetch_status.get("date") != args.date
+            or fetch_status.get("slug") != slug
+            or fetch_status.get("name") != venue["name"]
+        ):
+            raise RuntimeError(
+                f"fetch status identity mismatch: expected={slug}/{venue['name']}/{args.date} "
+                f"actual={fetch_status.get('slug')}/{fetch_status.get('name')}/{fetch_status.get('date')}"
+            )
         payload = None
-        detail = {"reason": "not_scheduled"}
+        detail = {
+            "reason": fetch_status.get("precheck", {}).get("reason", "fetch_incomplete"),
+            "fetchReturnCode": fetch_status.get("fetchReturnCode"),
+            "fetchAttempts": fetch_status.get("fetchAttempts", []),
+            "tide": fetch_status.get("tide", {}),
+        }
         if fetch_status.get("open") and fetch_status.get("entryCount") == 12:
             payload, detail = build_payload(venue, args.date, source_dir)
         is_open = payload is not None
@@ -270,8 +294,8 @@ def main() -> int:
             venue_dir = data_root / "venues" / slug
             venue_dir.mkdir(parents=True, exist_ok=True)
             serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
-            (venue_dir / f"{date_dir}.json").write_text(serialized, encoding="utf-8")
-            (venue_dir / "latest.json").write_text(serialized, encoding="utf-8")
+            write_text_atomic(venue_dir / f"{date_dir}.json", serialized)
+            write_text_atomic(venue_dir / "latest.json", serialized)
         statuses[slug] = {
             "open": is_open,
             "entryCount": 12 if is_open else 0,
@@ -295,8 +319,9 @@ def main() -> int:
             "dataPath": f"venues/{slug}/{date_dir}.json" if state["open"] else "",
             "latestPath": f"venues/{slug}/latest.json" if state["open"] else "",
         }
-        if state.get("eventDay") != "":
-            item["eventDay"] = state["eventDay"]
+        event_day = state.get("eventDay", "")
+        if event_day != "":
+            item["eventDay"] = event_day
         if state.get("eventDayLabel"):
             item["eventDayLabel"] = state["eventDayLabel"]
         manifest_venues.append(item)
@@ -310,12 +335,14 @@ def main() -> int:
         "venues": manifest_venues,
     }
     data_root.mkdir(parents=True, exist_ok=True)
-    (data_root / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    write_text_atomic(
+        data_root / "manifest.json",
+        json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
     )
     report = {"date": args.date, "createdAt": now, "venues": statuses}
-    (data_root / "morning_report.json").write_text(
-        json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    write_text_atomic(
+        data_root / "morning_report.json",
+        json.dumps(report, ensure_ascii=False, indent=2) + "\n",
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
