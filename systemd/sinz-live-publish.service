@@ -1,0 +1,15 @@
+[Unit]
+Description=Batch SINZ EDGE live JSON changes to Git
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=sinz-edge
+Group=sinz-edge
+WorkingDirectory=/opt/sinz-edge
+ExecStart=/opt/sinz-edge/.venv/bin/python /opt/sinz-edge/scripts/publish_live_data.py --push
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/sinz-edge

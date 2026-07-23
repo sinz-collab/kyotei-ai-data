@@ -1,0 +1,24 @@
+[Unit]
+Description=SINZ EDGE live race data fetcher
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sinz-edge
+Group=sinz-edge
+WorkingDirectory=/opt/sinz-edge
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/sinz-edge/.venv/bin/python /opt/sinz-edge/scripts/live_fetch_daemon.py
+Restart=on-failure
+RestartSec=20
+TimeoutStopSec=180
+KillMode=mixed
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/sinz-edge/data/live /opt/sinz-edge/logs /opt/sinz-edge/run
+
+[Install]
+WantedBy=multi-user.target
