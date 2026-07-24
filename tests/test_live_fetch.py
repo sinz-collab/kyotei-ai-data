@@ -17,6 +17,7 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 from detect_active_venues import detect_active_venues
+from fetch_exhibition import normalize_exhibition_entries
 from fetch_live_race import save_document
 from fetch_odds import official_odds_url, parse_odds, parse_official_odds
 from fetch_result import official_result_url, parse_result
@@ -75,6 +76,41 @@ class TimeWindowTests(unittest.TestCase):
 
 
 class VenueAndRaceTests(unittest.TestCase):
+    def test_exhibition_times_are_numeric_ranked_and_gapped_by_lane(self) -> None:
+        rows = normalize_exhibition_entries(
+            [
+                {"lane": 1, "exhibition_time": "6.75"},
+                {"lane": 2, "exhibition_time": "6.70"},
+                {"lane": 3, "exhibition_time": "6.71"},
+                {"lane": 4, "exhibition_time": "6.78"},
+                {"lane": 5, "exhibition_time": "6.74"},
+                {"lane": 6, "exhibition_time": "6.73"},
+            ]
+        )
+        self.assertEqual([row["lane"] for row in rows], [1, 2, 3, 4, 5, 6])
+        self.assertEqual([row["exhibition_rank"] for row in rows], [5, 1, 2, 6, 4, 3])
+        self.assertEqual([row["exhibition_gap"] for row in rows], [0.05, 0.0, 0.01, 0.08, 0.04, 0.03])
+        self.assertTrue(all(isinstance(row["exhibition_time"], float) for row in rows))
+
+    def test_exhibition_ties_missing_and_invalid_values_are_safe(self) -> None:
+        rows = normalize_exhibition_entries(
+            [
+                {"lane": 1, "exhibition_time": "6.70"},
+                {"lane": 2, "exhibition_time": 6.70},
+                {"lane": 3, "exhibition_time": "-"},
+                {"lane": 4, "exhibition_time": ""},
+                {"lane": 5, "exhibition_time": 0},
+                {"lane": 6, "exhibition_time": 99},
+            ]
+        )
+        self.assertEqual(rows[0]["exhibition_rank"], 1)
+        self.assertEqual(rows[1]["exhibition_rank"], 1)
+        self.assertEqual(rows[0]["exhibition_gap"], 0.0)
+        self.assertEqual(rows[1]["exhibition_gap"], 0.0)
+        self.assertTrue(all(row["exhibition_time"] is None for row in rows[2:]))
+        self.assertTrue(all(row["exhibition_rank"] is None for row in rows[2:]))
+        self.assertTrue(all(row["exhibition_gap"] is None for row in rows[2:]))
+
     def test_event_day_uses_target_date_not_first_schedule_label(self) -> None:
         lines = [
             "7月23日 (木) 初日",
