@@ -29,7 +29,11 @@ from validate_live_data import validate_live_data
 
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
-from build_site_data import preserve_same_day_live_fields
+from build_site_data import (
+    prediction_payload_is_complete,
+    preserve_prediction_payload,
+    preserve_same_day_live_fields,
+)
 
 
 CONFIG = load_config(Path(__file__).resolve().parents[1] / "config" / "live_fetch_config.json")
@@ -468,6 +472,72 @@ class OddsHashAndStorageTests(unittest.TestCase):
             merged = preserve_same_day_live_fields(payload, path)
         self.assertEqual(merged["preds"]["1"]["realtime"], {})
         self.assertEqual(merged["preds"]["1"]["odds"], {})
+
+    def test_morning_build_preserves_complete_engine_predictions_and_results(self) -> None:
+        morning = {
+            "date": "2026-07-24",
+            "engine": "",
+            "preds": {},
+            "tide": {"events": [{"time": "06:00", "level": 100}]},
+        }
+        prediction = {
+            "win": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "second": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "third": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "sab": "A",
+            "ai": [{"combo": "1-2-3"}],
+            "realtime": {"last": {"1": {"time": 6.70}}},
+            "odds": {"1-2-3": 12.3},
+            "result": {"status": "ok", "order": "1-2-3"},
+        }
+        existing = {
+            "date": "2026-07-24",
+            "engine": "venue_engine_v3",
+            "preds": {str(race): json.loads(json.dumps(prediction)) for race in range(1, 13)},
+            "tide": {},
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "20260724.json"
+            path.write_text(json.dumps(existing), encoding="utf-8")
+            merged = preserve_prediction_payload(morning, path)
+        self.assertIsNotNone(merged)
+        self.assertEqual(merged["engine"], "venue_engine_v3")
+        self.assertEqual(merged["preds"]["1"], prediction)
+        self.assertEqual(merged["tide"], morning["tide"])
+
+    def test_generic_baseline_cannot_replace_engine_payload(self) -> None:
+        baseline_prediction = {
+            "win": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "second": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "third": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "sab": "A",
+            "ai": [{"combo": "1-2-3"}],
+        }
+        baseline = {
+            "date": "2026-07-24",
+            "engine": "deterministic_baseline_v1",
+            "preds": {str(race): baseline_prediction for race in range(1, 13)},
+        }
+        self.assertFalse(prediction_payload_is_complete(baseline, "2026-07-24"))
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "20260724.json"
+            path.write_text(json.dumps(baseline), encoding="utf-8")
+            self.assertIsNone(preserve_prediction_payload({"date": "2026-07-24"}, path))
+
+    def test_result_addition_does_not_remove_prediction_or_live_fields(self) -> None:
+        prediction = {
+            "win": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "second": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "third": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "sab": "B",
+            "ai": [{"combo": "1-2-3"}],
+            "realtime": {"last": {"1": {"time": 6.70}}, "original": {"1": {"lap": 36.5}}},
+            "odds": {"1-2-3": 12.3},
+        }
+        before = json.loads(json.dumps(prediction))
+        prediction["result"] = {"status": "ok", "order": "1-2-3"}
+        for key, value in before.items():
+            self.assertEqual(prediction[key], value)
 
     def test_same_hash_does_not_rewrite(self) -> None:
         target = {

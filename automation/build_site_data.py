@@ -151,44 +151,52 @@ def event_day_info(lines: list[str]) -> tuple[int | str, str]:
     return (int(match.group(1)), match.group(0)) if match else ("", "")
 
 
-def deterministic_prediction(racers: list[dict]) -> dict:
-    lane_win = {1: 3.8, 2: 2.1, 3: 1.6, 4: 1.45, 5: 0.8, 6: 0.55}
-    lane_second = {1: 2.1, 2: 2.5, 3: 2.1, 4: 1.9, 5: 1.35, 6: 1.0}
-    lane_third = {1: 1.6, 2: 1.9, 3: 2.0, 4: 1.9, 5: 1.65, 6: 1.35}
-    class_bonus = {"A1": 1.0, "A2": 0.65, "B1": 0.25, "B2": 0.0}
-    win_scores = {}
-    second_scores = {}
-    third_scores = {}
-    for racer in racers:
-        lane = int(racer["lane"])
-        form = (
-            as_float(racer.get("nat_win"), 4.0) * 0.22
-            + as_float(racer.get("nat_2"), 25.0) * 0.018
-            + as_float(racer.get("local_2"), 25.0) * 0.012
-            + as_float(racer.get("motor_2"), 30.0) * 0.01
-            + class_bonus.get(racer.get("class"), 0.0)
-        )
-        win_scores[lane] = lane_win[lane] + form
-        second_scores[lane] = lane_second[lane] + form * 0.8
-        third_scores[lane] = lane_third[lane] + form * 0.65
-    win = normalize(win_scores)
-    second = normalize(second_scores)
-    third = normalize(third_scores)
-    ordered = sorted(win, key=lambda lane: win[lane], reverse=True)
-    gap = win[ordered[0]] - win[ordered[1]]
-    rank = "A" if gap >= 10 else "B" if gap >= 5 else "M"
-    return {
-        "win": win,
-        "second": second,
-        "third": third,
-        "sab": rank,
-        "predictionStage": "morning",
-        "realtime": {"last": [], "original": [], "weather": {}},
-        "odds": {},
-        "result": {"status": "waiting", "message": "結果未取得"},
-        "logs": [{"stage": "morning", "reason": "deterministic baseline"}],
-        "engineSource": "deterministic_baseline_v1",
-    }
+def prediction_payload_is_complete(payload: dict, expected_date: str) -> bool:
+    if payload.get("date") != expected_date:
+        return False
+    predictions = payload.get("preds")
+    if not isinstance(predictions, dict) or len(predictions) != 12:
+        return False
+    if payload.get("engine") == "deterministic_baseline_v1":
+        return False
+    for race_no in range(1, 13):
+        prediction = predictions.get(str(race_no))
+        if not isinstance(prediction, dict):
+            return False
+        for key in ("win", "second", "third"):
+            values = prediction.get(key)
+            if not isinstance(values, dict) or len(values) != 6:
+                return False
+        if not prediction.get("sab"):
+            return False
+        if not any(
+            isinstance(prediction.get(key), list) and prediction[key]
+            for key in ("ai", "aiUpset", "balance", "tickets")
+        ):
+            return False
+    return True
+
+
+def preserve_prediction_payload(morning: dict, existing_path: Path) -> dict | None:
+    if not existing_path.is_file():
+        return None
+    try:
+        existing = json.loads(existing_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    if not prediction_payload_is_complete(existing, morning.get("date", "")):
+        return None
+
+    # The scheduled collector has no venue engines. It may enrich non-prediction
+    # metadata, but it must never replace engine output, tickets, live data, or
+    # confirmed results with a generic baseline.
+    merged = existing
+    if not merged.get("tide") and morning.get("tide"):
+        merged["tide"] = morning["tide"]
+    for key in ("eventDay", "eventDayLabel", "eventScheduleLabels", "seriesDay"):
+        if not merged.get(key) and morning.get(key):
+            merged[key] = morning[key]
+    return merged
 
 
 def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
@@ -249,7 +257,6 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                 "eventDay": event_day,
             }
         )
-        predictions[str(race_no)] = deterministic_prediction(racers)
     tide_path = source_dir / "tide_today.json"
     tide = {}
     if tide_path.exists():
@@ -260,7 +267,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
         {
             "venue": venue["name"],
             "date": date,
-            "engine": "deterministic_baseline_v1",
+            "engine": "",
             "seriesDay": event_label,
             "races": races,
             "preds": predictions,
@@ -323,10 +330,20 @@ def main() -> int:
         if is_open:
             venue_dir = data_root / "venues" / slug
             venue_dir.mkdir(parents=True, exist_ok=True)
-            payload = preserve_same_day_live_fields(payload, venue_dir / "latest.json")
-            serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
-            write_text_atomic(venue_dir / f"{date_dir}.json", serialized)
-            write_text_atomic(venue_dir / "latest.json", serialized)
+            existing_path = venue_dir / f"{date_dir}.json"
+            payload = preserve_prediction_payload(payload, existing_path)
+            if payload is None:
+                is_open = False
+                detail = {
+                    **detail,
+                    "reason": "prediction_payload_unavailable",
+                    "predictionRequired": True,
+                }
+            else:
+                payload = preserve_same_day_live_fields(payload, venue_dir / "latest.json")
+                serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+                write_text_atomic(existing_path, serialized)
+                write_text_atomic(venue_dir / "latest.json", serialized)
         statuses[slug] = {
             "open": is_open,
             "entryCount": 12 if is_open else 0,
@@ -350,6 +367,13 @@ def main() -> int:
             "dataPath": f"venues/{slug}/{date_dir}.json" if state["open"] else "",
             "latestPath": f"venues/{slug}/latest.json" if state["open"] else "",
         }
+        reason = state.get("detail", {}).get("reason", "")
+        if reason:
+            item["availabilityReason"] = reason
+        if slug in configured:
+            item["predictionStatus"] = "ready" if state["open"] else (
+                "unavailable" if reason == "prediction_payload_unavailable" else "not_running"
+            )
         event_day = state.get("eventDay", "")
         if event_day != "":
             item["eventDay"] = event_day
