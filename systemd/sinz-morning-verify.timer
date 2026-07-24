@@ -1,0 +1,11 @@
+[Unit]
+Description=Verify morning fallback at 06:55 JST
+
+[Timer]
+OnCalendar=*-*-* 06:55:00 Asia/Tokyo
+Persistent=true
+AccuracySec=1m
+Unit=sinz-morning-verify.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check morning manifest at 06:40 JST
+
+[Timer]
+OnCalendar=*-*-* 06:40:00 Asia/Tokyo
+Persistent=true
+AccuracySec=1m
+Unit=sinz-morning-fallback.service
+
+[Install]
+WantedBy=timers.target

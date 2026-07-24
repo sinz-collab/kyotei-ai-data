@@ -1,0 +1,29 @@
+[Unit]
+Description=SINZ EDGE morning GitHub Actions fallback check
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=sinz-edge
+Group=sinz-edge
+WorkingDirectory=/opt/sinz-edge-fallback
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=MORNING_FALLBACK_STATE_DIR=/var/lib/sinz-edge-morning-fallback
+EnvironmentFile=-/etc/sinz-edge/morning-fallback.env
+ExecStart=/opt/sinz-edge/.venv/bin/python /opt/sinz-edge-fallback/scripts/check_morning_manifest.py --mode fallback
+StateDirectory=sinz-edge-morning-fallback
+StateDirectoryMode=0700
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/var/lib/sinz-edge-morning-fallback

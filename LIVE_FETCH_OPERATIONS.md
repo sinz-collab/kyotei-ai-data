@@ -77,6 +77,71 @@ JST. At the first in-window cycle, it downloads the morning manifest only when
 the local copy is missing, incomplete, or not today's JST date. Venue payloads
 are validated and written atomically before the manifest becomes active.
 
+## Morning Workflow Fallback
+
+GitHub Actions remains the primary morning-data scheduler at 06:30 JST. The VPS
+does not build, copy, or modify morning race data. It only checks the public
+manifest and, when authorized, requests the existing `morning-data.yml`
+workflow:
+
+- `sinz-morning-fallback.timer`: 06:40 JST, `Persistent=true`
+- `sinz-morning-verify.timer`: 06:55 JST, `Persistent=true`
+- State and lock: `/var/lib/sinz-edge-morning-fallback`
+- Isolated monitor code: `/opt/sinz-edge-fallback`
+- Secret environment: `/etc/sinz-edge/morning-fallback.env`
+
+The 06:40 check exits without action when `manifest.date` and `updatedAt` are
+both current, or when a same-day workflow is queued, in progress, or has
+completed successfully. If the manifest is stale and the same-day workflow is
+missing, failed, or cancelled, it can dispatch exactly once per JST date. A
+state file is reserved before the API request, so an API failure is not retried
+continuously. The 06:55 service is verification-only and never dispatches.
+
+Install the units without stopping `sinz-live-fetch.service`:
+
+```bash
+sudo bash /opt/sinz-edge/deploy/install_morning_fallback.sh
+```
+
+Use a repository-scoped fine-grained personal access token with Actions
+read/write permission. Metadata read access is implicit. No Contents write
+permission is needed. Store it only in the root-owned environment file:
+
+```bash
+sudoedit /etc/sinz-edge/morning-fallback.env
+```
+
+```text
+GITHUB_TOKEN=github_pat_REDACTED
+GITHUB_REPOSITORY=sinz-collab/kyotei-ai-data
+GITHUB_WORKFLOW=morning-data.yml
+MORNING_FALLBACK_DISPATCH_ENABLED=0
+```
+
+Keep `MORNING_FALLBACK_DISPATCH_ENABLED=0` while validating. A safe read-only
+check is:
+
+```bash
+sudo -u sinz-edge env \
+  MORNING_FALLBACK_DISPATCH_ENABLED=0 \
+  MORNING_FALLBACK_STATE_DIR=/var/lib/sinz-edge-morning-fallback \
+  /opt/sinz-edge/.venv/bin/python \
+  /opt/sinz-edge-fallback/scripts/check_morning_manifest.py \
+  --mode fallback --dry-run
+```
+
+After explicit production approval, set
+`MORNING_FALLBACK_DISPATCH_ENABLED=1`. Never place the token in the repository,
+command line, journal, public JSON, JavaScript, or GitHub Pages source.
+
+Inspect schedules and structured journal records:
+
+```bash
+systemctl list-timers 'sinz-morning-*'
+journalctl -u sinz-morning-fallback.service \
+  -u sinz-morning-verify.service --no-pager
+```
+
 ## HTTPS And Nginx
 
 Choose a DNS name, for example `live.example.com`, and point it to the VPS.

@@ -10,6 +10,12 @@ PYTHON_BIN="${PYTHON_BIN:-python3.12}"
 SERVICE_NAME="sinz-live-fetch.service"
 CLEANUP_SERVICE="sinz-live-cleanup.service"
 CLEANUP_TIMER="sinz-live-cleanup.timer"
+MORNING_UNITS=(
+  sinz-morning-fallback.service
+  sinz-morning-fallback.timer
+  sinz-morning-verify.service
+  sinz-morning-verify.timer
+)
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this installer with sudo." >&2
@@ -93,6 +99,17 @@ install -d -o root -g "${SERVICE_GROUP}" -m 0750 /etc/sinz-edge
 if [[ ! -e /etc/sinz-edge/live-fetch.env ]]; then
   install -o root -g "${SERVICE_GROUP}" -m 0640 /dev/null /etc/sinz-edge/live-fetch.env
 fi
+if [[ ! -e /etc/sinz-edge/morning-fallback.env ]]; then
+  install -o root -g "${SERVICE_GROUP}" -m 0640 /dev/null /etc/sinz-edge/morning-fallback.env
+fi
+install -d -o root -g "${SERVICE_GROUP}" -m 0750 \
+  /opt/sinz-edge-fallback /opt/sinz-edge-fallback/scripts
+install -o root -g "${SERVICE_GROUP}" -m 0640 \
+  "${INSTALL_DIR}/scripts/check_morning_manifest.py" \
+  /opt/sinz-edge-fallback/scripts/check_morning_manifest.py
+install -o root -g "${SERVICE_GROUP}" -m 0640 \
+  "${INSTALL_DIR}/scripts/trigger_morning_workflow.py" \
+  /opt/sinz-edge-fallback/scripts/trigger_morning_workflow.py
 install -o root -g root -m 0644 \
   "${INSTALL_DIR}/systemd/${SERVICE_NAME}" \
   "/etc/systemd/system/${SERVICE_NAME}"
@@ -102,6 +119,11 @@ install -o root -g root -m 0644 \
 install -o root -g root -m 0644 \
   "${INSTALL_DIR}/systemd/${CLEANUP_TIMER}" \
   "/etc/systemd/system/${CLEANUP_TIMER}"
+for unit in "${MORNING_UNITS[@]}"; do
+  install -o root -g root -m 0644 \
+    "${INSTALL_DIR}/systemd/${unit}" \
+    "/etc/systemd/system/${unit}"
+done
 install -o root -g root -m 0644 \
   "${INSTALL_DIR}/logrotate/sinz-live-fetch" \
   "/etc/logrotate.d/sinz-live-fetch"
@@ -114,7 +136,12 @@ runuser -u "${SERVICE_USER}" -- env \
 
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
-systemctl enable --now "${CLEANUP_TIMER}"
+systemctl enable --now \
+  "${CLEANUP_TIMER}" \
+  sinz-morning-fallback.timer \
+  sinz-morning-verify.timer
 systemctl restart "${SERVICE_NAME}"
 systemctl --no-pager --full status "${SERVICE_NAME}"
 systemctl --no-pager --full status "${CLEANUP_TIMER}"
+systemctl --no-pager --full status sinz-morning-fallback.timer
+systemctl --no-pager --full status sinz-morning-verify.timer
