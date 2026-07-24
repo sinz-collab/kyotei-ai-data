@@ -122,7 +122,7 @@ class VenueAndRaceTests(unittest.TestCase):
         targets = select_target_races(venue, at("08:20"), CONFIG)
         self.assertEqual([target["race_no"] for target in targets], [1])
 
-    def test_current_morning_data_does_not_use_network(self) -> None:
+    def test_current_morning_data_checks_manifest_without_rewriting(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             payload_path = root / "venues" / "a" / "20260724.json"
@@ -149,9 +149,88 @@ class VenueAndRaceTests(unittest.TestCase):
             }
             (root / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
             config = {**CONFIG, "morning_data_root": str(root)}
-            with patch("sync_morning_data._request_json", side_effect=AssertionError("network used")):
+            with patch("sync_morning_data._request_json", return_value=manifest) as request:
                 path = ensure_current_morning_data(config, "2026-07-24", Mock())
             self.assertEqual(path, root / "manifest.json")
+            request.assert_called_once()
+
+    def test_newer_same_day_manifest_replaces_valid_local_data(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            payload_path = root / "venues" / "a" / "20260724.json"
+            payload_path.parent.mkdir(parents=True)
+            payload = {
+                "date": "2026-07-24",
+                "races": [
+                    {"race": race, "deadline": "09:00", "racers": racers()}
+                    for race in range(1, 13)
+                ],
+            }
+            payload_path.write_text(json.dumps(payload), encoding="utf-8")
+            local_manifest = {
+                "date": "2026-07-24",
+                "updatedAt": "2026-07-24T06:35:00+09:00",
+                "venues": [
+                    {
+                        "slug": "a",
+                        "open": True,
+                        "date": "2026-07-24",
+                        "entryCount": 12,
+                        "dataPath": "venues/a/20260724.json",
+                    }
+                ],
+            }
+            remote_manifest = {
+                **local_manifest,
+                "updatedAt": "2026-07-24T13:08:35+09:00",
+            }
+            (root / "manifest.json").write_text(json.dumps(local_manifest), encoding="utf-8")
+            config = {**CONFIG, "morning_data_root": str(root)}
+            with patch(
+                "sync_morning_data._request_json",
+                side_effect=[remote_manifest, payload],
+            ):
+                ensure_current_morning_data(config, "2026-07-24", Mock())
+            self.assertEqual(
+                json.loads((root / "manifest.json").read_text(encoding="utf-8")),
+                remote_manifest,
+            )
+
+    def test_refresh_failure_preserves_valid_local_data(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            payload_path = root / "venues" / "a" / "20260724.json"
+            payload_path.parent.mkdir(parents=True)
+            payload = {
+                "date": "2026-07-24",
+                "races": [
+                    {"race": race, "deadline": "09:00", "racers": racers()}
+                    for race in range(1, 13)
+                ],
+            }
+            payload_path.write_text(json.dumps(payload), encoding="utf-8")
+            manifest = {
+                "date": "2026-07-24",
+                "venues": [
+                    {
+                        "slug": "a",
+                        "open": True,
+                        "date": "2026-07-24",
+                        "entryCount": 12,
+                        "dataPath": "venues/a/20260724.json",
+                    }
+                ],
+            }
+            manifest_path = root / "manifest.json"
+            manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+            config = {**CONFIG, "morning_data_root": str(root)}
+            with patch(
+                "sync_morning_data._request_json",
+                side_effect=RuntimeError("temporary outage"),
+            ):
+                path = ensure_current_morning_data(config, "2026-07-24", Mock())
+            self.assertEqual(path, manifest_path)
+            self.assertEqual(json.loads(manifest_path.read_text()), manifest)
 
     def test_stale_remote_manifest_preserves_local_data(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

@@ -6,6 +6,7 @@ import re
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -95,6 +96,16 @@ def _local_is_current(root: Path, today: str) -> bool:
     return True
 
 
+def _manifest_updated_at(manifest: dict[str, Any]) -> datetime | None:
+    value = str(manifest.get("updatedAt") or "")
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 def ensure_current_morning_data(
     config: dict[str, Any],
     today: str,
@@ -102,15 +113,44 @@ def ensure_current_morning_data(
 ) -> Path:
     root = resolve_root(config, "morning_data_root")
     manifest_path = root / "manifest.json"
-    if _local_is_current(root, today):
-        return manifest_path
+    local_is_current = _local_is_current(root, today)
+    local_manifest = load_json(manifest_path) if local_is_current else None
 
     base_url = str(config["morning_data_base_url"]).rstrip("/")
-    manifest = _request_json(f"{base_url}/manifest.json", config, logger)
+    try:
+        manifest = _request_json(f"{base_url}/manifest.json", config, logger)
+    except RuntimeError:
+        if not local_is_current:
+            raise
+        logger.warning(
+            f"morning manifest refresh failed; retaining validated local data for {today}",
+            extra={"event": "morning_sync_using_local"},
+        )
+        return manifest_path
+
     if manifest.get("date") != today:
+        if local_is_current:
+            logger.warning(
+                (
+                    "remote morning manifest is not current; retaining validated local data: "
+                    f"expected={today} actual={manifest.get('date')}"
+                ),
+                extra={"event": "morning_sync_using_local"},
+            )
+            return manifest_path
         raise RuntimeError(
             f"remote morning manifest is not current: expected={today} actual={manifest.get('date')}"
         )
+
+    if local_manifest is not None:
+        local_updated = _manifest_updated_at(local_manifest)
+        remote_updated = _manifest_updated_at(manifest)
+        if manifest == local_manifest or (
+            local_updated is not None
+            and remote_updated is not None
+            and remote_updated <= local_updated
+        ):
+            return manifest_path
 
     payloads: list[tuple[Path, dict[str, Any]]] = []
     for venue in manifest.get("venues") or []:
@@ -136,4 +176,3 @@ def ensure_current_morning_data(
         extra={"event": "morning_sync_complete"},
     )
     return manifest_path
-
