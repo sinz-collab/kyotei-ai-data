@@ -131,7 +131,12 @@ jobs:
       - name: Build and validate public data
         shell: bash
         run: |
+          cp -a data "$RUNNER_TEMP/morning-data-before"
+          python -m unittest discover -s tests
           python automation/build_site_data.py --date "$TARGET_DATE" | tee build.log
+          python automation/validate_morning_regression.py \
+            --before "$RUNNER_TEMP/morning-data-before" \
+            --after data
           {
             echo "## Morning data report"
             echo '```json'

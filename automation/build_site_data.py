@@ -10,6 +10,16 @@ from zoneinfo import ZoneInfo
 
 HERE = Path(__file__).resolve().parent
 CONFIG_PATH = HERE / "venues.json"
+PREDICTION_VENUES = {
+    "toda",
+    "wakamatsu",
+    "shimonoseki",
+    "heiwajima",
+    "tokoname",
+    "ashiya",
+    "omura",
+    "karatsu",
+}
 
 ALL_VENUES = [
     ("kiryu", "桐生"),
@@ -468,15 +478,20 @@ def main() -> int:
             venue_dir = data_root / "venues" / slug
             venue_dir.mkdir(parents=True, exist_ok=True)
             existing_path = venue_dir / f"{date_dir}.json"
-            payload = preserve_prediction_payload(payload, existing_path)
-            if payload is None:
-                is_open = False
-                detail = {
-                    **detail,
-                    "reason": "prediction_payload_unavailable",
-                    "predictionRequired": True,
-                }
+            if slug in PREDICTION_VENUES:
+                payload = preserve_prediction_payload(payload, existing_path)
+                if payload is None:
+                    is_open = False
+                    detail = {
+                        **detail,
+                        "reason": "prediction_payload_unavailable",
+                        "predictionRequired": True,
+                    }
             else:
+                payload["engine"] = None
+                payload["preds"] = {}
+                detail = {**detail, "reason": "venue_engine_not_registered"}
+            if is_open:
                 payload = preserve_same_day_live_fields(payload, venue_dir / "latest.json")
                 serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
                 write_text_atomic(existing_path, serialized)
@@ -508,9 +523,12 @@ def main() -> int:
         if reason:
             item["availabilityReason"] = reason
         if slug in configured:
-            item["predictionStatus"] = "ready" if state["open"] else (
-                "unavailable" if reason == "prediction_payload_unavailable" else "not_running"
-            )
+            if slug not in PREDICTION_VENUES and state["open"]:
+                item["predictionStatus"] = "unavailable"
+            else:
+                item["predictionStatus"] = "ready" if state["open"] else (
+                    "unavailable" if reason == "prediction_payload_unavailable" else "not_running"
+                )
         event_day = state.get("eventDay")
         if event_day is not None:
             item["eventDay"] = event_day
