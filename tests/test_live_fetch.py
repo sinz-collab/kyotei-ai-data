@@ -19,6 +19,7 @@ sys.path.insert(0, str(SCRIPTS))
 from detect_active_venues import detect_active_venues
 from fetch_live_race import save_document
 from fetch_odds import official_odds_url, parse_odds, parse_official_odds
+from fetch_result import official_result_url, parse_result
 from live_common import atomic_write_json, is_fetch_window, load_config, process_lock
 from live_data_hash import content_hash
 from publish_live_data import copy_changed_live_files
@@ -127,6 +128,26 @@ class VenueAndRaceTests(unittest.TestCase):
         }
         targets = select_target_races(venue, at("08:20"), CONFIG)
         self.assertEqual([target["race_no"] for target in targets], [1])
+
+    def test_result_is_selected_after_deadline_until_complete(self) -> None:
+        venue = {
+            "slug": "fukuoka",
+            "name": "福岡",
+            "payload": {
+                "date": "2026-07-24",
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            targets = select_target_races(venue, at("09:09"), CONFIG, root)
+            self.assertEqual(len(targets), 1)
+            self.assertTrue(targets[0]["fetch_result"])
+            self.assertFalse(targets[0]["fetch_live"])
+            result_path = root / "2026-07-24" / "fukuoka" / "01" / "result.json"
+            result_path.parent.mkdir(parents=True)
+            result_path.write_text('{"complete":true}', encoding="utf-8")
+            self.assertEqual(select_target_races(venue, at("09:13"), CONFIG, root), [])
 
     def test_current_morning_data_checks_manifest_without_rewriting(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -293,6 +314,33 @@ class OddsHashAndStorageTests(unittest.TestCase):
         self.assertEqual(
             url,
             "https://www.boatrace.jp/owpc/pc/race/odds3t?rno=9&jcd=08&hd=20260724",
+        )
+
+    def test_official_result_parser(self) -> None:
+        fixture = """
+        <td class="is-fs14 is-fBold is-boatColor1">1</td>
+        <td class="is-fs14 is-fBold is-boatColor2">2</td>
+        <td class="is-fs14 is-fBold is-boatColor4">4</td>
+        <td rowspan="2">3連単</td>
+        <span class="numberSet1_number is-type1">1</span>
+        <span class="numberSet1_number is-type2">2</span>
+        <span class="numberSet1_number is-type4">4</span>
+        <span class="is-payout1">&yen;1,250</span><td>5</td></tr>
+        <th>決まり手</th><td class="is-fs16">逃げ</td>
+        """
+        parsed = parse_result(fixture)
+        self.assertTrue(parsed["_complete"])
+        self.assertEqual(parsed["order"], ["1", "2", "4"])
+        self.assertEqual(parsed["payout3t"], "1,250円")
+        self.assertEqual(parsed["popularity3t"], 5)
+        self.assertEqual(parsed["kimarite"], "逃げ")
+        self.assertIn(
+            "jcd=22",
+            official_result_url("https://www.boatrace.jp", "fukuoka", "2026-07-24", 4),
+        )
+        self.assertEqual(
+            parse_result(fixture.replace("&yen;", "¥"))["payout3t"],
+            "1,250円",
         )
 
     def test_partial_odds(self) -> None:

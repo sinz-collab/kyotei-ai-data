@@ -24,6 +24,7 @@ REQUIRED_CONFIG = {
     "active_venues_only",
     "skip_when_no_target_races",
     "race_monitor_minutes_before_deadline",
+    "result_monitor_minutes_after_deadline",
     "max_retries",
     "connect_timeout_seconds",
     "read_timeout_seconds",
@@ -63,6 +64,7 @@ def load_config(path: Path = CONFIG_PATH) -> dict[str, Any]:
     for key in (
         "interval_minutes",
         "race_monitor_minutes_before_deadline",
+        "result_monitor_minutes_after_deadline",
         "max_retries",
         "connect_timeout_seconds",
         "read_timeout_seconds",

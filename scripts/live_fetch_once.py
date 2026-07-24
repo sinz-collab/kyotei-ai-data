@@ -53,11 +53,12 @@ async def run_once(
     if not is_fetch_window(current, config):
         return {"status": "outside_window", "changed": False, "targets": []}
     today = current.date().isoformat()
+    target_root = output_root or resolve_root(config, "live_output_root")
     manifest = manifest_path or ensure_current_morning_data(config, today, logger)
     active = detect_active_venues(manifest, today)
     targets = []
     for venue in active:
-        targets.extend(select_target_races(venue, current, config))
+        targets.extend(select_target_races(venue, current, config, target_root))
     if not targets:
         return {"status": "no_target_races", "changed": False, "active_venues": [v["slug"] for v in active], "targets": []}
     if dry_run:
@@ -76,7 +77,6 @@ async def run_once(
 
     from playwright.async_api import async_playwright
 
-    target_root = output_root or resolve_root(config, "live_output_root")
     lock_path = resolve_root(config, "lock_path")
     by_venue: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for target in targets:

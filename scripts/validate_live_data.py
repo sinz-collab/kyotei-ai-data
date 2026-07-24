@@ -76,6 +76,12 @@ def validate_live_data(
                 errors.append(f"invalid odds key: {key}")
         if document.get("complete") is True and len(odds) != 120:
             errors.append("complete odds must contain 120 combinations")
+    if item_type == "result":
+        order = [str(value) for value in (data.get("order") or [])]
+        if any(value not in "123456" for value in order) or len(order) != len(set(order)):
+            errors.append("invalid result order")
+        if document.get("complete") is True and len(order) != 3:
+            errors.append("complete result must contain three finishers")
     if document.get("complete") is True and document.get("status") != "complete":
         errors.append("complete/status mismatch")
     return errors

@@ -205,6 +205,7 @@ def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
         previous = previous_predictions.get(race_no) or {}
         realtime = previous.get("realtime")
         odds = previous.get("odds")
+        result = previous.get("result")
         realtime_has_data = isinstance(realtime, dict) and any(
             value not in (None, "", [], {}) for value in realtime.values()
         )
@@ -213,6 +214,8 @@ def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
             prediction["realtime"] = realtime
         if odds_has_data:
             prediction["odds"] = odds
+        if isinstance(result, dict) and result.get("status") == "ok":
+            prediction["result"] = result
         if (realtime_has_data or odds_has_data) and previous.get("predictionStage"):
             prediction["predictionStage"] = previous["predictionStage"]
     return payload

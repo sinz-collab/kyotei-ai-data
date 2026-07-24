@@ -11,6 +11,7 @@ from fetch_direct_info import parse_direct_info
 from fetch_exhibition import parse_exhibition
 from fetch_odds import odds_difference, official_odds_url, parse_official_odds
 from fetch_original_exhibition import parse_original_exhibition
+from fetch_result import official_result_url, parse_result
 from live_common import atomic_write_json, is_fetch_window, load_json, now_local
 from live_data_hash import content_hash
 from validate_live_data import validate_live_data
@@ -267,6 +268,29 @@ class LiveSourceClient:
         finally:
             await page.close()
 
+    async def fetch_result(self, target: dict[str, Any]) -> dict[str, Any]:
+        page = await self.context.new_page()
+        source = official_result_url(
+            self.config["odds_source_base_url"],
+            target["venue"],
+            target["date"],
+            target["race_no"],
+        )
+        try:
+            await self._goto(page, source, target, "result")
+            parsed = parse_result(await page.content())
+            return _base_document(
+                target,
+                source,
+                _status(parsed.pop("_published"), parsed.pop("_complete")),
+                False,
+                parsed,
+                None,
+                self.config,
+            )
+        finally:
+            await page.close()
+
 
 async def fetch_and_save_race(
     client: LiveSourceClient,
@@ -280,10 +304,19 @@ async def fetch_and_save_race(
     changed = False
     items: dict[str, Any] = {}
     try:
-        documents = await asyncio.wait_for(
-            client.fetch(target),
-            timeout=config["race_timeout_seconds"],
-        )
+        documents = {}
+        if target.get("fetch_live", True):
+            documents.update(await asyncio.wait_for(
+                client.fetch(target),
+                timeout=config["race_timeout_seconds"],
+            ))
+        if target.get("fetch_result"):
+            documents["result"] = await asyncio.wait_for(
+                client.fetch_result(target),
+                timeout=config["race_timeout_seconds"],
+            )
+            documents["result"]["complete"] = documents["result"]["status"] == "complete"
+            documents["result"]["content_hash"] = content_hash(documents["result"])
         previous_odds_path = race_dir / "odds.json"
         if "odds" in documents:
             previous = load_json(previous_odds_path) if previous_odds_path.is_file() else None
@@ -324,7 +357,14 @@ async def fetch_and_save_race(
             error,
             extra={"event": "race_failed", "venue": target["venue"], "race_no": target["race_no"]},
         )
-        for item_type in ("direct", "exhibition", "original_exhibition", "odds"):
+        failed_items = (
+            ("direct", "exhibition", "original_exhibition", "odds")
+            if target.get("fetch_live", True)
+            else ()
+        )
+        if target.get("fetch_result"):
+            failed_items = (*failed_items, "result")
+        for item_type in failed_items:
             document = _base_document(
                 target,
                 config["source_base_url"],
