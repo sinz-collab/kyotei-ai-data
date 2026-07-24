@@ -9,6 +9,7 @@ import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from live_common import atomic_write_json, is_fetch_window, load_json, resolve_root
 
@@ -101,7 +102,10 @@ def _manifest_updated_at(manifest: dict[str, Any]) -> datetime | None:
     if not value:
         return None
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=ZoneInfo("Asia/Tokyo"))
+        return parsed
     except ValueError:
         return None
 

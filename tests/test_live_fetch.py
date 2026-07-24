@@ -169,7 +169,7 @@ class VenueAndRaceTests(unittest.TestCase):
             payload_path.write_text(json.dumps(payload), encoding="utf-8")
             local_manifest = {
                 "date": "2026-07-24",
-                "updatedAt": "2026-07-24T06:35:00+09:00",
+                "updatedAt": "2026-07-24T06:35:00",
                 "venues": [
                     {
                         "slug": "a",
