@@ -7,8 +7,8 @@ INSTALL_DIR="${INSTALL_DIR:-/opt/sinz-edge}"
 SERVICE_NAME="sinz-live-fetch.service"
 NGINX_USER="${NGINX_USER:-www-data}"
 
-if [[ -z "${LIVE_ORIGIN}" || ! "${LIVE_ORIGIN}" =~ ^https://[A-Za-z0-9.-]+$ ]]; then
-  echo "Usage: $0 https://live.example.com [https://sinz-collab.github.io]" >&2
+if [[ -z "${LIVE_ORIGIN}" || ! "${LIVE_ORIGIN}" =~ ^https?://[A-Za-z0-9.-]+$ ]]; then
+  echo "Usage: $0 http[s]://live.example.com [https://sinz-collab.github.io]" >&2
   exit 2
 fi
 
