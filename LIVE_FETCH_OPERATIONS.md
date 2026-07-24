@@ -6,6 +6,7 @@
 - Morning data synchronized from GitHub: `/opt/sinz-edge/runtime/morning`
 - Public live JSON only: `/opt/sinz-edge/data/live`
 - Application log: `/opt/sinz-edge/logs/live_fetch.jsonl`
+- Daily cleanup: `sinz-live-cleanup.timer`
 - Process and venue locks: `/opt/sinz-edge/run`
 - Optional environment file: `/etc/sinz-edge/live-fetch.env`
 - Service account: `sinz-edge` with `/usr/sbin/nologin`
@@ -27,7 +28,7 @@ Ubuntu 24.04:
 ```bash
 sudo apt-get update
 sudo apt-get install -y git nginx acl curl ca-certificates \
-  python3.12 python3.12-venv certbot python3-certbot-nginx
+  python3.12 python3.12-venv certbot python3-certbot-nginx logrotate
 ```
 
 Debian or Ubuntu releases without Python 3.12 must install Python 3.12 from a
@@ -69,6 +70,7 @@ The installer:
 6. Creates an empty `0640` environment file.
 7. Runs unit tests.
 8. Installs, enables, and starts `sinz-live-fetch.service`.
+9. Installs and enables the daily cleanup timer and logrotate policy.
 
 The daemon performs no race-source access before 08:20 JST or at/after 23:00
 JST. At the first in-window cycle, it downloads the morning manifest only when
@@ -157,6 +159,33 @@ sudo -u sinz-edge env PYTHONDONTWRITEBYTECODE=1 \
 sudo systemctl status sinz-live-fetch.service
 sudo journalctl -u sinz-live-fetch.service -f
 sudo tail -f /opt/sinz-edge/logs/live_fetch.jsonl
+```
+
+`live_fetch.jsonl` is rotated daily, retained for 14 generations, and
+compressed. The Python logger uses `WatchedFileHandler`, so logrotate can
+rename the file without `copytruncate`; the next log record reopens the newly
+created `0640 sinz-edge:sinz-edge` file.
+
+Live JSON date directories are retained for 14 days. At 03:30 JST each day,
+with up to 15 minutes of randomized delay, `sinz-live-cleanup.timer` runs the
+cleanup as `sinz-edge`. Only direct children named exactly `YYYY-MM-DD` older
+than 14 days are eligible. Today, yesterday, files, unexpected names, and
+symbolic links are never deleted.
+
+Preview cleanup without deleting:
+
+```bash
+sudo -u sinz-edge /opt/sinz-edge/.venv/bin/python \
+  /opt/sinz-edge/scripts/cleanup_live_data.py --dry-run
+```
+
+Inspect timer and cleanup logs:
+
+```bash
+sudo systemctl status sinz-live-cleanup.timer
+sudo systemctl list-timers sinz-live-cleanup.timer
+sudo journalctl -u sinz-live-cleanup.service
+sudo journalctl --disk-usage
 ```
 
 Stop, start, and restart:

@@ -1,0 +1,22 @@
+[Unit]
+Description=Remove expired SINZ EDGE live JSON
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=sinz-edge
+Group=sinz-edge
+WorkingDirectory=/opt/sinz-edge
+ExecStart=/opt/sinz-edge/.venv/bin/python /opt/sinz-edge/scripts/cleanup_live_data.py
+UMask=0027
+Nice=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+ReadWritePaths=/opt/sinz-edge/data/live

@@ -1,0 +1,12 @@
+[Unit]
+Description=Daily SINZ EDGE live JSON cleanup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Tokyo
+RandomizedDelaySec=15m
+Persistent=true
+AccuracySec=1m
+Unit=sinz-live-cleanup.service
+
+[Install]
+WantedBy=timers.target

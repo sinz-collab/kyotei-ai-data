@@ -5,6 +5,8 @@ LIVE_ORIGIN="${1:-}"
 SITE_ORIGIN="${2:-https://sinz-collab.github.io}"
 INSTALL_DIR="${INSTALL_DIR:-/opt/sinz-edge}"
 SERVICE_NAME="sinz-live-fetch.service"
+CLEANUP_SERVICE="sinz-live-cleanup.service"
+CLEANUP_TIMER="sinz-live-cleanup.timer"
 NGINX_USER="${NGINX_USER:-www-data}"
 
 if [[ -z "${LIVE_ORIGIN}" || ! "${LIVE_ORIGIN}" =~ ^https?://[A-Za-z0-9.-]+$ ]]; then
@@ -16,10 +18,20 @@ test "$(id -u sinz-edge)" -ne 0
 test "$(systemctl show -p User --value "${SERVICE_NAME}")" = "sinz-edge"
 systemctl is-enabled --quiet "${SERVICE_NAME}"
 systemctl is-active --quiet "${SERVICE_NAME}"
+test "$(systemctl show -p User --value "${CLEANUP_SERVICE}")" = "sinz-edge"
+systemctl is-enabled --quiet "${CLEANUP_TIMER}"
+systemctl is-active --quiet "${CLEANUP_TIMER}"
 runuser -u sinz-edge -- test -w "${INSTALL_DIR}/data/live"
 runuser -u sinz-edge -- test -w "${INSTALL_DIR}/runtime/morning"
 runuser -u sinz-edge -- test -w "${INSTALL_DIR}/logs"
 runuser -u sinz-edge -- test -w "${INSTALL_DIR}/run"
+runuser -u sinz-edge -- \
+  "${INSTALL_DIR}/.venv/bin/python" \
+  "${INSTALL_DIR}/scripts/cleanup_live_data.py" --dry-run
+logrotate --debug /etc/logrotate.d/sinz-live-fetch >/dev/null
+systemd-analyze verify \
+  "/etc/systemd/system/${CLEANUP_SERVICE}" \
+  "/etc/systemd/system/${CLEANUP_TIMER}"
 
 unknown_status="$(
   curl -sS -o /dev/null -w '%{http_code}' \

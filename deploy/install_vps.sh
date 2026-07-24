@@ -8,13 +8,15 @@ NGINX_USER="${NGINX_USER:-www-data}"
 REPO_URL="${REPO_URL:-https://github.com/sinz-collab/kyotei-ai-data.git}"
 PYTHON_BIN="${PYTHON_BIN:-python3.12}"
 SERVICE_NAME="sinz-live-fetch.service"
+CLEANUP_SERVICE="sinz-live-cleanup.service"
+CLEANUP_TIMER="sinz-live-cleanup.timer"
 
 if [[ "${EUID}" -ne 0 ]]; then
   echo "Run this installer with sudo." >&2
   exit 1
 fi
 
-for command in git systemctl setfacl runuser "${PYTHON_BIN}"; do
+for command in git logrotate systemctl setfacl runuser "${PYTHON_BIN}"; do
   if ! command -v "${command}" >/dev/null 2>&1; then
     echo "Required command not found: ${command}" >&2
     exit 1
@@ -94,6 +96,15 @@ fi
 install -o root -g root -m 0644 \
   "${INSTALL_DIR}/systemd/${SERVICE_NAME}" \
   "/etc/systemd/system/${SERVICE_NAME}"
+install -o root -g root -m 0644 \
+  "${INSTALL_DIR}/systemd/${CLEANUP_SERVICE}" \
+  "/etc/systemd/system/${CLEANUP_SERVICE}"
+install -o root -g root -m 0644 \
+  "${INSTALL_DIR}/systemd/${CLEANUP_TIMER}" \
+  "/etc/systemd/system/${CLEANUP_TIMER}"
+install -o root -g root -m 0644 \
+  "${INSTALL_DIR}/logrotate/sinz-live-fetch" \
+  "/etc/logrotate.d/sinz-live-fetch"
 
 runuser -u "${SERVICE_USER}" -- env \
   PYTHONDONTWRITEBYTECODE=1 \
@@ -103,5 +114,7 @@ runuser -u "${SERVICE_USER}" -- env \
 
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}"
+systemctl enable --now "${CLEANUP_TIMER}"
 systemctl restart "${SERVICE_NAME}"
 systemctl --no-pager --full status "${SERVICE_NAME}"
+systemctl --no-pager --full status "${CLEANUP_TIMER}"

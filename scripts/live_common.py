@@ -7,6 +7,7 @@ import re
 import tempfile
 from contextlib import contextmanager
 from datetime import datetime, time, timedelta
+from logging.handlers import WatchedFileHandler
 from pathlib import Path
 from typing import Any, Iterator
 from zoneinfo import ZoneInfo
@@ -163,7 +164,7 @@ def configure_logging(config: dict[str, Any]) -> logging.Logger:
     logger.addHandler(stream)
     log_path = resolve_root(config, "log_path")
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    file_handler = logging.FileHandler(log_path, encoding="utf-8")
+    file_handler = WatchedFileHandler(log_path, encoding="utf-8")
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
     return logger
