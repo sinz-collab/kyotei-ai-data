@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import itertools
 import json
+import os
+import stat
 import sys
 import tempfile
 import unittest
@@ -17,7 +19,7 @@ sys.path.insert(0, str(SCRIPTS))
 from detect_active_venues import detect_active_venues
 from fetch_live_race import save_document
 from fetch_odds import parse_odds
-from live_common import is_fetch_window, load_config, process_lock
+from live_common import atomic_write_json, is_fetch_window, load_config, process_lock
 from live_data_hash import content_hash
 from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
@@ -169,6 +171,13 @@ class VenueAndRaceTests(unittest.TestCase):
 
 
 class OddsHashAndStorageTests(unittest.TestCase):
+    @unittest.skipUnless(os.name == "posix", "POSIX file modes are required")
+    def test_atomic_json_is_group_readable(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "status.json"
+            atomic_write_json(path, {"status": "pending"})
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o640)
+
     def test_all_120_odds(self) -> None:
         sections = []
         for first in range(1, 7):
