@@ -18,7 +18,7 @@ sys.path.insert(0, str(SCRIPTS))
 
 from detect_active_venues import detect_active_venues
 from fetch_live_race import save_document
-from fetch_odds import parse_odds
+from fetch_odds import official_odds_url, parse_odds, parse_official_odds
 from live_common import atomic_write_json, is_fetch_window, load_config, process_lock
 from live_data_hash import content_hash
 from publish_live_data import copy_changed_live_files
@@ -278,6 +278,22 @@ class OddsHashAndStorageTests(unittest.TestCase):
         parsed = parse_odds("\n".join(sections))
         self.assertEqual(parsed["count"], 120)
         self.assertTrue(parsed["_complete"])
+
+    def test_official_odds_maps_all_120_combinations(self) -> None:
+        values = [str(index + 1) for index in range(120)]
+        parsed = parse_official_odds(values, "オッズ更新時間 14:00")
+        self.assertTrue(parsed["_complete"])
+        self.assertEqual(parsed["count"], 120)
+        self.assertEqual(parsed["odds"]["1-2-3"], 1.0)
+        self.assertEqual(parsed["odds"]["6-5-4"], 120.0)
+        self.assertEqual(len(set(parsed["odds"])), 120)
+
+    def test_official_odds_url_uses_venue_code_and_compact_date(self) -> None:
+        url = official_odds_url("https://www.boatrace.jp", "tokoname", "2026-07-24", 9)
+        self.assertEqual(
+            url,
+            "https://www.boatrace.jp/owpc/pc/race/odds3t?rno=9&jcd=08&hd=20260724",
+        )
 
     def test_partial_odds(self) -> None:
         parsed = parse_odds("1.\n2\n3\n12.3")

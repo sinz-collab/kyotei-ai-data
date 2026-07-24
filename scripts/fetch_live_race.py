@@ -9,7 +9,7 @@ from typing import Any
 
 from fetch_direct_info import parse_direct_info
 from fetch_exhibition import parse_exhibition
-from fetch_odds import odds_difference, parse_odds
+from fetch_odds import odds_difference, official_odds_url, parse_official_odds
 from fetch_original_exhibition import parse_original_exhibition
 from live_common import atomic_write_json, is_fetch_window, load_json, now_local
 from live_data_hash import content_hash
@@ -165,7 +165,12 @@ class LiveSourceClient:
         base = self.config["source_base_url"].rstrip("/")
         race_root = f"{base}/race/{target['venue']}/{target['date']}/{target['race_no']}R"
         source_last = f"{race_root}/last-minute"
-        source_odds = f"{race_root}/odds"
+        source_odds = official_odds_url(
+            self.config["odds_source_base_url"],
+            target["venue"],
+            target["date"],
+            target["race_no"],
+        )
         output: dict[str, Any] = {}
         try:
             await self._goto(page, source_last, target, "direct")
@@ -245,7 +250,8 @@ class LiveSourceClient:
 
             await self._goto(page, source_odds, target, "odds")
             odds_text = await page.locator("body").inner_text()
-            odds = parse_odds(odds_text)
+            odds_values = await page.locator("td.oddsPoint").all_inner_texts()
+            odds = parse_official_odds(odds_values, odds_text)
             output["odds"] = _base_document(
                 target,
                 source_odds,

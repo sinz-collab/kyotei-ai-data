@@ -40,6 +40,7 @@ REQUIRED_CONFIG = {
     "lock_path",
     "publish_lock_path",
     "publish_repo_root",
+    "odds_source_base_url",
 }
 
 
