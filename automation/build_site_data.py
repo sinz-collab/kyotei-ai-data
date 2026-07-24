@@ -85,6 +85,56 @@ def parse_deadline(lines: list[str], race_no: int) -> str:
 
 
 def parse_racers(lines: list[str]) -> list[dict]:
+    season_labels = []
+    try:
+        season_start = lines.index("節間成績") + 1
+    except ValueError:
+        season_start = -1
+    if season_start >= 0:
+        for line in lines[season_start:season_start + 8]:
+            if re.fullmatch(r"初日|[0-9]+日目|最終日", line):
+                season_labels.append(line)
+            elif line == "早見":
+                break
+
+    def parse_season(start: int, end: int) -> tuple[list[dict], list[dict], str]:
+        tokens = lines[start:end]
+        runs = []
+        hayami = ""
+        index = 0
+        while index + 4 < len(tokens):
+            if (
+                re.fullmatch(r"[0-9]{1,2}R", tokens[index])
+                and re.fullmatch(r"[1-6]", tokens[index + 1])
+                and re.fullmatch(r"\.?[0-9]{1,2}", tokens[index + 2])
+                and re.fullmatch(r"[1-6]", tokens[index + 3])
+                and tokens[index + 4] == "着"
+            ):
+                runs.append(
+                    {
+                        "race": tokens[index],
+                        "course": tokens[index + 1],
+                        "entry_course": tokens[index + 1],
+                        "st": tokens[index + 2],
+                        "finish": f"{tokens[index + 3]}着",
+                    }
+                )
+                index += 5
+                continue
+            if re.fullmatch(r"[0-9]{1,2}R", tokens[index]):
+                hayami = tokens[index]
+            index += 1
+        groups = [
+            {
+                "day": season_labels[index // 2]
+                if index // 2 < len(season_labels)
+                else f"{index // 2 + 1}日目",
+                "runs": runs[index:index + 2],
+            }
+            for index in range(0, len(runs), 2)
+        ]
+        return runs, groups, hayami
+
     starts = [
         index
         for index, line in enumerate(lines)
@@ -102,14 +152,14 @@ def parse_racers(lines: list[str]) -> list[dict]:
         number_positions = [i for i, value in enumerate(block) if value in {"No.", "No"}]
         motor_at = number_positions[0] if number_positions else None
         boat_at = number_positions[1] if len(number_positions) > 1 else None
+        season_runs, season_groups, hayami = parse_season(index + 29, end)
 
         def block_value(base: int | None, offset: int, fallback: int) -> str:
             if base is not None and base + offset < len(block):
                 return block[base + offset]
             return lines[index + fallback] if index + fallback < len(lines) else ""
 
-        racers.append(
-            {
+        racer = {
                 "lane": lane,
                 "actual_course": lane,
                 "entry_course": lane,
@@ -134,21 +184,114 @@ def parse_racers(lines: list[str]) -> list[dict]:
                 "boat_no": block_value(boat_at, 1, 26),
                 "boat_2": clean_pct(block_value(boat_at, 2, 27)),
                 "boat_3": clean_pct(block_value(boat_at, 3, 28)),
-                "season_runs": [],
-                "season_groups": [],
+                "season_runs": season_runs,
+                "season_groups": season_groups,
             }
-        )
+        if hayami:
+            racer["hayami"] = hayami
+        racers.append(racer)
     return racers if len(racers) == 6 else []
 
 
-def event_day_info(lines: list[str]) -> tuple[int | str, str]:
-    text = "\n".join(lines[:120])
-    if "初日" in text:
-        return 1, "初日"
-    if "最終日" in text:
-        return "", "最終日"
-    match = re.search(r"([2-9])日目", text)
-    return (int(match.group(1)), match.group(0)) if match else ("", "")
+def event_day_info(lines: list[str], date: str) -> tuple[int | None, str | None]:
+    target = datetime.strptime(date, "%Y-%m-%d")
+    date_pattern = re.compile(
+        rf"{target.month}月\s*{target.day}日\s*\([^)]*\)\s*(初日|[0-9]+日目|最終日)"
+    )
+    schedule = []
+    current_label = None
+    for line in lines:
+        match = date_pattern.search(line)
+        if match:
+            current_label = match.group(1)
+        schedule_match = re.search(
+            r"\d{1,2}月\s*\d{1,2}日\s*\([^)]*\)\s*(初日|[0-9]+日目|最終日)",
+            line,
+        )
+        if schedule_match:
+            schedule.append(schedule_match.group(1))
+    if current_label is None:
+        return None, None
+    if current_label == "初日":
+        return 1, current_label
+    match = re.fullmatch(r"([0-9]+)日目", current_label)
+    if match:
+        return int(match.group(1)), current_label
+    if current_label == "最終日" and current_label in schedule:
+        return schedule.index(current_label) + 1, current_label
+    return None, current_label
+
+
+def _has_value(value: object) -> bool:
+    return value not in (None, "", [], {})
+
+
+def merge_validated_morning_metadata(existing: dict, morning: dict) -> dict:
+    """Merge only validated entry metadata; preserve prediction/live/result domains."""
+    merged = existing
+    existing_races = {
+        int(race.get("race") or 0): race
+        for race in merged.get("races") or []
+        if int(race.get("race") or 0) in range(1, 13)
+    }
+    morning_races = {
+        int(race.get("race") or 0): race
+        for race in morning.get("races") or []
+        if int(race.get("race") or 0) in range(1, 13)
+    }
+    candidate_day = morning.get("eventDay")
+    season_evidence = sum(
+        len(racer.get("season_runs") or [])
+        for race in morning_races.values()
+        for racer in race.get("racers") or []
+    )
+    current_day = merged.get("eventDay")
+    day_valid = (
+        isinstance(candidate_day, int)
+        and candidate_day > 0
+        and (
+            (candidate_day == 1 and current_day in (None, "", 0, 1))
+            or (candidate_day > 1 and season_evidence > 0)
+        )
+    )
+    if day_valid:
+        merged["eventDay"] = candidate_day
+        merged["eventDayLabel"] = morning.get("eventDayLabel")
+        merged["seriesDay"] = morning.get("seriesDay")
+    if morning.get("tide") and not merged.get("tide"):
+        merged["tide"] = morning["tide"]
+
+    for race_no, existing_race in existing_races.items():
+        incoming_race = morning_races.get(race_no)
+        if not incoming_race:
+            continue
+        for key in ("deadline", "title", "type", "entry_changes"):
+            if _has_value(incoming_race.get(key)):
+                existing_race[key] = incoming_race[key]
+        existing_by_lane = {
+            int(racer.get("lane") or 0): racer
+            for racer in existing_race.get("racers") or []
+        }
+        incoming_by_lane = {
+            int(racer.get("lane") or 0): racer
+            for racer in incoming_race.get("racers") or []
+        }
+        if sorted(existing_by_lane) != list(range(1, 7)) or sorted(incoming_by_lane) != list(range(1, 7)):
+            continue
+        for lane, incoming in incoming_by_lane.items():
+            target = existing_by_lane[lane]
+            if target.get("name") and incoming.get("name") and target["name"] != incoming["name"]:
+                continue
+            for key, value in incoming.items():
+                if key in {"season_runs", "season_groups"}:
+                    if value:
+                        target[key] = value
+                elif _has_value(value):
+                    target[key] = value
+        if day_valid:
+            existing_race["eventDay"] = merged["eventDay"]
+            existing_race["eventDayLabel"] = merged["eventDayLabel"]
+    return merged
 
 
 def prediction_payload_is_complete(payload: dict, expected_date: str) -> bool:
@@ -190,13 +333,7 @@ def preserve_prediction_payload(morning: dict, existing_path: Path) -> dict | No
     # The scheduled collector has no venue engines. It may enrich non-prediction
     # metadata, but it must never replace engine output, tickets, live data, or
     # confirmed results with a generic baseline.
-    merged = existing
-    if not merged.get("tide") and morning.get("tide"):
-        merged["tide"] = morning["tide"]
-    for key in ("eventDay", "eventDayLabel", "eventScheduleLabels", "seriesDay"):
-        if not merged.get(key) and morning.get(key):
-            merged[key] = morning[key]
-    return merged
+    return merge_validated_morning_metadata(existing, morning)
 
 
 def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
@@ -232,8 +369,8 @@ def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
 def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None, dict]:
     races = []
     predictions = {}
-    event_day: int | str = ""
-    event_label = ""
+    event_day: int | None = None
+    event_label: str | None = None
     for race_no in range(1, 13):
         entry_path = source_dir / "races" / f"race_{race_no:02d}_entry.txt"
         if not entry_path.exists():
@@ -244,7 +381,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
         if len(racers) != 6 or not deadline:
             return None, {"reason": f"invalid_entry_{race_no:02d}", "racers": len(racers)}
         if race_no == 1:
-            event_day, event_label = event_day_info(lines)
+            event_day, event_label = event_day_info(lines, date)
         races.append(
             {
                 "race": race_no,
@@ -348,8 +485,8 @@ def main() -> int:
             "open": is_open,
             "entryCount": 12 if is_open else 0,
             "firstDeadline": payload["races"][0]["deadline"] if is_open else "",
-            "eventDay": payload.get("eventDay", "") if is_open else "",
-            "eventDayLabel": payload.get("eventDayLabel", "") if is_open else "",
+            "eventDay": payload.get("eventDay") if is_open else None,
+            "eventDayLabel": payload.get("eventDayLabel") if is_open else None,
             "detail": detail,
         }
 
@@ -374,8 +511,8 @@ def main() -> int:
             item["predictionStatus"] = "ready" if state["open"] else (
                 "unavailable" if reason == "prediction_payload_unavailable" else "not_running"
             )
-        event_day = state.get("eventDay", "")
-        if event_day != "":
+        event_day = state.get("eventDay")
+        if event_day is not None:
             item["eventDay"] = event_day
         if state.get("eventDayLabel"):
             item["eventDayLabel"] = state["eventDayLabel"]

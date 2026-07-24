@@ -30,6 +30,9 @@ from validate_live_data import validate_live_data
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
 from build_site_data import (
+    event_day_info,
+    merge_validated_morning_metadata,
+    parse_racers,
     prediction_payload_is_complete,
     preserve_prediction_payload,
     preserve_same_day_live_fields,
@@ -72,6 +75,84 @@ class TimeWindowTests(unittest.TestCase):
 
 
 class VenueAndRaceTests(unittest.TestCase):
+    def test_event_day_uses_target_date_not_first_schedule_label(self) -> None:
+        lines = [
+            "7月23日 (木) 初日",
+            "7月24日 (金) 2日目",
+            "7月25日 (土) 3日目",
+        ]
+        self.assertEqual(event_day_info(lines, "2026-07-24"), (2, "2日目"))
+        self.assertEqual(event_day_info(["開催情報なし"], "2026-07-24"), (None, None))
+
+    def test_racer_parser_keeps_setsukan_runs(self) -> None:
+        lines = [
+            "節間成績", "初日", "2日目", "最終日", "早見",
+        ]
+        for lane in range(1, 7):
+            lines.extend(
+                [
+                    str(lane), f"選手{lane}", "A1", "30", "歳", "52.0", "kg", "東京",
+                    "支部", "F", "L", "F0", "L0", ".15", ".16", "6.00", "40%",
+                    "60%", "5.50", "35%", "55%", "モーター", "No.", str(lane),
+                    "30%", "50%", "No.", str(lane + 10), "25%", "45%",
+                    "1R", str(lane), ".12", "2", "着",
+                ]
+            )
+        parsed = parse_racers(lines)
+        self.assertEqual(len(parsed), 6)
+        self.assertTrue(all(len(racer["season_runs"]) == 1 for racer in parsed))
+        self.assertEqual(parsed[0]["season_runs"][0]["finish"], "2着")
+
+    def test_safe_morning_merge_preserves_domains_and_rejects_empty_regression(self) -> None:
+        existing = {
+            "eventDay": 3,
+            "eventDayLabel": "3日目",
+            "seriesDay": "3日目",
+            "races": [
+                {
+                    "race": 1,
+                    "racers": [
+                        {
+                            "lane": lane,
+                            "name": f"選手{lane}",
+                            "season_runs": [{"race": "1R", "st": ".12", "finish": "2着"}],
+                            "season_groups": [{"day": "初日", "runs": []}],
+                        }
+                        for lane in range(1, 7)
+                    ],
+                }
+            ],
+            "preds": {
+                "1": {
+                    "win": {"1": 30},
+                    "ai": [{"combo": "1-2-3"}],
+                    "realtime": {"last": {"1": {"time": 6.7}}},
+                    "odds": {"1-2-3": 10.0},
+                    "result": {"status": "ok"},
+                }
+            },
+        }
+        incoming = {
+            "eventDay": 1,
+            "eventDayLabel": "初日",
+            "seriesDay": "初日",
+            "races": [
+                {
+                    "race": 1,
+                    "racers": [
+                        {"lane": lane, "name": f"選手{lane}", "season_runs": [], "season_groups": []}
+                        for lane in range(1, 7)
+                    ],
+                }
+            ],
+        }
+        merged = merge_validated_morning_metadata(existing, incoming)
+        self.assertEqual(merged["eventDay"], 3)
+        self.assertEqual(len(merged["races"][0]["racers"][0]["season_runs"]), 1)
+        self.assertEqual(merged["preds"]["1"]["ai"][0]["combo"], "1-2-3")
+        self.assertEqual(merged["preds"]["1"]["result"]["status"], "ok")
+        self.assertEqual(merged["preds"]["1"]["odds"]["1-2-3"], 10.0)
+
     def test_only_complete_open_today(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
