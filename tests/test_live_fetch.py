@@ -21,13 +21,19 @@ from fetch_live_race import save_document
 from fetch_odds import parse_odds
 from live_common import atomic_write_json, is_fetch_window, load_config, process_lock
 from live_data_hash import content_hash
+from publish_live_data import copy_changed_live_files
 from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
 
+AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
+sys.path.insert(0, str(AUTOMATION))
+from build_site_data import preserve_same_day_live_fields
+
 
 CONFIG = load_config(Path(__file__).resolve().parents[1] / "config" / "live_fetch_config.json")
 JST = ZoneInfo("Asia/Tokyo")
+REPO = Path(__file__).resolve().parents[1]
 
 
 def at(value: str) -> datetime:
@@ -315,6 +321,74 @@ class OddsHashAndStorageTests(unittest.TestCase):
             self.assertTrue(result["preserved"])
             self.assertEqual(json.loads(path.read_text())["content_hash"], "complete-hash")
 
+    def test_pending_does_not_replace_valid_partial(self) -> None:
+        target = {
+            "date": "2026-07-24",
+            "venue": "a",
+            "race_no": 1,
+            "deadline": "09:00",
+            "racers": racers(),
+        }
+        partial = {
+            **{key: target[key] for key in ("date", "venue", "race_no", "deadline")},
+            "fetched_at": "2026-07-24T08:30:00+09:00",
+            "source": "fixture",
+            "status": "partial",
+            "complete": False,
+            "content_hash": "partial-hash",
+            "error": None,
+            "data": {"entries": racers()[:3]},
+        }
+        pending = {
+            **partial,
+            "fetched_at": "2026-07-24T08:34:00+09:00",
+            "status": "pending",
+            "content_hash": "pending-hash",
+            "data": {"entries": []},
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "exhibition.json"
+            path.write_text(json.dumps(partial), encoding="utf-8")
+            result = save_document(path, pending, target, "exhibition", CONFIG)
+            self.assertTrue(result["preserved"])
+            self.assertEqual(json.loads(path.read_text())["content_hash"], "partial-hash")
+
+    def test_same_day_morning_build_preserves_live_fields(self) -> None:
+        payload = {
+            "date": "2026-07-24",
+            "preds": {"1": {"realtime": {"last": []}, "odds": {}, "predictionStage": "morning"}},
+        }
+        existing = {
+            "date": "2026-07-24",
+            "preds": {
+                "1": {
+                    "realtime": {"last": {"1": {"time": 6.70}}},
+                    "odds": {"1-2-3": 12.3},
+                    "predictionStage": {"label": "本予想"},
+                }
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "latest.json"
+            path.write_text(json.dumps(existing), encoding="utf-8")
+            merged = preserve_same_day_live_fields(payload, path)
+        self.assertEqual(merged["preds"]["1"]["realtime"], existing["preds"]["1"]["realtime"])
+        self.assertEqual(merged["preds"]["1"]["odds"], existing["preds"]["1"]["odds"])
+        self.assertEqual(merged["preds"]["1"]["predictionStage"], existing["preds"]["1"]["predictionStage"])
+
+    def test_different_day_morning_build_does_not_preserve_live_fields(self) -> None:
+        payload = {"date": "2026-07-24", "preds": {"1": {"realtime": {}, "odds": {}}}}
+        existing = {
+            "date": "2026-07-23",
+            "preds": {"1": {"realtime": {"last": {"1": {}}}, "odds": {"1-2-3": 12.3}}},
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "latest.json"
+            path.write_text(json.dumps(existing), encoding="utf-8")
+            merged = preserve_same_day_live_fields(payload, path)
+        self.assertEqual(merged["preds"]["1"]["realtime"], {})
+        self.assertEqual(merged["preds"]["1"]["odds"], {})
+
     def test_same_hash_does_not_rewrite(self) -> None:
         target = {
             "date": "2026-07-24",
@@ -379,6 +453,37 @@ class OddsHashAndStorageTests(unittest.TestCase):
                 with process_lock(lock) as second:
                     self.assertTrue(first)
                     self.assertFalse(second)
+
+    def test_publisher_copies_without_deleting_existing_files(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            repository = root / "repository"
+            source_file = source / "2026-07-24" / "ashiya" / "01" / "direct.json"
+            old_file = repository / "data" / "live" / "2026-07-23" / "ashiya" / "01" / "direct.json"
+            source_file.parent.mkdir(parents=True)
+            old_file.parent.mkdir(parents=True)
+            source_file.write_text('{"new":true}', encoding="utf-8")
+            old_file.write_text('{"old":true}', encoding="utf-8")
+            self.assertEqual(copy_changed_live_files(source, repository), 1)
+            self.assertEqual(source_file.read_bytes(), (repository / "data" / "live" / source_file.relative_to(source)).read_bytes())
+            self.assertEqual(old_file.read_text(encoding="utf-8"), '{"old":true}')
+
+    def test_deploy_scripts_do_not_delete_persistent_data(self) -> None:
+        for relative in ("deploy/install_vps.sh", "deploy/update_vps.sh"):
+            text = (REPO / relative).read_text(encoding="utf-8")
+            with self.subTest(relative=relative):
+                self.assertNotIn("rsync --delete", text)
+                self.assertNotIn("rm -rf", text)
+                self.assertNotIn("shutil.rmtree", text)
+
+    def test_service_startup_has_no_live_data_deletion(self) -> None:
+        service = (REPO / "systemd" / "sinz-live-fetch.service").read_text(encoding="utf-8")
+        self.assertNotIn("rm ", service)
+        self.assertNotIn("ExecStartPre=/usr/bin/find", service)
+        self.assertNotIn("data/live", "\n".join(
+            line for line in service.splitlines() if line.startswith("ExecStartPre=")
+        ))
 
 
 if __name__ == "__main__":

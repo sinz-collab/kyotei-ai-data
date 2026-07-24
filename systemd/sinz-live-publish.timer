@@ -1,0 +1,12 @@
+[Unit]
+Description=Publish changed SINZ EDGE live JSON every 8 minutes
+
+[Timer]
+OnCalendar=*:0/8
+Persistent=true
+RandomizedDelaySec=20
+Unit=sinz-live-publish.service
+
+[Install]
+WantedBy=timers.target
+

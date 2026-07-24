@@ -1,15 +1,21 @@
 [Unit]
-Description=Batch SINZ EDGE live JSON changes to Git
+Description=Publish changed SINZ EDGE live JSON to GitHub
 After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=sinz-edge
 Group=sinz-edge
 WorkingDirectory=/opt/sinz-edge
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment="GIT_SSH_COMMAND=/usr/bin/ssh -i /etc/sinz-edge/github-publish-key -o IdentitiesOnly=yes -o UserKnownHostsFile=/etc/sinz-edge/github-known-hosts -o StrictHostKeyChecking=yes"
 ExecStart=/opt/sinz-edge/.venv/bin/python /opt/sinz-edge/scripts/publish_live_data.py --push
+TimeoutStartSec=180
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/opt/sinz-edge
+ReadOnlyPaths=/opt/sinz-edge/data/live
+ReadWritePaths=/opt/sinz-edge/runtime/publisher-repo /opt/sinz-edge/run

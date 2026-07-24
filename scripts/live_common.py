@@ -38,6 +38,8 @@ REQUIRED_CONFIG = {
     "live_output_root",
     "log_path",
     "lock_path",
+    "publish_lock_path",
+    "publish_repo_root",
 }
 
 

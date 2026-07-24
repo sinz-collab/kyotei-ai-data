@@ -78,11 +78,31 @@ def save_document(
     if errors:
         raise ValueError("; ".join(errors))
     previous = load_json(path) if path.is_file() else None
+    previous_data = (previous or {}).get("data") or {}
+    previous_has_data = bool(
+        previous_data.get("entries")
+        or previous_data.get("racers")
+        or previous_data.get("odds")
+        or any(
+            value not in (None, "", [], {})
+            for key, value in previous_data.items()
+            if key not in {"difference", "missing_count"}
+        )
+    )
     if (
         config["preserve_last_complete_data_on_error"]
         and previous
-        and previous.get("complete") is True
-        and document.get("complete") is not True
+        and (
+            (
+                previous.get("complete") is True
+                and document.get("complete") is not True
+            )
+            or (
+                previous.get("status") == "partial"
+                and previous_has_data
+                and document.get("status") in {"pending", "fetch_error", "parse_error"}
+            )
+        )
     ):
         return {"changed": False, "preserved": True, "document": previous}
     if previous and previous.get("content_hash") == document.get("content_hash"):

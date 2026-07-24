@@ -191,6 +191,33 @@ def deterministic_prediction(racers: list[dict]) -> dict:
     }
 
 
+def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
+    if not existing_path.is_file():
+        return payload
+    try:
+        existing = json.loads(existing_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, json.JSONDecodeError):
+        return payload
+    if existing.get("date") != payload.get("date"):
+        return payload
+    previous_predictions = existing.get("preds") or {}
+    for race_no, prediction in (payload.get("preds") or {}).items():
+        previous = previous_predictions.get(race_no) or {}
+        realtime = previous.get("realtime")
+        odds = previous.get("odds")
+        realtime_has_data = isinstance(realtime, dict) and any(
+            value not in (None, "", [], {}) for value in realtime.values()
+        )
+        odds_has_data = isinstance(odds, dict) and bool(odds)
+        if realtime_has_data:
+            prediction["realtime"] = realtime
+        if odds_has_data:
+            prediction["odds"] = odds
+        if (realtime_has_data or odds_has_data) and previous.get("predictionStage"):
+            prediction["predictionStage"] = previous["predictionStage"]
+    return payload
+
+
 def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None, dict]:
     races = []
     predictions = {}
@@ -293,6 +320,7 @@ def main() -> int:
         if is_open:
             venue_dir = data_root / "venues" / slug
             venue_dir.mkdir(parents=True, exist_ok=True)
+            payload = preserve_same_day_live_fields(payload, venue_dir / "latest.json")
             serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
             write_text_atomic(venue_dir / f"{date_dir}.json", serialized)
             write_text_atomic(venue_dir / "latest.json", serialized)
