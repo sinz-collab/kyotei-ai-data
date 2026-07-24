@@ -149,6 +149,22 @@ class VenueAndRaceTests(unittest.TestCase):
             result_path.write_text('{"complete":true}', encoding="utf-8")
             self.assertEqual(select_target_races(venue, at("09:13"), CONFIG, root), [])
 
+    def test_missing_result_is_backfilled_later_the_same_day(self) -> None:
+        venue = {
+            "slug": "ashiya",
+            "name": "Ashiya",
+            "payload": {
+                "date": "2026-07-24",
+                "races": [{"race": 1, "deadline": "08:32", "racers": racers()}],
+            },
+        }
+        config = {**CONFIG, "result_monitor_minutes_after_deadline": 900}
+        with tempfile.TemporaryDirectory() as temp:
+            targets = select_target_races(venue, at("15:30"), config, Path(temp))
+        self.assertEqual(len(targets), 1)
+        self.assertFalse(targets[0]["fetch_live"])
+        self.assertTrue(targets[0]["fetch_result"])
+
     def test_current_morning_data_checks_manifest_without_rewriting(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
