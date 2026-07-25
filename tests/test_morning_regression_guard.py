@@ -99,6 +99,25 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.assertTrue(any("live data disappeared" in error for error in errors))
             self.assertTrue(any("odds disappeared" in error for error in errors))
 
+    def test_prediction_history_or_active_stage_change_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            before_root = root / "before"
+            after_root = root / "after"
+            before = payload()
+            before["preds"]["1"]["prediction_history"] = {
+                "morning": [{"revision": 1, "content_sha256": "keep"}]
+            }
+            before["preds"]["1"]["active_prediction_stage"] = "morning"
+            after = deepcopy(before)
+            after["preds"]["1"]["prediction_history"]["morning"] = []
+            after["preds"]["1"]["active_prediction_stage"] = "final"
+            self.write_tree(before_root, before)
+            self.write_tree(after_root, after)
+            errors = validate(before_root, after_root)
+            self.assertTrue(any("prediction history changed" in error for error in errors))
+            self.assertTrue(any("active prediction stage changed" in error for error in errors))
+
     def test_second_day_empty_setsukan_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -136,11 +155,21 @@ class MorningRegressionGuardTests(unittest.TestCase):
             )
             existing = payload()
             existing["preds"]["1"]["marker"] = "keep"
+            existing["preds"]["1"]["prediction_history"] = {
+                "morning": [{"revision": 1, "content_sha256": "morning"}],
+                "t15": [{"revision": 1, "content_sha256": "t15"}],
+                "t5": [],
+                "final": [],
+                "unknown": [],
+            }
+            existing["preds"]["1"]["active_prediction_stage"] = "t15"
             venue_dir = data_root / "venues" / "toda"
             venue_dir.mkdir(parents=True)
             for filename in ("20260724.json", "latest.json"):
                 (venue_dir / filename).write_text(json.dumps(existing), encoding="utf-8")
             morning = deepcopy(existing)
+            morning["venueId"] = "toda"
+            morning["venue"] = "A"
             morning["engine"] = ""
             morning["eventDay"] = 1
             morning["eventDayLabel"] = "初日"
@@ -180,6 +209,11 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.assertTrue(after["preds"]["1"]["realtime"])
             self.assertTrue(after["preds"]["1"]["odds"])
             self.assertEqual(after["preds"]["1"]["result"]["status"], "ok")
+            self.assertEqual(
+                after["preds"]["1"]["prediction_history"],
+                existing["preds"]["1"]["prediction_history"],
+            )
+            self.assertEqual(after["preds"]["1"]["active_prediction_stage"], "t15")
             self.assertTrue(after["races"][0]["racers"][0]["season_runs"])
 
 

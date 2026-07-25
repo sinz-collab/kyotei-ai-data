@@ -58,6 +58,19 @@ def meaningful_odds(prediction: dict) -> bool:
     return isinstance(odds, dict) and bool(odds)
 
 
+def compare_independent_race_domains(slug: str, before: dict, after: dict, errors: list[str]) -> None:
+    before_races = {str(race.get("race")): race for race in before.get("races") or []}
+    after_races = {str(race.get("race")): race for race in after.get("races") or []}
+    for race_no, previous in before_races.items():
+        current = after_races.get(race_no) or {}
+        for key in ("live", "odds", "result"):
+            if has_value(previous.get(key)) and not has_value(current.get(key)):
+                errors.append(f"{slug} {race_no}R: independent {key} disappeared")
+        previous_setsukan = previous.get("setsukan")
+        if has_value(previous_setsukan) and not has_value(current.get("setsukan")):
+            errors.append(f"{slug} {race_no}R: independent setsukan disappeared")
+
+
 def compare_prediction_domains(slug: str, before: dict, after: dict, errors: list[str]) -> None:
     before_predictions = before.get("preds") or {}
     after_predictions = after.get("preds") or {}
@@ -78,6 +91,10 @@ def compare_prediction_domains(slug: str, before: dict, after: dict, errors: lis
             errors.append(f"{slug} {race_no}R: live data disappeared")
         if meaningful_odds(previous) and not meaningful_odds(current):
             errors.append(f"{slug} {race_no}R: odds disappeared")
+        if previous.get("prediction_history") != current.get("prediction_history"):
+            errors.append(f"{slug} {race_no}R: prediction history changed")
+        if previous.get("active_prediction_stage") != current.get("active_prediction_stage"):
+            errors.append(f"{slug} {race_no}R: active prediction stage changed")
 
 
 def validate(before_root: Path, after_root: Path) -> list[str]:
@@ -99,6 +116,17 @@ def validate(before_root: Path, after_root: Path) -> list[str]:
     missing_live = sorted(str(path) for path in before_live - after_live)
     if missing_live:
         errors.append(f"data/live files disappeared: {missing_live[:10]}")
+    before_venue_files = {
+        path.relative_to(before_root)
+        for path in (before_root / "venues").rglob("*.json")
+    } if (before_root / "venues").is_dir() else set()
+    after_venue_files = {
+        path.relative_to(after_root)
+        for path in (after_root / "venues").rglob("*.json")
+    } if (after_root / "venues").is_dir() else set()
+    missing_venue_files = sorted(str(path) for path in before_venue_files - after_venue_files)
+    if missing_venue_files:
+        errors.append(f"venue JSON files disappeared: {missing_venue_files[:10]}")
 
     before_venues = {venue["slug"]: venue for venue in before_manifest.get("venues") or []}
     for venue in after_manifest.get("venues") or []:
@@ -113,19 +141,40 @@ def validate(before_root: Path, after_root: Path) -> list[str]:
         before_path = before_root / (before_venues.get(slug, {}).get("dataPath") or path_text)
         after = load_json(after_path)
         before = load_json(before_path) if before_path.is_file() else {}
+        if before.get("date") != after.get("date"):
+            before = {}
+        races = after.get("races") or []
+        if (
+            len(races) != 12
+            or any(
+                len(race.get("racers") or []) != 6
+                or sorted(int(racer.get("lane") or 0) for racer in race.get("racers") or [])
+                != list(range(1, 7))
+                or not race.get("deadline")
+                for race in races
+            )
+        ):
+            errors.append(f"{slug}: published race data is incomplete")
+        if after.get("engine") == "deterministic_baseline_v1":
+            errors.append(f"{slug}: engine changed to deterministic_baseline_v1")
 
         if slug not in PREDICTION_VENUES:
             if venue.get("predictionStatus") != "unavailable":
                 errors.append(f"{slug}: unregistered venue is not marked unavailable")
             continue
 
+        if before:
+            compare_prediction_domains(slug, before, after, errors)
+            compare_independent_race_domains(slug, before, after, errors)
         if venue.get("predictionStatus") != "ready":
+            if venue.get("predictionStatus") == "unavailable" and after.get("preds"):
+                # Retained same-day predictions may remain stored for protection,
+                # but the manifest keeps them hidden until the strict gate passes.
+                pass
             continue
         day = after.get("eventDay")
         if isinstance(day, int) and day > 0:
             prediction_days.append(day)
-        if after.get("engine") == "deterministic_baseline_v1":
-            errors.append(f"{slug}: engine changed to deterministic_baseline_v1")
         if not after.get("preds"):
             errors.append(f"{slug}: prediction is empty")
         if isinstance(day, int) and day > 1:
@@ -137,7 +186,6 @@ def validate(before_root: Path, after_root: Path) -> list[str]:
                 ]
                 if sorted(lanes) != list(range(1, 7)):
                     errors.append(f"{slug} {race.get('race')}R: setsukan missing lanes")
-        compare_prediction_domains(slug, before, after, errors)
         before_keys = key_count(before)
         after_keys = key_count(after)
         if before_keys >= 100 and after_keys < before_keys * 0.75:

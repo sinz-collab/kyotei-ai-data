@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -304,46 +306,196 @@ def merge_validated_morning_metadata(existing: dict, morning: dict) -> dict:
     return merged
 
 
-def prediction_payload_is_complete(payload: dict, expected_date: str) -> bool:
+def race_data_gate(
+    payload: dict,
+    expected_date: str,
+    expected_slug: str,
+    expected_name: str,
+) -> tuple[bool, str]:
+    """Validate the publishable race-information domain independently."""
     if payload.get("date") != expected_date:
+        return False, "race_date_mismatch"
+    if payload.get("venueId") != expected_slug or payload.get("venue") != expected_name:
+        return False, "race_venue_mismatch"
+    races = payload.get("races")
+    if not isinstance(races, list) or len(races) != 12:
+        return False, "race_count_invalid"
+    if sorted(int(race.get("race") or 0) for race in races) != list(range(1, 13)):
+        return False, "race_numbers_invalid"
+    for race in races:
+        race_no = int(race.get("race") or 0)
+        racers = race.get("racers")
+        if not isinstance(racers, list) or len(racers) != 6:
+            return False, f"race_{race_no:02d}_entry_count_invalid"
+        lanes = sorted(int(racer.get("lane") or 0) for racer in racers)
+        if lanes != list(range(1, 7)):
+            return False, f"race_{race_no:02d}_lanes_invalid"
+        if not re.fullmatch(r"[0-9]{1,2}:[0-9]{2}", str(race.get("deadline") or "")):
+            return False, f"race_{race_no:02d}_deadline_invalid"
+    return True, "ok"
+
+
+def _probabilities_are_valid(values: object) -> bool:
+    if not isinstance(values, dict) or set(map(str, values)) != {str(lane) for lane in range(1, 7)}:
         return False
-    predictions = payload.get("preds")
-    if not isinstance(predictions, dict) or len(predictions) != 12:
+    try:
+        numbers = [float(values[str(lane)]) for lane in range(1, 7)]
+    except (KeyError, TypeError, ValueError):
         return False
-    if payload.get("engine") == "deterministic_baseline_v1":
+    return (
+        all(math.isfinite(value) and 0.0 <= value <= 100.0 for value in numbers)
+        and abs(sum(numbers) - 100.0) <= 0.5
+    )
+
+
+def _prediction_is_complete(prediction: object) -> bool:
+    if not isinstance(prediction, dict):
         return False
-    for race_no in range(1, 13):
-        prediction = predictions.get(str(race_no))
-        if not isinstance(prediction, dict):
-            return False
-        for key in ("win", "second", "third"):
-            values = prediction.get(key)
-            if not isinstance(values, dict) or len(values) != 6:
-                return False
-        if not prediction.get("sab"):
-            return False
-        if not any(
-            isinstance(prediction.get(key), list) and prediction[key]
-            for key in ("ai", "aiUpset", "balance", "tickets")
-        ):
-            return False
+    if any(not _probabilities_are_valid(prediction.get(key)) for key in ("win", "second", "third")):
+        return False
+    if not prediction.get("sab"):
+        return False
+    if not any(
+        isinstance(prediction.get(key), list) and prediction[key]
+        for key in ("ai", "aiUpset", "balance", "tickets")
+    ):
+        return False
+    if prediction.get("fallback") or prediction.get("fallbackUsed"):
+        return False
     return True
 
 
-def preserve_prediction_payload(morning: dict, existing_path: Path) -> dict | None:
-    if not existing_path.is_file():
+def prediction_payload_gate(payload: dict, expected_date: str) -> tuple[bool, str]:
+    """Validate only the venue-engine prediction domain."""
+    if payload.get("date") != expected_date:
+        return False, "prediction_date_mismatch"
+    engine = payload.get("engine")
+    if not isinstance(engine, str) or not engine.strip():
+        return False, "prediction_engine_missing"
+    if engine == "deterministic_baseline_v1" or "baseline" in engine.lower():
+        return False, "prediction_baseline_forbidden"
+    if payload.get("fallback") or payload.get("fallbackUsed"):
+        return False, "prediction_fallback_forbidden"
+    predictions = payload.get("preds")
+    if not isinstance(predictions, dict) or set(predictions) != {str(race) for race in range(1, 13)}:
+        return False, "prediction_race_count_invalid"
+    for race_no in range(1, 13):
+        if not _prediction_is_complete(predictions.get(str(race_no))):
+            return False, f"prediction_{race_no:02d}_invalid"
+    return True, "ok"
+
+
+def prediction_payload_is_complete(payload: dict, expected_date: str) -> bool:
+    valid, _ = prediction_payload_gate(payload, expected_date)
+    return valid
+
+
+def load_same_day_payload(path: Path, expected_date: str) -> dict | None:
+    if not path.is_file():
         return None
     try:
-        existing = json.loads(existing_path.read_text(encoding="utf-8"))
+        existing = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError, json.JSONDecodeError):
         return None
-    if not prediction_payload_is_complete(existing, morning.get("date", "")):
+    return existing if existing.get("date") == expected_date else None
+
+
+def preserve_prediction_payload(morning: dict, existing_path: Path) -> dict | None:
+    existing = load_same_day_payload(existing_path, morning.get("date", ""))
+    if existing is None:
+        return morning
+    engine = str(existing.get("engine") or "")
+    if (
+        engine == "deterministic_baseline_v1"
+        or "baseline" in engine.lower()
+        or existing.get("fallback")
+        or existing.get("fallbackUsed")
+    ):
         return None
 
     # The scheduled collector has no venue engines. It may enrich non-prediction
     # metadata, but it must never replace engine output, tickets, live data, or
-    # confirmed results with a generic baseline.
+    # confirmed results with empty or generic prediction data.
     return merge_validated_morning_metadata(existing, morning)
+
+
+def prediction_envelope(
+    payload: dict,
+    race_no: int,
+    prediction_available: bool,
+    reason: str,
+) -> dict:
+    if not prediction_available:
+        return {
+            "status": "unavailable",
+            "reason": reason,
+            "engine": None,
+            "engine_version": None,
+            "probabilities": None,
+            "sab": None,
+            "tickets": None,
+        }
+    prediction = (payload.get("preds") or {}).get(str(race_no)) or {}
+    return {
+        "status": "ready",
+        "reason": None,
+        "engine": payload.get("engine"),
+        "engine_version": payload.get("engineVersion") or payload.get("engine"),
+        "probabilities": {
+            "win": deepcopy(prediction.get("win")),
+            "second": deepcopy(prediction.get("second")),
+            "third": deepcopy(prediction.get("third")),
+        },
+        "sab": prediction.get("sab"),
+        "tickets": {
+            key: deepcopy(prediction.get(key))
+            for key in ("ai", "aiUpset", "balance", "tickets")
+            if isinstance(prediction.get(key), list)
+        },
+    }
+
+
+def attach_independent_race_domains(
+    payload: dict,
+    slug: str,
+    prediction_available: bool,
+    prediction_reason: str,
+) -> dict:
+    """Add explicit domains while retaining the legacy schema for compatibility."""
+    predictions = payload.get("preds") or {}
+    for race in payload.get("races") or []:
+        race_no = int(race["race"])
+        prediction = predictions.get(str(race_no)) or {}
+        racers = deepcopy(race.get("racers") or [])
+        race["race_meta"] = {
+            "date": payload.get("date"),
+            "venue": slug,
+            "race_no": race_no,
+            "deadline": race.get("deadline"),
+            "day_no": race.get("eventDay", payload.get("eventDay")),
+        }
+        race["entries"] = racers
+        race["setsukan"] = [
+            {
+                "lane": racer.get("lane"),
+                "season_runs": deepcopy(racer.get("season_runs") or []),
+                "season_groups": deepcopy(racer.get("season_groups") or []),
+            }
+            for racer in racers
+            if racer.get("season_runs") or racer.get("season_groups")
+        ]
+        race["prediction"] = prediction_envelope(
+            payload,
+            race_no,
+            prediction_available,
+            prediction_reason,
+        )
+        race["live"] = deepcopy(race.get("live") or prediction.get("realtime") or {})
+        race["odds"] = deepcopy(race.get("odds") or prediction.get("odds") or {})
+        race["result"] = deepcopy(race.get("result") or prediction.get("result") or {})
+    payload["predictionStatus"] = "ready" if prediction_available else "unavailable"
+    payload["predictionReason"] = None if prediction_available else prediction_reason
+    return payload
 
 
 def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
@@ -371,6 +523,10 @@ def preserve_same_day_live_fields(payload: dict, existing_path: Path) -> dict:
             prediction["odds"] = odds
         if isinstance(result, dict) and result.get("status") == "ok":
             prediction["result"] = result
+        if isinstance(previous.get("prediction_history"), dict):
+            prediction["prediction_history"] = previous["prediction_history"]
+        if previous.get("active_prediction_stage"):
+            prediction["active_prediction_stage"] = previous["active_prediction_stage"]
         if (realtime_has_data or odds_has_data) and previous.get("predictionStage"):
             prediction["predictionStage"] = previous["predictionStage"]
     return payload
@@ -412,6 +568,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             tide = candidate
     return (
         {
+            "venueId": venue["slug"],
             "venue": venue["name"],
             "date": date,
             "engine": "",
@@ -473,35 +630,66 @@ def main() -> int:
         }
         if fetch_status.get("open") and fetch_status.get("entryCount") == 12:
             payload, detail = build_payload(venue, args.date, source_dir)
-        is_open = payload is not None
-        if is_open:
+        race_data_available = payload is not None
+        prediction_available = False
+        prediction_reason = ""
+        if race_data_available:
+            race_data_available, race_reason = race_data_gate(
+                payload,
+                args.date,
+                slug,
+                venue["name"],
+            )
+            if not race_data_available:
+                detail = {**detail, "reason": race_reason}
+        if race_data_available:
             venue_dir = data_root / "venues" / slug
             venue_dir.mkdir(parents=True, exist_ok=True)
             existing_path = venue_dir / f"{date_dir}.json"
             if slug in PREDICTION_VENUES:
-                payload = preserve_prediction_payload(payload, existing_path)
-                if payload is None:
-                    is_open = False
+                preserved = preserve_prediction_payload(payload, existing_path)
+                if preserved is not None:
+                    payload = preserved
+                prediction_available, prediction_gate_reason = prediction_payload_gate(
+                    payload,
+                    args.date,
+                )
+                prediction_reason = "" if prediction_available else "prediction_payload_unavailable"
+                if not prediction_available:
                     detail = {
                         **detail,
-                        "reason": "prediction_payload_unavailable",
+                        "reason": prediction_reason,
+                        "predictionGateReason": prediction_gate_reason,
                         "predictionRequired": True,
                     }
             else:
                 payload["engine"] = None
                 payload["preds"] = {}
-                detail = {**detail, "reason": "venue_engine_not_registered"}
-            if is_open:
-                payload = preserve_same_day_live_fields(payload, venue_dir / "latest.json")
-                serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
-                write_text_atomic(existing_path, serialized)
-                write_text_atomic(venue_dir / "latest.json", serialized)
+                prediction_reason = "venue_engine_not_registered"
+                detail = {**detail, "reason": prediction_reason}
+            payload["venueId"] = slug
+            payload = preserve_same_day_live_fields(payload, venue_dir / "latest.json")
+            payload = attach_independent_race_domains(
+                payload,
+                slug,
+                prediction_available,
+                prediction_reason,
+            )
+            serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+            write_text_atomic(existing_path, serialized)
+            write_text_atomic(venue_dir / "latest.json", serialized)
         statuses[slug] = {
-            "open": is_open,
-            "entryCount": 12 if is_open else 0,
-            "firstDeadline": payload["races"][0]["deadline"] if is_open else "",
-            "eventDay": payload.get("eventDay") if is_open else None,
-            "eventDayLabel": payload.get("eventDayLabel") if is_open else None,
+            "open": race_data_available,
+            "raceDataAvailable": race_data_available,
+            "predictionAvailable": prediction_available,
+            "predictionStatus": "ready" if prediction_available else (
+                "unavailable" if race_data_available else "not_running"
+            ),
+            "predictionReason": prediction_reason,
+            "entryCount": 12 if race_data_available else 0,
+            "firstDeadline": payload["races"][0]["deadline"] if race_data_available else "",
+            "eventDay": payload.get("eventDay") if race_data_available else None,
+            "eventDayLabel": payload.get("eventDayLabel") if race_data_available else None,
             "detail": detail,
         }
 
@@ -510,6 +698,7 @@ def main() -> int:
         state = statuses.get(slug, {"open": False, "entryCount": 0, "firstDeadline": ""})
         item = {
             "slug": slug,
+            "venue": slug,
             "name": name,
             "open": state["open"],
             "entryCount": state["entryCount"],
@@ -518,17 +707,21 @@ def main() -> int:
             "dateDir": date_dir,
             "dataPath": f"venues/{slug}/{date_dir}.json" if state["open"] else "",
             "latestPath": f"venues/{slug}/latest.json" if state["open"] else "",
+            "raceDataAvailable": state.get("raceDataAvailable", state["open"]),
+            "race_data_available": state.get("raceDataAvailable", state["open"]),
+            "predictionAvailable": state.get("predictionAvailable", False),
+            "prediction_available": state.get("predictionAvailable", False),
         }
         reason = state.get("detail", {}).get("reason", "")
         if reason:
             item["availabilityReason"] = reason
         if slug in configured:
-            if slug not in PREDICTION_VENUES and state["open"]:
-                item["predictionStatus"] = "unavailable"
-            else:
-                item["predictionStatus"] = "ready" if state["open"] else (
-                    "unavailable" if reason == "prediction_payload_unavailable" else "not_running"
-                )
+            prediction_status = state.get("predictionStatus", "not_running")
+            prediction_reason = state.get("predictionReason", "")
+            item["predictionStatus"] = prediction_status
+            item["prediction_status"] = prediction_status
+            item["predictionReason"] = prediction_reason
+            item["prediction_reason"] = prediction_reason
         event_day = state.get("eventDay")
         if event_day is not None:
             item["eventDay"] = event_day
