@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 CONNECTOR = ROOT / "automation" / "apply_toda_v5.py"
 
 spec = importlib.util.spec_from_file_location("apply_toda_v5", CONNECTOR)
