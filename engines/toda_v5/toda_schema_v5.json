@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Toda Prediction Engine v5 Output",
+  "type": "object",
+  "required": [
+    "engine",
+    "master",
+    "win",
+    "second",
+    "third",
+    "sab",
+    "ai",
+    "aiUpset",
+    "sourceSummary"
+  ],
+  "properties": {
+    "engine": {
+      "const": "toda_prediction_engine_v5_20260727"
+    },
+    "win": {
+      "type": "object"
+    },
+    "second": {
+      "type": "object"
+    },
+    "third": {
+      "type": "object"
+    },
+    "sab": {
+      "enum": [
+        "S",
+        "A",
+        "B"
+      ]
+    },
+    "ai": {
+      "type": "array"
+    },
+    "aiUpset": {
+      "type": "array"
+    },
+    "sourceSummary": {
+      "type": "object"
+    }
+  }
+}

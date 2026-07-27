@@ -1,0 +1,930 @@
+[
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "場特性 | 戸田はイン固定場ではなく、逃げ・2差し・3攻め・4カド攻めが混在"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "確率 | 固定判定禁止。全条件を確率補正し、1/2/3着率を各100%に再正規化"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "オッズ | 市場期待・人気・AI印を予想ロジックに使用しない"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "相手連動 | 頭候補ごとに2着上位2～3艇と展開上残る3着艇を接続"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "類似レース | 類似条件と3連単パターンは最終照合に使用"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "選手DB | 単独で買い目を決めず、starts/reliabilityに応じて補正減衰"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "進入変更 | 枠番より実進入コースに合わせてコース・進入ズレ・ST DBを確認"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "展示ST | 数値単独ではなくスリット隊形・行き足・役割と統合"
+  },
+  {
+    "sheet": "03_v21_CoreRules",
+    "text": "SAB | 軸が1号艇かではなく、軸位置・相手連動・水面・展示一致度で判定"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "1 | 戸田競艇AI 予想運用改善ルール2026-07-08 実戦反省反映版"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "2 | 目的：今日の戸田2日目で発生した「評価できていた艇を買い目へ接続できない」「直近結果の補正を入れすぎる」問題を修正し、明日以降の予想で毎レース安定してフル反映するための固定運用メモ。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "3 | 1. 明日以降に必ず引き継ぐ固定ルール"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "4 | 優先度"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "5 | 修正内容"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "6 | 運用"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "7 | A"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "8 | 情報源DBを毎レース参照"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "9 | 戸田AIマスター、選手×コースDB、当地勝率、当地平均ST、コース別ST、枠別傾向を毎回フル反映する。会話内の方針だけで済ませない。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "10 | A"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "11 | 展示ST単独減点を禁止"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "12 | 展示STが遅い艇でも、当地勝率・当地平均ST・節間実戦ST・選手×コースSTが良ければ過度に下げない。展示STはスリット隊形・行き足の補助材料。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "13 | A"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "14 | 確率表と買い目の整合チェック"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "15 | 1着率10%以上の艇は、頭買い目を入れるか必ず確認する。入れない場合は理由を明確にする。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "16 | A"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "17 | 頭候補ごとのシナリオ展開を作成"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "18 | 頭候補を採用したら、その頭になった場合の2着率上位2〜3艇と、展開上残る3着艇を買い目候補へ接続する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "19 | A"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "20 | 3コース攻め時の4・5連動確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "21 | 3頭を採用する場合、3-1-Xだけでなく、3-4-X / 3-5-X / 3-2-X まで確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "22 | A"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "23 | 5頭時の展開連動確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "24 | 5頭を採用する場合、5-1-Xだけでなく、5-3-X / 5-4-X / 5-6絡みまで確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "25 | B"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "26 | 6の3着残り確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "27 | 直線上位・回り足上位・格上・節間気配ありなら、6枠でも3着候補を最低1点確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "28 | B"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "29 | 補正過多を避ける"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "30 | 当日傾向は弱〜中補正まで。直前の外れ方を次レースに強く入れすぎない。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "31 | B"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "32 | オリ展示/SUMは段階補正"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "33 | オリ展示が良い艇は上げるが、前データ・当地・節間と逆なら一発上書きせず段階補正に留める。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "34 | 2. 毎レースの固定フル反映フロー"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "35 | 順番"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "36 | 実施内容"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "37 | 1"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "38 | 情報源DB・戸田AIマスター・選手×コースDBを確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "39 | 2"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "40 | 当地勝率・当地平均ST・コース別ST・枠別傾向を確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "41 | 3"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "42 | 節間成績・実戦ST・モーター/ボートを確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "43 | 4"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "44 | 潮・風・波・時間帯を補助補正として反映"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "45 | 5"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "46 | 直前展示・展示タイム・スリット隊形を確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "47 | 6"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "48 | オリジナル展示/SUMを確認"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "49 | 7"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "50 | 全艇の1着率・2着率・3着率を再正規化"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "51 | 8"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "52 | シナリオ展開表を作成"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "53 | 9"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "54 | 頭候補ごとの2着・3着連動表を作成"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "55 | 10"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "56 | 確率表と買い目の照合後、買い目・金額配分を出す"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "57 | 3. 必ず入れるシナリオ展開"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "58 | シナリオ"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "59 | 必ず確認する展開"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "60 | 1逃げ"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "61 | 2差し残り、3追走、4/5/6の3着残りを確認。1頭でも外3着を狭めすぎない。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "62 | 2差し頭"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "63 | 1残り、3/4/5/6の連動を確認。2頭を採用するなら2-1-Xだけでなく2-3/2-4も確認。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "64 | 3攻め頭"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "65 | 1残りだけでなく、4連動・5連動・2残り・6残りを確認。3-4-X / 3-2-X は必須確認。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "66 | 4カド攻め頭"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "67 | 1残り、2残り、3連動、5/6連動を確認。4-1-Xだけに寄せない。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "68 | 5頭"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "69 | 1残り、3追走、4/6の外連動を確認。5-3-X / 5-4-X も候補化。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "70 | 6浮上"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "71 | 1/3/4/5の残り方を確認。6の2着を採用したら3着は4/5も確認。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "72 | 4. 今日の反省から抽出した具体例"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "73 | R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "74 | 抜けた/修正した展開"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "75 | 明日以降の運用"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "76 | 2R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "77 | 3新田の2着・5金子の3着"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "78 | 展示ST遅れだけで格上・当地実績艇を下げすぎない。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "79 | 3R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "80 | 5頭時の1残り"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "81 | 外頭を採用したら、1の2着残りを必ず確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "82 | 4R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "83 | 1-6時の4残り"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "84 | 2着候補を採用したら、その展開で残る3着艇を確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "85 | 5R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "86 | 1-3時の6残り"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "87 | 直線上位の6枠は、SUMが弱くても3着候補に1点確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "88 | 6R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "89 | 5頭→3追走→6残り"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "90 | 外頭時は外同士の連動を確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "91 | 8R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "92 | 3頭→4連動→5残り"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "93 | 3コース攻めなら4・5連動を必ず確認する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "94 | 10R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "95 | 3頭→2残り→4連動"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "96 | 頭候補ごとの2着率上位2〜3艇を買い目に接続する。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "97 | 11R"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "98 | 補正過多を戻して的中"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "99 | 情報源DB・当地・オリ展示を主軸に戻し、当日傾向は弱〜中補正に留める。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "100 | 5. 買い目を出す前の最終チェックリスト"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "101 | □ 情報源DB・当地勝率・当地平均ST・選手×コースSTを確認したか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "102 | □ 展示STだけで評価を下げすぎていないか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "103 | □ 全艇の1着率・2着率・3着率を再正規化したか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "104 | □ 1着率10%以上の艇について、頭買い目を入れるか検討したか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "105 | □ 頭候補ごとに2着率上位2〜3艇を接続したか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "106 | □ その頭展開で残る3着艇を単体評価だけで切っていないか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "107 | □ 3頭なら3-4-X / 3-2-X、5頭なら5-3-X / 5-1-Xを確認したか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "108 | □ 6枠が直線・回り足・格・節間で残せる場合、3着候補に入れたか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "109 | □ 当日傾向を強く入れすぎて、前データや情報源DBを崩していないか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "110 | □ 最終買い目が確率表・シナリオ展開表と一致しているか。"
+  },
+  {
+    "sheet": "07_RevisionRules",
+    "text": "111 | 運用メモ：この改善は「買い目固定」ではなく、確率補正と展開連動の照合ルールである。毎レース、基礎評価を崩さず、最後に弱〜中補正として当日傾向を入れる。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "1 | 競艇AI 展示スリット12型 展開補正ルール"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "2 | 全場共通版：固定買い目ではなく、1着率・2着率・3着率への確率補正として使用"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "3 | 1. 運用原則"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "4 | 1) 展示スリット12型は、展示ST単体より優先して「隊形」として見る。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "5 | 2) ただし、前データ・マスター・選手×コース適性・節間成績・オリジナル展示より上には置かない。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "6 | 3) 買い目を固定せず、各艇の1着率・2着率・3着率へ段階補正し、最後に再正規化する。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "7 | 4) 攻め役を上げるだけでなく、内残り・外連動・差し場発生を必ずセットで確認する。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "8 | 5) 場ごとの特性に合わせ、イン強場では頭補正を抑えめ、荒れ場・差し場では攻め役連動をやや強める。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "9 | 2. 推奨比重"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "10 | レイヤー"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "11 | 標準比重"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "12 | 使い方"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "13 | 前データ・マスター・選手×コース"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "14 | 40%"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "15 | 予想の土台。展示で崩しすぎない。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "16 | モーター・ボート・節間成績"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "17 | 20%"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "18 | 4日目以降は節間成績をやや強める。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "19 | 展示・オリ展示・スリット隊形"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "20 | 20%"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "21 | この中でスリット隊形は4〜6%。展示ST単体は1〜2%。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "22 | 潮・風・波・時間帯"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "23 | 10%"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "24 | 水面補正。強風・高波なら展開補正へ反映。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "25 | 当日傾向・直近結果"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "26 | 10%"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "27 | 1R単発は弱、2R連続は弱〜中、3R以上は中補正。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "28 | 3. 展示スリット12型 補正表"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "29 | 型"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "30 | 展開の基本"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "31 | 上げる艇・位置"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "32 | 注意点"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "33 | 内側先行"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "34 | 1逃げ、2差し、3差し"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "35 | 1頭、2の2着/3着、3の2着"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "36 | 内が足負けしていれば差し抜けも見る"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "37 | 横一線"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "38 | 枠なり・内寄り"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "39 | 1-2-3、1-3-2、2差し"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "40 | 足差・回り足で再補正"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "41 | 1・2が先行"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "42 | 1-2、2-1中心"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "43 | 1頭、2頭、3/4の3着"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "44 | 2がまくると1沈みもある"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "45 | スロー先行"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "46 | 内枠中心"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "47 | 1-2-3、1-3-2、2-1"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "48 | 小回り足の強い2・3を重視"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "49 | カベなし"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "50 | 3まくり差し、1残り"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "51 | 3頭、3-1、1-3、4連動"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "52 | 2が遅れる時は1逃げか3攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "53 | 2・3が遅れる"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "54 | 4攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "55 | 4頭、4-1、1-4、4-5/6"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "56 | 4が回り足弱い時は1残り優先"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "57 | 中凹み"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "58 | 3/4/5攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "59 | 3-4-5、5-6-4、1-4-5"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "60 | 外の伸び足がないと不発"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "61 | 3の先攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "62 | 3まくり主導"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "63 | 3頭、3-4/5/6、4-1"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "64 | 1・2は沈みやすいが1残りは残す"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "65 | 中ぶくれ"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "66 | 3/4攻め、5/6差し"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "67 | 3/4頭、5/6の2・3着"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "68 | 1が強い時は1-4-5も残す"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "69 | 1が遅れる"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "70 | 2差し、外中心"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "71 | 2頭、3/4/5、1の2・3着"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "72 | 1の回り足上位なら抜き返しあり"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "73 | 外側先行"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "74 | 3/4/5/6攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "75 | 3・4頭、5/6連動、1残り"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "76 | 仕掛けた艇の外側が伸びる"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "77 | ダッシュ先行"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "78 | 外枠中心"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "79 | 4/5/6頭、1残り、5/6連動"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "80 | 3が抵抗すると5/6差しも出る"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "81 | 4. 攻め役別の連動確認"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "82 | 攻め役"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "83 | 必ず見る連動"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "84 | 補正の考え方"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "85 | 2差し"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "86 | 2-1、2-4、1-2、2-5"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "87 | 1が流れる/甘い時に2頭。1の足が強ければ1-2も残す。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "88 | 3攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "89 | 3-1、1-3、3-4、3-5、4-1"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "90 | 3頭だけでなく1残り・4/5連動を同時確認。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "91 | 4攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "92 | 4-1、1-4、2-4、4-5、4-6"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "93 | 4頭固定にせず、4が作った差し場で2頭も見る。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "94 | 5攻め"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "95 | 5-1、5-6、1-5、4-5"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "96 | 5は2着/3着連動が基本。足抜けなら頭を少し残す。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "97 | 6伸び"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "98 | 1-6、5-6、6-1、6の3着"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "99 | 大外頭は控えめ。直線抜け＋内凹み時のみ頭補正。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "100 | 5. 場別への流用メモ"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "101 | ・芦屋：前データと選手×コースを土台にし、上げ潮・弱風では内残りを消しすぎない。外攻め時は5連動を確認。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "102 | ・下関・若松：潮・風の影響が出やすいので、スリット隊形は潮風補正とセットで使う。夜場は5・6の3着を確認。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "103 | ・平和島・戸田：イン固定に寄せすぎず、3攻め・4攻め・5/6連動をやや強めに扱う。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "104 | ・唐津・大村などイン強場：外攻め型でも、1のオリ展示・回り足が抜けていれば1頭率を消しすぎない。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "105 | ・全場共通：展示スリットだけで大幅変更しない。必ずオリ展示、節間、モーター、コース適性と整合させる。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "106 | 6. 実戦チェック順"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "107 | 1) 前データ・マスター・選手×コースで基礎確率を作る。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "108 | 2) モーター・ボート・節間成績で足と実戦気配を補正する。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "109 | 3) 展示タイム、オリジナル展示、SUMで直前気配を確認する。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "110 | 4) 展示スリット12型を判定し、攻め役・内残り・外連動を確率補正する。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "111 | 5) 潮・風・波・時間帯、当日傾向を重ねる。"
+  },
+  {
+    "sheet": "08_Slit12Rules",
+    "text": "112 | 6) 全艇の1着率・2着率・3着率を再正規化し、SAB判定と買い目を作る。"
+  }
+]
