@@ -134,6 +134,7 @@ jobs:
           cp -a data "$RUNNER_TEMP/morning-data-before"
           python -m unittest discover -s tests
           python automation/build_site_data.py --date "$TARGET_DATE" | tee build.log
+          python automation/apply_toda_v5.py --date "$TARGET_DATE"
           python automation/validate_morning_regression.py \
             --before "$RUNNER_TEMP/morning-data-before" \
             --after data
