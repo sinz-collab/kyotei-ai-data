@@ -145,30 +145,30 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Commit and push public data
-  shell: bash
-  run: |
-    git config user.name "github-actions[bot]"
-    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+  　　　shell: bash
+ 　　　 run: |
+  　　　  git config user.name "github-actions[bot]"
+   　　　 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-    # ライブ更新後の最新mainを取得
-    git fetch origin main
-    git reset --hard origin/main
+  　　　  # ライブ更新後の最新mainを取得
+ 　　　   git fetch origin main
+ 　　　   git reset --hard origin/main
 
-    # 最新データを基準に朝データと戸田v5を再生成
-    python automation/build_site_data.py --date "$TARGET_DATE" | tee build-after-sync.log
-    python automation/apply_toda_v5.py --date "$TARGET_DATE"
-    python automation/validate_morning_regression.py \
-      --before "$RUNNER_TEMP/morning-data-before" \
-      --after data
+  　　　  # 最新データを基準に朝データと戸田v5を再生成
+ 　　　   python automation/build_site_data.py --date "$TARGET_DATE" | tee build-after-sync.log
+　　　    python automation/apply_toda_v5.py --date "$TARGET_DATE"
+　　　    python automation/validate_morning_regression.py \
+  　　　    --before "$RUNNER_TEMP/morning-data-before" \
+    　　　  --after data
 
-    git add data
-    if git diff --cached --quiet; then
-      echo "No data changes."
-      exit 0
-    fi
+　　　    git add data
+ 　　　   if git diff --cached --quiet; then
+ 　　　     echo "No data changes."
+  　　　    exit 0
+ 　　　   fi
 
-    git commit -m "Update morning race data ${TARGET_DATE}"
-    git push origin HEAD:main
+  　　　  git commit -m "Update morning race data ${TARGET_DATE}"
+　　　    git push origin HEAD:main
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
