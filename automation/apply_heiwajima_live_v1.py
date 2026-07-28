@@ -34,6 +34,42 @@ def valid_complete(document: dict | None) -> bool:
     return bool(document and document.get("complete") is True and document.get("status") == "complete")
 
 
+def relative_scores(
+    rows: list[dict],
+    key: str,
+    *,
+    lower_is_better: bool,
+) -> dict[int, float]:
+    values: list[tuple[int, float]] = []
+    for row in rows:
+        lane = row.get("lane")
+        raw = row.get(key)
+        if lane is None or raw in (None, "", "-"):
+            continue
+        try:
+            values.append((int(lane), float(raw)))
+        except (TypeError, ValueError):
+            continue
+
+    if len(values) < 2:
+        return {}
+
+    raw_values = [value for _, value in values]
+    mean = sum(raw_values) / len(raw_values)
+    variance = sum((value - mean) ** 2 for value in raw_values) / len(raw_values)
+    std = variance ** 0.5
+    if std <= 1e-9:
+        return {lane: 0.0 for lane, _ in values}
+
+    result: dict[int, float] = {}
+    for lane, value in values:
+        z = (value - mean) / std
+        if lower_is_better:
+            z = -z
+        result[lane] = max(-2.0, min(2.0, z))
+    return result
+
+
 def live_input(live_root: Path) -> tuple[dict, list[str]]:
     direct = load_document(live_root / "direct.json")
     exhibition = load_document(live_root / "exhibition.json")
@@ -54,6 +90,22 @@ def live_input(live_root: Path) -> tuple[dict, list[str]]:
     direct_by_lane = {int(row.get("lane")): row for row in direct_rows if row.get("lane")}
     original_by_lane = {int(row.get("lane")): row for row in original_rows if row.get("lane")}
 
+    straight_scores = relative_scores(
+        original_rows,
+        "straight_time",
+        lower_is_better=True,
+    )
+    turn_scores = relative_scores(
+        original_rows,
+        "turn_time",
+        lower_is_better=True,
+    )
+    sum_scores = relative_scores(
+        original_rows,
+        "sum_difference",
+        lower_is_better=False,
+    )
+
     entries = []
     exhibitions = []
     for row in exhibition_rows:
@@ -67,9 +119,13 @@ def live_input(live_root: Path) -> tuple[dict, list[str]]:
                 "boat_no": boat_no,
                 # ST is intentionally a very small standalone correction in the engine.
                 "st_delta": float(str(row.get("start_time") or "0").replace("F", "-0") or 0),
-                "straight_score": float(original_row.get("straight_score") or original_row.get("line_score") or 0),
-                "turn_score": float(original_row.get("turn_score") or 0),
-                "sum_score": float(original_row.get("sum_score") or original_row.get("sum_diff") or 0),
+                "straight_score": straight_scores.get(boat_no, 0.0),
+                "turn_score": turn_scores.get(boat_no, 0.0),
+                "sum_score": sum_scores.get(boat_no, 0.0),
+                "straight_time": original_row.get("straight_time"),
+                "turn_time": original_row.get("turn_time"),
+                "lap_time": original_row.get("lap_time"),
+                "sum_difference": original_row.get("sum_difference"),
                 "exhibition_time": row.get("exhibition_time"),
                 "tilt": row.get("tilt") or direct_row.get("tilt"),
                 "weight": direct_row.get("weight"),
@@ -141,6 +197,14 @@ def apply_live_review(payload: dict, race_no: int, live_root: Path) -> dict:
         "color": "green",
     }
     prediction["odds"] = live.get("odds") or previous.get("odds") or {}
+    display_odds = prediction["odds"]
+    for ticket in prediction.get("ai") or []:
+        combo = str(ticket.get("combo") or "")
+        ticket["odds"] = display_odds.get(combo, "-")
+    for ticket in prediction.get("aiUpset") or []:
+        combo = str(ticket.get("combo") or "")
+        ticket["odds"] = display_odds.get(combo, "-")
+
     prediction["liveReviewMeta"] = {
         "method": "heiwajima_server_live_review_v1",
         "actualEntryReanalysis": True,

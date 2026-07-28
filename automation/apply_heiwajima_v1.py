@@ -196,7 +196,12 @@ def engine_input_for(
             "boats": boats,
             "tide": tide_context(payload, race),
             "weather": weather_context(payload, race),
-            "event_day": race.get("eventDay") or payload.get("eventDay") or payload.get("seriesDay"),
+            "event_day_no": (
+                race.get("eventDay")
+                or (race.get("race_meta") or {}).get("day_no")
+                or payload.get("eventDay")
+                or payload.get("seriesDay")
+            ),
         },
         sorted(set(missing_codes)),
     )
