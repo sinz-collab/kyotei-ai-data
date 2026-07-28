@@ -192,7 +192,7 @@ def engine_input_for(
             "race_date": payload["date"],
             "race_no": int(race["race"]),
             "stage": stage,
-            "max_tickets": 8,
+            "max_tickets": 10,
             "boats": boats,
             "tide": tide_context(payload, race),
             "weather": weather_context(payload, race),
@@ -207,9 +207,14 @@ def percent_map(result: dict, key: str) -> dict[str, float]:
         str(int(row["boat_no"])): round(float(row[key]) * 100.0, 1)
         for row in result["probabilities"]
     }
-    correction = round(100.0 - sum(values.values()), 1)
-    largest = max(values, key=values.get)
-    values[largest] = round(values[largest] + correction, 1)
+
+    # Win/second/third are mutually exclusive positions and each total 100%.
+    # Top3 is a per-boat inclusion probability, so its six-boat total is not 100%.
+    if key != "top3_prob":
+        correction = round(100.0 - sum(values.values()), 1)
+        largest = max(values, key=values.get)
+        values[largest] = round(values[largest] + correction, 1)
+
     return values
 
 
@@ -244,8 +249,9 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
     ai_upset = [ticket for ticket in all_tickets if ticket["role"] == "荒れ対応"]
     if not ai:
         ai = all_tickets[:6]
+    # 荒れ対応が生成されていない場合、本線やズレ対応を重複表示しない。
     if not ai_upset:
-        ai_upset = all_tickets[-2:]
+        ai_upset = []
 
     completeness = result.get("data_completeness") or {}
     missing_codes = sorted(set((completeness.get("missing_codes") or []) + connector_missing))
@@ -279,10 +285,25 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
             "axisLane": axis_lane,
             "secondHeadLane": second_lane,
             "axisGap": axis_gap,
+            "topScenarioProbability": round(
+                float(sab_data.get("top_scenario_probability") or 0.0),
+                4,
+            ),
+            "masterCoverage": round(
+                float(sab_data.get("master_coverage") or 0.0),
+                4,
+            ),
+            "entryChanged": bool(
+                sab_data.get("entry_changed", False)
+            ),
+            "ticketCountUsed": bool(
+                sab_data.get("ticket_count_used", False)
+            ),
             "comment": f"主シナリオ: {primary_scenario.get('name') or '未確定'} / 軸差 {axis_gap:.1f}pt",
         },
-        "ai": ai[:6],
-        "aiUpset": ai_upset[:4],
+        # 本線6点＋ズレ対応2点、荒れ対応2点の計10点を保持する。
+        "ai": ai[:8],
+        "aiUpset": ai_upset[:2],
         "scenarios": scenarios,
         "headExclusionLog": result.get("head_exclusion_log") or [],
         "sourceSummary": {

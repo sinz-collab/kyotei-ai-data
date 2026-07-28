@@ -1,20 +1,125 @@
 from itertools import permutations
 
-def generate_tickets(boats, scenarios, max_tickets=8):
-    probs={int(b['boat_no']):b for b in boats}; out=[]
-    # scenario-linked approximation: joint score by positional probabilities and scenario support.
-    scen_head={}
-    for s in scenarios[:4]:
-        scen_head[s['id']]=s['probability']
-    for a,b,c in permutations(range(1,7),3):
-        pa=probs[a]['win_prob']; pb=probs[b]['second_prob']; pc=probs[c]['third_prob']
-        link=1.0
-        if a==3 and b in (4,5,6): link*=1.18
-        if a==4 and b in (5,6): link*=1.18
-        if a in (2,3,4) and b==1: link*=1.10
-        if c in (5,6): link*=1.06
-        out.append({'combination':f'{a}-{b}-{c}','score':pa*pb*pc*link,'type':'main'})
-    out=sorted(out,key=lambda x:x['score'],reverse=True)[:max_tickets]
-    total=sum(x['score'] for x in out) or 1
-    for i,x in enumerate(out): x['share']=round(x['score']/total,4); x['type']='main' if i<4 else ('deviation' if i<6 else 'upset')
-    return out
+
+def generate_tickets(boats, scenarios, max_tickets=10):
+    probs = {int(b["boat_no"]): b for b in boats}
+    scenario_map = {}
+
+    for scenario in scenarios[:6]:
+        probability = float(scenario.get("probability") or 0.0)
+
+        for head in scenario.get("head", []):
+            head = int(head)
+            scenario_map.setdefault(head, {"second": {}, "third": {}})
+
+            for lane in scenario.get("second", []):
+                lane = int(lane)
+                scenario_map[head]["second"][lane] = (
+                    scenario_map[head]["second"].get(lane, 0.0)
+                    + probability
+                )
+
+            for lane in scenario.get("third", []):
+                lane = int(lane)
+                scenario_map[head]["third"][lane] = (
+                    scenario_map[head]["third"].get(lane, 0.0)
+                    + probability
+                )
+
+    candidates = []
+
+    for first, second, third in permutations(range(1, 7), 3):
+        base_score = (
+            probs[first]["win_prob"]
+            * probs[second]["second_prob"]
+            * probs[third]["third_prob"]
+        )
+
+        link = 1.0
+
+        if first in scenario_map:
+            second_link = scenario_map[first]["second"].get(second, 0.0)
+            third_link = scenario_map[first]["third"].get(third, 0.0)
+
+            link += min(
+                0.40,
+                second_link * 0.75
+                + third_link * 0.40,
+            )
+
+        candidates.append(
+            {
+                "combination": f"{first}-{second}-{third}",
+                "first": first,
+                "second": second,
+                "third": third,
+                "score": base_score * link,
+            }
+        )
+
+    candidates.sort(key=lambda row: row["score"], reverse=True)
+
+    if not candidates:
+        return []
+
+    axis_lane = candidates[0]["first"]
+    selected = []
+
+    # 本線6点
+    for row in candidates:
+        if len(selected) >= 6:
+            break
+
+        item = dict(row)
+        item["type"] = "main"
+        selected.append(item)
+
+    selected_combos = {row["combination"] for row in selected}
+
+    # ズレ対応2点
+    for row in candidates:
+        if len([x for x in selected if x["type"] == "deviation"]) >= 2:
+            break
+
+        if row["combination"] in selected_combos:
+            continue
+
+        item = dict(row)
+        item["type"] = "deviation"
+        selected.append(item)
+        selected_combos.add(row["combination"])
+
+    # 荒れ対応2点。本命頭と異なる頭を優先
+    upset_candidates = [
+        row for row in candidates
+        if row["combination"] not in selected_combos
+        and row["first"] != axis_lane
+    ]
+
+    for row in upset_candidates[:2]:
+        item = dict(row)
+        item["type"] = "upset"
+        selected.append(item)
+        selected_combos.add(row["combination"])
+
+    # 外頭候補が不足した場合も重複なしで10点まで補完
+    for row in candidates:
+        if len(selected) >= max_tickets:
+            break
+
+        if row["combination"] in selected_combos:
+            continue
+
+        item = dict(row)
+        item["type"] = "upset"
+        selected.append(item)
+        selected_combos.add(row["combination"])
+
+    selected = selected[:max_tickets]
+
+    total = sum(row["score"] for row in selected) or 1.0
+
+    for row in selected:
+        row["share"] = round(row["score"] / total, 4)
+
+    return selected
