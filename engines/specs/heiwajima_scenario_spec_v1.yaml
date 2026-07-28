@@ -1,0 +1,23 @@
+version: 1.0.0
+scenarios:
+  - id: S01_1_ESCAPE
+    name: 1逃げ
+    conditions: [1コース適性, 壁役成立, 足色整合, 水面矛盾なし]
+  - id: S03_2_SASHI
+    name: 2差し頭
+    conditions: [2コース差し適性, 1の旋回不安, 2の回り足]
+  - id: S05_3_MAKURI
+    name: 3まくり
+    conditions: [3の攻め足, 2壁不成立, センター水面]
+  - id: S06_3_MAKURIZASHI
+    name: 3まくり差し
+    conditions: [3のまくり差し適性, 1残り余地]
+  - id: S08_4_KADO
+    name: 4カドまくり
+    conditions: [4カド, 4直線上位, 内凹み]
+  - id: S13_OUTER_THIRD
+    name: 外枠3着残り
+    conditions: [外連動水面, 5または6の直線・回り足]
+  - id: S14_ENTRY_CHANGE
+    name: 進入変更による展開変化
+    conditions: [actual_course != lane]

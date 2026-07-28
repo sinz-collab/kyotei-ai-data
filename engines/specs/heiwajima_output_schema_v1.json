@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Heiwajima engine output",
+  "type": "object",
+  "required": [
+    "venue",
+    "probabilities",
+    "scenarios",
+    "sab",
+    "tickets",
+    "data_completeness"
+  ],
+  "properties": {
+    "venue": {
+      "const": "heiwajima"
+    },
+    "probabilities": {
+      "type": "array"
+    },
+    "scenarios": {
+      "type": "array"
+    },
+    "sab": {
+      "type": "object"
+    },
+    "tickets": {
+      "type": "array"
+    },
+    "data_completeness": {
+      "type": "object"
+    },
+    "odds_used_for_prediction": {
+      "const": false
+    }
+  }
+}
