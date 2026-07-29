@@ -1,0 +1,11 @@
+--- automation/fetch_one.py
++++ automation/fetch_one.py
+@@
+ import pandas as pd
++from tide_type_parser import add_tide_type
+@@
+         payload = {
+@@
+             "raceNotes": {},
+         }
++        payload = add_tide_type(payload, html, date)
