@@ -11,21 +11,29 @@ class AllVenueKimariteTest(unittest.TestCase):
             {"lane": 1, "name": "選手 一郎"},
             {"lane": 2, "name": "選手 二郎"},
         ]
+
         text = """
+決まり手率
+
 選手 一郎
 逃げ 61.2%
 差され 12.3%
 まくられ 9.8%
 まくられ差し 16.7%
 出走回数 123回
+
 選手 二郎
 逃し 45.0%
 差し 20.0%
 まくり 15.0%
 まくり差し 20.0%
 出走回数 80回
+
+前づけデータ
 """
+
         parsed = parse_race_kimarite(text, racers)
+
         self.assertEqual(parsed[1]["boaters_kimarite_starts"], 123)
         self.assertEqual(parsed[1]["boaters_escape_rate"], 61.2)
         self.assertEqual(parsed[1]["boaters_makurare_zashi_rate"], 16.7)
