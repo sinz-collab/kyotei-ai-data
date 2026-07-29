@@ -75,27 +75,42 @@ def starts_count(block: str) -> int | None:
     return None
 
 def positional_rates(block: str) -> list[float | None]:
-    tokens = re.findall(
-        r"(?<!\S)-(?!\S)|[0-9]+(?:\.[0-9]+)?\s*%",
-        block,
+    ...
+    return values
+
+
+def kimarite_section(text: str) -> str:
+    start = text.find("決まり手率")
+
+    if start < 0:
+        return ""
+
+    end_markers = (
+        "前づけデータ",
+        "先頭艇別連対率",
+        "直近10走",
+        "直近6ヶ月",
     )
 
-    values: list[float | None] = []
+    end = len(text)
 
-    for token in tokens[:4]:
-        token = token.strip()
+    for marker in end_markers:
+        position = text.find(
+            marker,
+            start + len("決まり手率"),
+        )
 
-        if token == "-":
-            values.append(None)
-        else:
-            values.append(
-                float(token.replace("%", "").strip())
-            )
+        if position >= 0:
+            end = min(end, position)
 
-    while len(values) < 4:
-        values.append(None)
+    return text[start:end]
 
-    return values
+
+def racer_block(
+    text: str,
+    name: str,
+    next_name: str | None,
+) -> str:
 
 def racer_block(text: str, name: str, next_name: str | None) -> str:
     compact_name = normalize_name(name)
@@ -123,6 +138,11 @@ def parse_race_kimarite(
     text: str,
     racers: list[dict[str, Any]],
 ) -> dict[int, dict[str, Any]]:
+    text = kimarite_section(text)
+
+    if not text:
+        return {}
+
     parsed: dict[int, dict[str, Any]] = {}
     ordered = sorted(
         racers,
