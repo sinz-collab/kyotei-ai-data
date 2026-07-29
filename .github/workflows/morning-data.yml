@@ -153,28 +153,53 @@ jobs:
       - name: Commit and push public data
         shell: bash
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git fetch origin main
-          git reset --hard origin/main
+          for attempt in 1 2 3 4 5; do
+            echo "Publish attempt ${attempt}/5"
 
-          python automation/build_site_data.py --date "$TARGET_DATE" | tee build-after-sync.log
-          python automation/enrich_heiwajima_kimarite.py --date "$TARGET_DATE"
-          python automation/apply_toda_v5.py --date "$TARGET_DATE"
-          python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
-          python automation/validate_morning_regression.py \
-            --before "$RUNNER_TEMP/morning-data-before" \
-            --after data
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd data
 
-          git add data
-          if git diff --cached --quiet; then
-            echo "No data changes."
-            exit 0
-          fi
+            rm -rf "$RUNNER_TEMP/morning-data-before-publish"
+            cp -a data "$RUNNER_TEMP/morning-data-before-publish"
 
-          git commit -m "Update morning race data ${TARGET_DATE}"
-          git push origin HEAD:main
+            python automation/build_site_data.py --date "$TARGET_DATE" \
+              | tee "build-after-sync-${attempt}.log"
+            python automation/enrich_heiwajima_kimarite.py --date "$TARGET_DATE"
+            python automation/apply_toda_v5.py --date "$TARGET_DATE"
+            python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
+            python automation/validate_morning_regression.py \
+              --before "$RUNNER_TEMP/morning-data-before-publish" \
+              --after data
+
+            git add data
+            if git diff --cached --quiet; then
+              echo "No data changes."
+              exit 0
+            fi
+
+            git commit -m "Update morning race data ${TARGET_DATE}"
+
+            if git push origin HEAD:main; then
+              echo "Morning data published successfully."
+              exit 0
+            fi
+
+            echo "Push was rejected because main changed; rebuilding from latest main."
+            git reset --hard origin/main
+
+            if [ "$attempt" -lt 5 ]; then
+              sleep $((attempt * 10))
+            fi
+          done
+
+          echo "Morning data publish failed after 5 attempts." >&2
+          exit 1
       - name: Upload diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -182,7 +207,7 @@ jobs:
           name: morning-report-${{ needs.prepare.outputs.target_date }}
           path: |
             build.log
-            build-after-sync.log
+            build-after-sync-*.log
             data/morning_report.json
             work/races/**/fetch_status.json
           if-no-files-found: warn
