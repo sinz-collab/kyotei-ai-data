@@ -106,11 +106,8 @@ def kimarite_section(text: str) -> str:
     return text[start:end]
 
 
-def racer_block(
-    text: str,
-    name: str,
-    next_name: str | None,
-) -> str:
+def racer_block(text: str, name: str, next_name: str | None) -> str:
+    compact_name = normalize_name(name)
 
 def racer_block(text: str, name: str, next_name: str | None) -> str:
     compact_name = normalize_name(name)
