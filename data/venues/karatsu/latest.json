@@ -178,7 +178,12 @@
           "boat_3": "40.4",
           "season_runs": [],
           "season_groups": [],
-          "hayami": "8R"
+          "hayami": "8R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 4.1,
+          "boaters_sashi_rate": 3.2,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 0.0
         }
       ],
       "entry_changes": [],
@@ -364,13 +369,249 @@
       ],
       "setsukan": [],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 58.0,
+          "2": 1.3,
+          "3": 22.4,
+          "4": 16.0,
+          "5": 1.6,
+          "6": 0.7
+        },
+        "second": {
+          "1": 12.0,
+          "2": 20.3,
+          "3": 19.4,
+          "4": 18.1,
+          "5": 18.4,
+          "6": 11.9
+        },
+        "third": {
+          "1": 10.1,
+          "2": 18.8,
+          "3": 18.8,
+          "4": 19.4,
+          "5": 21.1,
+          "6": 11.7
+        },
+        "top3": {
+          "1": 80.1,
+          "2": 40.4,
+          "3": 60.6,
+          "4": 53.5,
+          "5": 41.2,
+          "6": 24.3
+        },
+        "sab": "S",
+        "confidence": 85.6,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-2",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-3",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-3-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 46.0,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 25.9,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 17.3,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 10.8,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 3,
+          "axisGap": 35.6
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A1",
+              "motor_state": -0.24,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.002,
+                1.018,
+                1.018
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B1",
+              "motor_state": 0.042,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "B1",
+              "motor_state": -0.084,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B1",
+              "motor_state": 0.132,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "B1",
+              "motor_state": -0.091,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B1",
+              "motor_state": -0.525,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -394,7 +635,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "5.35",
           "nat_2": "32.4",
           "nat_3": "51.9",
@@ -422,7 +663,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "6.78",
           "nat_2": "50.6",
           "nat_3": "73.0",
@@ -450,7 +691,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "4.99",
           "nat_2": "30.5",
           "nat_3": "48.4",
@@ -478,7 +719,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".21",
           "nat_win": "1.64",
           "nat_2": "0.0",
           "nat_3": "2.6",
@@ -506,7 +747,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "3.62",
           "nat_2": "17.5",
           "nat_3": "26.8",
@@ -534,7 +775,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "4.59",
           "nat_2": "29.6",
           "nat_3": "43.2",
@@ -548,7 +789,12 @@
           "boat_2": "38.3",
           "boat_3": "53.2",
           "season_runs": [],
-          "season_groups": []
+          "season_groups": [],
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 30.0,
+          "boaters_sashi_rate": 14.8,
+          "boaters_makuri_rate": 3.7,
+          "boaters_makuri_sashi_rate": 3.7
         }
       ],
       "entry_changes": [],
@@ -574,7 +820,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "5.35",
           "nat_2": "32.4",
           "nat_3": "51.9",
@@ -602,7 +848,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "6.78",
           "nat_2": "50.6",
           "nat_3": "73.0",
@@ -630,7 +876,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "4.99",
           "nat_2": "30.5",
           "nat_3": "48.4",
@@ -658,7 +904,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".21",
           "nat_win": "1.64",
           "nat_2": "0.0",
           "nat_3": "2.6",
@@ -686,7 +932,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "3.62",
           "nat_2": "17.5",
           "nat_3": "26.8",
@@ -714,7 +960,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "4.59",
           "nat_2": "29.6",
           "nat_3": "43.2",
@@ -733,13 +979,249 @@
       ],
       "setsukan": [],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 53.9,
+          "2": 24.7,
+          "3": 17.4,
+          "4": 0.7,
+          "5": 1.7,
+          "6": 1.6
+        },
+        "second": {
+          "1": 11.0,
+          "2": 21.0,
+          "3": 20.1,
+          "4": 14.2,
+          "5": 17.4,
+          "6": 16.3
+        },
+        "third": {
+          "1": 9.3,
+          "2": 22.3,
+          "3": 21.1,
+          "4": 11.8,
+          "5": 18.4,
+          "6": 17.0
+        },
+        "top3": {
+          "1": 74.2,
+          "2": 68.0,
+          "3": 58.6,
+          "4": 26.7,
+          "5": 37.5,
+          "6": 34.9
+        },
+        "sab": "S",
+        "confidence": 79.2,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-5-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "2-3-1",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-2",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-6-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 44.8,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_2_attack",
+            "probability": 26.5,
+            "attackCourse": 2,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 17.7,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 11.0,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 2,
+          "axisGap": 29.2
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A2",
+              "motor_state": 0.031,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.011,
+                1.011
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "A1",
+              "motor_state": 0.303,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.009,
+                1.033,
+                1.033
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "B1",
+              "motor_state": -0.401,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B2",
+              "motor_state": -0.14,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                0.933,
+                0.941,
+                0.976
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "B1",
+              "motor_state": 0.248,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B1",
+              "motor_state": -0.125,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -763,7 +1245,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".13",
           "nat_win": "6.11",
           "nat_2": "39.5",
           "nat_3": "66.4",
@@ -791,7 +1273,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "3.65",
           "nat_2": "13.8",
           "nat_3": "30.0",
@@ -819,7 +1301,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.74",
           "nat_2": "42.2",
           "nat_3": "53.2",
@@ -847,7 +1329,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.91",
           "nat_2": "30.4",
           "nat_3": "45.1",
@@ -875,7 +1357,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "5.63",
           "nat_2": "41.7",
           "nat_3": "59.2",
@@ -903,7 +1385,7 @@
           "f": "1",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "4.79",
           "nat_2": "28.1",
           "nat_3": "45.6",
@@ -917,7 +1399,12 @@
           "boat_2": "25.8",
           "boat_3": "48.5",
           "season_runs": [],
-          "season_groups": []
+          "season_groups": [],
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 20.9,
+          "boaters_sashi_rate": 30.8,
+          "boaters_makuri_rate": 2.6,
+          "boaters_makuri_sashi_rate": 12.8
         }
       ],
       "entry_changes": [],
@@ -943,7 +1430,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".13",
           "nat_win": "6.11",
           "nat_2": "39.5",
           "nat_3": "66.4",
@@ -971,7 +1458,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "3.65",
           "nat_2": "13.8",
           "nat_3": "30.0",
@@ -999,7 +1486,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.74",
           "nat_2": "42.2",
           "nat_3": "53.2",
@@ -1027,7 +1514,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.91",
           "nat_2": "30.4",
           "nat_3": "45.1",
@@ -1055,7 +1542,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "5.63",
           "nat_2": "41.7",
           "nat_3": "59.2",
@@ -1083,7 +1570,7 @@
           "f": "1",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "4.79",
           "nat_2": "28.1",
           "nat_3": "45.6",
@@ -1102,13 +1589,249 @@
       ],
       "setsukan": [],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 54.1,
+          "2": 1.2,
+          "3": 17.0,
+          "4": 1.6,
+          "5": 24.7,
+          "6": 1.5
+        },
+        "second": {
+          "1": 10.2,
+          "2": 17.4,
+          "3": 20.5,
+          "4": 20.2,
+          "5": 16.6,
+          "6": 15.1
+        },
+        "third": {
+          "1": 9.4,
+          "2": 18.6,
+          "3": 16.7,
+          "4": 17.4,
+          "5": 17.9,
+          "6": 20.1
+        },
+        "top3": {
+          "1": 73.6,
+          "2": 37.1,
+          "3": 54.1,
+          "4": 39.2,
+          "5": 59.2,
+          "6": 36.7
+        },
+        "sab": "S",
+        "confidence": 79.3,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-3-1",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-6",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-4-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-3",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 46.0,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_5_attack",
+            "probability": 25.9,
+            "attackCourse": 5,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 17.3,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 10.8,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 5,
+          "axisGap": 29.3
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A2",
+              "motor_state": 0.14,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.001,
+                1.013,
+                1.013
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B2",
+              "motor_state": 0.449,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                0.943,
+                0.957,
+                0.993
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "B1",
+              "motor_state": -0.324,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B1",
+              "motor_state": -0.354,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A1",
+              "motor_state": -0.389,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.014,
+                1.014
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B1",
+              "motor_state": 0.003,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -1116,7 +1839,7 @@
     },
     {
       "race": 4,
-      "deadline": "09:57",
+      "deadline": "09:59",
       "title": "唐津",
       "type": "",
       "racers": [
@@ -1127,12 +1850,12 @@
           "name": "伏田 裕隆",
           "class": "B1",
           "age": "43",
-          "weight": "52.1",
+          "weight": "52.3",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.27",
           "nat_2": "37.2",
           "nat_3": "47.9",
@@ -1155,12 +1878,12 @@
           "name": "川上 剛",
           "class": "A1",
           "age": "45",
-          "weight": "54.2",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.97",
           "nat_2": "36.1",
           "nat_3": "58.0",
@@ -1183,12 +1906,12 @@
           "name": "占部 一真",
           "class": "B1",
           "age": "34",
-          "weight": "52.4",
+          "weight": "52.1",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "4.47",
           "nat_2": "27.0",
           "nat_3": "37.1",
@@ -1211,12 +1934,12 @@
           "name": "萩原 知哉",
           "class": "B1",
           "age": "39",
-          "weight": "54.6",
+          "weight": "54.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.82",
           "nat_2": "26.4",
           "nat_3": "40.7",
@@ -1239,12 +1962,12 @@
           "name": "櫻井 優",
           "class": "A2",
           "age": "28",
-          "weight": "52.4",
+          "weight": "52.6",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.59",
           "nat_2": "37.1",
           "nat_3": "56.0",
@@ -1267,12 +1990,12 @@
           "name": "木下 大將",
           "class": "A2",
           "age": "41",
-          "weight": "52.8",
+          "weight": "52.5",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "6.17",
           "nat_2": "45.6",
           "nat_3": "62.3",
@@ -1287,7 +2010,12 @@
           "boat_3": "48.0",
           "season_runs": [],
           "season_groups": [],
-          "hayami": "11R"
+          "hayami": "11R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 48.0,
+          "boaters_sashi_rate": 22.2,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 3.7
         }
       ],
       "entry_changes": [],
@@ -1297,7 +2025,7 @@
         "date": "2026-07-29",
         "venue": "karatsu",
         "race_no": 4,
-        "deadline": "09:57",
+        "deadline": "09:59",
         "day_no": 1
       },
       "entries": [
@@ -1308,12 +2036,12 @@
           "name": "伏田 裕隆",
           "class": "B1",
           "age": "43",
-          "weight": "52.1",
+          "weight": "52.3",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.27",
           "nat_2": "37.2",
           "nat_3": "47.9",
@@ -1336,12 +2064,12 @@
           "name": "川上 剛",
           "class": "A1",
           "age": "45",
-          "weight": "54.2",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.97",
           "nat_2": "36.1",
           "nat_3": "58.0",
@@ -1364,12 +2092,12 @@
           "name": "占部 一真",
           "class": "B1",
           "age": "34",
-          "weight": "52.4",
+          "weight": "52.1",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "4.47",
           "nat_2": "27.0",
           "nat_3": "37.1",
@@ -1392,12 +2120,12 @@
           "name": "萩原 知哉",
           "class": "B1",
           "age": "39",
-          "weight": "54.6",
+          "weight": "54.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.82",
           "nat_2": "26.4",
           "nat_3": "40.7",
@@ -1420,12 +2148,12 @@
           "name": "櫻井 優",
           "class": "A2",
           "age": "28",
-          "weight": "52.4",
+          "weight": "52.6",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.59",
           "nat_2": "37.1",
           "nat_3": "56.0",
@@ -1448,12 +2176,12 @@
           "name": "木下 大將",
           "class": "A2",
           "age": "41",
-          "weight": "52.8",
+          "weight": "52.5",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "6.17",
           "nat_2": "45.6",
           "nat_3": "62.3",
@@ -1473,13 +2201,249 @@
       ],
       "setsukan": [],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 49.9,
+          "2": 26.4,
+          "3": 1.5,
+          "4": 1.5,
+          "5": 18.7,
+          "6": 2.1
+        },
+        "second": {
+          "1": 10.6,
+          "2": 18.5,
+          "3": 20.5,
+          "4": 17.2,
+          "5": 14.8,
+          "6": 18.5
+        },
+        "third": {
+          "1": 8.7,
+          "2": 18.9,
+          "3": 19.9,
+          "4": 16.1,
+          "5": 15.9,
+          "6": 20.6
+        },
+        "top3": {
+          "1": 69.2,
+          "2": 63.7,
+          "3": 41.9,
+          "4": 34.7,
+          "5": 49.4,
+          "6": 41.1
+        },
+        "sab": "A",
+        "confidence": 73.5,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-6-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "5-2-6",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-4-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-5",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 37.1,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_2_attack",
+            "probability": 30.2,
+            "attackCourse": 2,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_5_attack",
+            "probability": 20.1,
+            "attackCourse": 5,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 12.6,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 2,
+          "axisGap": 23.5
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "B1",
+              "motor_state": -0.056,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "A1",
+              "motor_state": 0.316,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.009,
+                1.034,
+                1.034
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "B1",
+              "motor_state": -0.159,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B1",
+              "motor_state": 0.084,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A2",
+              "motor_state": 0.004,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.01,
+                1.01
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "A2",
+              "motor_state": -0.021,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.01,
+                1.01
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -1487,7 +2451,7 @@
     },
     {
       "race": 5,
-      "deadline": "10:23",
+      "deadline": "10:25",
       "title": "唐津",
       "type": "",
       "racers": [
@@ -1498,12 +2462,12 @@
           "name": "木谷 賢太",
           "class": "A1",
           "age": "30",
-          "weight": "54.7",
+          "weight": "53.2",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".12",
           "nat_win": "6.83",
           "nat_2": "50.4",
           "nat_3": "76.3",
@@ -1526,12 +2490,12 @@
           "name": "森作 広大",
           "class": "B1",
           "age": "38",
-          "weight": "56.4",
+          "weight": "56.3",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "3.42",
           "nat_2": "7.6",
           "nat_3": "25.8",
@@ -1554,12 +2518,12 @@
           "name": "角谷 健吾",
           "class": "A2",
           "age": "53",
-          "weight": "51.0",
+          "weight": "52.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".10",
           "nat_win": "6.14",
           "nat_2": "45.4",
           "nat_3": "62.3",
@@ -1582,12 +2546,12 @@
           "name": "三村 岳人",
           "class": "A2",
           "age": "26",
-          "weight": "51.8",
+          "weight": "52.0",
           "branch": "岡山",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.09",
           "nat_2": "47.1",
           "nat_3": "67.1",
@@ -1610,12 +2574,12 @@
           "name": "河野 真也",
           "class": "A2",
           "age": "37",
-          "weight": "51.6",
+          "weight": "52.7",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "6.01",
           "nat_2": "44.3",
           "nat_3": "61.3",
@@ -1638,12 +2602,12 @@
           "name": "小林 孝弘",
           "class": "B1",
           "age": "45",
-          "weight": "52.2",
+          "weight": "52.0",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "4.81",
           "nat_2": "26.7",
           "nat_3": "44.2",
@@ -1657,7 +2621,12 @@
           "boat_2": "25.0",
           "boat_3": "42.5",
           "season_runs": [],
-          "season_groups": []
+          "season_groups": [],
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 22.8,
+          "boaters_sashi_rate": 17.4,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 0.0
         }
       ],
       "entry_changes": [],
@@ -1667,7 +2636,7 @@
         "date": "2026-07-29",
         "venue": "karatsu",
         "race_no": 5,
-        "deadline": "10:23",
+        "deadline": "10:25",
         "day_no": 1
       },
       "entries": [
@@ -1678,12 +2647,12 @@
           "name": "木谷 賢太",
           "class": "A1",
           "age": "30",
-          "weight": "54.7",
+          "weight": "53.2",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".12",
           "nat_win": "6.83",
           "nat_2": "50.4",
           "nat_3": "76.3",
@@ -1706,12 +2675,12 @@
           "name": "森作 広大",
           "class": "B1",
           "age": "38",
-          "weight": "56.4",
+          "weight": "56.3",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "3.42",
           "nat_2": "7.6",
           "nat_3": "25.8",
@@ -1734,12 +2703,12 @@
           "name": "角谷 健吾",
           "class": "A2",
           "age": "53",
-          "weight": "51.0",
+          "weight": "52.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".10",
           "nat_win": "6.14",
           "nat_2": "45.4",
           "nat_3": "62.3",
@@ -1762,12 +2731,12 @@
           "name": "三村 岳人",
           "class": "A2",
           "age": "26",
-          "weight": "51.8",
+          "weight": "52.0",
           "branch": "岡山",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.09",
           "nat_2": "47.1",
           "nat_3": "67.1",
@@ -1790,12 +2759,12 @@
           "name": "河野 真也",
           "class": "A2",
           "age": "37",
-          "weight": "51.6",
+          "weight": "52.7",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "6.01",
           "nat_2": "44.3",
           "nat_3": "61.3",
@@ -1818,12 +2787,12 @@
           "name": "小林 孝弘",
           "class": "B1",
           "age": "45",
-          "weight": "52.2",
+          "weight": "52.0",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "4.81",
           "nat_2": "26.7",
           "nat_3": "44.2",
@@ -1842,13 +2811,249 @@
       ],
       "setsukan": [],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 58.2,
+          "2": 1.0,
+          "3": 15.2,
+          "4": 22.5,
+          "5": 1.7,
+          "6": 1.4
+        },
+        "second": {
+          "1": 10.4,
+          "2": 17.4,
+          "3": 20.7,
+          "4": 17.5,
+          "5": 18.9,
+          "6": 15.1
+        },
+        "third": {
+          "1": 9.2,
+          "2": 14.5,
+          "3": 17.2,
+          "4": 15.8,
+          "5": 24.0,
+          "6": 19.3
+        },
+        "top3": {
+          "1": 77.8,
+          "2": 33.0,
+          "3": 53.2,
+          "4": 55.8,
+          "5": 44.6,
+          "6": 35.7
+        },
+        "sab": "S",
+        "confidence": 85.7,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-3-1",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-4",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-4-3",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 46.0,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 25.9,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 17.3,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 10.8,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 4,
+          "axisGap": 35.7
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A1",
+              "motor_state": 0.006,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.005,
+                1.025,
+                1.025
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B1",
+              "motor_state": -0.123,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A2",
+              "motor_state": -0.414,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                0.996,
+                1.002,
+                1.002
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "A2",
+              "motor_state": -0.218,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                0.998,
+                1.006,
+                1.006
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A2",
+              "motor_state": 0.166,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.002,
+                1.013,
+                1.013
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B1",
+              "motor_state": 0.017,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -1856,7 +3061,7 @@
     },
     {
       "race": 6,
-      "deadline": "10:52",
+      "deadline": "10:53",
       "title": "唐津",
       "type": "",
       "racers": [
@@ -1872,7 +3077,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.88",
           "nat_2": "24.7",
           "nat_3": "50.6",
@@ -1895,12 +3100,12 @@
           "name": "三好 勇人",
           "class": "A2",
           "age": "42",
-          "weight": "54.2",
+          "weight": "53.7",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.06",
           "nat_2": "42.9",
           "nat_3": "58.9",
@@ -1923,12 +3128,12 @@
           "name": "宇佐見 淳",
           "class": "A2",
           "age": "45",
-          "weight": "53.2",
+          "weight": "52.3",
           "branch": "愛知",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "5.78",
           "nat_2": "36.9",
           "nat_3": "60.0",
@@ -1951,12 +3156,12 @@
           "name": "松田 憲幸",
           "class": "B2",
           "age": "49",
-          "weight": "51.8",
+          "weight": "52.0",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".22",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "4.62",
           "nat_2": "31.1",
           "nat_3": "44.3",
@@ -1979,12 +3184,12 @@
           "name": "中辻 崇人",
           "class": "A1",
           "age": "49",
-          "weight": "51.8",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "6.57",
           "nat_2": "43.1",
           "nat_3": "56.9",
@@ -2007,12 +3212,12 @@
           "name": "金山 立樹",
           "class": "B1",
           "age": "32",
-          "weight": "52.7",
+          "weight": "52.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".23",
           "nat_win": "5.01",
           "nat_2": "29.4",
           "nat_3": "52.0",
@@ -2025,9 +3230,35 @@
           "boat_no": "58",
           "boat_2": "25.5",
           "boat_3": "40.4",
-          "season_runs": [],
-          "season_groups": [],
-          "hayami": "1R"
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".25",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".25",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ],
+          "hayami": "1R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 18.5,
+          "boaters_sashi_rate": 31.3,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 6.3
         }
       ],
       "entry_changes": [],
@@ -2037,7 +3268,7 @@
         "date": "2026-07-29",
         "venue": "karatsu",
         "race_no": 6,
-        "deadline": "10:52",
+        "deadline": "10:53",
         "day_no": 1
       },
       "entries": [
@@ -2053,7 +3284,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.88",
           "nat_2": "24.7",
           "nat_3": "50.6",
@@ -2076,12 +3307,12 @@
           "name": "三好 勇人",
           "class": "A2",
           "age": "42",
-          "weight": "54.2",
+          "weight": "53.7",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.06",
           "nat_2": "42.9",
           "nat_3": "58.9",
@@ -2104,12 +3335,12 @@
           "name": "宇佐見 淳",
           "class": "A2",
           "age": "45",
-          "weight": "53.2",
+          "weight": "52.3",
           "branch": "愛知",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "5.78",
           "nat_2": "36.9",
           "nat_3": "60.0",
@@ -2132,12 +3363,12 @@
           "name": "松田 憲幸",
           "class": "B2",
           "age": "49",
-          "weight": "51.8",
+          "weight": "52.0",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".22",
-          "local_st": "-",
+          "local_st": ".20",
           "nat_win": "4.62",
           "nat_2": "31.1",
           "nat_3": "44.3",
@@ -2160,12 +3391,12 @@
           "name": "中辻 崇人",
           "class": "A1",
           "age": "49",
-          "weight": "51.8",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "6.57",
           "nat_2": "43.1",
           "nat_3": "56.9",
@@ -2188,12 +3419,12 @@
           "name": "金山 立樹",
           "class": "B1",
           "age": "32",
-          "weight": "52.7",
+          "weight": "52.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".23",
           "nat_win": "5.01",
           "nat_2": "29.4",
           "nat_3": "52.0",
@@ -2206,20 +3437,304 @@
           "boat_no": "58",
           "boat_2": "25.5",
           "boat_3": "40.4",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".25",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".25",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 6,
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".25",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".25",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 45.9,
+          "2": 20.0,
+          "3": 1.8,
+          "4": 1.5,
+          "5": 29.0,
+          "6": 1.8
+        },
+        "second": {
+          "1": 11.4,
+          "2": 18.6,
+          "3": 22.2,
+          "4": 16.6,
+          "5": 15.4,
+          "6": 15.8
+        },
+        "third": {
+          "1": 10.6,
+          "2": 18.2,
+          "3": 18.7,
+          "4": 15.1,
+          "5": 17.5,
+          "6": 19.9
+        },
+        "top3": {
+          "1": 68.0,
+          "2": 56.7,
+          "3": 42.7,
+          "4": 33.2,
+          "5": 61.9,
+          "6": 37.6
+        },
+        "sab": "A",
+        "confidence": 67.0,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-2-1",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-3-2",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-2-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-5-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 33.4,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_5_attack",
+            "probability": 31.9,
+            "attackCourse": 5,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_2_attack",
+            "probability": 21.3,
+            "attackCourse": 2,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 13.3,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 5,
+          "axisGap": 17.0
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "B1",
+              "motor_state": 0.279,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "A2",
+              "motor_state": 0.294,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.003,
+                1.016,
+                1.016
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A2",
+              "motor_state": -0.421,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                0.996,
+                1.002,
+                1.002
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B2",
+              "motor_state": 0.157,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                0.938,
+                0.949,
+                0.985
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A1",
+              "motor_state": 0.13,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.007,
+                1.029,
+                1.029
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B1",
+              "motor_state": -0.084,
+              "exhibition_state": 0.0,
+              "season_state": -0.4,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -2227,7 +3742,7 @@
     },
     {
       "race": 7,
-      "deadline": "11:20",
+      "deadline": "11:21",
       "title": "唐津",
       "type": "",
       "racers": [
@@ -2238,12 +3753,12 @@
           "name": "梶原 正",
           "class": "B1",
           "age": "51",
-          "weight": "55.1",
+          "weight": "55.0",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.53",
           "nat_2": "28.3",
           "nat_3": "40.2",
@@ -2256,8 +3771,29 @@
           "boat_no": "1",
           "boat_2": "42.5",
           "boat_3": "55.2",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".19",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".19",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -2267,12 +3803,12 @@
           "name": "蒲原 健太",
           "class": "B1",
           "age": "32",
-          "weight": "52.3",
+          "weight": "52.1",
           "branch": "佐賀",
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "4.99",
           "nat_2": "30.5",
           "nat_3": "48.4",
@@ -2285,8 +3821,29 @@
           "boat_no": "11",
           "boat_2": "27.5",
           "boat_3": "33.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".19",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".19",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         },
         {
@@ -2296,12 +3853,12 @@
           "name": "竹井 貴史",
           "class": "A1",
           "age": "35",
-          "weight": "54.1",
+          "weight": "53.2",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "7.37",
           "nat_2": "60.2",
           "nat_3": "79.6",
@@ -2324,12 +3881,12 @@
           "name": "末永 祐輝",
           "class": "A1",
           "age": "38",
-          "weight": "54.7",
+          "weight": "53.1",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".08",
           "nat_win": "5.74",
           "nat_2": "35.7",
           "nat_3": "60.5",
@@ -2352,12 +3909,12 @@
           "name": "佐竹 友樹",
           "class": "B1",
           "age": "44",
-          "weight": "53.7",
+          "weight": "52.8",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "4.10",
           "nat_2": "18.4",
           "nat_3": "33.0",
@@ -2380,12 +3937,12 @@
           "name": "嘉手苅 徹哉",
           "class": "B2",
           "age": "27",
-          "weight": "52.4",
+          "weight": "52.2",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "3.65",
           "nat_2": "13.8",
           "nat_3": "30.0",
@@ -2398,9 +3955,35 @@
           "boat_no": "55",
           "boat_2": "41.6",
           "boat_3": "57.3",
-          "season_runs": [],
-          "season_groups": [],
-          "hayami": "3R"
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".14",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".14",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
+          "hayami": "3R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 8.4,
+          "boaters_sashi_rate": 4.5,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 0.0
         }
       ],
       "entry_changes": [],
@@ -2410,7 +3993,7 @@
         "date": "2026-07-29",
         "venue": "karatsu",
         "race_no": 7,
-        "deadline": "11:20",
+        "deadline": "11:21",
         "day_no": 1
       },
       "entries": [
@@ -2421,12 +4004,12 @@
           "name": "梶原 正",
           "class": "B1",
           "age": "51",
-          "weight": "55.1",
+          "weight": "55.0",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "4.53",
           "nat_2": "28.3",
           "nat_3": "40.2",
@@ -2439,8 +4022,29 @@
           "boat_no": "1",
           "boat_2": "42.5",
           "boat_3": "55.2",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".19",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".19",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -2450,12 +4054,12 @@
           "name": "蒲原 健太",
           "class": "B1",
           "age": "32",
-          "weight": "52.3",
+          "weight": "52.1",
           "branch": "佐賀",
           "f": "0",
           "l": "0",
           "avg_st": ".20",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "4.99",
           "nat_2": "30.5",
           "nat_3": "48.4",
@@ -2468,8 +4072,29 @@
           "boat_no": "11",
           "boat_2": "27.5",
           "boat_3": "33.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".19",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".19",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         },
         {
@@ -2479,12 +4104,12 @@
           "name": "竹井 貴史",
           "class": "A1",
           "age": "35",
-          "weight": "54.1",
+          "weight": "53.2",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "7.37",
           "nat_2": "60.2",
           "nat_3": "79.6",
@@ -2507,12 +4132,12 @@
           "name": "末永 祐輝",
           "class": "A1",
           "age": "38",
-          "weight": "54.7",
+          "weight": "53.1",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".08",
           "nat_win": "5.74",
           "nat_2": "35.7",
           "nat_3": "60.5",
@@ -2535,12 +4160,12 @@
           "name": "佐竹 友樹",
           "class": "B1",
           "age": "44",
-          "weight": "53.7",
+          "weight": "52.8",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".19",
           "nat_win": "4.10",
           "nat_2": "18.4",
           "nat_3": "33.0",
@@ -2563,12 +4188,12 @@
           "name": "嘉手苅 徹哉",
           "class": "B2",
           "age": "27",
-          "weight": "52.4",
+          "weight": "52.2",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "3.65",
           "nat_2": "13.8",
           "nat_3": "30.0",
@@ -2581,20 +4206,356 @@
           "boat_no": "55",
           "boat_2": "41.6",
           "boat_3": "57.3",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".14",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".14",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 1,
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".19",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".19",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 2,
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".19",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".19",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 6,
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".14",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".14",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 43.9,
+          "2": 2.0,
+          "3": 29.8,
+          "4": 21.4,
+          "5": 1.6,
+          "6": 1.3
+        },
+        "second": {
+          "1": 12.1,
+          "2": 21.3,
+          "3": 19.8,
+          "4": 19.0,
+          "5": 15.6,
+          "6": 12.2
+        },
+        "third": {
+          "1": 10.4,
+          "2": 18.4,
+          "3": 18.2,
+          "4": 20.7,
+          "5": 17.6,
+          "6": 14.7
+        },
+        "top3": {
+          "1": 66.4,
+          "2": 41.6,
+          "3": 67.8,
+          "4": 61.2,
+          "5": 34.8,
+          "6": 28.1
+        },
+        "sab": "A",
+        "confidence": 64.1,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-2-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-4-1",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-3",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-3-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-5",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 28.2,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 34.5,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 23.0,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 14.4,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 3,
+          "axisGap": 14.1
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "B1",
+              "motor_state": 0.132,
+              "exhibition_state": 0.0,
+              "season_state": 0.35,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B1",
+              "motor_state": -0.401,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A1",
+              "motor_state": 0.284,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.009,
+                1.033,
+                1.033
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "A1",
+              "motor_state": 0.076,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.006,
+                1.027,
+                1.027
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "B1",
+              "motor_state": -0.046,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B2",
+              "motor_state": 0.449,
+              "exhibition_state": 0.0,
+              "season_state": 0.35,
+              "position_multiplier": [
+                0.943,
+                0.957,
+                0.993
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -2602,7 +4563,7 @@
     },
     {
       "race": 8,
-      "deadline": "11:49",
+      "deadline": "11:50",
       "title": "唐津",
       "type": "",
       "racers": [
@@ -2613,12 +4574,12 @@
           "name": "田中 宏典",
           "class": "B1",
           "age": "27",
-          "weight": "52.7",
+          "weight": "52.6",
           "branch": "佐賀",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".24",
           "nat_win": "4.91",
           "nat_2": "30.4",
           "nat_3": "45.1",
@@ -2631,8 +4592,29 @@
           "boat_no": "33",
           "boat_2": "19.1",
           "boat_3": "30.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".16",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".16",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         },
         {
@@ -2642,12 +4624,12 @@
           "name": "泉 啓文",
           "class": "B1",
           "age": "51",
-          "weight": "59.3",
+          "weight": "58.5",
           "branch": "岡山",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "3.62",
           "nat_2": "17.5",
           "nat_3": "26.8",
@@ -2660,8 +4642,29 @@
           "boat_no": "7",
           "boat_2": "42.9",
           "boat_3": "63.1",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".19",
+              "finish": "4着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".19",
+                  "finish": "4着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         },
         {
@@ -2671,12 +4674,12 @@
           "name": "鈴木 章司",
           "class": "B1",
           "age": "28",
-          "weight": "53.2",
+          "weight": "52.6",
           "branch": "愛知",
           "f": "1",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "4.13",
           "nat_2": "19.1",
           "nat_3": "35.7",
@@ -2699,12 +4702,12 @@
           "name": "竹内 来",
           "class": "B1",
           "age": "22",
-          "weight": "51.5",
+          "weight": "51.0",
           "branch": "愛知",
           "f": "0",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".28",
           "nat_win": "2.39",
           "nat_2": "1.4",
           "nat_3": "14.3",
@@ -2717,8 +4720,29 @@
           "boat_no": "30",
           "boat_2": "23.2",
           "boat_3": "40.4",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "6",
+              "entry_course": "6",
+              "st": ".36",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "6",
+                  "entry_course": "6",
+                  "st": ".36",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -2728,12 +4752,12 @@
           "name": "加藤 翔馬",
           "class": "A1",
           "age": "29",
-          "weight": "56.4",
+          "weight": "54.1",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "7.19",
           "nat_2": "59.5",
           "nat_3": "75.6",
@@ -2756,12 +4780,12 @@
           "name": "占部 一真",
           "class": "B1",
           "age": "34",
-          "weight": "52.4",
+          "weight": "52.1",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "4.47",
           "nat_2": "27.0",
           "nat_3": "37.1",
@@ -2774,9 +4798,35 @@
           "boat_no": "45",
           "boat_2": "26.0",
           "boat_3": "46.9",
-          "season_runs": [],
-          "season_groups": [],
-          "hayami": "4R"
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".15",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".15",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
+          "hayami": "4R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 30.7,
+          "boaters_sashi_rate": 19.1,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 4.8
         }
       ],
       "entry_changes": [],
@@ -2786,7 +4836,7 @@
         "date": "2026-07-29",
         "venue": "karatsu",
         "race_no": 8,
-        "deadline": "11:49",
+        "deadline": "11:50",
         "day_no": 1
       },
       "entries": [
@@ -2797,12 +4847,12 @@
           "name": "田中 宏典",
           "class": "B1",
           "age": "27",
-          "weight": "52.7",
+          "weight": "52.6",
           "branch": "佐賀",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".24",
           "nat_win": "4.91",
           "nat_2": "30.4",
           "nat_3": "45.1",
@@ -2815,8 +4865,29 @@
           "boat_no": "33",
           "boat_2": "19.1",
           "boat_3": "30.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".16",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".16",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         },
         {
@@ -2826,12 +4897,12 @@
           "name": "泉 啓文",
           "class": "B1",
           "age": "51",
-          "weight": "59.3",
+          "weight": "58.5",
           "branch": "岡山",
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "3.62",
           "nat_2": "17.5",
           "nat_3": "26.8",
@@ -2844,8 +4915,29 @@
           "boat_no": "7",
           "boat_2": "42.9",
           "boat_3": "63.1",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".19",
+              "finish": "4着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".19",
+                  "finish": "4着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         },
         {
@@ -2855,12 +4947,12 @@
           "name": "鈴木 章司",
           "class": "B1",
           "age": "28",
-          "weight": "53.2",
+          "weight": "52.6",
           "branch": "愛知",
           "f": "1",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "4.13",
           "nat_2": "19.1",
           "nat_3": "35.7",
@@ -2883,12 +4975,12 @@
           "name": "竹内 来",
           "class": "B1",
           "age": "22",
-          "weight": "51.5",
+          "weight": "51.0",
           "branch": "愛知",
           "f": "0",
           "l": "0",
           "avg_st": ".19",
-          "local_st": "-",
+          "local_st": ".28",
           "nat_win": "2.39",
           "nat_2": "1.4",
           "nat_3": "14.3",
@@ -2901,8 +4993,29 @@
           "boat_no": "30",
           "boat_2": "23.2",
           "boat_3": "40.4",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "6",
+              "entry_course": "6",
+              "st": ".36",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "6",
+                  "entry_course": "6",
+                  "st": ".36",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -2912,12 +5025,12 @@
           "name": "加藤 翔馬",
           "class": "A1",
           "age": "29",
-          "weight": "56.4",
+          "weight": "54.1",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "7.19",
           "nat_2": "59.5",
           "nat_3": "75.6",
@@ -2940,12 +5053,12 @@
           "name": "占部 一真",
           "class": "B1",
           "age": "34",
-          "weight": "52.4",
+          "weight": "52.1",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".18",
           "nat_win": "4.47",
           "nat_2": "27.0",
           "nat_3": "37.1",
@@ -2958,20 +5071,382 @@
           "boat_no": "45",
           "boat_2": "26.0",
           "boat_3": "46.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".15",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".15",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 1,
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".16",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".16",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 2,
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".19",
+              "finish": "4着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".19",
+                  "finish": "4着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 4,
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "6",
+              "entry_course": "6",
+              "st": ".36",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "6",
+                  "entry_course": "6",
+                  "st": ".36",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 6,
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".15",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".15",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 46.0,
+          "2": 2.0,
+          "3": 20.1,
+          "4": 1.1,
+          "5": 28.9,
+          "6": 1.9
+        },
+        "second": {
+          "1": 12.2,
+          "2": 21.6,
+          "3": 18.2,
+          "4": 15.6,
+          "5": 16.2,
+          "6": 16.2
+        },
+        "third": {
+          "1": 11.1,
+          "2": 20.5,
+          "3": 17.2,
+          "4": 12.0,
+          "5": 19.2,
+          "6": 20.0
+        },
+        "top3": {
+          "1": 69.3,
+          "2": 44.2,
+          "3": 55.5,
+          "4": 28.7,
+          "5": 64.3,
+          "6": 38.1
+        },
+        "sab": "A",
+        "confidence": 67.0,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-2-1",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-5-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 31.9,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_5_attack",
+            "probability": 32.7,
+            "attackCourse": 5,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 21.8,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 13.6,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 5,
+          "axisGap": 17.0
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "B1",
+              "motor_state": -0.354,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B1",
+              "motor_state": 0.248,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "B1",
+              "motor_state": 0.386,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B1",
+              "motor_state": -0.525,
+              "exhibition_state": 0.0,
+              "season_state": -0.7,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A1",
+              "motor_state": -0.287,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.001,
+                1.017,
+                1.017
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "B1",
+              "motor_state": -0.159,
+              "exhibition_state": 0.0,
+              "season_state": -0.7,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -2990,12 +5465,12 @@
           "name": "宮野 仁",
           "class": "B1",
           "age": "36",
-          "weight": "56.1",
+          "weight": "53.6",
           "branch": "岡山",
           "f": "1",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "4.34",
           "nat_2": "26.2",
           "nat_3": "40.2",
@@ -3018,12 +5493,12 @@
           "name": "三村 岳人",
           "class": "A2",
           "age": "26",
-          "weight": "51.8",
+          "weight": "52.0",
           "branch": "岡山",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "6.09",
           "nat_2": "47.1",
           "nat_3": "67.1",
@@ -3036,8 +5511,29 @@
           "boat_no": "36",
           "boat_2": "23.7",
           "boat_3": "40.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".11",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".11",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ],
           "hayami": "5R"
         },
         {
@@ -3047,12 +5543,12 @@
           "name": "小坂 宗司",
           "class": "A2",
           "age": "45",
-          "weight": "51.7",
+          "weight": "52.0",
           "branch": "大阪",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.11",
           "nat_2": "39.5",
           "nat_3": "66.4",
@@ -3065,8 +5561,29 @@
           "boat_no": "26",
           "boat_2": "25.5",
           "boat_3": "45.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".09",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".09",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         },
         {
@@ -3076,12 +5593,12 @@
           "name": "高橋 英之",
           "class": "B1",
           "age": "52",
-          "weight": "53.0",
+          "weight": "52.4",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.29",
           "nat_2": "35.3",
           "nat_3": "52.0",
@@ -3104,12 +5621,12 @@
           "name": "伏田 裕隆",
           "class": "B1",
           "age": "43",
-          "weight": "52.1",
+          "weight": "52.3",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".11",
           "nat_win": "5.27",
           "nat_2": "37.2",
           "nat_3": "47.9",
@@ -3122,8 +5639,29 @@
           "boat_no": "24",
           "boat_2": "35.6",
           "boat_3": "54.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "6",
+              "entry_course": "6",
+              "st": ".17",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "6",
+                  "entry_course": "6",
+                  "st": ".17",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         },
         {
@@ -3133,12 +5671,12 @@
           "name": "石田 貴洋",
           "class": "A1",
           "age": "30",
-          "weight": "52.2",
+          "weight": "52.0",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "6.78",
           "nat_2": "50.6",
           "nat_3": "73.0",
@@ -3151,9 +5689,35 @@
           "boat_no": "15",
           "boat_2": "35.2",
           "boat_3": "56.0",
-          "season_runs": [],
-          "season_groups": [],
-          "hayami": "2R"
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".19",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".19",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
+          "hayami": "2R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 59.0,
+          "boaters_sashi_rate": 50.0,
+          "boaters_makuri_rate": 12.5,
+          "boaters_makuri_sashi_rate": 16.7
         }
       ],
       "entry_changes": [],
@@ -3174,12 +5738,12 @@
           "name": "宮野 仁",
           "class": "B1",
           "age": "36",
-          "weight": "56.1",
+          "weight": "53.6",
           "branch": "岡山",
           "f": "1",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "4.34",
           "nat_2": "26.2",
           "nat_3": "40.2",
@@ -3202,12 +5766,12 @@
           "name": "三村 岳人",
           "class": "A2",
           "age": "26",
-          "weight": "51.8",
+          "weight": "52.0",
           "branch": "岡山",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "6.09",
           "nat_2": "47.1",
           "nat_3": "67.1",
@@ -3220,8 +5784,29 @@
           "boat_no": "36",
           "boat_2": "23.7",
           "boat_3": "40.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".11",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".11",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ],
           "hayami": "5R"
         },
         {
@@ -3231,12 +5816,12 @@
           "name": "小坂 宗司",
           "class": "A2",
           "age": "45",
-          "weight": "51.7",
+          "weight": "52.0",
           "branch": "大阪",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.11",
           "nat_2": "39.5",
           "nat_3": "66.4",
@@ -3249,8 +5834,29 @@
           "boat_no": "26",
           "boat_2": "25.5",
           "boat_3": "45.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".09",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".09",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         },
         {
@@ -3260,12 +5866,12 @@
           "name": "高橋 英之",
           "class": "B1",
           "age": "52",
-          "weight": "53.0",
+          "weight": "52.4",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.29",
           "nat_2": "35.3",
           "nat_3": "52.0",
@@ -3288,12 +5894,12 @@
           "name": "伏田 裕隆",
           "class": "B1",
           "age": "43",
-          "weight": "52.1",
+          "weight": "52.3",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".11",
           "nat_win": "5.27",
           "nat_2": "37.2",
           "nat_3": "47.9",
@@ -3306,8 +5912,29 @@
           "boat_no": "24",
           "boat_2": "35.6",
           "boat_3": "54.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "6",
+              "entry_course": "6",
+              "st": ".17",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "6",
+                  "entry_course": "6",
+                  "st": ".17",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         },
         {
@@ -3317,12 +5944,12 @@
           "name": "石田 貴洋",
           "class": "A1",
           "age": "30",
-          "weight": "52.2",
+          "weight": "52.0",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "6.78",
           "nat_2": "50.6",
           "nat_3": "73.0",
@@ -3335,20 +5962,382 @@
           "boat_no": "15",
           "boat_2": "35.2",
           "boat_3": "56.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".19",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".19",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 2,
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".11",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".11",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 3,
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".09",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".09",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 5,
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "6",
+              "entry_course": "6",
+              "st": ".17",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "6",
+                  "entry_course": "6",
+                  "st": ".17",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 6,
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".19",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".19",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 50.0,
+          "2": 1.9,
+          "3": 26.0,
+          "4": 18.4,
+          "5": 1.5,
+          "6": 2.1
+        },
+        "second": {
+          "1": 10.0,
+          "2": 22.5,
+          "3": 17.3,
+          "4": 15.8,
+          "5": 15.7,
+          "6": 18.6
+        },
+        "third": {
+          "1": 9.0,
+          "2": 19.5,
+          "3": 16.5,
+          "4": 16.7,
+          "5": 16.3,
+          "6": 22.0
+        },
+        "top3": {
+          "1": 69.0,
+          "2": 43.9,
+          "3": 59.9,
+          "4": 51.0,
+          "5": 33.5,
+          "6": 42.7
+        },
+        "sab": "A",
+        "confidence": 73.9,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-2-6",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-6",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-3-4",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 38.6,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 29.5,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 19.7,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 12.3,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 3,
+          "axisGap": 23.9
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "B1",
+              "motor_state": 0.205,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "A2",
+              "motor_state": -0.218,
+              "exhibition_state": 0.0,
+              "season_state": -0.4,
+              "position_multiplier": [
+                0.998,
+                1.006,
+                1.006
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A2",
+              "motor_state": 0.14,
+              "exhibition_state": 0.0,
+              "season_state": 1.0,
+              "position_multiplier": [
+                1.001,
+                1.013,
+                1.013
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B1",
+              "motor_state": 0.3,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "B1",
+              "motor_state": -0.056,
+              "exhibition_state": 0.0,
+              "season_state": 0.35,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "A1",
+              "motor_state": 0.303,
+              "exhibition_state": 0.0,
+              "season_state": 1.0,
+              "position_multiplier": [
+                1.009,
+                1.033,
+                1.033
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -3367,12 +6356,12 @@
           "name": "櫻井 優",
           "class": "A2",
           "age": "28",
-          "weight": "52.4",
+          "weight": "52.6",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "5.59",
           "nat_2": "37.1",
           "nat_3": "56.0",
@@ -3385,8 +6374,29 @@
           "boat_no": "48",
           "boat_2": "28.9",
           "boat_3": "47.4",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".12",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".12",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         },
         {
@@ -3396,12 +6406,12 @@
           "name": "山田 真聖",
           "class": "B1",
           "age": "27",
-          "weight": "57.5",
+          "weight": "56.5",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.43",
           "nat_2": "35.4",
           "nat_3": "56.1",
@@ -3414,8 +6424,29 @@
           "boat_no": "29",
           "boat_2": "37.5",
           "boat_3": "51.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".25",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".25",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -3425,12 +6456,12 @@
           "name": "濱本 優一",
           "class": "A1",
           "age": "42",
-          "weight": "49.9",
+          "weight": "50.5",
           "branch": "大阪",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.63",
           "nat_2": "41.7",
           "nat_3": "59.2",
@@ -3443,8 +6474,29 @@
           "boat_no": "22",
           "boat_2": "26.5",
           "boat_3": "42.2",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".19",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".19",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         },
         {
@@ -3454,12 +6506,12 @@
           "name": "小野寺 智洋",
           "class": "A2",
           "age": "49",
-          "weight": "51.7",
+          "weight": "51.5",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".13",
           "nat_win": "5.72",
           "nat_2": "35.0",
           "nat_3": "58.1",
@@ -3482,12 +6534,12 @@
           "name": "田中 宏樹",
           "class": "A2",
           "age": "38",
-          "weight": "53.4",
+          "weight": "52.3",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "5.35",
           "nat_2": "32.4",
           "nat_3": "51.9",
@@ -3500,8 +6552,29 @@
           "boat_no": "40",
           "boat_2": "28.6",
           "boat_3": "52.8",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".20",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".20",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         },
         {
@@ -3511,12 +6584,12 @@
           "name": "大久保信一郎",
           "class": "A2",
           "age": "46",
-          "weight": "51.7",
+          "weight": "52.0",
           "branch": "佐賀",
           "f": "1",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.52",
           "nat_2": "36.5",
           "nat_3": "54.2",
@@ -3530,7 +6603,12 @@
           "boat_2": "31.5",
           "boat_3": "52.2",
           "season_runs": [],
-          "season_groups": []
+          "season_groups": [],
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 35.7,
+          "boaters_sashi_rate": 28.1,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 3.1
         }
       ],
       "entry_changes": [],
@@ -3551,12 +6629,12 @@
           "name": "櫻井 優",
           "class": "A2",
           "age": "28",
-          "weight": "52.4",
+          "weight": "52.6",
           "branch": "埼玉",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "5.59",
           "nat_2": "37.1",
           "nat_3": "56.0",
@@ -3569,8 +6647,29 @@
           "boat_no": "48",
           "boat_2": "28.9",
           "boat_3": "47.4",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".12",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".12",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         },
         {
@@ -3580,12 +6679,12 @@
           "name": "山田 真聖",
           "class": "B1",
           "age": "27",
-          "weight": "57.5",
+          "weight": "56.5",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.43",
           "nat_2": "35.4",
           "nat_3": "56.1",
@@ -3598,8 +6697,29 @@
           "boat_no": "29",
           "boat_2": "37.5",
           "boat_3": "51.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".25",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".25",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -3609,12 +6729,12 @@
           "name": "濱本 優一",
           "class": "A1",
           "age": "42",
-          "weight": "49.9",
+          "weight": "50.5",
           "branch": "大阪",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.63",
           "nat_2": "41.7",
           "nat_3": "59.2",
@@ -3627,8 +6747,29 @@
           "boat_no": "22",
           "boat_2": "26.5",
           "boat_3": "42.2",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".19",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".19",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "3R"
         },
         {
@@ -3638,12 +6779,12 @@
           "name": "小野寺 智洋",
           "class": "A2",
           "age": "49",
-          "weight": "51.7",
+          "weight": "51.5",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".13",
           "nat_win": "5.72",
           "nat_2": "35.0",
           "nat_3": "58.1",
@@ -3666,12 +6807,12 @@
           "name": "田中 宏樹",
           "class": "A2",
           "age": "38",
-          "weight": "53.4",
+          "weight": "52.3",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "5.35",
           "nat_2": "32.4",
           "nat_3": "51.9",
@@ -3684,8 +6825,29 @@
           "boat_no": "40",
           "boat_2": "28.6",
           "boat_3": "52.8",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".20",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".20",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ],
           "hayami": "2R"
         },
         {
@@ -3695,12 +6857,12 @@
           "name": "大久保信一郎",
           "class": "A2",
           "age": "46",
-          "weight": "51.7",
+          "weight": "52.0",
           "branch": "佐賀",
           "f": "1",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "5.52",
           "nat_2": "36.5",
           "nat_3": "54.2",
@@ -3717,15 +6879,356 @@
           "season_groups": []
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 1,
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".12",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".12",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 2,
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".25",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".25",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 3,
+          "season_runs": [
+            {
+              "race": "3R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".19",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "3R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".19",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 5,
+          "season_runs": [
+            {
+              "race": "2R",
+              "course": "2",
+              "entry_course": "2",
+              "st": ".20",
+              "finish": "5着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "2R",
+                  "course": "2",
+                  "entry_course": "2",
+                  "st": ".20",
+                  "finish": "5着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 53.9,
+          "2": 1.4,
+          "3": 16.7,
+          "4": 24.6,
+          "5": 1.6,
+          "6": 1.7
+        },
+        "second": {
+          "1": 9.2,
+          "2": 19.0,
+          "3": 21.1,
+          "4": 16.9,
+          "5": 17.2,
+          "6": 16.6
+        },
+        "third": {
+          "1": 8.0,
+          "2": 16.1,
+          "3": 15.9,
+          "4": 17.2,
+          "5": 20.5,
+          "6": 22.3
+        },
+        "top3": {
+          "1": 71.2,
+          "2": 36.4,
+          "3": 53.8,
+          "4": 58.8,
+          "5": 39.3,
+          "6": 40.6
+        },
+        "sab": "S",
+        "confidence": 79.3,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-3-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-3-1",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-4",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-4-5",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 44.7,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 26.6,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 17.7,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 11.1,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 4,
+          "axisGap": 29.3
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A2",
+              "motor_state": 0.004,
+              "exhibition_state": 0.0,
+              "season_state": 1.0,
+              "position_multiplier": [
+                1.0,
+                1.01,
+                1.01
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B1",
+              "motor_state": -0.091,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A1",
+              "motor_state": -0.389,
+              "exhibition_state": 0.0,
+              "season_state": -0.7,
+              "position_multiplier": [
+                1.0,
+                1.014,
+                1.014
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "A2",
+              "motor_state": 0.481,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.005,
+                1.02,
+                1.02
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A2",
+              "motor_state": 0.031,
+              "exhibition_state": 0.0,
+              "season_state": -0.4,
+              "position_multiplier": [
+                1.0,
+                1.011,
+                1.011
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "A2",
+              "motor_state": 0.405,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.004,
+                1.018,
+                1.018
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -3744,12 +7247,12 @@
           "name": "末永 祐輝",
           "class": "A1",
           "age": "38",
-          "weight": "54.7",
+          "weight": "53.1",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.74",
           "nat_2": "35.7",
           "nat_3": "60.5",
@@ -3762,8 +7265,29 @@
           "boat_no": "13",
           "boat_2": "34.0",
           "boat_3": "48.5",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "7R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".18",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "7R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".18",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "7R"
         },
         {
@@ -3773,12 +7297,12 @@
           "name": "木下 大將",
           "class": "A2",
           "age": "41",
-          "weight": "52.8",
+          "weight": "52.5",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "6.17",
           "nat_2": "45.6",
           "nat_3": "62.3",
@@ -3791,8 +7315,29 @@
           "boat_no": "5",
           "boat_2": "32.0",
           "boat_3": "48.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".11",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".11",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         },
         {
@@ -3802,12 +7347,12 @@
           "name": "井手 良太",
           "class": "A2",
           "age": "38",
-          "weight": "51.4",
+          "weight": "51.5",
           "branch": "大阪",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".12",
           "nat_win": "6.03",
           "nat_2": "40.5",
           "nat_3": "62.0",
@@ -3830,12 +7375,12 @@
           "name": "篠田 優也",
           "class": "A1",
           "age": "40",
-          "weight": "54.2",
+          "weight": "53.0",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.49",
           "nat_2": "46.1",
           "nat_3": "69.6",
@@ -3863,7 +7408,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".21",
           "nat_win": "4.88",
           "nat_2": "24.7",
           "nat_3": "50.6",
@@ -3876,8 +7421,29 @@
           "boat_no": "60",
           "boat_2": "31.2",
           "boat_3": "45.2",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "6R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".15",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "6R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".15",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "6R"
         },
         {
@@ -3887,12 +7453,12 @@
           "name": "角谷 健吾",
           "class": "A2",
           "age": "53",
-          "weight": "51.0",
+          "weight": "52.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".13",
           "nat_win": "6.14",
           "nat_2": "45.4",
           "nat_3": "62.3",
@@ -3905,9 +7471,35 @@
           "boat_no": "46",
           "boat_2": "18.0",
           "boat_3": "30.0",
-          "season_runs": [],
-          "season_groups": [],
-          "hayami": "5R"
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".02",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".02",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
+          "hayami": "5R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 25.6,
+          "boaters_sashi_rate": 18.4,
+          "boaters_makuri_rate": 0.0,
+          "boaters_makuri_sashi_rate": 5.3
         }
       ],
       "entry_changes": [],
@@ -3928,12 +7520,12 @@
           "name": "末永 祐輝",
           "class": "A1",
           "age": "38",
-          "weight": "54.7",
+          "weight": "53.1",
           "branch": "山口",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "5.74",
           "nat_2": "35.7",
           "nat_3": "60.5",
@@ -3946,8 +7538,29 @@
           "boat_no": "13",
           "boat_2": "34.0",
           "boat_3": "48.5",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "7R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".18",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "7R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".18",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ],
           "hayami": "7R"
         },
         {
@@ -3957,12 +7570,12 @@
           "name": "木下 大將",
           "class": "A2",
           "age": "41",
-          "weight": "52.8",
+          "weight": "52.5",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".16",
           "nat_win": "6.17",
           "nat_2": "45.6",
           "nat_3": "62.3",
@@ -3975,8 +7588,29 @@
           "boat_no": "5",
           "boat_2": "32.0",
           "boat_3": "48.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".11",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".11",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         },
         {
@@ -3986,12 +7620,12 @@
           "name": "井手 良太",
           "class": "A2",
           "age": "38",
-          "weight": "51.4",
+          "weight": "51.5",
           "branch": "大阪",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".12",
           "nat_win": "6.03",
           "nat_2": "40.5",
           "nat_3": "62.0",
@@ -4014,12 +7648,12 @@
           "name": "篠田 優也",
           "class": "A1",
           "age": "40",
-          "weight": "54.2",
+          "weight": "53.0",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".17",
-          "local_st": "-",
+          "local_st": ".14",
           "nat_win": "6.49",
           "nat_2": "46.1",
           "nat_3": "69.6",
@@ -4047,7 +7681,7 @@
           "f": "0",
           "l": "0",
           "avg_st": ".18",
-          "local_st": "-",
+          "local_st": ".21",
           "nat_win": "4.88",
           "nat_2": "24.7",
           "nat_3": "50.6",
@@ -4060,8 +7694,29 @@
           "boat_no": "60",
           "boat_2": "31.2",
           "boat_3": "45.2",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "6R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".15",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "6R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".15",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "6R"
         },
         {
@@ -4071,12 +7726,12 @@
           "name": "角谷 健吾",
           "class": "A2",
           "age": "53",
-          "weight": "51.0",
+          "weight": "52.0",
           "branch": "東京",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".13",
           "nat_win": "6.14",
           "nat_2": "45.4",
           "nat_3": "62.3",
@@ -4089,20 +7744,382 @@
           "boat_no": "46",
           "boat_2": "18.0",
           "boat_3": "30.0",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".02",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".02",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "5R"
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 1,
+          "season_runs": [
+            {
+              "race": "7R",
+              "course": "4",
+              "entry_course": "4",
+              "st": ".18",
+              "finish": "6着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "7R",
+                  "course": "4",
+                  "entry_course": "4",
+                  "st": ".18",
+                  "finish": "6着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 2,
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".11",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".11",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 5,
+          "season_runs": [
+            {
+              "race": "6R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".15",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "6R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".15",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 6,
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".02",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".02",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 58.0,
+          "2": 1.5,
+          "3": 15.3,
+          "4": 22.5,
+          "5": 1.3,
+          "6": 1.5
+        },
+        "second": {
+          "1": 9.8,
+          "2": 21.8,
+          "3": 19.9,
+          "4": 17.5,
+          "5": 15.0,
+          "6": 16.0
+        },
+        "third": {
+          "1": 8.5,
+          "2": 19.1,
+          "3": 16.8,
+          "4": 16.5,
+          "5": 20.2,
+          "6": 18.8
+        },
+        "top3": {
+          "1": 76.3,
+          "2": 42.4,
+          "3": 52.0,
+          "4": 56.5,
+          "5": 36.5,
+          "6": 36.3
+        },
+        "sab": "S",
+        "confidence": 85.6,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-4",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-2-5",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 46.0,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 25.9,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 17.3,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 10.8,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 4,
+          "axisGap": 35.6
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A1",
+              "motor_state": 0.076,
+              "exhibition_state": 0.0,
+              "season_state": -0.7,
+              "position_multiplier": [
+                1.006,
+                1.027,
+                1.027
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "A2",
+              "motor_state": -0.021,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                1.0,
+                1.01,
+                1.01
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A2",
+              "motor_state": 0.373,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.004,
+                1.017,
+                1.017
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "A1",
+              "motor_state": 0.158,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.007,
+                1.029,
+                1.029
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "B1",
+              "motor_state": 0.279,
+              "exhibition_state": 0.0,
+              "season_state": 1.0,
+              "position_multiplier": [
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "A2",
+              "motor_state": -0.414,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                0.996,
+                1.002,
+                1.002
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -4121,12 +8138,12 @@
           "name": "加藤 翔馬",
           "class": "A1",
           "age": "29",
-          "weight": "56.4",
+          "weight": "54.1",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "7.19",
           "nat_2": "59.5",
           "nat_3": "75.6",
@@ -4139,8 +8156,29 @@
           "boat_no": "27",
           "boat_2": "22.8",
           "boat_3": "37.6",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "8R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".06",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "8R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".06",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "8R"
         },
         {
@@ -4150,12 +8188,12 @@
           "name": "竹井 貴史",
           "class": "A1",
           "age": "35",
-          "weight": "54.1",
+          "weight": "53.2",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "7.37",
           "nat_2": "60.2",
           "nat_3": "79.6",
@@ -4168,8 +8206,29 @@
           "boat_no": "23",
           "boat_2": "43.0",
           "boat_3": "61.3",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "7R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".21",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "7R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".21",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "7R"
         },
         {
@@ -4179,12 +8238,12 @@
           "name": "中辻 崇人",
           "class": "A1",
           "age": "49",
-          "weight": "51.8",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".12",
           "nat_win": "6.57",
           "nat_2": "43.1",
           "nat_3": "56.9",
@@ -4197,8 +8256,29 @@
           "boat_no": "31",
           "boat_2": "37.8",
           "boat_3": "56.1",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "6R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".37",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "6R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".37",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "6R"
         },
         {
@@ -4208,12 +8288,12 @@
           "name": "小坂 尚哉",
           "class": "A1",
           "age": "39",
-          "weight": "52.8",
+          "weight": "52.1",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".10",
           "nat_win": "7.23",
           "nat_2": "54.7",
           "nat_3": "77.4",
@@ -4226,8 +8306,29 @@
           "boat_no": "52",
           "boat_2": "34.7",
           "boat_3": "46.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".19",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".19",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -4237,12 +8338,12 @@
           "name": "木谷 賢太",
           "class": "A1",
           "age": "30",
-          "weight": "54.7",
+          "weight": "53.2",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "6.83",
           "nat_2": "50.4",
           "nat_3": "76.3",
@@ -4255,8 +8356,29 @@
           "boat_no": "53",
           "boat_2": "34.8",
           "boat_3": "48.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".04",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".04",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "5R"
         },
         {
@@ -4266,12 +8388,12 @@
           "name": "川上 剛",
           "class": "A1",
           "age": "45",
-          "weight": "54.2",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "5.97",
           "nat_2": "36.1",
           "nat_3": "58.0",
@@ -4284,9 +8406,35 @@
           "boat_no": "41",
           "boat_2": "37.5",
           "boat_3": "58.3",
-          "season_runs": [],
-          "season_groups": [],
-          "hayami": "4R"
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".15",
+              "finish": "4着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".15",
+                  "finish": "4着"
+                }
+              ]
+            }
+          ],
+          "hayami": "4R",
+          "boaters_kimarite_starts": 2,
+          "boaters_nigashi_rate": 12.8,
+          "boaters_sashi_rate": 52.8,
+          "boaters_makuri_rate": 13.9,
+          "boaters_makuri_sashi_rate": 16.7
         }
       ],
       "entry_changes": [],
@@ -4307,12 +8455,12 @@
           "name": "加藤 翔馬",
           "class": "A1",
           "age": "29",
-          "weight": "56.4",
+          "weight": "54.1",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".15",
           "nat_win": "7.19",
           "nat_2": "59.5",
           "nat_3": "75.6",
@@ -4325,8 +8473,29 @@
           "boat_no": "27",
           "boat_2": "22.8",
           "boat_3": "37.6",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "8R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".06",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "8R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".06",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "8R"
         },
         {
@@ -4336,12 +8505,12 @@
           "name": "竹井 貴史",
           "class": "A1",
           "age": "35",
-          "weight": "54.1",
+          "weight": "53.2",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "7.37",
           "nat_2": "60.2",
           "nat_3": "79.6",
@@ -4354,8 +8523,29 @@
           "boat_no": "23",
           "boat_2": "43.0",
           "boat_3": "61.3",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "7R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".21",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "7R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".21",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ],
           "hayami": "7R"
         },
         {
@@ -4365,12 +8555,12 @@
           "name": "中辻 崇人",
           "class": "A1",
           "age": "49",
-          "weight": "51.8",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".12",
           "nat_win": "6.57",
           "nat_2": "43.1",
           "nat_3": "56.9",
@@ -4383,8 +8573,29 @@
           "boat_no": "31",
           "boat_2": "37.8",
           "boat_3": "56.1",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "6R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".37",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "6R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".37",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ],
           "hayami": "6R"
         },
         {
@@ -4394,12 +8605,12 @@
           "name": "小坂 尚哉",
           "class": "A1",
           "age": "39",
-          "weight": "52.8",
+          "weight": "52.1",
           "branch": "兵庫",
           "f": "0",
           "l": "0",
           "avg_st": ".14",
-          "local_st": "-",
+          "local_st": ".10",
           "nat_win": "7.23",
           "nat_2": "54.7",
           "nat_3": "77.4",
@@ -4412,8 +8623,29 @@
           "boat_no": "52",
           "boat_2": "34.7",
           "boat_3": "46.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".19",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".19",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "1R"
         },
         {
@@ -4423,12 +8655,12 @@
           "name": "木谷 賢太",
           "class": "A1",
           "age": "30",
-          "weight": "54.7",
+          "weight": "53.2",
           "branch": "香川",
           "f": "0",
           "l": "0",
           "avg_st": ".15",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "6.83",
           "nat_2": "50.4",
           "nat_3": "76.3",
@@ -4441,8 +8673,29 @@
           "boat_no": "53",
           "boat_2": "34.8",
           "boat_3": "48.9",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".04",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".04",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ],
           "hayami": "5R"
         },
         {
@@ -4452,12 +8705,12 @@
           "name": "川上 剛",
           "class": "A1",
           "age": "45",
-          "weight": "54.2",
+          "weight": "53.0",
           "branch": "福岡",
           "f": "1",
           "l": "0",
           "avg_st": ".16",
-          "local_st": "-",
+          "local_st": ".17",
           "nat_win": "5.97",
           "nat_2": "36.1",
           "nat_3": "58.0",
@@ -4470,20 +8723,434 @@
           "boat_no": "41",
           "boat_2": "37.5",
           "boat_3": "58.3",
-          "season_runs": [],
-          "season_groups": [],
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".15",
+              "finish": "4着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".15",
+                  "finish": "4着"
+                }
+              ]
+            }
+          ],
           "hayami": "4R"
         }
       ],
-      "setsukan": [],
+      "setsukan": [
+        {
+          "lane": 1,
+          "season_runs": [
+            {
+              "race": "8R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".06",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "8R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".06",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 2,
+          "season_runs": [
+            {
+              "race": "7R",
+              "course": "3",
+              "entry_course": "3",
+              "st": ".21",
+              "finish": "2着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "7R",
+                  "course": "3",
+                  "entry_course": "3",
+                  "st": ".21",
+                  "finish": "2着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 3,
+          "season_runs": [
+            {
+              "race": "6R",
+              "course": "5",
+              "entry_course": "5",
+              "st": ".37",
+              "finish": "3着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "6R",
+                  "course": "5",
+                  "entry_course": "5",
+                  "st": ".37",
+                  "finish": "3着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 4,
+          "season_runs": [
+            {
+              "race": "1R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".19",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "1R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".19",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 5,
+          "season_runs": [
+            {
+              "race": "5R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".04",
+              "finish": "1着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "5R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".04",
+                  "finish": "1着"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "lane": 6,
+          "season_runs": [
+            {
+              "race": "4R",
+              "course": "1",
+              "entry_course": "1",
+              "st": ".15",
+              "finish": "4着"
+            }
+          ],
+          "season_groups": [
+            {
+              "day": "初日",
+              "runs": [
+                {
+                  "race": "4R",
+                  "course": "1",
+                  "entry_course": "1",
+                  "st": ".15",
+                  "finish": "4着"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_0",
+        "engineVersion": "1.0",
+        "win": {
+          "1": 57.9,
+          "2": 1.6,
+          "3": 15.2,
+          "4": 22.3,
+          "5": 1.5,
+          "6": 1.4
+        },
+        "second": {
+          "1": 8.8,
+          "2": 22.7,
+          "3": 19.5,
+          "4": 16.4,
+          "5": 17.0,
+          "6": 15.6
+        },
+        "third": {
+          "1": 7.5,
+          "2": 20.5,
+          "3": 16.3,
+          "4": 14.4,
+          "5": 21.5,
+          "6": 19.8
+        },
+        "top3": {
+          "1": 74.3,
+          "2": 44.9,
+          "3": 50.9,
+          "4": 53.1,
+          "5": 40.0,
+          "6": 36.9
+        },
+        "sab": "S",
+        "confidence": 85.6,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "early",
+        "weights": {
+          "early": {
+            "motorBoat": 0.3,
+            "exhibition": 0.25,
+            "playerCourse": 0.25,
+            "waterScenario": 0.15,
+            "season": 0.05
+          },
+          "middle": {
+            "motorBoat": 0.22,
+            "exhibition": 0.2,
+            "playerCourse": 0.22,
+            "waterScenario": 0.15,
+            "season": 0.21
+          },
+          "late": {
+            "motorBoat": 0.15,
+            "exhibition": 0.15,
+            "playerCourse": 0.2,
+            "waterScenario": 0.15,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-2-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-6",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-2",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "4-2-5",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "3-1-2",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-2-3",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-6",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 46.0,
+            "attackCourse": 1,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_4_attack",
+            "probability": 25.9,
+            "attackCourse": 4,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "course_3_attack",
+            "probability": 17.3,
+            "attackCourse": 3,
+            "notes": [
+              "hierarchical outer linkage v0.3"
+            ]
+          },
+          {
+            "name": "mixed_residual",
+            "probability": 10.8,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 4,
+          "axisGap": 35.6
+        },
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A1",
+              "motor_state": -0.287,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                1.001,
+                1.017,
+                1.017
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "A1",
+              "motor_state": 0.284,
+              "exhibition_state": 0.0,
+              "season_state": 0.65,
+              "position_multiplier": [
+                1.009,
+                1.033,
+                1.033
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A1",
+              "motor_state": 0.13,
+              "exhibition_state": 0.0,
+              "season_state": 0.35,
+              "position_multiplier": [
+                1.007,
+                1.029,
+                1.029
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "A1",
+              "motor_state": -0.24,
+              "exhibition_state": 0.0,
+              "season_state": 1.0,
+              "position_multiplier": [
+                1.002,
+                1.018,
+                1.018
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A1",
+              "motor_state": 0.006,
+              "exhibition_state": 0.0,
+              "season_state": 1.0,
+              "position_multiplier": [
+                1.005,
+                1.025,
+                1.025
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "A1",
+              "motor_state": 0.316,
+              "exhibition_state": 0.0,
+              "season_state": 0.0,
+              "position_multiplier": [
+                1.009,
+                1.034,
+                1.034
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [
+            "Course-1 multiplier: 1.000"
+          ]
+        }
       },
       "live": {},
       "odds": {},
@@ -4526,5 +9193,40 @@
   "eventDay": 1,
   "eventScheduleLabels": {},
   "predictionStatus": "unavailable",
-  "predictionReason": "prediction_payload_unavailable"
+  "predictionReason": "prediction_payload_unavailable",
+  "sourceStatus": {
+    "kimarite": {
+      "status": "partial",
+      "reflected": 12,
+      "expected": 72,
+      "source_races": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "warnings": [
+        "race_01:kimarite_reflected_1_of_6",
+        "race_02:kimarite_reflected_1_of_6",
+        "race_03:kimarite_reflected_1_of_6",
+        "race_04:kimarite_reflected_1_of_6",
+        "race_05:kimarite_reflected_1_of_6",
+        "race_06:kimarite_reflected_1_of_6",
+        "race_07:kimarite_reflected_1_of_6",
+        "race_08:kimarite_reflected_1_of_6",
+        "race_09:kimarite_reflected_1_of_6",
+        "race_10:kimarite_reflected_1_of_6",
+        "race_11:kimarite_reflected_1_of_6",
+        "race_12:kimarite_reflected_1_of_6"
+      ]
+    }
+  }
 }
