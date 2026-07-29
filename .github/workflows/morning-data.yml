@@ -142,6 +142,11 @@ jobs:
           python automation/apply_toda_v5.py --date "$TARGET_DATE"
           python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
           python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
+
+          python automation/build_site_data.py --date "$TARGET_DATE" \
+            | tee build-after-engine.log
+
+          
           python automation/validate_morning_regression.py \
             --before "$RUNNER_TEMP/morning-data-before" \
             --after data
@@ -175,6 +180,10 @@ jobs:
             python automation/apply_toda_v5.py --date "$TARGET_DATE"
             python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
             python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
+
+            python automation/build_site_data.py --date "$TARGET_DATE" \
+              | tee "build-after-engine-${attempt}.log"
+            
             python automation/validate_morning_regression.py \
               --before "$RUNNER_TEMP/morning-data-before-publish" \
               --after data
