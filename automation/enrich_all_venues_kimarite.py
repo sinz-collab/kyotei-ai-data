@@ -74,6 +74,28 @@ def starts_count(block: str) -> int | None:
             return int(matches[-1].group(1))
     return None
 
+def positional_rates(block: str) -> list[float | None]:
+    tokens = re.findall(
+        r"(?<!\S)-(?!\S)|[0-9]+(?:\.[0-9]+)?\s*%",
+        block,
+    )
+
+    values: list[float | None] = []
+
+    for token in tokens[:4]:
+        token = token.strip()
+
+        if token == "-":
+            values.append(None)
+        else:
+            values.append(
+                float(token.replace("%", "").strip())
+            )
+
+    while len(values) < 4:
+        values.append(None)
+
+    return values
 
 def racer_block(text: str, name: str, next_name: str | None) -> str:
     compact_name = normalize_name(name)
