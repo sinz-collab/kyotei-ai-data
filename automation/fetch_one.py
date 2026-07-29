@@ -15,6 +15,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from tide_type_parser import add_tide_type
+
 
 HERE = Path(__file__).resolve().parent
 CONFIG_PATH = HERE / "venues.json"
@@ -106,6 +108,9 @@ def fetch_tide(venue: dict, date: str, output_dir: Path) -> dict:
             ),
             "raceNotes": {},
         }
+        
+        payload = add_tide_type(payload, html, date)
+        
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "tide_today.json").write_text(
             json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
