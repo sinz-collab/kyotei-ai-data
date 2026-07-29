@@ -148,18 +148,18 @@ def parse_race_kimarite(
         rates = positional_rates(block)
 
         if lane == 1:
-           values = {
-                "boaters_escape_rate": rates[0],
-                "boaters_sashare_rate": rates[1],
-                "boaters_makurare_rate": rates[2],
-                "boaters_makurare_zashi_rate": rates[3],
+            values = {
+                 "boaters_escape_rate": rates[0],
+                 "boaters_sashare_rate": rates[1],
+                 "boaters_makurare_rate": rates[2],
+                 "boaters_makurare_zashi_rate": rates[3],
             }
         else:
-            values = {
-                "boaters_nigashi_rate": rates[0],
-                "boaters_sashi_rate": rates[1],
-                "boaters_makuri_rate": rates[2],
-                "boaters_makuri_sashi_rate": rates[3],
+             values = {
+                 "boaters_nigashi_rate": rates[0],
+                 "boaters_sashi_rate": rates[1],
+                 "boaters_makuri_rate": rates[2],
+                 "boaters_makuri_sashi_rate": rates[3],
             }
         
         found = False
