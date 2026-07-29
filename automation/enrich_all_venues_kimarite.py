@@ -10,7 +10,32 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORK_ROOT = REPO_ROOT / "work" / "races"
 VENUES_ROOT = REPO_ROOT / "data" / "venues"
-
+VENUE_NAMES = {
+    "kiryu": "桐生",
+    "toda": "戸田",
+    "edogawa": "江戸川",
+    "heiwajima": "平和島",
+    "tamagawa": "多摩川",
+    "hamanako": "浜名湖",
+    "gamagori": "蒲郡",
+    "tokoname": "常滑",
+    "tsu": "津",
+    "mikuni": "三国",
+    "biwako": "びわこ",
+    "suminoe": "住之江",
+    "amagasaki": "尼崎",
+    "naruto": "鳴門",
+    "marugame": "丸亀",
+    "kojima": "児島",
+    "miyajima": "宮島",
+    "tokuyama": "徳山",
+    "shimonoseki": "下関",
+    "wakamatsu": "若松",
+    "ashiya": "芦屋",
+    "fukuoka": "福岡",
+    "karatsu": "唐津",
+    "omura": "大村",
+}
 
 def normalize_name(value: Any) -> str:
     return re.sub(r"[\s\u3000]+", "", str(value or "")).strip()
@@ -142,9 +167,12 @@ def race_number_from_path(path: Path) -> int | None:
 
 def path_matches_venue(path: Path, venue: str) -> bool:
     venue_lower = venue.lower()
-    return (
-        any(part.lower() == venue_lower for part in path.parts)
-        or venue_lower in str(path).lower()
+    venue_name = VENUE_NAMES.get(venue, "")
+
+    return any(
+        part.lower() == venue_lower
+        or (venue_name and part == venue_name)
+        for part in path.parts
     )
 
 
