@@ -122,25 +122,24 @@ def parse_race_kimarite(
             continue
 
         row: dict[str, Any] = {"boaters_kimarite_starts": starts}
+
+        rates = positional_rates(block)
+
         if lane == 1:
-            values = {
-                "boaters_escape_rate": percentage(block, ("逃げ",)),
-                "boaters_sashare_rate": percentage(block, ("差され",)),
-                "boaters_makurare_rate": percentage(block, ("まくられ",)),
-                "boaters_makurare_zashi_rate": percentage(
-                    block, ("まくられ差し", "まくられ差")
-                ),
+           values = {
+                "boaters_escape_rate": rates[0],
+                "boaters_sashare_rate": rates[1],
+                "boaters_makurare_rate": rates[2],
+                "boaters_makurare_zashi_rate": rates[3],
             }
         else:
             values = {
-                "boaters_nigashi_rate": percentage(block, ("逃し",)),
-                "boaters_sashi_rate": percentage(block, ("差し",)),
-                "boaters_makuri_rate": percentage(block, ("まくり",)),
-                "boaters_makuri_sashi_rate": percentage(
-                    block, ("まくり差し", "まくり差")
-                ),
+                "boaters_nigashi_rate": rates[0],
+                "boaters_sashi_rate": rates[1],
+                "boaters_makuri_rate": rates[2],
+                "boaters_makuri_sashi_rate": rates[3],
             }
-
+        
         found = False
         for key, value in values.items():
             if value is not None:
