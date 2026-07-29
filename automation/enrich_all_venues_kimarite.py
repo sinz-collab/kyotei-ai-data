@@ -54,17 +54,21 @@ def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
 
 
 def starts_count(block: str) -> int | None:
-    patterns = (
-        r"出走回数\s*([0-9]+)\s*回",
-        r"出走回数\s*([0-9]+)",
-        r"([0-9]+)\s*回",
+    # BOATERS本文では各割合の回数が「（15回）」のように表示され、
+    # 最後の出走回数だけが「123回」の単独行になる。
+    # 次艇の表見出し「出走回数\n2」を誤取得しないよう、
+    # 単独行の「数字+回」だけを対象にする。
+    matches = list(
+        re.finditer(
+            r"(?m)^[ \t]*([0-9]+)[ \t]*回[ \t]*$",
+            block,
+        )
     )
-    for pattern in patterns:
-        matches = list(re.finditer(pattern, block, flags=re.MULTILINE))
-        if matches:
-            return int(matches[-1].group(1))
-    return None
 
+    if not matches:
+        return None
+
+    return int(matches[-1].group(1))
 
 def positional_rates(block: str) -> list[float | None]:
     tokens = re.findall(
