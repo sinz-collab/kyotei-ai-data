@@ -225,14 +225,37 @@ def apply_file(path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date", required=True, help="YYYYMMDD")
+    parser.add_argument(
+        "--date",
+        required=True,
+        help="YYYY-MM-DD or YYYYMMDD",
+    )
     args = parser.parse_args()
-    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date}.json"
+
+    date_dir = args.date.replace("-", "")
+
+    if not re.fullmatch(r"\d{8}", date_dir):
+        raise ValueError(f"invalid_date: {args.date}")
+
+    path = (
+        REPO_ROOT
+        / "data"
+        / "venues"
+        / "karatsu"
+        / f"{date_dir}.json"
+    )
+
     if not path.exists():
         raise FileNotFoundError(path)
+
     apply_file(path)
+
     latest = path.parent / "latest.json"
-    atomic_write_json(latest, json.loads(path.read_text(encoding="utf-8")))
+    atomic_write_json(
+        latest,
+        json.loads(path.read_text(encoding="utf-8")),
+    )
+
     print(path)
 
 
