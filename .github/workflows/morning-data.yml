@@ -141,6 +141,7 @@ jobs:
           python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
           python automation/apply_toda_v5.py --date "$TARGET_DATE"
           python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
+          python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
           python automation/validate_morning_regression.py \
             --before "$RUNNER_TEMP/morning-data-before" \
             --after data
@@ -173,6 +174,7 @@ jobs:
             python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
             python automation/apply_toda_v5.py --date "$TARGET_DATE"
             python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
+            python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
             python automation/validate_morning_regression.py \
               --before "$RUNNER_TEMP/morning-data-before-publish" \
               --after data
