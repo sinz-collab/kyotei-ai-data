@@ -85,22 +85,26 @@ def positional_rates(block: str) -> list[float | None]:
 
 def kimarite_section(text: str) -> str:
     start = text.find("決まり手率")
+
     if start < 0:
         return ""
+
     end_markers = (
+        "決まり手率について",
+        "AIオッズ評価",
         "前づけデータ",
-        "先頭艇別連対率",
-        "直近10走",
-        "直近6ヶ月",
-        "当地",
-        "今期",
-        "一般戦",
     )
+
     end = len(text)
+
     for marker in end_markers:
-        position = text.find(marker, start + len("決まり手率"))
+        position = text.find(
+            marker,
+            start + len("決まり手率"),
+        )
         if position >= 0:
             end = min(end, position)
+
     return text[start:end]
 
 
@@ -167,8 +171,7 @@ def parse_race_kimarite(
             if value is not None:
                 row[key] = value
                 found = True
-        if found:
-            parsed[lane] = row
+        parsed[lane] = row
     return parsed
 
 
