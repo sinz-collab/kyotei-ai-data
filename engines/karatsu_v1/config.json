@@ -1,12 +1,18 @@
 {
-  "engine": "karatsu_scenario_engine_v1_0",
+  "engine": "karatsu_scenario_engine_v1_1_1",
   "odds_used_for_prediction": false,
   "entry_change_detection": "actual_entry_array",
   "day_stage_weights": {
-    "early": {"motor_boat": 0.30, "exhibition": 0.25, "player_course": 0.25, "water_scenario": 0.15, "season": 0.05},
-    "middle": {"motor_boat": 0.22, "exhibition": 0.20, "player_course": 0.22, "water_scenario": 0.15, "season": 0.21},
-    "late": {"motor_boat": 0.15, "exhibition": 0.15, "player_course": 0.20, "water_scenario": 0.15, "season": 0.35}
+    "early": {"motor_boat": 0.24, "exhibition": 0.20, "player_course": 0.29, "course_prior": 0.17, "season": 0.10},
+    "middle": {"motor_boat": 0.19, "exhibition": 0.17, "player_course": 0.24, "course_prior": 0.17, "season": 0.23},
+    "late": {"motor_boat": 0.14, "exhibition": 0.13, "player_course": 0.21, "course_prior": 0.17, "season": 0.35}
   },
+  "exhibition_policy": {
+    "first_place_contribution_reduced": true,
+    "exhibition_start_is_context_only": true,
+    "outer_good_exhibition_routes_to_second_and_third": true
+  },
+  "machine_policy": "raw motor and boat values are preserved; only position-specific contribution weights are adjusted",
   "class_state_policy": "grade_only_amplifies_verified_motor_exhibition_or_season_form",
   "ticket_count": 10
 }
