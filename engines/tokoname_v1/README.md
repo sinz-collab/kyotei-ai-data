@@ -24,6 +24,25 @@ Tickets:
 python -m engine.predictor samples/tokoname_20260730_R01_input.json -o samples/tokoname_20260730_R01_output.json
 ```
 
+## サイト用予想JSON接続
+
+朝データ `data/venues/tokoname/YYYYMMDD.json` と、各レースの
+`data/live/YYYY-MM-DD/tokoname/RR/` にある `direct.json`、
+`exhibition.json`、`original_exhibition.json` からエンジン入力を構築します。
+成功したレースだけ `races[n].prediction` を更新し、失敗時は既存予想を保持します。
+オッズと結果は確率計算に使用しません。
+
+```bash
+python engines/tokoname_v1/tokoname_site_pipeline.py \
+  --date 2026-07-30 \
+  --races 1-7 \
+  --compare-results
+```
+
+既定はdry-runです。JSONへ反映する場合のみ `--write` を明示します。
+モデルはスクリプト自身を基準にした `models/` の相対パスから読み込むため、
+WindowsとLinuxの両方でリポジトリ配置のまま実行できます。
+
 ## 固定仕様
 - SABは予測再現性の評価で、買い目数と分離
 - 買い目は本線6・ズレ2・荒れ2の10点固定、重複なし
