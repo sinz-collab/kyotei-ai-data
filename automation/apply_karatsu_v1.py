@@ -13,7 +13,7 @@ ENGINE_DIR = REPO_ROOT / "engines" / "karatsu_v1"
 sys.path.insert(0, str(ENGINE_DIR))
 from karatsu_prediction_engine import KaratsuScenarioEngine, RaceInput, RacerInput
 
-ENGINE_ID = "karatsu_scenario_engine_v1_0"
+ENGINE_ID = "karatsu_scenario_engine_v1_1_1"
 LANES = (1, 2, 3, 4, 5, 6)
 
 
@@ -170,6 +170,7 @@ def build_race_input(payload: dict, race: dict) -> tuple[RaceInput, dict[int, di
             lap_time=number(org.get("lap_time"), None),
             turn_time=number(org.get("turn_time"), None),
             straight_time=number(org.get("straight_time"), None),
+            season_score=season_score(r),
             tilt=number(ex.get("tilt"), number(r.get("tilt"), 0)),
             withdrawn=bool(r.get("withdrawn", False)),
         ))
@@ -180,7 +181,8 @@ def build_race_input(payload: dict, race: dict) -> tuple[RaceInput, dict[int, di
 def site_prediction(payload: dict, race: dict) -> dict:
     race_input, ex_map, org_map = build_race_input(payload, race)
     prediction = KaratsuScenarioEngine().predict(race_input, ticket_count=10)
-    first, second, third, state_diag = apply_position_multipliers(prediction, race.get("racers") or [], race_input.day_no, ex_map, org_map)
+    first, second, third = dict(prediction.marginal_first), dict(prediction.marginal_second), dict(prediction.marginal_third)
+    state_diag = [{"lane": int(r["lane"]), "class": r.get("class"), "season_state": round(season_score(r), 3)} for r in (race.get("racers") or [])]
     top3 = {lane: first[lane] + second[lane] + third[lane] for lane in LANES}
     entry = [r.lane for r in sorted(race_input.racers, key=lambda x: x.actual_course)]
     tickets = []
@@ -192,7 +194,7 @@ def site_prediction(payload: dict, race: dict) -> dict:
     return {
         "status": "complete",
         "engine": ENGINE_ID,
-        "engineVersion": "1.0",
+        "engineVersion": "1.1.1",
         "win": {str(k): round(v * 100, 1) for k, v in first.items()},
         "second": {str(k): round(v * 100, 1) for k, v in second.items()},
         "third": {str(k): round(v * 100, 1) for k, v in third.items()},
@@ -202,7 +204,7 @@ def site_prediction(payload: dict, race: dict) -> dict:
         "actualEntry": entry,
         "entryChanged": entry != [1, 2, 3, 4, 5, 6],
         "dayStage": "early" if race_input.day_no <= 2 else ("late" if race_input.day_no >= 5 else "middle"),
-        "weights": {"early": {"motorBoat": 0.30, "exhibition": 0.25, "playerCourse": 0.25, "waterScenario": 0.15, "season": 0.05}, "middle": {"motorBoat": 0.22, "exhibition": 0.20, "playerCourse": 0.22, "waterScenario": 0.15, "season": 0.21}, "late": {"motorBoat": 0.15, "exhibition": 0.15, "playerCourse": 0.20, "waterScenario": 0.15, "season": 0.35}},
+        "weights": {"early": {"motorBoat": 0.24, "exhibition": 0.20, "playerCourse": 0.29, "coursePrior": 0.17, "season": 0.10}, "middle": {"motorBoat": 0.19, "exhibition": 0.17, "playerCourse": 0.24, "coursePrior": 0.17, "season": 0.23}, "late": {"motorBoat": 0.14, "exhibition": 0.13, "playerCourse": 0.21, "coursePrior": 0.17, "season": 0.35}},
         "ai": tickets[:8],
         "aiUpset": tickets[8:10],
         "scenarios": scenarios,
@@ -213,65 +215,26 @@ def site_prediction(payload: dict, race: dict) -> dict:
 
 def apply_file(path: Path) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
-
     if payload.get("venueId") != "karatsu" and payload.get("venue") != "唐津":
         raise RuntimeError("not_karatsu_payload")
-
     races = payload.get("races") or []
-
     if len(races) != 12:
         raise RuntimeError("karatsu_races_must_be_12")
-
-    preds = {}
-
     for race in races:
-        race_no = int(race.get("race") or 0)
-        prediction = site_prediction(payload, race)
-
-        # レース内表示用
-        race["prediction"] = prediction
-
-        # build_site_data.pyの予想判定用
-        preds[str(race_no)] = prediction
-
-    payload["engine"] = ENGINE_ID
-    payload["preds"] = preds
-
+        race["prediction"] = site_prediction(payload, race)
     atomic_write_json(path, payload)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--date",
-        required=True,
-        help="YYYY-MM-DD or YYYYMMDD",
-    )
+    parser.add_argument("--date", required=True, help="YYYYMMDD")
     args = parser.parse_args()
-
-    date_dir = args.date.replace("-", "")
-
-    if not re.fullmatch(r"\d{8}", date_dir):
-        raise ValueError(f"invalid_date: {args.date}")
-
-    path = (
-        REPO_ROOT
-        / "data"
-        / "venues"
-        / "karatsu"
-        / f"{date_dir}.json"
-    )
-
+    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date}.json"
     if not path.exists():
         raise FileNotFoundError(path)
-
     apply_file(path)
-
     latest = path.parent / "latest.json"
-    atomic_write_json(
-        latest,
-        json.loads(path.read_text(encoding="utf-8")),
-    )
-
+    atomic_write_json(latest, json.loads(path.read_text(encoding="utf-8")))
     print(path)
 
 
