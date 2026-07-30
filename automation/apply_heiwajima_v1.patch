@@ -1,0 +1,69 @@
+diff --git a/automation/apply_heiwajima_v1.py b/automation/apply_heiwajima_v1.py
+--- a/automation/apply_heiwajima_v1.py
++++ b/automation/apply_heiwajima_v1.py
+@@
+ def motor_power_score(racer: dict) -> float:
+@@
+     return round(clamp(score, -3.0, 3.0), 4)
+
+
++def boaters_kimarite_input(racer: dict) -> dict:
++    starts = racer.get("boaters_kimarite_starts")
++    if starts in (None, "", "-"):
++        return {}
++
++    lane = int(racer.get("lane") or 0)
++    payload = {"starts": starts}
++
++    if lane == 1:
++        mapping = {
++            "escape_rate": "boaters_escape_rate",
++            "sashare_rate": "boaters_sashare_rate",
++            "makurare_rate": "boaters_makurare_rate",
++            "makurare_zashi_rate": "boaters_makurare_zashi_rate",
++        }
++    else:
++        mapping = {
++            "nigashi_rate": "boaters_nigashi_rate",
++            "sashi_rate": "boaters_sashi_rate",
++            "makuri_rate": "boaters_makuri_rate",
++            "makuri_sashi_rate": "boaters_makuri_sashi_rate",
++        }
++
++    for target_key, source_key in mapping.items():
++        value = racer.get(source_key)
++        if value not in (None, "", "-"):
++            payload[target_key] = value
++    return payload
++
++
+ def tide_context(payload: dict, race: dict) -> dict:
+@@
+                 "actual_course": actual_course,
+                 "motor": {"power_score": motor_power_score(racer)},
+                 "season": {"form_score": season_form_score(racer)},
++                "kimarite": boaters_kimarite_input(racer),
+             }
+         )
+@@
+             "playerCourseReflected": completeness.get("player_course_reflected", 0),
+             "localStReflected": completeness.get("local_st_reflected", 0),
++            "boatersKimariteReflected": completeness.get("boaters_kimarite_reflected", 0),
++            "sqliteKimariteReflected": completeness.get("sqlite_kimarite_reflected", 0),
++            "kimariteReflected": completeness.get("kimarite_reflected", 0),
+             "entryChanged": completeness.get("entry_changed") is True,
+@@
+         "readability": {
+@@
+             "ticketCountUsed": bool(
+                 sab_data.get("ticket_count_used", False)
+             ),
++            "kimariteSource": "boaters_6months_no_entry_change",
++            "kimariteCoverage": round(
++                float(completeness.get("kimarite_reflected", 0)) / 6.0,
++                4,
++            ),
++            "predictionStage": "final" if result.get("stage") == "final" else "pre",
++            "sabGuardrailReasons": sab_data.get("guardrail_reasons") or [],
+             "comment": f"主シナリオ: {primary_scenario.get('name') or '未確定'} / 軸差 {axis_gap:.1f}pt",
+         },
