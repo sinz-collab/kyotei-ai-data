@@ -213,15 +213,31 @@ def site_prediction(payload: dict, race: dict) -> dict:
 
 def apply_file(path: Path) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
+
     if payload.get("venueId") != "karatsu" and payload.get("venue") != "唐津":
         raise RuntimeError("not_karatsu_payload")
+
     races = payload.get("races") or []
+
     if len(races) != 12:
         raise RuntimeError("karatsu_races_must_be_12")
-    for race in races:
-        race["prediction"] = site_prediction(payload, race)
-    atomic_write_json(path, payload)
 
+    preds = {}
+
+    for race in races:
+        race_no = int(race.get("race") or 0)
+        prediction = site_prediction(payload, race)
+
+        # レース内表示用
+        race["prediction"] = prediction
+
+        # build_site_data.pyの予想判定用
+        preds[str(race_no)] = prediction
+
+    payload["engine"] = ENGINE_ID
+    payload["preds"] = preds
+
+    atomic_write_json(path, payload)
 
 def main() -> None:
     parser = argparse.ArgumentParser()
