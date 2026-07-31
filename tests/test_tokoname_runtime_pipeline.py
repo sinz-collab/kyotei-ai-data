@@ -312,6 +312,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
             without_predictions(staged),
             without_predictions(self.source),
         )
+        self.assertTrue(staged["races"][0]["prediction"]["input_hash"])
         self.assertNotIn("prediction", staged["races"][1])
         self.assertEqual(self.morning_path.read_bytes(), original_morning)
         self.assertEqual(file_snapshot(self.root / "data"), before_data)
@@ -322,6 +323,11 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertTrue(first["written"])
         dated = self.output_root / "venues" / "tokoname" / "20260730.json"
         before = dated.read_bytes()
+        direct_path = self.live_root / DATE / "tokoname" / "01" / "direct.json"
+        direct = json.loads(direct_path.read_text(encoding="utf-8"))
+        direct["data"]["entry_changed"] = True
+        direct["data"]["actual_entry"] = [2, 1, 3, 4, 5, 6]
+        direct_path.write_text(json.dumps(direct), encoding="utf-8")
 
         def failing_predictor(payload: dict, model_dir: Path) -> dict:
             raise RuntimeError("model failed")
@@ -335,6 +341,80 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
             (self.output_root / "venues" / "tokoname" / "latest.json").read_bytes(),
             before,
         )
+
+    def test_same_input_hash_skips_model_and_write(self) -> None:
+        write_live(self.live_root, 1)
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(int(payload["race"]["race"]))
+            return fake_predict(payload, model_dir)
+
+        first = self.stage(race_numbers=[1], predictor=predictor)
+        dated = self.output_root / "venues" / "tokoname" / "20260730.json"
+        before = dated.read_bytes()
+        second = self.stage(race_numbers=[1], predictor=predictor)
+
+        self.assertEqual(first["updated_races"], [1])
+        self.assertEqual(second["status"], "unchanged")
+        self.assertEqual(second["unchanged_races"], [1])
+        self.assertEqual(calls, [1])
+        self.assertEqual(dated.read_bytes(), before)
+
+    def test_exhibition_change_recalculates_only_changed_race(self) -> None:
+        write_live(self.live_root, 1)
+        write_live(self.live_root, 2)
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(int(payload["race"]["race"]))
+            return fake_predict(payload, model_dir)
+
+        self.stage(race_numbers=[1, 2], predictor=predictor)
+        exhibition_path = (
+            self.live_root / DATE / "tokoname" / "02" / "exhibition.json"
+        )
+        exhibition = json.loads(exhibition_path.read_text(encoding="utf-8"))
+        exhibition["data"]["entries"][0]["exhibition_time"] = 6.55
+        exhibition_path.write_text(json.dumps(exhibition), encoding="utf-8")
+        result = self.stage(race_numbers=[1, 2], predictor=predictor)
+
+        self.assertEqual(result["updated_races"], [2])
+        self.assertEqual(result["unchanged_races"], [1])
+        self.assertEqual(calls, [1, 2, 2])
+
+    def test_result_complete_stops_recalculation_and_preserves_prediction(self) -> None:
+        write_live(self.live_root, 1)
+        first = self.stage(race_numbers=[1])
+        self.assertEqual(first["updated_races"], [1])
+        dated = self.output_root / "venues" / "tokoname" / "20260730.json"
+        before = dated.read_bytes()
+        result_path = self.live_root / DATE / "tokoname" / "01" / "result.json"
+        result_path.write_text(
+            json.dumps(
+                {
+                    "date": DATE,
+                    "venue": "tokoname",
+                    "race_no": 1,
+                    "status": "complete",
+                    "complete": True,
+                    "data": {"order": [1, 2, 3]},
+                }
+            ),
+            encoding="utf-8",
+        )
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(payload)
+            return fake_predict(payload, model_dir)
+
+        result = self.stage(race_numbers=[1], predictor=predictor)
+
+        self.assertEqual(result["status"], "unchanged")
+        self.assertEqual(result["result_complete_races"], [1])
+        self.assertEqual(calls, [])
+        self.assertEqual(dated.read_bytes(), before)
 
     def test_non_tokoname_live_result_does_not_start_staging(self) -> None:
         class Logger:

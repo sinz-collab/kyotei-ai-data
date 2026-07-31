@@ -123,16 +123,20 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
             "reason": "staged_prediction_identity_invalid",
             "paths": [],
         }
-    try:
-        for race_no in range(1, 13):
-            prediction = staged_races[race_no].get("prediction")
-            if not isinstance(prediction, dict) or prediction.get("status") != "ready":
-                raise ValueError(f"race_{race_no:02d}_prediction_not_ready")
+    publishable = {}
+    for race_no in range(1, 13):
+        prediction = staged_races[race_no].get("prediction")
+        if not isinstance(prediction, dict) or prediction.get("status") != "ready":
+            continue
+        try:
             validate_site_prediction(prediction)
-    except (KeyError, TypeError, ValueError) as exc:
+        except (KeyError, TypeError, ValueError):
+            continue
+        publishable[race_no] = prediction
+    if not publishable:
         return {
             "status": "not_ready",
-            "reason": str(exc),
+            "reason": "no_publishable_predictions",
             "paths": [],
         }
 
@@ -160,18 +164,32 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
             "paths": [],
         }
 
-    merged = deepcopy(destination)
-    merged_races = race_index(merged)
-    for race_no in range(1, 13):
-        merged_races[race_no]["prediction"] = deepcopy(
-            staged_races[race_no]["prediction"]
-        )
-    merged["engine"] = "tokoname_engine"
-    merged["engineVersion"] = "1.6"
-    merged["predictionStatus"] = "ready"
-    merged["predictionReason"] = None
-    if without_prediction_fields(merged) != without_prediction_fields(destination):
-        raise RuntimeError("tokoname_non_prediction_fields_changed")
+    latest = load_json(latest_path) if latest_path.is_file() else deepcopy(destination)
+    if (
+        latest.get("venueId") != TOKONAME
+        or latest.get("date") != target_date
+        or set(race_index(latest)) != set(range(1, 13))
+    ):
+        latest = deepcopy(destination)
+
+    changed_races = []
+    merged_documents = []
+    for original in (destination, latest):
+        merged = deepcopy(original)
+        merged_races = race_index(merged)
+        for race_no, prediction in publishable.items():
+            if merged_races[race_no].get("prediction") != prediction:
+                merged_races[race_no]["prediction"] = deepcopy(prediction)
+                if race_no not in changed_races:
+                    changed_races.append(race_no)
+        merged["engine"] = "tokoname_engine"
+        merged["engineVersion"] = "1.6"
+        merged["predictionStatus"] = "ready"
+        merged["predictionReason"] = None
+        if without_prediction_fields(merged) != without_prediction_fields(original):
+            raise RuntimeError("tokoname_non_prediction_fields_changed")
+        merged_documents.append(merged)
+    merged_dated, merged_latest = merged_documents
 
     updated_manifest = deepcopy(manifest)
     updated_venue = next(
@@ -188,25 +206,29 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
     updated_venue["availabilityReason"] = "ok"
 
     if (
-        load_json(dated_path) == merged
+        load_json(dated_path) == merged_dated
         and latest_path.is_file()
-        and load_json(latest_path) == merged
+        and load_json(latest_path) == merged_latest
         and load_json(manifest_path) == updated_manifest
     ):
         return {
             "status": "unchanged",
             "reason": "already_published",
             "date": target_date,
+            "published_races": [],
+            "available_races": sorted(publishable),
             "paths": [],
         }
 
-    atomic_write_json(dated_path, merged)
-    atomic_write_json(latest_path, merged)
+    atomic_write_json(dated_path, merged_dated)
+    atomic_write_json(latest_path, merged_latest)
     atomic_write_json(manifest_path, updated_manifest)
     return {
         "status": "published",
         "reason": "ok",
         "date": target_date,
+        "published_races": sorted(changed_races),
+        "available_races": sorted(publishable),
         "paths": [
             str(dated_relative),
             str(latest_relative),

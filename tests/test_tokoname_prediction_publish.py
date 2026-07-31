@@ -147,25 +147,31 @@ class TokonamePredictionPublishTests(unittest.TestCase):
             payload,
         )
 
-    def test_complete_predictions_publish_only_prediction_domains(self) -> None:
+    def test_ready_race_publishes_incrementally_without_other_domain_changes(self) -> None:
         staged = deepcopy(self.original)
-        for race in staged["races"]:
-            race["prediction"] = prediction()
+        staged["races"][0]["prediction"] = {
+            **prediction(),
+            "input_hash": "race-1",
+        }
         self.stage(staged)
         manifest_before = json.loads(self.manifest_path.read_text(encoding="utf-8"))
 
         result = publish_tokoname_predictions(self.staging_root, self.repo_root)
 
         self.assertEqual(result["status"], "published")
+        self.assertEqual(result["published_races"], [1])
+        self.assertEqual(result["available_races"], [1])
         published = json.loads(self.dated.read_text(encoding="utf-8"))
         self.assertEqual(self.dated.read_bytes(), self.latest.read_bytes())
         self.assertEqual(
             without_prediction_fields(published),
             without_prediction_fields(self.original),
         )
+        self.assertEqual(published["races"][0]["prediction"]["engine_version"], "1.6")
+        self.assertEqual(published["races"][0]["prediction"]["input_hash"], "race-1")
         self.assertEqual(
-            [race["prediction"]["engine_version"] for race in published["races"]],
-            ["1.6"] * 12,
+            published["races"][1]["prediction"]["status"],
+            "unavailable",
         )
         published_manifest = json.loads(
             self.manifest_path.read_text(encoding="utf-8")
@@ -180,8 +186,6 @@ class TokonamePredictionPublishTests(unittest.TestCase):
 
     def test_failed_or_empty_prediction_is_not_published(self) -> None:
         staged = deepcopy(self.original)
-        for race in staged["races"]:
-            race["prediction"] = prediction()
         staged["races"][4]["prediction"] = {
             "status": "unavailable",
             "reason": "engine_failed",
@@ -196,8 +200,10 @@ class TokonamePredictionPublishTests(unittest.TestCase):
 
     def test_same_content_is_unchanged(self) -> None:
         staged = deepcopy(self.original)
-        for race in staged["races"]:
-            race["prediction"] = prediction()
+        staged["races"][0]["prediction"] = {
+            **prediction(),
+            "input_hash": "same",
+        }
         self.stage(staged)
         first = publish_tokoname_predictions(self.staging_root, self.repo_root)
         before = snapshot(self.repo_root)
@@ -207,6 +213,31 @@ class TokonamePredictionPublishTests(unittest.TestCase):
         self.assertEqual(first["status"], "published")
         self.assertEqual(second["status"], "unchanged")
         self.assertEqual(snapshot(self.repo_root), before)
+
+    def test_only_changed_ready_race_is_republished(self) -> None:
+        staged = deepcopy(self.original)
+        staged["races"][0]["prediction"] = {
+            **prediction(),
+            "input_hash": "first",
+        }
+        self.stage(staged)
+        publish_tokoname_predictions(self.staging_root, self.repo_root)
+        before = json.loads(self.dated.read_text(encoding="utf-8"))
+
+        staged["races"][1]["prediction"] = {
+            **prediction(),
+            "input_hash": "second",
+        }
+        self.stage(staged)
+        result = publish_tokoname_predictions(self.staging_root, self.repo_root)
+        after = json.loads(self.dated.read_text(encoding="utf-8"))
+
+        self.assertEqual(result["published_races"], [2])
+        self.assertEqual(
+            after["races"][0]["prediction"],
+            before["races"][0]["prediction"],
+        )
+        self.assertEqual(after["races"][1]["prediction"]["input_hash"], "second")
 
 
 if __name__ == "__main__":

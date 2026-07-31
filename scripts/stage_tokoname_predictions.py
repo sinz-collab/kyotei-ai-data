@@ -22,6 +22,7 @@ from engines.tokoname_v1.tokoname_site_pipeline import (
     validate_morning_document,
     without_predictions,
 )
+from live_data_hash import content_hash
 
 
 def _race_index(document: dict) -> dict[int, dict]:
@@ -63,6 +64,34 @@ def live_inputs_complete(live_race_dir: Path, target_date: str, race_no: int) ->
     except (OSError, ValueError, TypeError, json.JSONDecodeError):
         return False
     return True
+
+
+def result_is_complete(live_race_dir: Path) -> bool:
+    try:
+        return load_json(live_race_dir / "result.json").get("complete") is True
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return False
+
+
+def prediction_input_hash(
+    morning: dict,
+    race_no: int,
+    live_race_dir: Path,
+) -> str:
+    race = deepcopy(_race_index(morning)[race_no])
+    race.pop("prediction", None)
+    return content_hash(
+        {
+            "date": morning.get("date"),
+            "eventDay": race.get("eventDay") or morning.get("eventDay"),
+            "race": race,
+            "tide": race.get("tide") or morning.get("tide"),
+            **{
+                filename.removesuffix(".json"): load_json(live_race_dir / filename)
+                for filename in LIVE_FILENAMES
+            },
+        }
+    )
 
 
 def _load_existing(path: Path) -> dict | None:
@@ -117,13 +146,55 @@ def stage_tokoname_predictions(
 
     existing = _load_existing(dated_path) or _load_existing(latest_path)
     base = overlay_existing_predictions(morning, existing)
+    base_races = _race_index(base)
+    input_hashes = {}
+    unchanged_races = []
+    result_complete_races = []
+    to_update = []
+    for race_no in ready:
+        live_race_dir = venue_live_root / f"{race_no:02d}"
+        if result_is_complete(live_race_dir):
+            result_complete_races.append(race_no)
+            continue
+        current_hash = prediction_input_hash(morning, race_no, live_race_dir)
+        input_hashes[race_no] = current_hash
+        previous = base_races[race_no].get("prediction")
+        if (
+            isinstance(previous, dict)
+            and previous.get("status") == "ready"
+            and previous.get("input_hash") == current_hash
+        ):
+            unchanged_races.append(race_no)
+            continue
+        to_update.append(race_no)
+
+    if not to_update:
+        return {
+            "status": "unchanged",
+            "date": target_date,
+            "requested_races": requested,
+            "ready_races": ready,
+            "updated_races": [],
+            "preserved_races": [],
+            "unchanged_races": unchanged_races,
+            "result_complete_races": result_complete_races,
+            "dated_path": str(dated_path),
+            "latest_path": str(latest_path),
+            "written": False,
+        }
+
     updated, reports = apply_tokoname_predictions(
         base,
         live_root=venue_live_root,
-        race_numbers=ready,
+        race_numbers=to_update,
         model_dir=model_dir,
         predictor=predictor,
     )
+    updated_by_race = _race_index(updated)
+    for report in reports:
+        race_no = int(report["race"])
+        if report["status"] == "updated":
+            updated_by_race[race_no]["prediction"]["input_hash"] = input_hashes[race_no]
     if without_predictions(updated) != without_predictions(morning):
         raise RuntimeError("non_prediction_fields_changed_from_morning")
 
@@ -141,6 +212,8 @@ def stage_tokoname_predictions(
             "ready_races": ready,
             "updated_races": [],
             "preserved_races": preserved_races,
+            "unchanged_races": unchanged_races,
+            "result_complete_races": result_complete_races,
             "dated_path": str(dated_path),
             "latest_path": str(latest_path),
             "written": False,
@@ -157,6 +230,8 @@ def stage_tokoname_predictions(
             "ready_races": ready,
             "updated_races": updated_races,
             "preserved_races": preserved_races,
+            "unchanged_races": unchanged_races,
+            "result_complete_races": result_complete_races,
             "dated_path": str(dated_path),
             "latest_path": str(latest_path),
             "written": False,
@@ -174,6 +249,8 @@ def stage_tokoname_predictions(
         "ready_races": ready,
         "updated_races": updated_races,
         "preserved_races": preserved_races,
+        "unchanged_races": unchanged_races,
+        "result_complete_races": result_complete_races,
         "dated_path": str(dated_path),
         "latest_path": str(latest_path),
         "written": True,
