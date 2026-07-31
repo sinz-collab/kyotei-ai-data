@@ -455,6 +455,31 @@ def prediction_envelope(
     }
 
 
+def tokoname_race_prediction_is_complete(prediction: object) -> bool:
+    """Validate the race-native Tokoname prediction without changing legacy venues."""
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("engine") != "tokoname_engine":
+        return False
+    if str(prediction.get("engine_version") or "") != "1.6":
+        return False
+    probabilities = prediction.get("probabilities")
+    if not isinstance(probabilities, dict) or any(
+        not _probabilities_are_valid(probabilities.get(key))
+        for key in ("win", "second", "third")
+    ):
+        return False
+    if not prediction.get("sab"):
+        return False
+    tickets = prediction.get("tickets")
+    if not isinstance(tickets, dict):
+        return False
+    return all(
+        isinstance(tickets.get(key), list) and len(tickets[key]) == count
+        for key, count in (("main", 6), ("deviation", 2), ("upset", 2))
+    )
+
+
 def attach_independent_race_domains(
     payload: dict,
     slug: str,
@@ -466,6 +491,12 @@ def attach_independent_race_domains(
     for race in payload.get("races") or []:
         race_no = int(race["race"])
         prediction = predictions.get(str(race_no)) or {}
+        tokoname_prediction = (
+            deepcopy(race.get("prediction"))
+            if slug == "tokoname"
+            and tokoname_race_prediction_is_complete(race.get("prediction"))
+            else None
+        )
         racers = deepcopy(race.get("racers") or [])
         race["race_meta"] = {
             "date": payload.get("date"),
@@ -484,12 +515,15 @@ def attach_independent_race_domains(
             for racer in racers
             if racer.get("season_runs") or racer.get("season_groups")
         ]
-        race["prediction"] = prediction_envelope(
-            payload,
-            race_no,
-            prediction_available,
-            prediction_reason,
-        )
+        if tokoname_prediction is not None:
+            race["prediction"] = tokoname_prediction
+        else:
+            race["prediction"] = prediction_envelope(
+                payload,
+                race_no,
+                prediction_available,
+                prediction_reason,
+            )
         race["live"] = deepcopy(race.get("live") or prediction.get("realtime") or {})
         race["odds"] = deepcopy(race.get("odds") or prediction.get("odds") or {})
         race["result"] = deepcopy(race.get("result") or prediction.get("result") or {})
