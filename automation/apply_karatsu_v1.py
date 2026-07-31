@@ -220,8 +220,16 @@ def apply_file(path: Path) -> None:
     races = payload.get("races") or []
     if len(races) != 12:
         raise RuntimeError("karatsu_races_must_be_12")
+    predictions = {}
     for race in races:
-        race["prediction"] = site_prediction(payload, race)
+        prediction = site_prediction(payload, race)
+        race["prediction"] = prediction
+        predictions[str(int(race["race"]))] = prediction
+    payload["engine"] = ENGINE_ID
+    payload["engineVersion"] = "1.1.1"
+    payload["preds"] = predictions
+    payload["predictionStatus"] = "ready"
+    payload["predictionReason"] = None
     atomic_write_json(path, payload)
 
 
