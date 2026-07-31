@@ -1,0 +1,74 @@
+{
+  "name": "wakamatsu_engine_v1",
+  "version": "2.0",
+  "engine_type": "data-calibrated rules engine",
+  "original_model_reproduction": false,
+  "ticket_policy": {
+    "main": 6,
+    "deviation": 2,
+    "upset": 2,
+    "total": 10
+  },
+  "sab_independent_from_ticket_count": true,
+  "improvements": [
+    "first-day motor weighting",
+    "minutes-to-low-tide correction",
+    "wind/wave scenario correction",
+    "entry-change severity",
+    "attack-head/direct-outside/inside-remain ticket gate"
+  ],
+  "improvements_v1_2": [
+    "scenario tags based on actual entry course, not lane number",
+    "direct-outside linkage based on actual entry order",
+    "inside-remain gate for attack-head scenarios",
+    "multi-signal inner-course mover correction"
+  ],
+  "improvements_v1_3": [
+    "local win/2nd/3rd performance correction",
+    "local-vs-national differential correction",
+    "local actual ST correction",
+    "zero local stats treated as no sample",
+    "day-1 local suitability weighting"
+  ],
+  "improvements_v1_4": [
+    "slit comparison by actual entry order",
+    "penalty only when slow exhibition slit and slow local ST agree",
+    "bonus to immediate right-side attacker when slit and local ST agree",
+    "second/third linkage bonus to direct outside boat",
+    "auditable slit adjacency adjustment output"
+  ],
+  "improvements_v1_5": [
+    "slit penalty requires objectively slow local ST >=0.18",
+    "top head-second third-place gate for candidates >=10%",
+    "up to three third candidates preserved"
+  ],
+  "improvements_v1_6": [
+    "top head-second pair covers up to four third candidates above 10%",
+    "fixed 10-ticket structure retained"
+  ],
+  "improvements_v1_7": [
+    "original exhibition normalized against race mean",
+    "course-4 outer linkage comparison between courses 5 and 6",
+    "class/motor/exhibition/original/local composite score",
+    "relative second/third probability correction"
+  ],
+  "improvements_v1_8": [
+    "course4 second-place scenario uses preferred 5/6 outer candidate in ticket scoring",
+    "scenario-specific multiplier does not globally inflate the boat"
+  ],
+  "improvements_v1_9": [
+    "course-1 escape rate below 63 percent triggers conditional head reduction",
+    "multiple qualified attackers all receive proportional head bonuses",
+    "attack-head direct-outside second and inside third ordering is prioritized",
+    "SAB is reduced when low escape and attack candidates coexist",
+    "SAB grade capped at A when low escape rate and a qualified attacker coexist"
+  ],
+  "improvements_v2_0": [
+    "six-stage motor/exhibition/original/meeting weighting",
+    "meeting level, recent form, trend and stability derived from chronological runs",
+    "course-adjusted finish evaluation",
+    "rising, flat and falling meeting trend labels",
+    "day-1 meeting correction disabled",
+    "audit output for stage weights and each boat's meeting form"
+  ]
+}
