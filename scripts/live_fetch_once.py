@@ -26,6 +26,52 @@ from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 
 
+def stage_tokoname_results(
+    config: dict[str, Any],
+    target_date: str,
+    live_root: Path,
+    results: list[dict[str, Any]],
+    logger: Any,
+) -> dict[str, Any] | None:
+    live_items = {"direct", "exhibition", "original_exhibition"}
+    race_numbers = sorted(
+        {
+            int(result["target"]["race_no"])
+            for result in results
+            if result.get("target", {}).get("venue") == "tokoname"
+            and all(
+                (result.get("items", {}).get(item) or {}).get("complete") is True
+                and (result.get("items", {}).get(item) or {}).get("status") == "complete"
+                for item in live_items
+            )
+        }
+    )
+    if not race_numbers:
+        return None
+    try:
+        from stage_tokoname_predictions import stage_tokoname_predictions
+
+        return stage_tokoname_predictions(
+            target_date,
+            morning_root=resolve_root(config, "morning_data_root"),
+            live_root=live_root,
+            output_root=ROOT / "runtime" / "predictions",
+            race_numbers=race_numbers,
+        )
+    except Exception as exc:
+        logger.error(
+            f"{type(exc).__name__}: {exc}",
+            extra={"event": "tokoname_prediction_staging_failed", "venue": "tokoname"},
+        )
+        return {
+            "status": "error",
+            "date": target_date,
+            "requested_races": race_numbers,
+            "written": False,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+
 async def _launch_browser(playwright: Any, config: dict[str, Any], logger: Any) -> Any:
     last_error = None
     for attempt in range(1, config["max_retries"] + 1):
@@ -116,12 +162,22 @@ async def run_once(
             )
         finally:
             await browser.close()
-    return {
+    response = {
         "status": "completed",
         "changed": any(result["changed"] for result in results),
         "targets": [{"venue": item["venue"], "race_no": item["race_no"]} for item in targets],
         "results": results,
     }
+    tokoname_staging = stage_tokoname_results(
+        config,
+        today,
+        target_root,
+        results,
+        logger,
+    )
+    if tokoname_staging is not None:
+        response["tokoname_prediction_staging"] = tokoname_staging
+    return response
 
 
 def main() -> int:

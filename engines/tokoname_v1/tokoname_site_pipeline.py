@@ -7,11 +7,6 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Iterable
 
-if __package__:
-    from .engine.predictor import predict
-else:
-    from engine.predictor import predict
-
 
 ENGINE_NAME = "tokoname_engine"
 ENGINE_VERSION = "1.6"
@@ -23,6 +18,14 @@ LIVE_FILENAMES = (
     "exhibition.json",
     "original_exhibition.json",
 )
+
+
+def default_predictor(payload: dict, model_dir: Path) -> dict:
+    if __package__:
+        from .engine.predictor import predict
+    else:
+        from engine.predictor import predict
+    return predict(payload, model_dir)
 
 
 def load_json(path: Path) -> dict:
@@ -294,7 +297,7 @@ def apply_tokoname_predictions(
     live_root: Path,
     race_numbers: Iterable[int] = range(1, 13),
     model_dir: Path = DEFAULT_MODEL_DIR,
-    predictor: Callable[[dict, Path], dict] = predict,
+    predictor: Callable[[dict, Path], dict] | None = None,
 ) -> tuple[dict, list[dict]]:
     target_date = str(document.get("date") or "")
     validate_morning_document(document, target_date)
@@ -303,6 +306,7 @@ def apply_tokoname_predictions(
         raise ValueError(f"race_numbers_invalid: {sorted(selected)}")
     if not model_dir.is_dir():
         raise FileNotFoundError(f"model_dir_missing: {model_dir}")
+    selected_predictor = predictor or default_predictor
 
     updated = deepcopy(document)
     reports = []
@@ -319,7 +323,7 @@ def apply_tokoname_predictions(
                 race_no,
             )
             engine_input = build_engine_input(updated, race, live_documents)
-            output = predictor(engine_input, model_dir)
+            output = selected_predictor(engine_input, model_dir)
             prediction = site_prediction(output)
             race["prediction"] = prediction
             reports.append(
