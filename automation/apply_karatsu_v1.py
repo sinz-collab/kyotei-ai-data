@@ -229,7 +229,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="YYYYMMDD")
     args = parser.parse_args()
-    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date}.json"
+    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date.replace('-', '')}.json"
     if not path.exists():
         raise FileNotFoundError(path)
     apply_file(path)
