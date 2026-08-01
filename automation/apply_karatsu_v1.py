@@ -33,15 +33,95 @@ def atomic_write_json(path: Path, payload: dict) -> None:
     tmp.replace(path)
 
 
-def actual_entry_map(race: dict) -> dict[int, int]:
+def _valid_entry_order(value: Any) -> list[int] | None:
+    """Return lane order by course, e.g. [1, 6, 2, 3, 4, 5]."""
+    if isinstance(value, str):
+        numbers = [int(x) for x in re.findall(r"[1-6]", value)]
+        if len(numbers) == 6 and sorted(numbers) == list(LANES):
+            return numbers
+        return None
+
+    if isinstance(value, list):
+        # Plain lane-order list.
+        try:
+            numbers = [int(x) for x in value]
+        except (TypeError, ValueError):
+            numbers = []
+        if len(numbers) == 6 and sorted(numbers) == list(LANES):
+            return numbers
+
+        # List of entry objects.
+        rows = []
+        for row in value:
+            if not isinstance(row, dict):
+                continue
+            lane = int(row.get("lane") or row.get("boat_no") or row.get("boat") or 0)
+            course = int(
+                row.get("actual_course")
+                or row.get("entry_course")
+                or row.get("course")
+                or row.get("display_course")
+                or row.get("pit_course")
+                or 0
+            )
+            if lane in LANES and course in LANES:
+                rows.append((course, lane))
+        if len(rows) == 6 and sorted(lane for _, lane in rows) == list(LANES):
+            return [lane for _, lane in sorted(rows)]
+    return None
+
+
+def actual_entry_order(race: dict) -> tuple[list[int], str]:
+    """Resolve actual entry from all formats used by morning/live/site JSON."""
     live = race.get("live") or {}
-    actual = live.get("actual_entry") or race.get("actual_entry")
-    if isinstance(actual, list) and len(actual) == 6:
-        return {int(lane): course for course, lane in enumerate(actual, start=1)}
-    return {
-        int(r.get("lane") or 0): int(r.get("actual_course") or r.get("entry_course") or r.get("lane") or 0)
-        for r in race.get("racers") or []
-    }
+    exhibition = live.get("exhibition") or {}
+    direct = race.get("exhibition") or {}
+
+    candidates = [
+        ("live.actual_entry", live.get("actual_entry")),
+        ("live.actualEntry", live.get("actualEntry")),
+        ("live.entry_order", live.get("entry_order")),
+        ("live.entryOrder", live.get("entryOrder")),
+        ("live.actual_entry_order", live.get("actual_entry_order")),
+        ("live.actualEntryOrder", live.get("actualEntryOrder")),
+        ("race.actual_entry", race.get("actual_entry")),
+        ("race.actualEntry", race.get("actualEntry")),
+        ("race.entry_order", race.get("entry_order")),
+        ("race.entryOrder", race.get("entryOrder")),
+        ("exhibition.actual_entry", exhibition.get("actual_entry")),
+        ("exhibition.actualEntry", exhibition.get("actualEntry")),
+        ("exhibition.entry_order", exhibition.get("entry_order")),
+        ("exhibition.entryOrder", exhibition.get("entryOrder")),
+        ("live.exhibition.entries", exhibition.get("entries")),
+        ("live.exhibition_entries", live.get("exhibition_entries")),
+        ("race.exhibition.entries", direct.get("entries") if isinstance(direct, dict) else None),
+        ("race.entry_changes", race.get("entry_changes")),
+    ]
+
+    for source, value in candidates:
+        order = _valid_entry_order(value)
+        if order:
+            return order, source
+
+    # Final fallback: racer-level actual_course/entry_course.
+    racers = race.get("racers") or race.get("entries") or []
+    rows = []
+    for racer in racers:
+        if not isinstance(racer, dict):
+            continue
+        lane = int(racer.get("lane") or 0)
+        course = int(racer.get("actual_course") or racer.get("entry_course") or 0)
+        if lane in LANES and course in LANES:
+            rows.append((course, lane))
+    if len(rows) == 6 and sorted(lane for _, lane in rows) == list(LANES):
+        return [lane for _, lane in sorted(rows)], "racers.actual_course"
+
+    return list(LANES), "fallback_normal_entry"
+
+
+def actual_entry_map(race: dict) -> dict[int, int]:
+    order, _ = actual_entry_order(race)
+    return {lane: course for course, lane in enumerate(order, start=1)}
 
 
 def exhibition_index(race: dict) -> dict[int, dict]:
@@ -186,6 +266,7 @@ def build_race_input(payload: dict, race: dict) -> tuple[RaceInput, dict[int, di
         org = org_map.get(lane, {})
         racers.append(RacerInput(
             lane=lane,
+            original_lane=lane,
             actual_course=int(entry.get(lane, lane)),
             class_rank=str(r.get("class") or "B1"),
             nat_win=number(r.get("nat_win")),
@@ -236,6 +317,7 @@ def site_prediction(payload: dict, race: dict) -> dict:
     ]
     top3 = {lane: first[lane] + second[lane] + third[lane] for lane in LANES}
     entry = [r.lane for r in sorted(race_input.racers, key=lambda x: x.actual_course)]
+    _, entry_source = actual_entry_order(race)
     tickets = []
     for idx, combo in enumerate(prediction.tickets):
         role = "本線" if idx < 6 else ("ズレ対応" if idx < 8 else "荒れ対応")
@@ -269,6 +351,8 @@ def site_prediction(payload: dict, race: dict) -> dict:
             "sameDayWaterBias": race_input.same_day_water_bias,
             "oddsUsedForPrediction": False,
             "engineDiagnostics": prediction.diagnostics,
+            "actualEntrySource": entry_source,
+            "actualCourseByLane": {str(r.lane): r.actual_course for r in race_input.racers},
         },
     }
 
