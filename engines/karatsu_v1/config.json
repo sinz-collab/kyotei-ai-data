@@ -1,11 +1,76 @@
 {
-  "engine": "karatsu_scenario_engine_v1_1_1",
+  "engine": "karatsu_scenario_engine_v1_2",
+  "engine_version": "1.2.0",
   "odds_used_for_prediction": false,
-  "entry_change_detection": "actual_entry_array",
+  "entry_change_detection": "actual_course_permutation_full_rebuild",
+  "entry_change_policy": {
+    "rebuild_base_probabilities": true,
+    "rebuild_head_conditional_second_third": true,
+    "rebuild_all_120_trifectas": true,
+    "rebuild_tickets": true,
+    "sab_cap": "A",
+    "sab_default_when_complex": "B"
+  },
   "day_stage_weights": {
-    "early": {"motor_boat": 0.24, "exhibition": 0.20, "player_course": 0.29, "course_prior": 0.17, "season": 0.10},
-    "middle": {"motor_boat": 0.19, "exhibition": 0.17, "player_course": 0.24, "course_prior": 0.17, "season": 0.23},
-    "late": {"motor_boat": 0.14, "exhibition": 0.13, "player_course": 0.21, "course_prior": 0.17, "season": 0.35}
+    "early": {
+      "motor_boat": 0.24,
+      "exhibition": 0.2,
+      "player_course": 0.29,
+      "course_prior": 0.17,
+      "season": 0.1
+    },
+    "middle": {
+      "motor_boat": 0.19,
+      "exhibition": 0.17,
+      "player_course": 0.24,
+      "course_prior": 0.17,
+      "season": 0.23
+    },
+    "late": {
+      "motor_boat": 0.14,
+      "exhibition": 0.13,
+      "player_course": 0.21,
+      "course_prior": 0.17,
+      "season": 0.35
+    }
+  },
+  "season_policy": {
+    "recency_weights": [
+      1.0,
+      0.82,
+      0.67,
+      0.55,
+      0.45
+    ],
+    "finish_points": {
+      "1": 2.4,
+      "2": 1.5,
+      "3": 0.7,
+      "4": -0.3,
+      "5": -1.1,
+      "6": -1.8
+    },
+    "outside_win_bonus": 0.8,
+    "outside_second_bonus": 0.5,
+    "outside_third_bonus": 0.3,
+    "lane1_poor_finish_penalty": true
+  },
+  "scenario_policy": {
+    "head_conditional_second_third": true,
+    "outer_linkage": true,
+    "inside_residual": true,
+    "attacker_out_revival": true
+  },
+  "trifecta_policy": {
+    "score_all_120": true,
+    "ticket_count": 10,
+    "scenario_floor": true,
+    "odds_excluded": true
+  },
+  "same_day_water_policy": {
+    "enabled_after_race": 3,
+    "max_course_adjustment": 0.06,
+    "must_not_override_core_strength": true
   },
   "exhibition_policy": {
     "first_place_contribution_reduced": true,
@@ -14,5 +79,41 @@
   },
   "machine_policy": "raw motor and boat values are preserved; only position-specific contribution weights are adjusted",
   "class_state_policy": "grade_only_amplifies_verified_motor_exhibition_or_season_form",
-  "ticket_count": 10
+  "sab_policy": {
+    "s_requires_head_gap": 0.2,
+    "s_requires_top_scenario": 0.34,
+    "s_requires_ticket_coverage": 0.2,
+    "s_requires_top10_share": 0.38,
+    "a_requires_head_gap": 0.09,
+    "a_requires_top_scenario": 0.23,
+    "a_requires_ticket_coverage": 0.14,
+    "a_requires_top10_share": 0.28
+  },
+  "regression_races": [
+    {
+      "date": "2026-08-01",
+      "race": 2,
+      "expected_result": "1-5-6"
+    },
+    {
+      "date": "2026-08-01",
+      "race": 3,
+      "expected_result": "1-5-6"
+    },
+    {
+      "date": "2026-08-01",
+      "race": 4,
+      "expected_result": "2-3-4"
+    },
+    {
+      "date": "2026-08-01",
+      "race": 5,
+      "expected_result": "1-3-4"
+    },
+    {
+      "date": "2026-08-01",
+      "race": 7,
+      "expected_result": "6-4-1"
+    }
+  ]
 }
