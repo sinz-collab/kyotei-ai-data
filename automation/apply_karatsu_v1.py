@@ -301,9 +301,14 @@ def apply_file(path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--date", required=True, help="YYYYMMDD")
+    parser.add_argument("--date", required=True, help="YYYYMMDD or YYYY-MM-DD")
     args = parser.parse_args()
-    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date}.json"
+
+    normalized_date = re.sub(r"[^0-9]", "", args.date)
+    if len(normalized_date) != 8:
+        raise ValueError(f"invalid_date:{args.date}")
+
+    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{normalized_date}.json"
     if not path.exists():
         raise FileNotFoundError(path)
     apply_file(path)
