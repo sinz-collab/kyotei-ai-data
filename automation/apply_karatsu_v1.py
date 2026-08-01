@@ -280,8 +280,22 @@ def apply_file(path: Path) -> None:
     races = payload.get("races") or []
     if len(races) != 12:
         raise RuntimeError("karatsu_races_must_be_12")
+    predictions = {}
     for race in races:
-        race["prediction"] = site_prediction(payload, race)
+        prediction = site_prediction(payload, race)
+        race["prediction"] = prediction
+        race_no = int(race.get("race") or (race.get("race_meta") or {}).get("race_no") or 0)
+        if race_no:
+            predictions[str(race_no)] = prediction
+
+    # Keep the top-level prediction domains synchronized with the race-level output.
+    # The morning three-stage pipeline validates and preserves these fields.
+    payload["engine"] = ENGINE_ID
+    payload["engineVersion"] = "1.2.0"
+    payload["preds"] = predictions
+    payload["predictionStatus"] = "ready"
+    payload["predictionReason"] = ""
+
     atomic_write_json(path, payload)
 
 
