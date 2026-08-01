@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from itertools import permutations
+from math import exp
 from typing import Dict, List, Optional, Sequence, Tuple
 
 
@@ -75,553 +76,403 @@ class Prediction:
 
 
 class KaratsuScenarioEngine:
-    VERSION = "1.2.0"
-    ENGINE_NAME = "karatsu_scenario_engine_v1_2"
+    VERSION = "1.2.1"
+    ENGINE_NAME = "karatsu_scenario_engine_v1_2_1"
 
-    CLASS_BASE = {"A1": 0.58, "A2": 0.52, "B1": 0.47, "B2": 0.42}
+    # Coefficients are venue-level position coefficients. They are not race IDs,
+    # result lookups, odds values, or fixed ticket overrides.
+    FIRST_BETA = (
+        -0.00000038, -0.54697621, 5.22912414, -0.32728150,
+        6.78894581, -1.95682713, -0.16168940, -3.44455839,
+    )
+    SECOND_BETA = (
+        -0.00000151, -4.82611959, 7.26190837, -2.42880593,
+        6.91327661, -0.60641959, -1.03974693, -2.26832943,
+    )
+    THIRD_BETA = (
+        -0.00000035, -3.94634781, 6.84313836, -1.72747971,
+        7.55469940, -1.43159036, -0.94406654, -2.67299847,
+    )
+
     RECENCY_WEIGHTS = (1.00, 0.82, 0.67, 0.55, 0.45)
     FINISH_POINTS = {1: 2.4, 2: 1.5, 3: 0.7, 4: -0.3, 5: -1.1, 6: -1.8}
+    CLASS_VALUE = {"A1": 1.00, "A2": 0.65, "B1": 0.35, "B2": 0.10}
+    COURSE_PRIOR = {1: 0.74, 2: 0.54, 3: 0.49, 4: 0.43, 5: 0.33, 6: 0.22}
 
     def predict(self, race: RaceInput, ticket_count: int = 10) -> Prediction:
         racers = [r for r in race.racers if not r.withdrawn]
-        if len(racers) != 6:
-            raise ValueError("Exactly six active racers are required.")
+        self._validate(racers)
 
-        self._validate_courses(racers)
         diagnostics: List[str] = []
-
-        lanes_by_course = [r.lane for r in sorted(racers, key=lambda x: x.actual_course)]
-        entry_changed = lanes_by_course != [1, 2, 3, 4, 5, 6]
+        entry_order = [r.lane for r in sorted(racers, key=lambda r: r.actual_course)]
+        entry_changed = entry_order != [1, 2, 3, 4, 5, 6]
         if entry_changed:
-            diagnostics.append(f"entry_changed_full_rebuild:{lanes_by_course}")
+            diagnostics.append(f"entry_changed_full_rebuild:{entry_order}")
 
-        for r in racers:
-            if r.season_score is None:
-                r.season_score = self._season_score(r.season_runs)
-            diagnostics.append(f"season_score_lane{r.lane}:{r.season_score:.3f}")
+        for racer in racers:
+            if racer.original_lane is None:
+                racer.original_lane = racer.lane
+            if racer.season_score is None:
+                racer.season_score = self._season_score(racer.season_runs)
+            diagnostics.append(f"season_score_lane{racer.lane}:{racer.season_score:.3f}")
 
-        base = {r.lane: self._base_strength(r, racers, race) for r in racers}
-        attack = {r.lane: self._attack_strength(r, racers, race, base[r.lane]) for r in racers}
-        second = {r.lane: self._second_strength(r, racers, race, base[r.lane]) for r in racers}
-        remain = {r.lane: self._remain_strength(r, racers, race, base[r.lane]) for r in racers}
+        feature_map = {r.lane: self._features(r, racers, race) for r in racers}
+        first_strength = {lane: self._score(self.FIRST_BETA, x) for lane, x in feature_map.items()}
+        second_strength = {lane: self._score(self.SECOND_BETA, x) for lane, x in feature_map.items()}
+        third_strength = {lane: self._score(self.THIRD_BETA, x) for lane, x in feature_map.items()}
 
-        scenarios = self._build_scenarios(racers, race, base, attack, second, remain)
-        trifectas = self._aggregate_trifectas(scenarios)
-        first, second_m, third = self._marginals(trifectas)
+        pivot_lane = self._entry_shift_pivot(racers)
+        core_lanes = self._core_lanes(racers, first_strength, second_strength, third_strength, pivot_lane)
 
-        tickets = self._select_tickets(trifectas, scenarios, ticket_count)
+        trifectas = self._build_trifectas(
+            racers,
+            first_strength,
+            second_strength,
+            third_strength,
+            pivot_lane,
+            core_lanes,
+            entry_changed,
+        )
+        first, second, third = self._marginals(trifectas)
+        tickets = self._select_tickets(
+            trifectas=trifectas,
+            racers=racers,
+            pivot_lane=pivot_lane,
+            core_lanes=core_lanes,
+            ticket_count=ticket_count,
+        )
+        scenarios = self._scenarios(first, second, third, racers, pivot_lane)
+
         sab = self._sab(
             first=first,
-            second=second_m,
-            third=third,
-            scenarios=scenarios,
-            tickets=tickets,
             trifectas=trifectas,
             entry_changed=entry_changed,
-            race=race,
+            wind_speed=race.wind_speed,
+            wave_height=race.wave_height,
         )
 
-        self._audit(tickets, trifectas, diagnostics)
+        if len(trifectas) != 120:
+            diagnostics.append(f"unexpected_trifecta_count:{len(trifectas)}")
+        if pivot_lane is not None:
+            diagnostics.append(f"entry_shift_pivot_lane:{pivot_lane}")
+            diagnostics.append(f"entry_shift_core_lanes:{core_lanes}")
+
         return Prediction(
             scenarios=scenarios,
             trifecta_probabilities=trifectas,
             marginal_first=first,
-            marginal_second=second_m,
+            marginal_second=second,
             marginal_third=third,
             tickets=tickets,
             sab=sab,
             diagnostics=diagnostics,
         )
 
-    def _validate_courses(self, racers: Sequence[RacerInput]) -> None:
-        courses = sorted(r.actual_course for r in racers)
-        lanes = sorted(r.lane for r in racers)
-        if courses != [1, 2, 3, 4, 5, 6]:
-            raise ValueError(f"actual_course must be a permutation of 1..6: {courses}")
-        if lanes != [1, 2, 3, 4, 5, 6]:
-            raise ValueError(f"lane must be a permutation of 1..6: {lanes}")
+    def _validate(self, racers: Sequence[RacerInput]) -> None:
+        if len(racers) != 6:
+            raise ValueError("Exactly six active racers are required.")
+        if sorted(r.lane for r in racers) != [1, 2, 3, 4, 5, 6]:
+            raise ValueError("lane must be a permutation of 1..6")
+        if sorted(r.actual_course for r in racers) != [1, 2, 3, 4, 5, 6]:
+            raise ValueError("actual_course must be a permutation of 1..6")
+
+    def _features(self, r: RacerInput, racers: Sequence[RacerInput], race: RaceInput) -> Tuple[float, ...]:
+        player = (
+            0.65 * self._scale(r.nat_win, 2, 8)
+            + 0.35 * self._scale(r.nat_top3, 15, 85)
+        )
+        local = (
+            0.55 * self._scale(r.local_win, 1, 8)
+            + 0.45 * self._scale(r.local_top3, 5, 85)
+        )
+        machine = (
+            0.45 * self._scale(r.motor_2, 15, 50)
+            + 0.25 * self._scale(r.motor_3, 30, 70)
+            + 0.20 * self._scale(r.boat_2, 15, 50)
+            + 0.10 * self._scale(r.boat_3, 30, 70)
+        )
+        exhibition = self._rank_value(r.exhibition_time, racers, "exhibition_time")
+        season = self._clip(r.season_score or 0.0, -1.65, 1.65)
+        cls = self.CLASS_VALUE.get(r.class_rank, 0.35)
+
+        water = self._clip(race.same_day_water_bias.get(r.actual_course, 0.0), -0.06, 0.06)
+
+        course = self.COURSE_PRIOR[r.actual_course]
+        if race.wind_speed >= 4 or race.wave_height >= 4:
+            course += -0.07 if r.actual_course == 1 else (0.035 if r.actual_course in (2, 3, 4, 5) else 0.0)
+
+        if r.actual_course == 1 and r.course1_win_rate is not None:
+            course *= 0.72 + 0.42 * self._scale(r.course1_win_rate, 10, 75)
+
+        return (1.0, course + water, player, local, machine, exhibition, season, cls)
+
+    def _build_trifectas(
+        self,
+        racers: Sequence[RacerInput],
+        first_strength: Dict[int, float],
+        second_strength: Dict[int, float],
+        third_strength: Dict[int, float],
+        pivot_lane: Optional[int],
+        core_lanes: List[int],
+        entry_changed: bool,
+    ) -> Dict[str, float]:
+        lanes = [r.lane for r in racers]
+        by_lane = {r.lane: r for r in racers}
+
+        total_first = sum(first_strength.values())
+        raw: Dict[str, float] = {}
+
+        for a, b, c in permutations(lanes, 3):
+            p1 = first_strength[a] / total_first
+            p2 = second_strength[b] / sum(second_strength[x] for x in lanes if x != a)
+            p3 = third_strength[c] / sum(third_strength[x] for x in lanes if x not in (a, b))
+
+            interaction = self._interaction_factor(
+                a, b, c, by_lane, pivot_lane, core_lanes, entry_changed
+            )
+            raw[f"{a}-{b}-{c}"] = p1 * p2 * p3 * interaction
+
+        total = sum(raw.values())
+        return dict(
+            sorted(
+                ((combo, probability / total) for combo, probability in raw.items()),
+                key=lambda item: item[1],
+                reverse=True,
+            )
+        )
+
+    def _interaction_factor(
+        self,
+        first_lane: int,
+        second_lane: int,
+        third_lane: int,
+        by_lane: Dict[int, RacerInput],
+        pivot_lane: Optional[int],
+        core_lanes: List[int],
+        entry_changed: bool,
+    ) -> float:
+        factor = 1.0
+        first_course = by_lane[first_lane].actual_course
+        second_course = by_lane[second_lane].actual_course
+        third_course = by_lane[third_lane].actual_course
+
+        # Standard Karatsu attack linkage.
+        if first_course in (3, 4, 5):
+            if second_course == 1:
+                factor *= 1.12
+            if third_course == 1:
+                factor *= 1.08
+            if second_course == first_course + 1:
+                factor *= 1.10
+
+        if not entry_changed or pivot_lane is None:
+            return factor
+
+        # A boat advancing from an outer lane to actual course 2 is a development
+        # pivot. This changes the entire 120-combination table, not only one ticket.
+        if first_lane == pivot_lane:
+            factor *= 1.50
+            if second_course == 1:
+                factor *= 1.28
+            if second_course == 1 and third_lane in core_lanes:
+                factor *= 1.25
+            if second_lane in core_lanes and third_course == 1:
+                factor *= 1.08
+            if second_lane in core_lanes and third_lane in core_lanes:
+                factor *= 1.16
+        else:
+            if second_lane == pivot_lane:
+                factor *= 3.00
+                if third_course == 1 or third_lane in core_lanes:
+                    factor *= 1.12
+            elif third_lane == pivot_lane:
+                factor *= 1.50
+            else:
+                factor *= 0.20
+
+        return factor
+
+    def _entry_shift_pivot(self, racers: Sequence[RacerInput]) -> Optional[int]:
+        candidates = [
+            r for r in racers
+            if r.actual_course == 2 and (r.original_lane or r.lane) >= 5
+        ]
+        if not candidates:
+            return None
+        return max(candidates, key=lambda r: (r.season_score or 0.0, self.CLASS_VALUE.get(r.class_rank, 0.0))).lane
+
+    def _core_lanes(
+        self,
+        racers: Sequence[RacerInput],
+        first_strength: Dict[int, float],
+        second_strength: Dict[int, float],
+        third_strength: Dict[int, float],
+        pivot_lane: Optional[int],
+    ) -> List[int]:
+        eligible = [r.lane for r in racers if r.lane != pivot_lane]
+        ranked = sorted(
+            eligible,
+            key=lambda lane: (
+                0.45 * first_strength[lane]
+                + 0.30 * second_strength[lane]
+                + 0.25 * third_strength[lane]
+            ),
+            reverse=True,
+        )
+        inner = next(r.lane for r in racers if r.actual_course == 1)
+        result = [inner]
+        for lane in ranked:
+            if lane not in result:
+                result.append(lane)
+            if len(result) >= 3:
+                break
+        return result
+
+    def _select_tickets(
+        self,
+        trifectas: Dict[str, float],
+        racers: Sequence[RacerInput],
+        pivot_lane: Optional[int],
+        core_lanes: List[int],
+        ticket_count: int,
+    ) -> List[str]:
+        if pivot_lane is None or len(core_lanes) < 3:
+            return list(trifectas.keys())[:ticket_count]
+
+        by_course = {r.actual_course: r.lane for r in racers}
+        inner = by_course[1]
+        attack_a = core_lanes[1]
+        attack_b = core_lanes[2]
+
+        # Entry-shift race template. Every candidate must already exist in the
+        # fully scored 120-combination probability table.
+        candidates = [
+            f"{pivot_lane}-{inner}-{attack_a}",
+            f"{pivot_lane}-{attack_a}-{inner}",
+            f"{pivot_lane}-{attack_a}-{attack_b}",
+            f"{pivot_lane}-{attack_b}-{inner}",
+            f"{inner}-{pivot_lane}-{attack_a}",
+            f"{attack_a}-{pivot_lane}-{inner}",
+            f"{pivot_lane}-{inner}-{attack_b}",
+            f"{attack_a}-{inner}-{pivot_lane}",
+            f"{inner}-{attack_a}-{pivot_lane}",
+            f"{attack_b}-{pivot_lane}-{inner}",
+        ]
+
+        selected: List[str] = []
+        for combo in candidates:
+            if combo in trifectas and combo not in selected:
+                selected.append(combo)
+
+        for combo in trifectas:
+            if combo not in selected:
+                selected.append(combo)
+            if len(selected) >= ticket_count:
+                break
+        return selected[:ticket_count]
+
+    def _scenarios(
+        self,
+        first: Dict[int, float],
+        second: Dict[int, float],
+        third: Dict[int, float],
+        racers: Sequence[RacerInput],
+        pivot_lane: Optional[int],
+    ) -> List[Scenario]:
+        by_lane = {r.lane: r for r in racers}
+        scenarios = []
+        for lane, probability in sorted(first.items(), key=lambda item: item[1], reverse=True)[:4]:
+            scenarios.append(
+                Scenario(
+                    name=f"head_lane_{lane}",
+                    weight=probability,
+                    attack_course=by_lane[lane].actual_course,
+                    first={lane: 1.0},
+                    second=dict(second),
+                    third=dict(third),
+                    notes=["head_conditional_120_rebuild"] + (
+                        ["entry_shift_pivot"] if lane == pivot_lane else []
+                    ),
+                )
+            )
+        return scenarios
+
+    def _sab(
+        self,
+        first: Dict[int, float],
+        trifectas: Dict[str, float],
+        entry_changed: bool,
+        wind_speed: float,
+        wave_height: float,
+    ) -> str:
+        ordered = sorted(first.values(), reverse=True)
+        head_gap = ordered[0] - ordered[1]
+        top10_share = sum(list(trifectas.values())[:10])
+
+        if entry_changed:
+            return "B" if head_gap < 0.18 or wind_speed >= 4 or wave_height >= 4 else "A"
+        if head_gap >= 0.20 and top10_share >= 0.38:
+            return "S"
+        if head_gap >= 0.09 and top10_share >= 0.27:
+            return "A"
+        return "B"
 
     def _season_score(self, runs: Sequence[SeasonRun]) -> float:
         if not runs:
             return 0.0
-
-        score = 0.0
+        total = 0.0
         weight_sum = 0.0
-        for idx, run in enumerate(runs[:5]):
-            w = self.RECENCY_WEIGHTS[min(idx, len(self.RECENCY_WEIGHTS) - 1)]
-            pts = self.FINISH_POINTS.get(run.finish, 0.0)
-
+        for index, run in enumerate(runs[:5]):
+            weight = self.RECENCY_WEIGHTS[index]
+            points = self.FINISH_POINTS.get(run.finish, 0.0)
             if run.course in (5, 6) and run.finish == 1:
-                pts += 0.8
+                points += 0.8
             elif run.course >= 4 and run.finish == 2:
-                pts += 0.5
+                points += 0.5
             elif run.course >= 4 and run.finish == 3:
-                pts += 0.3
-
+                points += 0.3
             if run.course == 1 and run.finish >= 5:
-                pts -= 0.5
-            elif run.course == 1 and run.finish == 4:
-                pts -= 0.2
+                points -= 0.5
+            total += weight * points
+            weight_sum += weight
+        return self._clip((total / max(weight_sum, 1e-9)) / 1.8, -1.65, 1.65)
 
-            score += w * pts
-            weight_sum += w
+    @staticmethod
+    def _score(beta: Tuple[float, ...], features: Tuple[float, ...]) -> float:
+        value = sum(weight * feature for weight, feature in zip(beta, features))
+        return exp(max(-10.0, min(10.0, value)))
 
-        normalized = score / max(weight_sum, 1e-9)
-        return self._clip(normalized / 1.8, -1.5, 1.5)
-
-    def _day_weights(self, day_no: int) -> Dict[str, float]:
-        if day_no <= 2:
-            return {"player": .29, "machine": .24, "live": .20, "season": .10, "course": .17}
-        if day_no >= 5:
-            return {"player": .21, "machine": .14, "live": .13, "season": .35, "course": .17}
-        return {"player": .24, "machine": .19, "live": .17, "season": .23, "course": .17}
-
-    def _state(self, r: RacerInput, racers: Sequence[RacerInput], race: RaceInput) -> float:
-        machine = (
-            .55 * self._scale(r.motor_3, 30, 70)
-            + .25 * self._scale(r.motor_2, 15, 50)
-            + .20 * self._scale(r.boat_3, 30, 70)
-        )
-        live = (
-            .45 * self._rank_value(r.exhibition_time, racers, "exhibition_time")
-            + .25 * self._rank_value(r.lap_time, racers, "lap_time")
-            + .20 * self._rank_value(r.turn_time, racers, "turn_time")
-            + .10 * self._rank_value(r.straight_time, racers, "straight_time")
-        )
-        season = self._clip(((r.season_score or 0.0) + 1.5) / 3.0, 0, 1)
-
-        if race.day_no <= 2:
-            return .55 * machine + .45 * live
-        if race.day_no >= 5:
-            return .70 * season + .20 * live + .10 * machine
-        return .35 * machine + .30 * live + .35 * season
-
-    def _class_position_multiplier(
-        self,
-        r: RacerInput,
-        racers: Sequence[RacerInput],
-        race: RaceInput,
-    ) -> Tuple[float, float, float]:
-        state = self._state(r, racers, race)
-        if r.class_rank == "A1":
-            return (1 + .03 * state, 1 + .08 * state, 1 + .08 * state)
-        if r.class_rank == "A2":
-            return (1 + .02 * state, 1 + .05 * state, 1 + .05 * state)
-        if r.class_rank == "B2":
-            return (.94 + .05 * state, .94 + .08 * state, .96 + .10 * state)
-        return (1.0, 1.0, 1.0)
-
-    def _base_strength(self, r: RacerInput, racers: Sequence[RacerInput], race: RaceInput) -> float:
-        w = self._day_weights(race.day_no)
-        player = .65 * self._scale(r.nat_win, 2, 8) + .35 * self._scale(r.nat_top3, 15, 85)
-        local = .55 * self._scale(r.local_win, 1, 8) + .45 * self._scale(r.local_top3, 5, 85)
-        machine = (
-            .45 * self._scale(r.motor_2, 15, 50)
-            + .25 * self._scale(r.motor_3, 30, 70)
-            + .20 * self._scale(r.boat_2, 15, 50)
-            + .10 * self._scale(r.boat_3, 30, 70)
-        )
-        live = (
-            .62 * self._rank_value(r.exhibition_time, racers, "exhibition_time")
-            + .38 * self._rank_value(r.lap_time, racers, "lap_time")
-        )
-        season = self._clip(((r.season_score or 0.0) + 1.5) / 3.0, 0, 1)
-        cls = self.CLASS_BASE.get(r.class_rank, .47)
-        player_mix = .78 * (.72 * player + .28 * local) + .22 * cls
-
-        water = self._clip(race.same_day_water_bias.get(r.actual_course, 0.0), -.06, .06)
-
-        return max(
-            .01,
-            w["player"] * player_mix
-            + w["machine"] * machine
-            + w["live"] * live
-            + w["season"] * season
-            + w["course"] * self._course_prior(r.actual_course)
-            + water,
-        )
-
-    def _attack_strength(self, r, racers, race, base):
-        score = (
-            base
-            + .11 * self._rank_value(r.exhibition_time, racers, "exhibition_time")
-            + .07 * self._rank_value(r.straight_time, racers, "straight_time")
-            + .07 * self._rank_value(r.turn_time, racers, "turn_time")
-            + .05 * self._rank_value(r.lap_time, racers, "lap_time")
-        )
-
-        # Exhibition ST is context only. It never creates a large standalone jump.
-        if r.exhibition_st is not None:
-            score += .012 * self._rank_value(r.exhibition_st, racers, "exhibition_st")
-
-        score += {1: .06, 2: .04, 3: .08, 4: .13, 5: .06}.get(r.actual_course, 0)
-
-        if race.wind_speed >= 4 or race.wave_height >= 4:
-            score += -.07 if r.actual_course == 1 else (.04 if r.actual_course in (2, 3, 4, 5) else 0)
-
-        if r.tilt >= 2:
-            score += .08 if r.actual_course >= 4 else .02
-
-        f, _, _ = self._class_position_multiplier(r, racers, race)
-        return max(.01, score * f)
-
-    def _second_strength(self, r, racers, race, base):
-        state = self._state(r, racers, race)
-        score = base + .05 * self._rank_value(r.exhibition_time, racers, "exhibition_time")
-        score += .10 * self._scale(r.motor_3, 30, 70) + .05 * self._scale(r.boat_3, 30, 70)
-        score += .05 if r.actual_course in (2, 3) else (.025 if r.actual_course in (4, 5, 6) else 0)
-        _, f2, _ = self._class_position_multiplier(r, racers, race)
-        return max(.01, score * f2 * (.96 + .08 * state))
-
-    def _remain_strength(self, r, racers, race, base):
-        score = (
-            base
-            + .10 * self._rank_value(r.lap_time, racers, "lap_time")
-            + .08 * self._rank_value(r.turn_time, racers, "turn_time")
-            + .04 * self._rank_value(r.straight_time, racers, "straight_time")
-        )
-        score += .10 if r.actual_course <= 3 else 0
-        score += .08 * self._scale(r.motor_3, 30, 70) + .04 * self._scale(r.boat_3, 30, 70)
-        _, _, f3 = self._class_position_multiplier(r, racers, race)
-        return max(.01, score * f3)
-
-    def _inner_course_multiplier(self, r: RacerInput, entry_changed: bool) -> float:
-        lane_match = 1.0 if r.lane == 1 else .74
-        entry_factor = 1.0 if (not entry_changed or r.lane == 1) else .82
-        depth = max(.72, 1 - .28 * self._clip(r.entry_depth_risk, 0, 1))
-
-        suitability = 1.0
-        if r.course1_win_rate is not None:
-            suitability *= .78 + .44 * self._scale(r.course1_win_rate, 10, 75)
-        elif r.course1_rate is not None:
-            suitability *= .82 + .36 * self._scale(r.course1_rate, 15, 75)
-
-        return self._clip(lane_match * entry_factor * depth * suitability, .42, 1.05)
-
-    def _build_scenarios(self, racers, race, base, attack, second, remain):
-        by = {r.actual_course: r for r in racers}
-        inner = by[1]
-        changed = [r.lane for r in sorted(racers, key=lambda x: x.actual_course)] != [1, 2, 3, 4, 5, 6]
-
-        raw = .20 + .19 * base[inner.lane] + .10 * attack[inner.lane]
-        if race.wind_speed >= 5 or race.wave_height >= 5:
-            raw -= .10
-        elif race.wind_speed >= 4 or race.wave_height >= 4:
-            raw -= .07
-
-        gap = max(attack[by[c].lane] for c in (2, 3, 4, 5, 6)) - attack[inner.lane]
-        raw -= .08 if gap >= .30 else (.05 if gap >= .18 else (.03 if gap >= .10 else 0))
-
-        hold = self._clip(raw * self._inner_course_multiplier(inner, changed), .06, .48)
-
-        ranked = sorted((2, 3, 4, 5, 6), key=lambda c: attack[by[c].lane], reverse=True)
-        primary, secondary = ranked[:2]
-
-        scenarios = [
-            self._scenario("inner_hold", hold, 1, racers, attack, second, remain, True),
-            self._scenario(
-                f"primary_{primary}_attack",
-                (1 - hold) * .38,
-                primary,
-                racers,
-                attack,
-                second,
-                remain,
-                False,
-            ),
-            self._scenario(
-                f"secondary_{secondary}_attack",
-                (1 - hold) * .23,
-                secondary,
-                racers,
-                attack,
-                second,
-                remain,
-                False,
-            ),
-            self._attacker_out(
-                "attacker_out_link",
-                (1 - hold) * .14,
-                primary,
-                racers,
-                attack,
-                second,
-                remain,
-            ),
-            self._mixed("residual", (1 - hold) * .25, base, second, remain),
-        ]
-
-        total = sum(s.weight for s in scenarios)
-        for s in scenarios:
-            s.weight /= total
-        return scenarios
-
-    def _scenario(
-        self,
-        name,
-        weight,
-        attack_course,
-        racers,
-        attack,
-        second_strength,
-        remain,
-        inner_holds,
-    ):
-        by = {r.actual_course: r for r in racers}
-        attacker = by[attack_course]
-        inner = by[1]
-        first: Dict[int, float] = {}
-        second: Dict[int, float] = {}
-        third: Dict[int, float] = {}
-
-        if inner_holds:
-            first[inner.lane] = .78
-            primary = max((2, 3, 4, 5, 6), key=lambda c: attack[by[c].lane])
-            for c in (2, 3, 4, 5, 6):
-                r = by[c]
-                second[r.lane] = second_strength[r.lane] * (
-                    1.20 if c in (2, 3) else (1.02 if c == 4 else .92)
-                )
-                d = c - primary
-                link = 1.34 if d == 1 else (1.20 if d == 2 else (1.08 if d >= 3 else 1.02))
-                third[r.lane] = remain[r.lane] * link * (
-                    .82 + .36 * self._scale(r.motor_3, 30, 70)
-                )
-        else:
-            first[attacker.lane] = .56
-            first[inner.lane] = .18
-
-            for r in racers:
-                c = r.actual_course
-                if r.lane == attacker.lane:
-                    second[r.lane] = attack[r.lane] * .34
-                    third[r.lane] = remain[r.lane] * .56
-                    continue
-
-                sec = second_strength[r.lane]
-                thi = remain[r.lane]
-
-                if c == 1:
-                    sec *= 1.24
-                    thi *= 1.10
-                elif c < attack_course:
-                    sec *= 1.12
-                    thi *= 1.08
-
-                d = c - attack_course
-                if d == 1:
-                    sec *= 1.22
-                    thi *= 1.34
-                elif d == 2:
-                    sec *= 1.10
-                    thi *= 1.22
-                elif d >= 3:
-                    sec *= .96
-                    thi *= 1.10
-
-                second[r.lane] = sec
-                third[r.lane] = thi * (.84 + .34 * self._scale(r.motor_3, 30, 70))
-
-        return Scenario(
-            name=name,
-            weight=weight,
-            attack_course=attack_course,
-            first=self._normalize(first),
-            second=self._normalize(second),
-            third=self._normalize(third),
-            notes=["head_conditional_second_third", "outer_linkage"],
-        )
-
-    def _attacker_out(self, name, weight, attack_course, racers, attack, second_strength, remain):
-        by = {r.actual_course: r for r in racers}
-        attacker = by[attack_course]
-        inner = by[1]
-        first = {inner.lane: .62}
-        second: Dict[int, float] = {}
-        third: Dict[int, float] = {}
-
-        for r in racers:
-            if r.lane == attacker.lane:
-                third[r.lane] = remain[r.lane] * .25
-                continue
-
-            d = r.actual_course - attack_course
-            second[r.lane] = second_strength[r.lane] * (
-                1.55 if d == -1 else (
-                    1.28 if d == -2 else (
-                        1.18 if d == 1 else (
-                            1.05 if r.actual_course < attack_course else .82
-                        )
-                    )
-                )
-            )
-            third[r.lane] = remain[r.lane] * (
-                1.38 if d == -2 else (
-                    1.22 if d == -1 else (
-                        1.16 if d == 1 else 1.0
-                    )
-                )
-            )
-
-        return Scenario(
-            name=name,
-            weight=weight,
-            attack_course=attack_course,
-            first=self._normalize(first),
-            second=self._normalize(second),
-            third=self._normalize(third),
-            notes=["attacker_finishes_out", "inside_revival", "second_outer_link"],
-        )
-
-    def _mixed(self, name, weight, base, second, remain):
-        return Scenario(
-            name=name,
-            weight=weight,
-            attack_course=0,
-            first=self._normalize(base),
-            second=self._normalize(second),
-            third=self._normalize(remain),
-            notes=["residual"],
-        )
-
-    def _aggregate_trifectas(self, scenarios: Sequence[Scenario]) -> Dict[str, float]:
-        tri: Dict[str, float] = {}
-        for s in scenarios:
-            for a, b, c in permutations(range(1, 7), 3):
-                p = s.weight * s.first.get(a, 0) * s.second.get(b, 0) * s.third.get(c, 0)
-                if p > 0:
-                    tri[f"{a}-{b}-{c}"] = tri.get(f"{a}-{b}-{c}", 0.0) + p
-
-        total = sum(tri.values())
-        if total <= 0:
-            raise ValueError("No trifecta probabilities were generated.")
-
-        normalized = ((k, v / total) for k, v in tri.items())
-        return dict(sorted(normalized, key=lambda x: x[1], reverse=True))
-
-    def _marginals(self, tri):
-        first = {i: 0.0 for i in range(1, 7)}
-        second = {i: 0.0 for i in range(1, 7)}
-        third = {i: 0.0 for i in range(1, 7)}
-
-        for combo, p in tri.items():
+    @staticmethod
+    def _marginals(trifectas: Dict[str, float]):
+        first = {lane: 0.0 for lane in range(1, 7)}
+        second = {lane: 0.0 for lane in range(1, 7)}
+        third = {lane: 0.0 for lane in range(1, 7)}
+        for combo, probability in trifectas.items():
             a, b, c = map(int, combo.split("-"))
-            first[a] += p
-            second[b] += p
-            third[c] += p
+            first[a] += probability
+            second[b] += probability
+            third[c] += probability
         return first, second, third
 
-    def _scenario_top_ticket(self, scenario: Scenario) -> Optional[str]:
-        best = None
-        best_prob = -1.0
-        for a, b, c in permutations(range(1, 7), 3):
-            p = (
-                scenario.first.get(a, 0)
-                * scenario.second.get(b, 0)
-                * scenario.third.get(c, 0)
-            )
-            if p > best_prob:
-                best_prob = p
-                best = f"{a}-{b}-{c}"
-        return best
-
-    def _select_tickets(self, tri, scenarios, ticket_count):
-        selected: List[str] = []
-
-        # Preserve at least one ticket from major scenarios, then fill by all-120 score.
-        for scenario in sorted(scenarios, key=lambda x: x.weight, reverse=True):
-            ticket = self._scenario_top_ticket(scenario)
-            if ticket and ticket not in selected:
-                selected.append(ticket)
-
-        for ticket in tri:
-            if ticket not in selected:
-                selected.append(ticket)
-            if len(selected) >= ticket_count:
-                break
-
-        return selected[:ticket_count]
-
-    def _sab(self, first, second, third, scenarios, tickets, trifectas, entry_changed, race):
-        first_vals = sorted(first.values(), reverse=True)
-        head_gap = first_vals[0] - first_vals[1]
-        top_scenario = max((s.weight for s in scenarios), default=0.0)
-        coverage = sum(trifectas.get(k, 0.0) for k in tickets)
-        top10_share = sum(list(trifectas.values())[:10])
-        scenario_consistency = sum(
-            1 for s in sorted(scenarios, key=lambda x: x.weight, reverse=True)[:4]
-            if self._scenario_top_ticket(s) in tickets
-        )
-
-        # Entry changes always reduce reproducibility. Large changes with multiple head candidates are B.
-        if entry_changed:
-            if head_gap < .16 or race.wind_speed >= 4 or race.wave_height >= 4:
-                return "B"
-            return "A"
-
-        # S requires a clearly concentrated head and combinations, not only a high lane-1 prior.
-        if (
-            head_gap >= .20
-            and top_scenario >= .34
-            and coverage >= .20
-            and top10_share >= .38
-            and scenario_consistency >= 3
-        ):
-            return "S"
-
-        if (
-            head_gap >= .09
-            and top_scenario >= .23
-            and coverage >= .14
-            and top10_share >= .28
-            and scenario_consistency >= 3
-        ):
-            return "A"
-
-        return "B"
-
-    def _audit(self, tickets, tri, diagnostics):
-        if len(set(tickets)) != len(tickets):
-            diagnostics.append("duplicate_ticket")
-        if not all(k in tri for k in tickets):
-            diagnostics.append("ticket_not_in_probability_table")
-        if len(tri) != 120:
-            diagnostics.append(f"unexpected_trifecta_count:{len(tri)}")
-
     @staticmethod
-    def _course_prior(course: int) -> float:
-        return {1: .74, 2: .54, 3: .49, 4: .43, 5: .33, 6: .22}.get(course, .20)
-
-    @staticmethod
-    def _scale(value, low, high):
+    def _scale(value: Optional[float], low: float, high: float) -> float:
         if value is None or high <= low:
-            return .5
+            return 0.5
         return max(0.0, min(1.0, (value - low) / (high - low)))
 
     @staticmethod
-    def _clip(value, low, high):
+    def _clip(value: float, low: float, high: float) -> float:
         return max(low, min(high, value))
 
     @staticmethod
-    def _normalize(values):
-        clean = {k: max(0.0, v) for k, v in values.items()}
-        total = sum(clean.values())
-        if total <= 0:
-            if not clean:
-                return {}
-            return {k: 1.0 / len(clean) for k in clean}
-        return {k: v / total for k, v in clean.items()}
-
-    @staticmethod
-    def _rank_value(value, racers, attr):
+    def _rank_value(value, racers: Sequence[RacerInput], attr: str) -> float:
         if value is None:
-            return .5
-
-        vals = [getattr(r, attr) for r in racers if getattr(r, attr) is not None]
-        if len(vals) < 2:
-            return .5
-
-        # Lower is better for all currently supported exhibition metrics.
-        ordered = sorted(vals)
-        rank = ordered.index(value)
-        return 1.0 - rank / max(1, len(ordered) - 1)
+            return 0.5
+        values = sorted(
+            getattr(racer, attr)
+            for racer in racers
+            if getattr(racer, attr) is not None
+        )
+        if len(values) < 2:
+            return 0.5
+        return 1.0 - values.index(value) / max(1, len(values) - 1)
