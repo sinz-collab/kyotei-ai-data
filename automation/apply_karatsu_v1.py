@@ -11,9 +11,9 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "karatsu_v1"
 sys.path.insert(0, str(ENGINE_DIR))
-from karatsu_prediction_engine import KaratsuScenarioEngine, RaceInput, RacerInput
+from karatsu_prediction_engine import KaratsuScenarioEngine, RaceInput, RacerInput, SeasonRun
 
-ENGINE_ID = "karatsu_scenario_engine_v1_1_1"
+ENGINE_ID = "karatsu_scenario_engine_v1_2"
 LANES = (1, 2, 3, 4, 5, 6)
 
 
@@ -91,18 +91,24 @@ def class_state_multiplier(class_rank: str, event_day: int, motor_score: float, 
     return (1.0, 1.0, 1.0)
 
 
-def season_score(racer: dict) -> float:
-    runs = racer.get("season_runs") or []
-    if not runs:
-        return 0.0
-    total = 0.0
-    weight = 0.0
-    for i, run in enumerate(runs[-10:]):
-        w = 1.0 + i * 0.08
-        finish = int(re.search(r"[1-6]", str(run.get("finish") or "6")).group()) if re.search(r"[1-6]", str(run.get("finish") or "6")) else 6
-        total += w * {1: 1.0, 2: 0.65, 3: 0.35, 4: 0.0, 5: -0.4, 6: -0.7}[finish]
-        weight += w
-    return max(-1.0, min(1.0, total / max(weight, 1.0)))
+def season_runs(racer: dict) -> list[SeasonRun]:
+    rows = racer.get("season_runs") or []
+    converted: list[SeasonRun] = []
+
+    # Source data is generally oldest -> newest. v1.2 expects newest first.
+    for run in reversed(rows[-5:]):
+        finish_match = re.search(r"[1-6]", str(run.get("finish") or "6"))
+        finish = int(finish_match.group()) if finish_match else 6
+        course = int(run.get("entry_course") or run.get("course") or 6)
+        st_value = run.get("st")
+        converted.append(
+            SeasonRun(
+                finish=finish,
+                course=course,
+                st=number(st_value, None),
+            )
+        )
+    return converted
 
 
 def motor_score(racer: dict) -> float:
@@ -127,20 +133,46 @@ def normalize(values: dict[int, float]) -> dict[int, float]:
     return {k: max(0.0, v) / total for k, v in values.items()}
 
 
-def apply_position_multipliers(prediction, racers: list[dict], event_day: int, ex_map: dict[int, dict], org_map: dict[int, dict]):
-    first, second, third = dict(prediction.marginal_first), dict(prediction.marginal_second), dict(prediction.marginal_third)
-    diagnostics = []
-    for racer in racers:
-        lane = int(racer["lane"])
-        m = motor_score(racer)
-        e = exhibit_score(ex_map.get(lane, {}), org_map.get(lane, {}))
-        s = season_score(racer)
-        f1, f2, f3 = class_state_multiplier(str(racer.get("class") or "B1"), event_day, m, e, s)
-        first[lane] *= f1
-        second[lane] *= f2
-        third[lane] *= f3
-        diagnostics.append({"lane": lane, "class": racer.get("class"), "motor_state": round(m, 3), "exhibition_state": round(e, 3), "season_state": round(s, 3), "position_multiplier": [round(f1, 3), round(f2, 3), round(f3, 3)]})
-    return normalize(first), normalize(second), normalize(third), diagnostics
+
+def same_day_water_bias(payload: dict, race_no: int) -> dict[int, float]:
+    """Build a small course bias from completed earlier races only.
+
+    The correction is capped at ±0.06 and never uses odds.
+    It starts after 3R and is intentionally weaker than player/course/form inputs.
+    """
+    if race_no <= 3:
+        return {}
+
+    scores = {lane: 0.0 for lane in LANES}
+    counts = {lane: 0 for lane in LANES}
+
+    for prior in payload.get("races") or []:
+        prior_no = int(prior.get("race") or 0)
+        if prior_no <= 0 or prior_no >= race_no:
+            continue
+
+        result = prior.get("result") or {}
+        order = result.get("order") or []
+        if not isinstance(order, list) or len(order) < 3:
+            continue
+
+        for pos, lane_value in enumerate(order[:3], start=1):
+            try:
+                lane = int(lane_value)
+            except (TypeError, ValueError):
+                continue
+            scores[lane] += {1: 1.0, 2: 0.45, 3: 0.20}[pos]
+            counts[lane] += 1
+
+    if not any(counts.values()):
+        return {}
+
+    average = sum(scores.values()) / 6.0
+    bias = {}
+    for lane in LANES:
+        raw = (scores[lane] - average) * 0.018
+        bias[lane] = max(-0.06, min(0.06, raw))
+    return bias
 
 
 def build_race_input(payload: dict, race: dict) -> tuple[RaceInput, dict[int, dict], dict[int, dict]]:
@@ -170,19 +202,38 @@ def build_race_input(payload: dict, race: dict) -> tuple[RaceInput, dict[int, di
             lap_time=number(org.get("lap_time"), None),
             turn_time=number(org.get("turn_time"), None),
             straight_time=number(org.get("straight_time"), None),
-            season_score=season_score(r),
+            season_score=None,
+            season_runs=season_runs(r),
             tilt=number(ex.get("tilt"), number(r.get("tilt"), 0)),
             withdrawn=bool(r.get("withdrawn", False)),
         ))
     w = weather(race, payload)
-    return RaceInput(racers=racers, wind_speed=number(w.get("wind_speed") or w.get("wind"), 0), wave_height=number(w.get("wave_height") or w.get("wave"), 0), tide_phase=str((race.get("tide") or {}).get("phase") or "unknown"), day_no=day_no(race, payload)), ex_map, org_map
+    race_no = int(race.get("race") or (race.get("race_meta") or {}).get("race_no") or 0)
+    return RaceInput(
+        racers=racers,
+        wind_speed=number(w.get("wind_speed") or w.get("wind"), 0),
+        wave_height=number(w.get("wave_height") or w.get("wave"), 0),
+        tide_phase=str((race.get("tide") or {}).get("phase") or "unknown"),
+        day_no=day_no(race, payload),
+        same_day_water_bias=same_day_water_bias(payload, race_no),
+    ), ex_map, org_map
 
 
 def site_prediction(payload: dict, race: dict) -> dict:
     race_input, ex_map, org_map = build_race_input(payload, race)
     prediction = KaratsuScenarioEngine().predict(race_input, ticket_count=10)
     first, second, third = dict(prediction.marginal_first), dict(prediction.marginal_second), dict(prediction.marginal_third)
-    state_diag = [{"lane": int(r["lane"]), "class": r.get("class"), "season_state": round(season_score(r), 3)} for r in (race.get("racers") or [])]
+    state_diag = [
+        {
+            "lane": int(r["lane"]),
+            "class": r.get("class"),
+            "seasonRuns": [
+                {"finish": x.finish, "course": x.course, "st": x.st}
+                for x in season_runs(r)
+            ],
+        }
+        for r in (race.get("racers") or [])
+    ]
     top3 = {lane: first[lane] + second[lane] + third[lane] for lane in LANES}
     entry = [r.lane for r in sorted(race_input.racers, key=lambda x: x.actual_course)]
     tickets = []
@@ -194,7 +245,7 @@ def site_prediction(payload: dict, race: dict) -> dict:
     return {
         "status": "complete",
         "engine": ENGINE_ID,
-        "engineVersion": "1.1.1",
+        "engineVersion": "1.2.0",
         "win": {str(k): round(v * 100, 1) for k, v in first.items()},
         "second": {str(k): round(v * 100, 1) for k, v in second.items()},
         "third": {str(k): round(v * 100, 1) for k, v in third.items()},
@@ -209,7 +260,16 @@ def site_prediction(payload: dict, race: dict) -> dict:
         "aiUpset": tickets[8:10],
         "scenarios": scenarios,
         "readability": {"axisLane": ranked[0], "secondHeadLane": ranked[1], "axisGap": round((first[ranked[0]] - first[ranked[1]]) * 100, 1)},
-        "diagnostics": {"classState": state_diag, "oddsUsedForPrediction": False, "engineDiagnostics": prediction.diagnostics},
+        "trifectaTop20": [
+            {"combo": combo, "probability": round(prob * 100, 4)}
+            for combo, prob in list(prediction.trifecta_probabilities.items())[:20]
+        ],
+        "diagnostics": {
+            "classState": state_diag,
+            "sameDayWaterBias": race_input.same_day_water_bias,
+            "oddsUsedForPrediction": False,
+            "engineDiagnostics": prediction.diagnostics,
+        },
     }
 
 
@@ -220,16 +280,8 @@ def apply_file(path: Path) -> None:
     races = payload.get("races") or []
     if len(races) != 12:
         raise RuntimeError("karatsu_races_must_be_12")
-    predictions = {}
     for race in races:
-        prediction = site_prediction(payload, race)
-        race["prediction"] = prediction
-        predictions[str(int(race["race"]))] = prediction
-    payload["engine"] = ENGINE_ID
-    payload["engineVersion"] = "1.1.1"
-    payload["preds"] = predictions
-    payload["predictionStatus"] = "ready"
-    payload["predictionReason"] = None
+        race["prediction"] = site_prediction(payload, race)
     atomic_write_json(path, payload)
 
 
@@ -237,7 +289,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="YYYYMMDD")
     args = parser.parse_args()
-    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date.replace('-', '')}.json"
+    path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{args.date}.json"
     if not path.exists():
         raise FileNotFoundError(path)
     apply_file(path)
