@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 
 import argparse
 import json
@@ -15,13 +16,19 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_ROOT = REPO_ROOT / "engines" / "wakamatsu_v2"
 ENGINE_DIR = ENGINE_ROOT / "engine"
 DB_PATH = ENGINE_ROOT / "data" / "wakamatsu_master_v1.sqlite"
-ENGINE_ID = "wakamatsu_engine_v2.0"
+
 LANES = (1, 2, 3, 4, 5, 6)
 
 if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
 
 from wakamatsu_engine import WakamatsuEngine  # noqa: E402
+
+from wakamatsu_v2_1_adjustments import (
+    ENGINE_ID,
+    ENGINE_VERSION,
+    apply_v21_adjustments,
+)
 
 
 def number(value: Any, default: float | None = 0.0) -> float | None:
@@ -60,6 +67,12 @@ class PlayerIdResolver:
         self.conn = sqlite3.connect(str(db_path))
         self.by_name: dict[str, int] = {}
         self._load()
+        self.by_name.update(
+            {
+                normalize_name("\u5ddd\u5408 \u7406\u53f8"): 3839,
+                normalize_name("\u4f50\u85e4 \u4e16\u90a3"): 5359,
+            }
+        )
 
     def _load(self) -> None:
         table_names = {
@@ -109,6 +122,52 @@ class PlayerIdResolver:
     def close(self) -> None:
         self.conn.close()
 
+
+def merge_live_files(
+    payload: dict,
+    target_date: str,
+    data_root: Path,
+) -> dict:
+    live_root = (
+        data_root
+        / "live"
+        / target_date
+        / "wakamatsu"
+    )
+
+    for race in payload.get("races") or []:
+        race_no = integer(race.get("race"))
+        race_dir = live_root / f"{race_no:02d}"
+
+        live = race.get("live")
+        if not isinstance(live, dict):
+            live = {}
+
+        for key, filename in (
+            ("exhibition", "exhibition.json"),
+            ("original", "original.json"),
+            ("weather", "weather.json"),
+            ("result", "result.json"),
+        ):
+            file_path = race_dir / filename
+
+            if not file_path.exists():
+                continue
+
+            try:
+                wrapper = json.loads(
+                    file_path.read_text(encoding="utf-8")
+                )
+            except Exception:
+                continue
+
+            data = wrapper.get("data")
+            if isinstance(data, dict):
+                live[key] = data
+
+        race["live"] = live
+
+    return payload
 
 def validate_payload(payload: dict, target_date: str) -> None:
     if payload.get("venueId") != "wakamatsu":
@@ -179,6 +238,48 @@ def entries_from_live(race: dict, kind: str) -> list[dict]:
             return value
     return []
 
+def final_inputs_ready(race: dict) -> tuple[bool, list[str]]:
+    missing: list[str] = []
+
+    exhibition = entries_from_live(race, "exhibition")
+
+    if len(exhibition) != 6:
+        missing.append("exhibition_entries")
+
+    lanes = sorted(
+        integer(
+            entry.get("lane")
+            or entry.get("boat_no")
+            or entry.get("boat")
+        )
+        for entry in exhibition
+    )
+
+    if lanes != list(LANES):
+        missing.append("exhibition_lanes")
+
+    times = [
+        number(
+            first_present(
+                entry,
+                "exhibition_time",
+                "display_time",
+                "time",
+            ),
+            None,
+        )
+        for entry in exhibition
+    ]
+
+    if len(times) != 6 or any(value is None for value in times):
+        missing.append("exhibition_times")
+
+    entry_map = actual_entry_map(race)
+
+    if sorted(entry_map) != list(LANES):
+        missing.append("actual_entry")
+
+    return not missing, missing
 
 def entry_index(entries: list[dict]) -> dict[int, dict]:
     result = {}
@@ -481,7 +582,7 @@ def site_prediction(result: dict, unresolved: list[dict]) -> dict:
     return {
         "status": "complete",
         "engine": ENGINE_ID,
-        "engineVersion": "2.0",
+        "engineVersion": ENGINE_VERSION,
         "win": win,
         "second": second,
         "third": third,
@@ -532,10 +633,76 @@ def apply_wakamatsu_v2(payload: dict, target_date: str) -> dict:
             race_no = integer(race.get("race"))
             try:
                 race_input, unresolved = build_engine_input(payload, race, resolver)
-                result = engine.predict(race_input)
-                prediction = site_prediction(result, unresolved)
+                ready, missing_final_inputs = final_inputs_ready(race)
+                existing_pre = race.get("predictionPre")
+
+                if ready:
+                    final_result = engine.predict(race_input)
+                    final_result = apply_v21_adjustments(
+                        final_result,
+                        race_input,
+                    )
+
+                    final_prediction = site_prediction(
+                        final_result,
+                        unresolved,
+                    )
+                    final_prediction["phase"] = "final"
+                    final_prediction["finalPredictionStatus"] = "complete"
+                    final_prediction["missingFinalInputs"] = []
+
+                    if existing_pre is None:
+                        pre_input = deepcopy(race_input)
+
+                        for boat in pre_input.get("boats") or []:
+                            boat["exhibition_score"] = 0.0
+                            boat["original_exhibition_score"] = 0.0
+                            boat["original_exhibition"] = None
+                            boat["start_time"] = None
+
+                        pre_result = engine.predict(pre_input)
+                        pre_result = apply_v21_adjustments(
+                            pre_result,
+                            pre_input,
+                        )
+
+                        existing_pre = site_prediction(
+                            pre_result,
+                            unresolved,
+                        )
+                        existing_pre["phase"] = "pre"
+                        existing_pre["finalPredictionStatus"] = "waiting_live_data"
+                        existing_pre["missingFinalInputs"] = [
+                            "exhibition_entries",
+                            "exhibition_times",
+                        ]
+
+                    race["predictionPre"] = existing_pre
+                    race["predictionFinal"] = final_prediction
+                    race["prediction"] = final_prediction
+                    prediction = final_prediction
+
+                else:
+                    pre_result = engine.predict(race_input)
+                    pre_result = apply_v21_adjustments(
+                        pre_result,
+                        race_input,
+                    )
+
+                    pre_prediction = site_prediction(
+                        pre_result,
+                        unresolved,
+                    )
+                    pre_prediction["phase"] = "pre"
+                    pre_prediction["finalPredictionStatus"] = "waiting_live_data"
+                    pre_prediction["missingFinalInputs"] = missing_final_inputs
+
+                    race["predictionPre"] = pre_prediction
+                    race["predictionFinal"] = None
+                    race["prediction"] = pre_prediction
+                    prediction = pre_prediction
+
                 predictions[str(race_no)] = prediction
-                race["prediction"] = prediction
                 unresolved_all.extend(
                     {"race": race_no, **row}
                     for row in unresolved
@@ -560,13 +727,13 @@ def apply_wakamatsu_v2(payload: dict, target_date: str) -> dict:
         raise RuntimeError("wakamatsu_v2_predictions_must_be_12")
 
     payload["engine"] = ENGINE_ID
-    payload["engineVersion"] = "2.0"
+    payload["engineVersion"] = ENGINE_VERSION
     payload["preds"] = predictions
     payload["predictionStatus"] = "ready"
     payload["predictionReason"] = None
     payload["predictionEngine"] = {
         "id": ENGINE_ID,
-        "version": "2.0",
+        "version": ENGINE_VERSION,
         "master": str(DB_PATH.relative_to(REPO_ROOT)).replace("\\", "/"),
         "generatedBy": "automation/apply_wakamatsu_v2.py",
         "oddsUsedForProbability": False,
@@ -601,6 +768,11 @@ def main() -> int:
         return 0
 
     payload = json.loads(dated_path.read_text(encoding="utf-8"))
+    payload = merge_live_files(
+        payload,
+        args.date,
+        data_root,
+    )
     payload = apply_wakamatsu_v2(payload, args.date)
 
     atomic_write_json(dated_path, payload)
