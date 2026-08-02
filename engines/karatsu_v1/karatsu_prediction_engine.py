@@ -4,6 +4,12 @@ from itertools import permutations
 from typing import Dict, List, Optional, Sequence
 
 @dataclass
+class SeasonRun:
+    finish: int
+    course: int
+    st: Optional[float] = None
+
+@dataclass
 class RacerInput:
     lane: int
     actual_course: int
@@ -26,7 +32,8 @@ class RacerInput:
     lap_time: Optional[float] = None
     turn_time: Optional[float] = None
     straight_time: Optional[float] = None
-    season_score: float = 0.0
+    season_score: Optional[float] = None
+    season_runs: List[SeasonRun] = field(default_factory=list)
     tilt: float = 0.0
     withdrawn: bool = False
 
@@ -37,6 +44,7 @@ class RaceInput:
     wave_height: float = 0.0
     tide_phase: str = "unknown"
     day_no: int = 1
+    same_day_water_bias: Dict[int, float] = field(default_factory=dict)
 
 @dataclass
 class Scenario:
@@ -73,6 +81,10 @@ class KaratsuScenarioEngine:
         if entry_changed:
             diagnostics.append(f"entry_changed:{lanes_by_course}")
 
+        for racer in racers:
+            if racer.season_score is None:
+                racer.season_score = self._season_score(racer.season_runs)
+
         base = {r.lane: self._base_strength(r, racers, race) for r in racers}
         attack = {r.lane: self._attack_strength(r, racers, race, base[r.lane]) for r in racers}
         second = {r.lane: self._second_strength(r, racers, race, base[r.lane]) for r in racers}
@@ -85,6 +97,27 @@ class KaratsuScenarioEngine:
         sab = self._sab(first, second, third, scenarios, tickets, entry_changed, race)
         self._audit(tickets, tri, diagnostics)
         return Prediction(scenarios, tri, first, second, third, tickets, sab, diagnostics)
+
+
+    @staticmethod
+    def _season_score(runs: Sequence[SeasonRun]) -> float:
+        if not runs:
+            return 0.0
+        recency = (1.00, 0.82, 0.67, 0.55, 0.45)
+        finish_points = {1: 1.00, 2: 0.55, 3: 0.20, 4: -0.15, 5: -0.45, 6: -0.75}
+        weighted = 0.0
+        total_weight = 0.0
+        for idx, run in enumerate(list(runs)[:5]):
+            weight = recency[idx]
+            point = finish_points.get(int(run.finish), -0.75)
+            if run.st is not None:
+                if run.st <= 0.12:
+                    point += 0.08
+                elif run.st >= 0.25:
+                    point -= 0.08
+            weighted += weight * point
+            total_weight += weight
+        return max(-1.0, min(1.0, weighted / total_weight if total_weight else 0.0))
 
     def _day_weights(self, day_no: int):
         if day_no <= 2:
