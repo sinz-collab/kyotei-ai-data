@@ -2,7 +2,7 @@
   "venueId": "tokoname",
   "venue": "常滑",
   "date": "2026-08-02",
-  "engine": "",
+  "engine": "tokoname_engine",
   "seriesDay": "4日目",
   "races": [
     {
@@ -1726,13 +1726,115 @@
         }
       ],
       "prediction": {
-        "status": "unavailable",
-        "reason": "prediction_payload_unavailable",
-        "engine": null,
-        "engine_version": null,
-        "probabilities": null,
-        "sab": null,
-        "tickets": null
+        "status": "ready",
+        "reason": null,
+        "engine": "tokoname_engine",
+        "engine_version": "1.6",
+        "probabilities": {
+          "win": {
+            "1": 39.1,
+            "2": 15.7,
+            "3": 8.9,
+            "4": 16.5,
+            "5": 9.7,
+            "6": 10.1
+          },
+          "second": {
+            "1": 12.2,
+            "2": 14.5,
+            "3": 22.6,
+            "4": 27.5,
+            "5": 17.7,
+            "6": 5.5
+          },
+          "third": {
+            "1": 19.5,
+            "2": 14.0,
+            "3": 1.3,
+            "4": 32.6,
+            "5": 11.3,
+            "6": 21.3
+          }
+        },
+        "sab": {
+          "grade": "S",
+          "score": 95,
+          "independent_of_ticket_count": true
+        },
+        "tickets": {
+          "main": [
+            {
+              "combination": "1-4-6",
+              "score_pct": 4.158,
+              "category": "main"
+            },
+            {
+              "combination": "1-4-2",
+              "score_pct": 2.722,
+              "category": "main"
+            },
+            {
+              "combination": "1-4-5",
+              "score_pct": 2.196,
+              "category": "main"
+            },
+            {
+              "combination": "1-4-3",
+              "score_pct": 0.257,
+              "category": "main"
+            },
+            {
+              "combination": "1-3-4",
+              "score_pct": 5.248,
+              "category": "main"
+            },
+            {
+              "combination": "1-3-6",
+              "score_pct": 3.426,
+              "category": "main"
+            }
+          ],
+          "deviation": [
+            {
+              "combination": "2-1-4",
+              "score_pct": 1.144,
+              "category": "deviation"
+            },
+            {
+              "combination": "4-1-6",
+              "score_pct": 0.783,
+              "category": "deviation"
+            }
+          ],
+          "upset": [
+            {
+              "combination": "2-3-4",
+              "score_pct": 2.117,
+              "category": "upset"
+            },
+            {
+              "combination": "2-4-6",
+              "score_pct": 1.677,
+              "category": "upset"
+            }
+          ]
+        },
+        "scenario": {
+          "primary": "1逃げ中心",
+          "head": 1,
+          "head_gap": 22.5
+        },
+        "data_flags": {
+          "entry_change": false,
+          "direct": true,
+          "exhibition": true,
+          "original_exhibition": true,
+          "setsukan": true,
+          "tide": true,
+          "odds_used_for_probability": false,
+          "result_used_for_probability": false
+        },
+        "input_hash": "a0c72ccd78a1b27fa3ae8da32e124e121fb075f111561a42076334c5bd5a66a9"
       },
       "live": {},
       "odds": {},
@@ -23208,8 +23310,8 @@
   "eventDayLabel": "4日目",
   "eventDay": 4,
   "eventScheduleLabels": {},
-  "predictionStatus": "unavailable",
-  "predictionReason": "prediction_payload_unavailable",
+  "predictionStatus": "ready",
+  "predictionReason": null,
   "sourceStatus": {
     "kimarite": {
       "status": "loaded",
@@ -23231,5 +23333,6 @@
       ],
       "warnings": []
     }
-  }
+  },
+  "engineVersion": "1.6"
 }
