@@ -61,7 +61,6 @@ class Prediction:
 
 class KaratsuScenarioEngine:
     VERSION = "1.1.1"
-    # Class is a small baseline only. Current form controls the meaningful class amplification.
     CLASS_BASE = {"A1": 0.58, "A2": 0.52, "B1": 0.47, "B2": 0.42}
 
     def predict(self, race: RaceInput, ticket_count: int = 10) -> Prediction:
@@ -80,7 +79,6 @@ class KaratsuScenarioEngine:
         remain = {r.lane: self._remain_strength(r, racers, race, base[r.lane]) for r in racers}
 
         scenarios = self._build_scenarios(racers, race, base, attack, second, remain)
-        # Correct pipeline: state-adjusted strengths -> scenarios -> trifectas -> marginals -> tickets.
         tri = self._aggregate_trifectas(scenarios)
         first, second, third = self._marginals(tri)
         tickets = self._select_tickets_with_scenario_floors(tri, scenarios, ticket_count)
@@ -134,7 +132,6 @@ class KaratsuScenarioEngine:
         return max(.01,score*f)
 
     def _second_strength(self,r,racers,race,base):
-        # Motor/boat and current form are routed more strongly to second place than to first.
         state=self._state(r,racers,race)
         score=base+.05*self._rank_value(r.exhibition_time,racers,"exhibition_time")
         score+=.10*self._scale(r.motor_3,30,70)+.05*self._scale(r.boat_3,30,70)
@@ -143,7 +140,6 @@ class KaratsuScenarioEngine:
         return max(.01,score*f2*(.96+.08*state))
 
     def _remain_strength(self,r,racers,race,base):
-        # Third-place exhibition impact is deliberately lower than first-place impact.
         score=base+.10*self._rank_value(r.lap_time,racers,"lap_time")+.08*self._rank_value(r.turn_time,racers,"turn_time")+.04*self._rank_value(r.straight_time,racers,"straight_time")
         score+=.10 if r.actual_course<=3 else 0
         score+=.08*self._scale(r.motor_3,30,70)+.04*self._scale(r.boat_3,30,70)
@@ -216,8 +212,6 @@ class KaratsuScenarioEngine:
 
     def _course6_catalyst_out(self,name,weight,racers,second_strength,remain):
         by={r.actual_course:r for r in racers}; inner=by[1]
-        # Course 6 creates the development but drops out; course 5 links to second,
-        # and course 4/inside survival is protected for third.
         first={inner.lane:1.0}
         second={by[5].lane:1.75*second_strength[by[5].lane], by[4].lane:.65*second_strength[by[4].lane], by[3].lane:.45*second_strength[by[3].lane]}
         third={by[4].lane:1.60, by[3].lane:1.05, by[2].lane:.90, by[5].lane:.55}
