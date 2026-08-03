@@ -128,9 +128,9 @@ def merge_live_files(
     target_date: str,
     data_root: Path,
 ) -> dict:
+    # Live collector stores raw files outside the publisher repository.
     live_root = (
-        data_root
-        / "live"
+        Path("/opt/sinz-edge/data/live")
         / target_date
         / "wakamatsu"
     )
@@ -143,31 +143,74 @@ def merge_live_files(
         if not isinstance(live, dict):
             live = {}
 
-        for key, filename in (
-            ("exhibition", "exhibition.json"),
-            ("original", "original.json"),
-            ("weather", "weather.json"),
-            ("result", "result.json"),
-        ):
-            file_path = race_dir / filename
+        files = {
+            "direct": race_dir / "direct.json",
+            "exhibition": race_dir / "exhibition.json",
+            "original_exhibition": race_dir / "original_exhibition.json",
+            "result": race_dir / "result.json",
+        }
 
-            if not file_path.exists():
+        for kind, file_path in files.items():
+            if not file_path.is_file():
                 continue
 
             try:
                 wrapper = json.loads(
                     file_path.read_text(encoding="utf-8")
                 )
-            except Exception:
+            except (OSError, ValueError, json.JSONDecodeError):
+                continue
+
+            if (
+                wrapper.get("status") != "complete"
+                or wrapper.get("complete") is not True
+            ):
                 continue
 
             data = wrapper.get("data")
-            if isinstance(data, dict):
-                live[key] = data
+            if not isinstance(data, dict):
+                continue
+
+            if kind == "direct":
+                # Keep the complete direct-information object.
+                # The engine expects live["weather"] to be a dictionary,
+                # not the weather label string such as "晴".
+                live["direct"] = data
+                live["weather"] = data
+
+                # Entry helpers are also read directly from the live root.
+                for field in (
+                    "actual_entry",
+                    "entry_changed",
+                    "withdrawals",
+                    "stabilizer",
+                    "lap_shortened",
+                    "other_changes",
+                    "racers",
+                ):
+                    if field in data:
+                        live[field] = data[field]
+
+                race["direct"] = data
+
+            elif kind == "exhibition":
+                live["exhibition"] = data
+                race["exhibition"] = data
+
+            elif kind == "original_exhibition":
+                live["original"] = data
+                live["original_exhibition"] = data
+                race["original"] = data
+                race["original_exhibition"] = data
+
+            elif kind == "result":
+                live["result"] = data
+                race["result"] = data
 
         race["live"] = live
 
     return payload
+
 
 def validate_payload(payload: dict, target_date: str) -> None:
     if payload.get("venueId") != "wakamatsu":
