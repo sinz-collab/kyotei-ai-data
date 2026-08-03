@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import random
+import sys
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
@@ -25,6 +26,126 @@ from live_common import (
 from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 
+
+PUBLISHER_REPO = Path("/opt/sinz-edge/runtime/publisher-repo")
+HEIWAJIMA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_heiwajima_live_v1.py"
+HEIWAJIMA_DATA_ROOT = PUBLISHER_REPO / "data"
+ASHIYA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_ashiya_live_v1.py"
+ASHIYA_DATA_ROOT = PUBLISHER_REPO / "data"
+
+
+async def apply_heiwajima_live_prediction(
+    target: dict[str, Any],
+    race_dir: Path,
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "heiwajima":
+        return
+    if fetch_result.get("error"):
+        return
+
+    items = fetch_result.get("items") or {}
+    required = ("direct", "exhibition", "original_exhibition")
+    if not all((items.get(name) or {}).get("complete") is True for name in required):
+        return
+
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(HEIWAJIMA_LIVE_APPLIER),
+        "--date",
+        str(target["date"]),
+        "--race",
+        str(target["race_no"]),
+        "--data-root",
+        str(HEIWAJIMA_DATA_ROOT),
+        "--live-root",
+        str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "heiwajima_live_prediction_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "heiwajima_live_prediction_complete",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+        },
+    )
+
+
+async def apply_ashiya_live_data(
+    target: dict[str, Any],
+    race_dir: Path,
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "ashiya":
+        return
+    if fetch_result.get("error"):
+        return
+
+    items = fetch_result.get("items") or {}
+    required = ("direct", "exhibition", "original_exhibition")
+
+    if not all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    ):
+        return
+
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(ASHIYA_LIVE_APPLIER),
+        "--date",
+        str(target["date"]),
+        "--race",
+        str(target["race_no"]),
+        "--data-root",
+        str(ASHIYA_DATA_ROOT),
+        "--live-root",
+        str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "ashiya_live_apply_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "ashiya_live_applied",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+        },
+    )
 
 def stage_tokoname_results(
     config: dict[str, Any],
@@ -153,6 +274,24 @@ async def run_once(
                                     break
                                 result = await fetch_and_save_race(client, target, target_root, config, logger)
                                 results.append(result)
+                                race_dir = (
+                                    target_root
+                                    / target["date"]
+                                    / target["venue"]
+                                    / f"{target['race_no']:02d}"
+                                )
+                                await apply_heiwajima_live_prediction(
+                                    target,
+                                    race_dir,
+                                    result,
+                                    logger,
+                                )
+                                await apply_ashiya_live_data(
+                                    target,
+                                    race_dir,
+                                    result,
+                                    logger,
+                                )
                         finally:
                             await context.close()
 
