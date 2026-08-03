@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import unicodedata
+from datetime import datetime, timedelta
 from pathlib import Path
 
 
@@ -56,6 +59,77 @@ def meaningful_live(prediction: dict) -> bool:
 def meaningful_odds(prediction: dict) -> bool:
     odds = prediction.get("odds")
     return isinstance(odds, dict) and bool(odds)
+
+
+def normalize_racer_name(value: object) -> str:
+    text = unicodedata.normalize("NFKC", str(value or ""))
+    return re.sub(r"[\s\u3000]+", "", text)
+
+
+def no_prior_meeting_runs_is_verified(
+    after_root: Path,
+    slug: str,
+    target_date: str,
+    event_day: int,
+    racer: dict,
+    setsukan: dict,
+) -> bool:
+    if (
+        racer.get("setsukan_status") != "no_prior_meeting_runs"
+        or setsukan.get("setsukan_status") != "no_prior_meeting_runs"
+        or racer.get("season_runs")
+        or racer.get("season_groups")
+        or setsukan.get("season_runs")
+        or setsukan.get("season_groups")
+        or racer.get("setsukan_first_entry_date") != target_date
+        or setsukan.get("setsukan_first_entry_date") != target_date
+    ):
+        return False
+    evidence = racer.get("setsukan_evidence")
+    if not isinstance(evidence, dict) or evidence != setsukan.get("setsukan_evidence"):
+        return False
+    target = datetime.strptime(target_date, "%Y-%m-%d").date()
+    expected_days = list(range(1, event_day))
+    expected_dates = [
+        (target - timedelta(days=event_day - prior_day)).isoformat()
+        for prior_day in expected_days
+    ]
+    if (
+        evidence.get("source") != "published_prior_meeting_data"
+        or evidence.get("venue") != slug
+        or evidence.get("checked_dates") != expected_dates
+        or evidence.get("checked_event_days") != expected_days
+        or evidence.get("prior_race_appearances") != 0
+    ):
+        return False
+    name = normalize_racer_name(racer.get("name"))
+    if not name:
+        return False
+    for prior_day, prior_date in zip(expected_days, expected_dates):
+        prior_path = after_root / "venues" / slug / f"{prior_date.replace('-', '')}.json"
+        if not prior_path.is_file():
+            return False
+        try:
+            prior = load_json(prior_path)
+        except (OSError, ValueError, json.JSONDecodeError):
+            return False
+        races = prior.get("races")
+        if (
+            prior.get("date") != prior_date
+            or prior.get("venueId") != slug
+            or prior.get("eventDay") != prior_day
+            or not isinstance(races, list)
+            or len(races) != 12
+            or any(len(race.get("racers") or []) != 6 for race in races)
+        ):
+            return False
+        if any(
+            normalize_racer_name(previous.get("name")) == name
+            for race in races
+            for previous in race.get("racers") or []
+        ):
+            return False
+    return True
 
 
 def compare_independent_race_domains(slug: str, before: dict, after: dict, errors: list[str]) -> None:
@@ -177,15 +251,47 @@ def validate(before_root: Path, after_root: Path) -> list[str]:
             prediction_days.append(day)
         if not after.get("preds"):
             errors.append(f"{slug}: prediction is empty")
-        if isinstance(day, int) and day > 1:
-            for race in after.get("races") or []:
-                lanes = [
-                    racer.get("lane")
-                    for racer in race.get("racers") or []
-                    if racer.get("season_runs")
-                ]
-                if sorted(lanes) != list(range(1, 7)):
-                    errors.append(f"{slug} {race.get('race')}R: setsukan missing lanes")
+        for race in after.get("races") or []:
+            race_no = race.get("race")
+            racers = {
+                int(racer.get("lane") or 0): racer
+                for racer in race.get("racers") or []
+            }
+            setsukan_rows = race.get("setsukan")
+            if not isinstance(setsukan_rows, list):
+                errors.append(f"{slug} {race_no}R: setsukan lanes invalid")
+                continue
+            setsukan = {
+                int(row.get("lane") or 0): row
+                for row in setsukan_rows
+                if isinstance(row, dict)
+            }
+            if (
+                len(setsukan_rows) != 6
+                or sorted(setsukan) != list(range(1, 7))
+                or sorted(racers) != list(range(1, 7))
+            ):
+                errors.append(f"{slug} {race_no}R: setsukan lanes invalid")
+                continue
+            for lane in range(1, 7):
+                racer = racers[lane]
+                row = setsukan[lane]
+                if (
+                    row.get("season_runs") != (racer.get("season_runs") or [])
+                    or row.get("season_groups") != (racer.get("season_groups") or [])
+                ):
+                    errors.append(f"{slug} {race_no}R lane {lane}: setsukan mismatch")
+                    continue
+                if isinstance(day, int) and day > 1 and not racer.get("season_runs"):
+                    if not no_prior_meeting_runs_is_verified(
+                        after_root,
+                        slug,
+                        after.get("date", ""),
+                        day,
+                        racer,
+                        row,
+                    ):
+                        errors.append(f"{slug} {race_no}R: setsukan missing lanes")
         before_keys = key_count(before)
         after_keys = key_count(after)
         if before_keys >= 100 and after_keys < before_keys * 0.75:

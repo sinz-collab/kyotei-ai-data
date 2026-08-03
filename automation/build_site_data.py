@@ -4,8 +4,9 @@ import argparse
 import json
 import math
 import re
+import unicodedata
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -236,6 +237,89 @@ def event_day_info(lines: list[str], date: str) -> tuple[int | None, str | None]
 
 def _has_value(value: object) -> bool:
     return value not in (None, "", [], {})
+
+
+def normalize_racer_name(value: object) -> str:
+    text = unicodedata.normalize("NFKC", str(value or ""))
+    return re.sub(r"[\s\u3000]+", "", text)
+
+
+def load_prior_meeting_payloads(
+    data_root: Path,
+    slug: str,
+    target_date: str,
+    event_day: int,
+) -> list[dict] | None:
+    target = datetime.strptime(target_date, "%Y-%m-%d").date()
+    prior_payloads = []
+    for prior_day in range(1, event_day):
+        prior_date = target - timedelta(days=event_day - prior_day)
+        path = data_root / "venues" / slug / f"{prior_date:%Y%m%d}.json"
+        if not path.is_file():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError, json.JSONDecodeError):
+            return None
+        races = payload.get("races")
+        if (
+            payload.get("date") != prior_date.isoformat()
+            or payload.get("venueId") != slug
+            or payload.get("eventDay") != prior_day
+            or not isinstance(races, list)
+            or len(races) != 12
+            or any(len(race.get("racers") or []) != 6 for race in races)
+        ):
+            return None
+        prior_payloads.append(payload)
+    return prior_payloads
+
+
+def annotate_no_prior_meeting_runs(payload: dict, slug: str, data_root: Path) -> dict:
+    event_day = payload.get("eventDay")
+    target_date = payload.get("date")
+    if not isinstance(event_day, int) or event_day <= 1 or not isinstance(target_date, str):
+        return payload
+
+    prior_payloads = load_prior_meeting_payloads(
+        data_root,
+        slug,
+        target_date,
+        event_day,
+    )
+    prior_names = None
+    if prior_payloads is not None:
+        prior_names = {
+            normalize_racer_name(racer.get("name"))
+            for prior in prior_payloads
+            for race in prior.get("races") or []
+            for racer in race.get("racers") or []
+            if normalize_racer_name(racer.get("name"))
+        }
+    evidence = {
+        "source": "published_prior_meeting_data",
+        "venue": slug,
+        "checked_dates": [prior["date"] for prior in prior_payloads or []],
+        "checked_event_days": [prior["eventDay"] for prior in prior_payloads or []],
+        "prior_race_appearances": 0,
+    }
+
+    for race in payload.get("races") or []:
+        for racer in race.get("racers") or []:
+            for key in (
+                "setsukan_status",
+                "setsukan_evidence",
+                "setsukan_first_entry_date",
+            ):
+                racer.pop(key, None)
+            if racer.get("season_runs") or racer.get("season_groups"):
+                continue
+            name = normalize_racer_name(racer.get("name"))
+            if prior_names is not None and name and name not in prior_names:
+                racer["setsukan_status"] = "no_prior_meeting_runs"
+                racer["setsukan_evidence"] = deepcopy(evidence)
+                racer["setsukan_first_entry_date"] = target_date
+    return payload
 
 
 def merge_validated_morning_metadata(existing: dict, morning: dict) -> dict:
@@ -506,15 +590,21 @@ def attach_independent_race_domains(
             "day_no": race.get("eventDay", payload.get("eventDay")),
         }
         race["entries"] = racers
-        race["setsukan"] = [
-            {
+        race["setsukan"] = []
+        for racer in sorted(racers, key=lambda item: int(item.get("lane") or 0)):
+            setsukan = {
                 "lane": racer.get("lane"),
                 "season_runs": deepcopy(racer.get("season_runs") or []),
                 "season_groups": deepcopy(racer.get("season_groups") or []),
             }
-            for racer in racers
-            if racer.get("season_runs") or racer.get("season_groups")
-        ]
+            for key in (
+                "setsukan_status",
+                "setsukan_evidence",
+                "setsukan_first_entry_date",
+            ):
+                if key in racer:
+                    setsukan[key] = deepcopy(racer[key])
+            race["setsukan"].append(setsukan)
         if tokoname_prediction is not None:
             race["prediction"] = tokoname_prediction
         else:
@@ -664,6 +754,8 @@ def main() -> int:
         }
         if fetch_status.get("open") and fetch_status.get("entryCount") == 12:
             payload, detail = build_payload(venue, args.date, source_dir)
+            if payload is not None:
+                payload = annotate_no_prior_meeting_runs(payload, slug, data_root)
         race_data_available = payload is not None
         prediction_available = False
         prediction_reason = ""

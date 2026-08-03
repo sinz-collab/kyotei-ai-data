@@ -30,31 +30,79 @@ def prediction() -> dict:
     }
 
 
-def payload() -> dict:
-    return {
-        "date": "2026-07-24",
-        "engine": "venue_engine",
-        "eventDay": 2,
-        "races": [
+def payload(date: str = "2026-07-24", event_day: int = 2) -> dict:
+    races = []
+    for race in range(1, 13):
+        racers = [
+            {
+                "lane": lane,
+                "name": f"Racer {lane}",
+                "season_runs": [{"race": "1R", "finish": "2着"}],
+                "season_groups": [],
+            }
+            for lane in range(1, 7)
+        ]
+        races.append(
             {
                 "race": race,
                 "deadline": "09:00",
-                "racers": [
-                    {"lane": lane, "season_runs": [{"race": "1R", "finish": "2着"}]}
-                    for lane in range(1, 7)
+                "racers": racers,
+                "setsukan": [
+                    {
+                        "lane": racer["lane"],
+                        "season_runs": deepcopy(racer["season_runs"]),
+                        "season_groups": [],
+                    }
+                    for racer in racers
                 ],
             }
-            for race in range(1, 13)
-        ],
+        )
+    return {
+        "venueId": "toda",
+        "date": date,
+        "engine": "venue_engine",
+        "eventDay": event_day,
+        "races": races,
         "preds": {str(race): prediction() for race in range(1, 13)},
     }
 
 
+def mark_no_prior_meeting_runs(value: dict, race_index: int = 0, lane: int = 4) -> None:
+    racer = value["races"][race_index]["racers"][lane - 1]
+    row = value["races"][race_index]["setsukan"][lane - 1]
+    racer["name"] = "Additional Racer"
+    racer["season_runs"] = []
+    racer["season_groups"] = []
+    evidence = {
+        "source": "published_prior_meeting_data",
+        "venue": "toda",
+        "checked_dates": ["2026-07-23"],
+        "checked_event_days": [1],
+        "prior_race_appearances": 0,
+    }
+    racer["setsukan_status"] = "no_prior_meeting_runs"
+    racer["setsukan_evidence"] = deepcopy(evidence)
+    racer["setsukan_first_entry_date"] = "2026-07-24"
+    row.update(
+        {
+            "season_runs": [],
+            "season_groups": [],
+            "setsukan_status": "no_prior_meeting_runs",
+            "setsukan_evidence": deepcopy(evidence),
+            "setsukan_first_entry_date": "2026-07-24",
+        }
+    )
+
+
 class MorningRegressionGuardTests(unittest.TestCase):
-    def write_tree(self, root: Path, value: dict) -> None:
+    def write_tree(self, root: Path, value: dict, prior: dict | None = None) -> None:
         venue = root / "venues" / "toda"
         venue.mkdir(parents=True)
-        (venue / "20260724.json").write_text(json.dumps(value), encoding="utf-8")
+        filename = value["date"].replace("-", "") + ".json"
+        (venue / filename).write_text(json.dumps(value), encoding="utf-8")
+        if prior is not None:
+            prior_filename = prior["date"].replace("-", "") + ".json"
+            (venue / prior_filename).write_text(json.dumps(prior), encoding="utf-8")
         (root / "manifest.json").write_text(
             json.dumps(
                 {
@@ -63,7 +111,7 @@ class MorningRegressionGuardTests(unittest.TestCase):
                             "slug": "toda",
                             "open": True,
                             "predictionStatus": "ready",
-                            "dataPath": "venues/toda/20260724.json",
+                            "dataPath": f"venues/toda/{filename}",
                         }
                     ]
                 }
@@ -125,8 +173,101 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.write_tree(before, payload())
             broken = payload()
             broken["races"][0]["racers"][3]["season_runs"] = []
+            broken["races"][0]["setsukan"][3]["season_runs"] = []
             self.write_tree(after, broken)
             self.assertTrue(any("setsukan missing" in error for error in validate(before, after)))
+
+    def test_verified_no_prior_meeting_runs_passes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            before, after = root / "before", root / "after"
+            self.write_tree(before, payload())
+            current = payload()
+            mark_no_prior_meeting_runs(current)
+            self.write_tree(after, current, payload("2026-07-23", 1))
+            self.assertEqual(validate(before, after), [])
+
+    def test_no_prior_status_without_evidence_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            before, after = root / "before", root / "after"
+            self.write_tree(before, payload())
+            current = payload()
+            mark_no_prior_meeting_runs(current)
+            current["races"][0]["racers"][3].pop("setsukan_evidence")
+            self.write_tree(after, current, payload("2026-07-23", 1))
+            errors = validate(before, after)
+            self.assertTrue(any("setsukan missing" in error for error in errors))
+
+    def test_no_prior_status_fails_when_racer_appeared_on_prior_day(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            before, after = root / "before", root / "after"
+            self.write_tree(before, payload())
+            current = payload()
+            mark_no_prior_meeting_runs(current)
+            prior = payload("2026-07-23", 1)
+            prior["races"][0]["racers"][0]["name"] = "Additional Racer"
+            self.write_tree(after, current, prior)
+            errors = validate(before, after)
+            self.assertTrue(any("setsukan missing" in error for error in errors))
+
+    def test_setsukan_with_fewer_than_six_lanes_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            before, after = root / "before", root / "after"
+            self.write_tree(before, payload())
+            broken = payload()
+            broken["races"][0]["setsukan"].pop()
+            self.write_tree(after, broken)
+            errors = validate(before, after)
+            self.assertTrue(any("setsukan lanes invalid" in error for error in errors))
+
+    def test_attach_independent_domains_always_emits_six_setsukan_lanes(self) -> None:
+        value = payload()
+        value["races"][0]["racers"][3]["season_runs"] = []
+        value["races"][0]["racers"][3]["season_groups"] = []
+        result = morning_builder.attach_independent_race_domains(
+            value,
+            "toda",
+            True,
+            "",
+        )
+        for race in result["races"]:
+            self.assertEqual(
+                [row["lane"] for row in race["setsukan"]],
+                list(range(1, 7)),
+            )
+
+    def test_builder_marks_only_racers_absent_from_complete_prior_days(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            data_root = Path(temp)
+            venue_dir = data_root / "venues" / "toda"
+            venue_dir.mkdir(parents=True)
+            prior = payload("2026-07-23", 1)
+            (venue_dir / "20260723.json").write_text(
+                json.dumps(prior),
+                encoding="utf-8",
+            )
+            current = payload()
+            additional = current["races"][0]["racers"][3]
+            additional["name"] = "Additional Racer"
+            additional["season_runs"] = []
+            additional["season_groups"] = []
+            appeared = current["races"][0]["racers"][4]
+            appeared["season_runs"] = []
+            appeared["season_groups"] = []
+
+            morning_builder.annotate_no_prior_meeting_runs(current, "toda", data_root)
+
+            self.assertEqual(additional["season_runs"], [])
+            self.assertEqual(additional["season_groups"], [])
+            self.assertEqual(additional["setsukan_status"], "no_prior_meeting_runs")
+            self.assertEqual(
+                additional["setsukan_first_entry_date"],
+                "2026-07-24",
+            )
+            self.assertNotIn("setsukan_status", appeared)
 
     def test_morning_main_uses_isolated_output_and_preserves_existing_domains(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
