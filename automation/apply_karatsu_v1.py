@@ -393,8 +393,11 @@ def main() -> None:
         raise ValueError(f"invalid_date:{args.date}")
 
     path = REPO_ROOT / "data" / "venues" / "karatsu" / f"{normalized_date}.json"
+    
     if not path.exists():
-        raise FileNotFoundError(path)
+        print(f"Karatsu data is not open: {path.relative_to(REPO_ROOT)}")
+        return
+        
     apply_file(path)
     latest = path.parent / "latest.json"
     atomic_write_json(latest, json.loads(path.read_text(encoding="utf-8")))
