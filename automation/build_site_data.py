@@ -564,6 +564,38 @@ def tokoname_race_prediction_is_complete(prediction: object) -> bool:
     )
 
 
+
+def wakamatsu_race_prediction_is_complete(prediction: object) -> bool:
+    """Validate and preserve the race-native Wakamatsu v2.1 prediction."""
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("engine") != "wakamatsu_engine_v2.1":
+        return False
+    if str(prediction.get("engineVersion") or "") != "2.1":
+        return False
+    if prediction.get("phase") not in {"pre", "final"}:
+        return False
+    if prediction.get("status") != "complete":
+        return False
+    if any(
+        not _probabilities_are_valid(prediction.get(key))
+        for key in ("win", "second", "third")
+    ):
+        return False
+    if not prediction.get("sab"):
+        return False
+
+    tickets = prediction.get("tickets")
+    if not isinstance(tickets, list) or len(tickets) != 10:
+        return False
+
+    combos = [
+        ticket.get("combo")
+        for ticket in tickets
+        if isinstance(ticket, dict) and ticket.get("combo")
+    ]
+    return len(combos) == 10 and len(set(combos)) == 10
+
 def attach_independent_race_domains(
     payload: dict,
     slug: str,
@@ -575,12 +607,17 @@ def attach_independent_race_domains(
     for race in payload.get("races") or []:
         race_no = int(race["race"])
         prediction = predictions.get(str(race_no)) or {}
-        tokoname_prediction = (
-            deepcopy(race.get("prediction"))
-            if slug == "tokoname"
+        native_prediction = None
+        if (
+            slug == "tokoname"
             and tokoname_race_prediction_is_complete(race.get("prediction"))
-            else None
-        )
+        ):
+            native_prediction = deepcopy(race.get("prediction"))
+        elif (
+            slug == "wakamatsu"
+            and wakamatsu_race_prediction_is_complete(race.get("prediction"))
+        ):
+            native_prediction = deepcopy(race.get("prediction"))
         racers = deepcopy(race.get("racers") or [])
         race["race_meta"] = {
             "date": payload.get("date"),
@@ -605,8 +642,8 @@ def attach_independent_race_domains(
                 if key in racer:
                     setsukan[key] = deepcopy(racer[key])
             race["setsukan"].append(setsukan)
-        if tokoname_prediction is not None:
-            race["prediction"] = tokoname_prediction
+        if native_prediction is not None:
+            race["prediction"] = native_prediction
         else:
             race["prediction"] = prediction_envelope(
                 payload,
