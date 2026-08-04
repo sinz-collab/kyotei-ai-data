@@ -76,6 +76,16 @@ def apply_live_fields(
     if race is None:
         raise RuntimeError(f"race_not_found: {race_no}")
 
+    # Older versions duplicated live data at both race root and race["live"].
+    # Keep one canonical location under race["live"].
+    for legacy_key in (
+        "direct",
+        "exhibition",
+        "original",
+        "original_exhibition",
+    ):
+        race.pop(legacy_key, None)
+
     direct = complete_data(live_root / "direct.json")
     exhibition = complete_data(live_root / "exhibition.json")
     original = complete_data(
@@ -89,7 +99,6 @@ def apply_live_fields(
         live = {}
 
     if direct is not None:
-        race["direct"] = direct
         live["direct"] = direct
         live["weather"] = direct
 
@@ -148,12 +157,9 @@ def apply_live_fields(
             ]
 
     if exhibition is not None:
-        race["exhibition"] = exhibition
         live["exhibition"] = exhibition
 
     if original is not None:
-        race["original"] = original
-        race["original_exhibition"] = original
         live["original"] = original
         live["original_exhibition"] = original
 
