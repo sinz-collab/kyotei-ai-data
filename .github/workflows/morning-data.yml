@@ -22,9 +22,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
+      should_run: ${{ steps.schedule_guard.outputs.should_run }}
       target_date: ${{ steps.target.outputs.target_date }}
     steps:
+      - id: schedule_guard
+        name: Reject stale scheduled run
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          now_jst="$(TZ=Asia/Tokyo date +'%Y-%m-%d %H:%M:%S %Z')"
+          now_hm="$(TZ=Asia/Tokyo date +%H%M)"
+          should_run=true
+
+          # The scheduled run is intended for 06:30 JST.
+          # Skip delayed scheduled runs after 09:00 JST.
+          # Manual workflow_dispatch runs remain available at any time.
+          if [ "$EVENT_NAME" = "schedule" ] && [ $((10#$now_hm)) -gt 900 ]; then
+            should_run=false
+            echo "Scheduled run skipped because it started after 09:00 JST (${now_jst})."
+          fi
+
+          echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Schedule guard"
+            echo "- Event: $EVENT_NAME"
+            echo "- Current JST: $now_jst"
+            echo "- Continue: $should_run"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - id: target
+        if: steps.schedule_guard.outputs.should_run == 'true'
         name: Fix target date
         shell: bash
         env:
@@ -44,6 +72,7 @@ jobs:
 
   fetch:
     needs: prepare
+    if: needs.prepare.outputs.should_run == 'true'
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -110,7 +139,7 @@ jobs:
 
   publish:
     needs: [prepare, fetch]
-    if: always() && needs.prepare.result == 'success'
+    if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
