@@ -1,15 +1,18 @@
 {
-  "engine_version": "heiwajima_v1_codex_rebuild_20260728",
+  "engine_version": "heiwajima_complete_v2_4_20260804",
   "principles": {
     "odds_used_for_prediction": false,
     "scenario_first": true,
     "exhibition_st_standalone_strong_correction": false,
     "max_normal_live_shift": 0.03,
-    "max_composite_live_shift": 0.06
+    "max_composite_live_shift": 0.06,
+    "race_specific_baseline": true,
+    "slit_composite": true,
+    "five_head_scenario": true
   },
   "weights": {
     "course_baseline": 1.0,
-    "player_course": 0.62,
+    "player_course": 0.5,
     "player_lane": 0.12,
     "local_fit": 0.18,
     "kimarite": 0.2,
@@ -20,7 +23,7 @@
     "scenario_positional": 0.3
   },
   "caps": {
-    "player_course_logit": 0.22,
+    "player_course_logit": 0.17,
     "lane_logit": 0.07,
     "local_logit": 0.1,
     "kimarite_logit": 0.12,
@@ -46,5 +49,18 @@
       "season": 1.25,
       "live": 0.9
     }
+  },
+  "heiwajima_v2_4": {
+    "one_course_escape_positive_coefficient": 0.12,
+    "one_course_vulnerability_coefficient": 0.07,
+    "escape_scenario_threshold": 0.28,
+    "escape_scenario_cap": 0.25,
+    "wall_bonus_coefficient": 0.18,
+    "course3_attack_penalty": 0.55,
+    "course4_attack_penalty": 0.32,
+    "condition_baseline_weight_cap": 0.65,
+    "water_residual_ratio": 0.35,
+    "five_head_win_cap": 0.06,
+    "five_head_scenario_cap": 0.18
   }
 }

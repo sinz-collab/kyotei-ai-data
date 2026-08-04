@@ -12,7 +12,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "heiwajima_v1"
 MASTER_DB = ENGINE_DIR / "master_db" / "heiwajima_runtime_master.sqlite"
-ENGINE_ID = "heiwajima_prediction_engine_v1_20260728"
+ENGINE_ID = "heiwajima_complete_v2_4_20260804"
 MASTER_ID = "heiwajima_runtime_master_v1_20260728"
 LANES = (1, 2, 3, 4, 5, 6)
 

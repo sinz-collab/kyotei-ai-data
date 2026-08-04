@@ -11,6 +11,10 @@ from heiwajima_water_engine import water_features
 from heiwajima_scenario_engine import evaluate_scenarios, scenario_position_adjustments
 from heiwajima_ticket_engine import generate_tickets
 from heiwajima_sab_engine import judge_sab
+from heiwajima_race_baseline import race_specific_first_baseline
+from heiwajima_slit_engine import calculate_slit_adjustments
+from heiwajima_class_motor_engine import class_motor_multipliers
+from heiwajima_five_head_engine import five_head_scenario_adjustment
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
@@ -91,7 +95,7 @@ def _kimarite_adjustments(course, source, source_type, cap):
             makurare = rate(source, "makurare_rate", 0.0)
             makurare_zashi = rate(source, "makurare_zashi_rate", 0.0)
             vulnerability = sashare + makurare + makurare_zashi
-            win = clip((escape - 0.48) * 0.20 - vulnerability * 0.06, cap) * reliability
+            win = clip((escape - 0.48) * 0.12 - vulnerability * 0.07, cap) * reliability
             second = clip(vulnerability * 0.035, cap * 0.55) * reliability
             third = clip(vulnerability * 0.025, cap * 0.45) * reliability
             return win, second, third
@@ -259,6 +263,9 @@ def calculate(input_data, loader=None):
     loader = loader or MasterLoader()
     stage = input_data.get("stage", "pre")
     boats = input_data.get("boats") or input_data.get("entries") or []
+    live_context = input_data.get("live") or {}
+    slit_adjustments = calculate_slit_adjustments(boats, live_context)
+    five_head = five_head_scenario_adjustment(boats, live_context)
     if len(boats) != 6:
         raise ValueError("boats/entries must contain exactly 6 boats")
 
@@ -279,6 +286,13 @@ def calculate(input_data, loader=None):
     mult = CONFIG["day_stage"][bucket]
     caps = CONFIG["caps"]
     course_base = loader.table("course_baseline")
+    global_first_rates = [
+        max(0.01, rate(row1(course_base[course_base["course"].astype(str) == str(course)]), "first_rate",
+                       [0.4525, 0.1697, 0.1496, 0.1269, 0.0758, 0.0438][course - 1]))
+        for course in range(1, 7)
+    ]
+    race_base = race_specific_first_baseline(input_data, global_first_rates)
+    water["five_head_scenario_bonus"] = float(five_head.get("scenario_bonus", 0.0))
     local_df = loader.table("player_local_stats")
 
     records = []
@@ -320,7 +334,7 @@ def calculate(input_data, loader=None):
         if local:
             local_st_count += 1
 
-        bw = max(0.01, rate(base, "first_rate", [0.4525, 0.1697, 0.1496, 0.1269, 0.0758, 0.0438][course - 1]))
+        bw = max(0.01, float(race_base["first_rates"][course - 1]))
         bs = max(0.01, rate(base, "second_rate", [0.1931, 0.2273, 0.1914, 0.1795, 0.1284, 0.0977][course - 1]))
         bt = max(0.01, rate(base, "third_rate", [0.1158, 0.1976, 0.1844, 0.1803, 0.1659, 0.1726][course - 1]))
 
@@ -331,7 +345,7 @@ def calculate(input_data, loader=None):
             rel = {"A": 1.0, "B": 0.72, "C": 0.45}.get(str(pc.get("reliability")), 0.25)
             delta = rate(pc, "win_rate", bw) - bw
             top3d = rate(pc, "top3_vs_course_avg", 0.0)
-            cw = clip(delta * 0.72 + top3d * 0.16, caps["player_course_logit"]) * rel
+            cw = clip(delta * 0.50 + top3d * 0.14, caps["player_course_logit"]) * rel
             sw += cw
             ss += clip(top3d * 0.13, caps["player_course_logit"] * 0.65) * rel
             st += clip(top3d * 0.12, caps["player_course_logit"] * 0.55) * rel
@@ -368,11 +382,15 @@ def calculate(input_data, loader=None):
         form = num(season.get("form_score"), 0.0)
         power = num(motor.get("power_score"), 0.0)
         sx = clip(form * 0.055 * mult["season"], caps["season_logit"])
-        mx = clip(power * 0.045 * mult["motor"], caps["motor_logit"])
+        motor_mult = class_motor_multipliers(b, course, bucket)
+        mx_base = power * 0.045 * mult["motor"]
+        mx_win = clip(mx_base * motor_mult["win"], caps["motor_logit"])
+        mx_second = clip(mx_base * motor_mult["second"], caps["motor_logit"])
+        mx_third = clip(mx_base * motor_mult["third"], caps["motor_logit"])
 
-        sw += sx + mx
-        ss += sx * 0.80 + mx * 0.78
-        st += sx * 0.68 + mx * 0.65
+        sw += sx + mx_win
+        ss += sx * 0.80 + mx_second * 0.78
+        st += sx * 0.68 + mx_third * 0.65
 
         wx = 0.0
         if course == 1:
@@ -382,9 +400,9 @@ def calculate(input_data, loader=None):
         elif course in (5, 6):
             st += clip(water["outer_bias"], caps["water_logit"])
 
-        sw += clip(wx, caps["water_logit"])
+        sw += clip(wx * 0.35, caps["water_logit"])
         if abs(wx) > 0.01:
-            reasons.append({"code": "water", "delta": round(clip(wx, caps["water_logit"]), 4)})
+            reasons.append({"code": "water_residual", "delta": round(clip(wx * 0.35, caps["water_logit"]), 4)})
 
         if stage == "final":
             st_alone = clip(-num(ex.get("st_delta"), 0.0) * 0.08, 0.015)
@@ -395,6 +413,14 @@ def calculate(input_data, loader=None):
             sw += st_alone + composite
             ss += composite * 0.80
             st += composite * 0.72
+
+        slit_adj = slit_adjustments.get(boat, {})
+        sw += float(slit_adj.get("win", 0.0))
+        ss += float(slit_adj.get("second", 0.0))
+        st += float(slit_adj.get("third", 0.0))
+        if boat == 5 and five_head.get("active"):
+            sw += float(five_head.get("win_delta", 0.0))
+            sw += math.log(float(five_head.get("course_multiplier", 1.0)))
 
         records.append({
             "boat_no": boat,
@@ -468,7 +494,7 @@ def calculate(input_data, loader=None):
     ]
 
     return {
-        "schema_version": "1.3.0",
+        "schema_version": "1.7.0",
         "engine_version": CONFIG["engine_version"],
         "venue": "heiwajima",
         "race_date": input_data["race_date"],
@@ -483,6 +509,9 @@ def calculate(input_data, loader=None):
         "head_exclusion_log": exclusions,
         "data_completeness": completeness,
         "odds_used_for_prediction": False,
+        "race_specific_baseline": race_base,
+        "slit_adjustments": slit_adjustments,
+        "five_head_context": five_head,
     }
 
 
