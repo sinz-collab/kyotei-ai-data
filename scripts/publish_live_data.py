@@ -253,7 +253,7 @@ def main() -> int:
             print(f"Publisher repository is not initialized: {publish_repo}")
             return 2
         if args.push:
-            pulled = run(["git", "pull", "--rebase", "origin", "main"], publish_repo)
+            pulled = run(["git", "pull", "--rebase", "--autostash", "origin", "main"], publish_repo)
             if pulled.returncode:
                 print(pulled.stderr)
                 return pulled.returncode
@@ -263,9 +263,28 @@ def main() -> int:
             publish_repo,
         )
         print(f"Tokoname prediction publish: {tokoname['status']} ({tokoname['reason']})")
-        run(["git", "add", "-f", "data/live"], publish_repo)
+        # Stage raw live JSON and generated public venue JSON.
+        # Venue apply scripts modify data/venues before this publisher runs.
+        for generated_path in (
+            "data/live",
+            "data/venues",
+            "data/manifest.json",
+        ):
+            candidate = publish_repo / generated_path
+            if candidate.exists():
+                staged = run(
+                    ["git", "add", "-f", generated_path],
+                    publish_repo,
+                )
+                if staged.returncode:
+                    print(staged.stderr)
+                    return staged.returncode
+
         for path in tokoname["paths"]:
-            run(["git", "add", "-f", path], publish_repo)
+            staged = run(["git", "add", "-f", path], publish_repo)
+            if staged.returncode:
+                print(staged.stderr)
+                return staged.returncode
         if run(["git", "diff", "--cached", "--quiet"], publish_repo).returncode == 0:
             print("No publishable data changes.")
             return 0
@@ -286,7 +305,7 @@ def main() -> int:
         if args.push:
             pushed = run(["git", "push", "origin", "HEAD:main"], publish_repo)
             if pushed.returncode:
-                pulled = run(["git", "pull", "--rebase", "origin", "main"], publish_repo)
+                pulled = run(["git", "pull", "--rebase", "--autostash", "origin", "main"], publish_repo)
                 if pulled.returncode:
                     print(pulled.stderr)
                     return pulled.returncode
