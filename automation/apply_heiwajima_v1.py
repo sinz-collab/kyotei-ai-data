@@ -153,12 +153,77 @@ def weather_context(payload: dict, race: dict) -> dict:
     }
 
 
+def read_complete_live_json(path: Path) -> dict:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if payload.get("status") != "complete" or payload.get("complete") is not True:
+        return {}
+    data = payload.get("data")
+    return data if isinstance(data, dict) else {}
+
+
+def exhibition_live_context(data_root: Path, target_date: str, race_no: int) -> dict:
+    live_dir = data_root / "live" / target_date / "heiwajima" / f"{race_no:02d}"
+    exhibition = read_complete_live_json(live_dir / "exhibition.json")
+    if not exhibition:
+        return {}
+
+    entries = exhibition.get("entries") or []
+    if len(entries) != 6:
+        return {}
+
+    by_lane = {int(row.get("lane") or 0): row for row in entries}
+    if sorted(by_lane) != list(LANES):
+        return {}
+
+    exhibition_st = {
+        str(lane): number(by_lane[lane].get("start_time"), 0.99)
+        for lane in LANES
+    }
+    exhibition_time_rank = {
+        str(lane): int(number(by_lane[lane].get("exhibition_rank"), 99))
+        for lane in LANES
+    }
+
+    ordered_st = sorted(exhibition_st.values())
+    second_fastest = ordered_st[1]
+    median_st = (ordered_st[2] + ordered_st[3]) / 2.0
+    slit = {}
+    for lane in LANES:
+        st = exhibition_st[str(lane)]
+        if st <= second_fastest + 0.02:
+            slit[str(lane)] = "advance"
+        elif st >= median_st + 0.08:
+            slit[str(lane)] = "dent"
+        else:
+            slit[str(lane)] = "neutral"
+
+    actual_courses = {
+        str(lane): int(number(by_lane[lane].get("exhibition_course"), lane))
+        for lane in LANES
+    }
+
+    return {
+        "slit": slit,
+        "exhibition_st": exhibition_st,
+        "exhibition_time_rank": exhibition_time_rank,
+        "actual_courses": actual_courses,
+        "source": "data/live/.../exhibition.json",
+        "fetched": True,
+    }
+
+
 def engine_input_for(
     payload: dict,
     race: dict,
     player_index: dict[str, str],
     *,
     stage: str = "pre",
+    live_context: dict | None = None,
 ) -> tuple[dict, list[str]]:
     missing_codes: list[str] = []
     boats = []
@@ -171,8 +236,12 @@ def engine_input_for(
             # Keep prediction operational, but prevent accidental master match.
             reg_no = f"unresolved:{normalize_name(racer.get('name')) or lane}"
             missing_codes.append("player_id_unresolved")
+        live_context = live_context or {}
+        actual_courses = live_context.get("actual_courses") or {}
         actual_course = int(
-            racer.get("actual_course")
+            actual_courses.get(str(lane))
+            or actual_courses.get(lane)
+            or racer.get("actual_course")
             or racer.get("entry_course")
             or racer.get("course")
             or lane
@@ -196,6 +265,7 @@ def engine_input_for(
             "boats": boats,
             "tide": tide_context(payload, race),
             "weather": weather_context(payload, race),
+            "live": live_context or {},
             "event_day_no": (
                 race.get("eventDay")
                 or (race.get("race_meta") or {}).get("day_no")
@@ -373,7 +443,7 @@ def prediction_complete(prediction: dict) -> bool:
     return True
 
 
-def apply_heiwajima_v1(payload: dict, target_date: str) -> dict:
+def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict:
     validate_payload(payload, target_date)
     if str(ENGINE_DIR) not in sys.path:
         sys.path.insert(0, str(ENGINE_DIR))
@@ -385,9 +455,31 @@ def apply_heiwajima_v1(payload: dict, target_date: str) -> dict:
     for race in payload["races"]:
         race_no = int(race["race"])
         try:
-            engine_input, connector_missing = engine_input_for(payload, race, player_index)
+            live_context = exhibition_live_context(data_root, target_date, race_no)
+            stage = "final" if live_context else "pre"
+            engine_input, connector_missing = engine_input_for(
+                payload,
+                race,
+                player_index,
+                stage=stage,
+                live_context=live_context,
+            )
             result = calculate(engine_input)
             prediction = site_prediction(result, connector_missing)
+            if live_context:
+                prediction["probabilityFlow"]["realtimeApplied"] = True
+                prediction["probabilityFlow"]["realtimeLabel"] = "直前展示・スリット・実進入を反映"
+                prediction["predictionStage"] = {
+                    "label": "最終予想",
+                    "statusText": "直前展示・スリット・実進入を反映した再計算",
+                    "badge": "最終予想",
+                    "color": "green",
+                }
+                prediction["liveApplied"] = True
+                prediction["liveSource"] = live_context.get("source")
+                race["live"] = live_context
+            else:
+                prediction["liveApplied"] = False
             if not prediction_complete(prediction):
                 raise RuntimeError("prediction_output_incomplete")
             predictions[str(race_no)] = prediction
@@ -453,7 +545,7 @@ def main() -> int:
         return 0
 
     payload = json.loads(dated_path.read_text(encoding="utf-8"))
-    payload = apply_heiwajima_v1(payload, args.date)
+    payload = apply_heiwajima_v1(payload, args.date, data_root)
     atomic_write_json(dated_path, payload)
     atomic_write_json(latest_path, payload)
     update_manifest(data_root, payload, dated_path)
