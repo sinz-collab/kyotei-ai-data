@@ -1,0 +1,144 @@
+{
+  "version": "omura_engine_v1_9_production",
+  "probability": {
+    "max_single_adjustment": 0.06,
+    "normal_adjustment": 0.025,
+    "strong_adjustment": 0.045,
+    "minimum_probability": 0.002
+  },
+  "anti_inside_bias": {
+    "enabled": true,
+    "venue_lane1_anchor_cap": 0.5,
+    "lane1_cap_without_local_grade_support": 0.44,
+    "lane1_cap_b1_b2_weak_local": 0.38,
+    "lane1_strong_support_required": 3,
+    "strong_support_signals": [
+      "grade_A1_or_A2",
+      "local_win_rate_at_least_national",
+      "player_course_reliable_above_baseline",
+      "escape_rate_good",
+      "attacker_risk_low",
+      "meeting_form_positive"
+    ]
+  },
+  "reliability": {
+    "A": 1.0,
+    "B": 0.7,
+    "C": 0.4,
+    "D": 0.2,
+    "E": 0.0
+  },
+  "tickets": {
+    "main": 6,
+    "deviation": 2,
+    "upset": 2
+  },
+  "sab": {
+    "S": 80,
+    "A": 65,
+    "B": 45
+  },
+  "day_form_weights": {
+    "day1": {
+      "motor_recent10": 0.45,
+      "exhibition": 0.4,
+      "meeting": 0.15
+    },
+    "day2": {
+      "motor_recent10": 0.35,
+      "exhibition": 0.35,
+      "meeting": 0.3
+    },
+    "day3": {
+      "motor_recent10": 0.25,
+      "exhibition": 0.3,
+      "meeting": 0.45
+    },
+    "day4": {
+      "motor_recent10": 0.2,
+      "exhibition": 0.25,
+      "meeting": 0.55
+    },
+    "day5": {
+      "motor_recent10": 0.15,
+      "exhibition": 0.25,
+      "meeting": 0.6
+    },
+    "final": {
+      "motor_recent10": 0.1,
+      "exhibition": 0.2,
+      "meeting": 0.7
+    }
+  },
+  "relative_inside_transfer": {
+    "enabled": true,
+    "max_transfer": 0.075,
+    "min_lane1_floor": 0.32,
+    "features": [
+      "grade_gap",
+      "local_win_rate_gap",
+      "local_top3_gap",
+      "exhibition_rank_gap",
+      "original_exhibition_rank_gap"
+    ]
+  },
+  "scenario_ticket_rules": {
+    "non1_head_lane1_remain": {
+      "enabled": true,
+      "attack_probability_min": 0.35,
+      "lane1_win_min": 0.22,
+      "lane1_second_min": 0.12,
+      "replacement_group": "deviation",
+      "max_forced_tickets": 1,
+      "third_link_score": {
+        "third_weight": 0.55,
+        "top3_weight": 0.35,
+        "lane2_inside_survival_bonus": 0.06,
+        "lane3_inside_survival_bonus": 0.035,
+        "outside_of_head_penalty": 0.025
+      }
+    }
+  },
+  "tide_input_policy": {
+    "source": "site venue JSON tide.events",
+    "interpolation": "linear between surrounding extrema",
+    "race_time": "deadline JST",
+    "fields": [
+      "tide_type",
+      "tide_direction",
+      "tide_height_cm",
+      "normalized_tide_height",
+      "minutes_from_nearest_extreme"
+    ]
+  },
+  "scenario_probability_link": {
+    "enabled": true,
+    "attack_probability_min": 0.52,
+    "adjacent_slit_gap_min": 0.08,
+    "normal_win_transfer": "0.025-0.05",
+    "near_extreme_strengthening_minutes": 30,
+    "outside_followers": "third-place only"
+  },
+  "day1_policy": {
+    "motor_exhibition_agreement_win_boost": "0.03-0.04",
+    "exhibition_only_second_boost": 0.012,
+    "exhibition_only_third_boost": 0.018,
+    "high_tilt_outside_third_boost": 0.03,
+    "exhibition_st_direct_weight": 0
+  },
+  "ticket_head_guard": {
+    "secondary_head_min_1_ticket_if_win_at_least": 0.15,
+    "secondary_head_min_2_tickets_if_win_at_least": 0.18,
+    "prefer_primary_head_in_second": true,
+    "odds_used": false
+  },
+  "release_status": "adopted",
+  "adopted_date_jst": "2026-08-07",
+  "production_notes": [
+    "v1.7 tide/wind/wave scenario-to-boat linkage retained",
+    "v1.8 day-1 motor and exhibition weighting retained",
+    "v1.9 secondary-head ticket minimum retained",
+    "odds are display-only and never used for probabilities or ticket generation",
+    "exhibition ST is used for scenario shape only, not as a standalone probability score"
+  ]
+}
