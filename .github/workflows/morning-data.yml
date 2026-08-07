@@ -172,6 +172,7 @@ jobs:
           python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
           python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
           python automation/apply_wakamatsu_v2.py --date "$TARGET_DATE"
+          python automation/apply_omura_v1.py --date "$TARGET_DATE"
 
           python automation/build_site_data.py --date "$TARGET_DATE" \
             | tee build-after-engine.log
@@ -211,6 +212,7 @@ jobs:
             python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
             python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
             python automation/apply_wakamatsu_v2.py --date "$TARGET_DATE"
+            python automation/apply_omura_v1.py --date "$TARGET_DATE"
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
               | tee "build-after-engine-${attempt}.log"
