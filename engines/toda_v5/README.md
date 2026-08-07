@@ -1,26 +1,40 @@
-# 戸田予想エンジン v5.1 COMPACT
+# 戸田予想エンジン v5 2026-08-08 正式採用修正
 
-GitHubブラウザの25MB/ファイル上限に対応した小型版です。
+このフォルダは現行 `engines/toda_v5/` に上書きするための差し替え版です。
 
-## マスター形式
-選手×コース・進入ズレ・枠・ST・潮DBを次のSQLiteへ格納しています。
+## 正式採用した修正
 
-```text
-master_json/toda_master_v5.sqlite3
-```
+1. `local_win=0.00`、`motor_2=0.0`、`boat_2=0.0` を欠損センチネルとして扱い、実力ゼロの減点をしない。
+2. 決まり手を固定着順ではなく展開シナリオ強度に使用する。
+   - 1コース: 逃げ / 被差し / 被まくり / 被まくり差し
+   - 2コース: 差し / まくり / 逃がし率
+   - 3・4コース: まくり / まくり差し / 差し
+3. 戸田の頭昇格条件として `直線 × 歴史ST(当地/コース/全国) × 展示ST × 決まり手 × 1号艇崩れ条件` を統合する。
+4. 展示ST単独では加点・減点しない。歴史STの裏付けがある時だけ当日の踏み込み確認として使う。
+5. 攻め艇成立時は攻め艇を加点するだけでなく1号艇1着率を連動減点する。
+6. ただし1号艇自身が直線・展示・ST・逃げ率で強い場合は減点を抑制する。
+7. 頭向きでない好直線艇は1着率より2・3着率へ強く反映する。
+8. 直前反映後は `win / second / third / secondByHead / thirdByHead / scenarios / SAB / tickets` を再生成する。
+9. `entry_changed` フラグだけを信用せず、`actual_entry` と枠順を直接比較して進入変化を検知する。
+10. オッズは確率・買い目生成に使わない。
 
-Python標準ライブラリ `sqlite3` だけで参照するため、追加パッケージや外部APIは不要です。
+## 上書き対象
 
-## アップロード
-このフォルダの中身を、次へアップロードしてください。
+- `toda_prediction_engine_v5.py`
+- `toda_scenario_engine_v5.py`
+- `toda_live_review_v5.py`
+- `toda_sab_engine_v5.py`
 
-```text
-kyotei-ai-data/engines/toda_v5/
-```
+`ticket` と `utils` は互換性確認用に同梱しています。
 
-`__pycache__` は含まれていません。
+## バージョン
 
-## 実行
-```bash
-python engines/toda_v5/tools/generate_toda_predictions_v5.py input.json output.json
-```
+`ENGINE_ID = toda_prediction_engine_v5_20260808_attack_fix`
+
+## 実装思想
+
+1号艇を一律に弱くする修正ではありません。
+
+`1号艇基礎逃げ性能 - 攻め成立リスク + 1号艇自身の当日防御性能`
+
+で当日のイン信頼度を作ります。攻め成立リスクは複数の独立信号が揃った時だけ大きくし、展示ST単独では崩しません。

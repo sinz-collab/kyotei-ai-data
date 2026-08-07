@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from toda_utils_v5 import LANES, num, clamp, exp_softmax
 from toda_master_loader_v5 import TodaMasterV5
@@ -6,11 +5,16 @@ from toda_scenario_engine_v5 import detect_scenarios
 from toda_ticket_engine_v5 import build_head_conditionals, build_tickets, build_upset_tickets
 from toda_sab_engine_v5 import judge_sab
 
-ENGINE_ID="toda_prediction_engine_v5_20260727"
+ENGINE_ID="toda_prediction_engine_v5_20260808_attack_fix"
 MASTER_ID="Toda_AI_MASTER_v3_1_COMPLETE_ONE_FILE"
 
 CLASS_BONUS={"A1":2.25,"A2":1.20,"B1":0.0,"B2":-1.15}
 LANE_PRIOR={1:1.65,2:.50,3:.22,4:.03,5:-.28,6:-.58}
+
+def _positive_or(value, fallback):
+    """Treat zero/negative site sentinel values as missing, not literal performance zero."""
+    v=num(value, fallback)
+    return v if v > 0 else fallback
 
 class TodaPredictionEngineV5:
     def __init__(self, master_dir=None):
@@ -29,12 +33,15 @@ class TodaPredictionEngineV5:
 
     def _base_score(self,r,lane,profile):
         nat=num(r.get("nat_win"),4.5)
-        local=num(r.get("local_win"),nat)
+        # Site JSON uses 0.00 when local history is unavailable. It must be neutral,
+        # otherwise no-local-history racers receive an artificial ~-3.15 score penalty.
+        local=_positive_or(r.get("local_win"),nat)
         avg=num(r.get("avg_st"),.18)
         local_st=num(r.get("local_st"),9)
         course_st=num(profile.get("avg_st"),9)
-        motor=num(r.get("motor_2"),32)
-        boat=num(r.get("boat_2"),32)
+        # 0.0 is also used as a no-data sentinel for new/unknown motor and boat stats.
+        motor=_positive_or(r.get("motor_2"),32)
+        boat=_positive_or(r.get("boat_2"),32)
         top3diff=num(profile.get("top3_vs_course_avg"),0)
         strength=str(profile.get("strength") or "")
         strength_bonus={"得意":.60,"やや得意":.30,"苦手":-.60}.get(strength,0)
@@ -57,16 +64,21 @@ class TodaPredictionEngineV5:
             p=self.master.course_profile(r,course)
             profiles[str(lane)]=p
             scores[str(lane)]=self._base_score(r,lane,p)
+            local_win_raw=num(r.get("local_win"),0)
+            motor_raw=num(r.get("motor_2"),0)
             source_status[str(lane)]={
                 "player_course":"reflected" if p["matched"] else "missing",
                 "sources":p.get("sources",[]),
                 "local_st":"reflected" if num(r.get("local_st"),9)<1 else "missing",
+                "local_win":"reflected" if local_win_raw>0 else "missing_neutral",
                 "season":"reflected" if r.get("season_runs") else "missing",
-                "motor":"reflected" if r.get("motor_2") not in (None,"") else "missing"
+                "motor":"reflected" if motor_raw>0 else "missing_neutral"
             }
             logs.append({"lane":lane,"stage":"base","notes":[
                 f"course_profile={p['strength'] or 'none'}",
                 f"course_sources={','.join(p.get('sources',[])) or 'none'}",
+                f"local_win={'neutral_missing' if local_win_raw<=0 else local_win_raw}",
+                f"motor_2={'neutral_missing' if motor_raw<=0 else motor_raw}",
                 f"base_score={scores[str(lane)]:.3f}"
             ]})
         scenarios,one_weak=detect_scenarios(racers,profiles,scores,context)
@@ -78,7 +90,6 @@ class TodaPredictionEngineV5:
             s=next((x for x in scenarios if x["head"]==h),None)
             sec,thr=build_head_conditionals(h,scores,s)
             second_by_head[str(h)]=sec; third_by_head[str(h)]=thr
-        # display maps condition on leading axis
         temp_heads=sorted(LANES,key=lambda x:win[str(x)],reverse=True)
         provisional=temp_heads[0]
         second=second_by_head[str(provisional)]
@@ -111,8 +122,9 @@ class TodaPredictionEngineV5:
             "tickets":[x["combo"] for x in tickets],
             "sourceStatus":source_status,"sourceSummary":source_summary,
             "logs":logs,
+            "modelInputs":{"racers":racers,"profiles":profiles,"baseScores":scores,"expectedEntry":[1,2,3,4,5,6]},
             "probabilityFlow":{"required":True,"baseApplied":True,"baseLabel":"戸田v5事前基礎予想",
                                "realtimeApplied":False,"reviewed":False,"reviewLabel":"直前情報待ち"},
-            "predictionStage":{"label":"事前予想","statusText":"戸田v5：統合マスター・選手×コース・展開連動反映",
+            "predictionStage":{"label":"事前予想","statusText":"戸田v5：統合マスター・選手×コース・決まり手展開連動反映",
                                "badge":"事前","color":"blue"}
         }
