@@ -165,7 +165,17 @@ def parse_racers(lines: list[str]) -> list[dict]:
         number_positions = [i for i, value in enumerate(block) if value in {"No.", "No"}]
         motor_at = number_positions[0] if number_positions else None
         boat_at = number_positions[1] if len(number_positions) > 1 else None
-        season_runs, season_groups, hayami = parse_season(index + 29, end)
+
+        # BOATERS may omit the second ST field. Infer the performance block
+        # from the first motor "No." instead of relying on fixed offsets.
+        stats_start = motor_at - 6 if motor_at is not None else 15
+        st_values = block[13:stats_start] if stats_start >= 13 else []
+        avg_st = st_values[0] if st_values else "-"
+        local_st = st_values[1] if len(st_values) > 1 else "-"
+
+        # Meeting form starts immediately after the boat number and 2/3 rates.
+        season_start = index + (boat_at + 4 if boat_at is not None else 29)
+        season_runs, season_groups, hayami = parse_season(season_start, end)
 
         def block_value(base: int | None, offset: int, fallback: int) -> str:
             if base is not None and base + offset < len(block):
@@ -183,14 +193,14 @@ def parse_racers(lines: list[str]) -> list[dict]:
                 "branch": lines[index + 7],
                 "f": clean_count(lines[index + 11], "F"),
                 "l": clean_count(lines[index + 12], "L"),
-                "avg_st": lines[index + 13],
-                "local_st": lines[index + 14],
-                "nat_win": lines[index + 15],
-                "nat_2": clean_pct(lines[index + 16]),
-                "nat_3": clean_pct(lines[index + 17]),
-                "local_win": lines[index + 18],
-                "local_2": clean_pct(lines[index + 19]),
-                "local_3": clean_pct(lines[index + 20]),
+                "avg_st": avg_st,
+                "local_st": local_st,
+                "nat_win": block_value(stats_start, 0, 15),
+                "nat_2": clean_pct(block_value(stats_start, 1, 16)),
+                "nat_3": clean_pct(block_value(stats_start, 2, 17)),
+                "local_win": block_value(stats_start, 3, 18),
+                "local_2": clean_pct(block_value(stats_start, 4, 19)),
+                "local_3": clean_pct(block_value(stats_start, 5, 20)),
                 "motor_no": block_value(motor_at, 1, 22),
                 "motor_2": clean_pct(block_value(motor_at, 2, 23)),
                 "motor_3": clean_pct(block_value(motor_at, 3, 24)),
