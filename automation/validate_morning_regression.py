@@ -11,7 +11,6 @@ from pathlib import Path
 PREDICTION_VENUES = {
     "toda",
     "wakamatsu",
-    "shimonoseki",
     "heiwajima",
     "tokoname",
     "ashiya",
