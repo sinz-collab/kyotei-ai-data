@@ -166,7 +166,7 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.assertTrue(any("prediction history changed" in error for error in errors))
             self.assertTrue(any("active prediction stage changed" in error for error in errors))
 
-    def test_second_day_empty_setsukan_fails(self) -> None:
+    def test_second_day_empty_setsukan_warns(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             before, after = root / "before", root / "after"
@@ -175,7 +175,10 @@ class MorningRegressionGuardTests(unittest.TestCase):
             broken["races"][0]["racers"][3]["season_runs"] = []
             broken["races"][0]["setsukan"][3]["season_runs"] = []
             self.write_tree(after, broken)
-            self.assertTrue(any("setsukan missing" in error for error in validate(before, after)))
+            with patch("builtins.print") as mock_print:
+                errors = validate(before, after)
+            self.assertEqual(errors, [])
+            mock_print.assert_called_once_with("WARNING: toda 1R: setsukan missing lanes")
 
     def test_verified_no_prior_meeting_runs_passes(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -187,7 +190,7 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.write_tree(after, current, payload("2026-07-23", 1))
             self.assertEqual(validate(before, after), [])
 
-    def test_no_prior_status_without_evidence_fails(self) -> None:
+    def test_no_prior_status_without_evidence_warns(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             before, after = root / "before", root / "after"
@@ -196,10 +199,12 @@ class MorningRegressionGuardTests(unittest.TestCase):
             mark_no_prior_meeting_runs(current)
             current["races"][0]["racers"][3].pop("setsukan_evidence")
             self.write_tree(after, current, payload("2026-07-23", 1))
-            errors = validate(before, after)
-            self.assertTrue(any("setsukan missing" in error for error in errors))
+            with patch("builtins.print") as mock_print:
+                errors = validate(before, after)
+            self.assertEqual(errors, [])
+            mock_print.assert_called_once_with("WARNING: toda 1R: setsukan missing lanes")
 
-    def test_no_prior_status_fails_when_racer_appeared_on_prior_day(self) -> None:
+    def test_no_prior_status_warns_when_racer_appeared_on_prior_day(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             before, after = root / "before", root / "after"
@@ -209,8 +214,10 @@ class MorningRegressionGuardTests(unittest.TestCase):
             prior = payload("2026-07-23", 1)
             prior["races"][0]["racers"][0]["name"] = "Additional Racer"
             self.write_tree(after, current, prior)
-            errors = validate(before, after)
-            self.assertTrue(any("setsukan missing" in error for error in errors))
+            with patch("builtins.print") as mock_print:
+                errors = validate(before, after)
+            self.assertEqual(errors, [])
+            mock_print.assert_called_once_with("WARNING: toda 1R: setsukan missing lanes")
 
     def test_setsukan_with_fewer_than_six_lanes_fails(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
