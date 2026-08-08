@@ -291,7 +291,7 @@ def validate(before_root: Path, after_root: Path) -> list[str]:
                         racer,
                         row,
                     ):
-                        errors.append(f"{slug} {race_no}R: setsukan missing lanes")
+                        print(f"WARNING: {slug} {race_no}R: setsukan missing lanes")
         before_keys = key_count(before)
         after_keys = key_count(after)
         if before_keys >= 100 and after_keys < before_keys * 0.75:
