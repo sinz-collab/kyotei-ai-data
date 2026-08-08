@@ -1,7 +1,7 @@
 
 import argparse,json
 from pathlib import Path
-from toda_prediction_engine_v5 import TodaPredictionEngineV5
+from toda_prediction_engine_v5 import TodaPredictionEngineV5, ENGINE_ID
 
 def main():
     ap=argparse.ArgumentParser()
@@ -9,7 +9,7 @@ def main():
     args=ap.parse_args()
     payload=json.loads(Path(args.input_json).read_text(encoding="utf-8"))
     engine=TodaPredictionEngineV5()
-    payload["engine"]="toda_prediction_engine_v5_20260727"
+    payload["engine"]=ENGINE_ID
     payload.setdefault("preds",{})
     for race in payload.get("races",[]):
         context={
