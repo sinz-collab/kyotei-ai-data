@@ -16,7 +16,6 @@ CONFIG_PATH = HERE / "venues.json"
 PREDICTION_VENUES = {
     "toda",
     "wakamatsu",
-    "shimonoseki",
     "heiwajima",
     "tokoname",
     "ashiya",
