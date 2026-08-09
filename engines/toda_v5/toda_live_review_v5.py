@@ -53,6 +53,22 @@ def _actual_course_map(doc):
     return course_map, changed
 
 
+def _refresh_changed_profiles(racers, profiles, course_map, master=None):
+    refreshed = []
+    for r in racers:
+        lane = int(r["lane"])
+        previous_course = int(r.get("actual_course") or r.get("entry_course") or lane)
+        actual_course = int(course_map.get(lane, lane))
+        if actual_course != previous_course:
+            if master is None:
+                from toda_master_loader_v5 import TodaMasterV5
+                master = TodaMasterV5()
+            profiles[str(lane)] = master.course_profile(r, actual_course)
+            refreshed.append(lane)
+        r["actual_course"] = actual_course
+    return refreshed
+
+
 def _adjust_conditionals(base_map, review, position, residual_boost=None):
     """Apply live strength to every head-conditioned opponent map, then renormalize."""
     residual_boost = residual_boost or {}
@@ -252,9 +268,13 @@ def apply_live_review(prediction, documents):
     base_scores = deepcopy(model_inputs.get("baseScores") or {})
     course_map, entry_changed = _actual_course_map(documents.get("direct"))
     if racers:
-        for r in racers:
-            lane = int(r["lane"])
-            r["actual_course"] = course_map.get(lane, lane)
+        actual_entry = ((documents.get("direct") or {}).get("data") or {}).get("actual_entry") or []
+        if len(actual_entry) == 6:
+            _refresh_changed_profiles(racers, profiles, course_map)
+        else:
+            for r in racers:
+                lane = int(r["lane"])
+                r["actual_course"] = course_map.get(lane, lane)
 
     adjusted = {"win": {}, "second": {}, "third": {}}
     review = {}
@@ -294,6 +314,7 @@ def apply_live_review(prediction, documents):
             "wind_speed": wind,
             "wave_height": wave,
             "tide_phase": prediction.get("tidePhase") or "",
+            "tide_type": prediction.get("tideType") or "",
         }
         scenarios, _ = _live_scenarios(scenarios, racers, profiles, base_scores, context, attack_meta, collapse)
 

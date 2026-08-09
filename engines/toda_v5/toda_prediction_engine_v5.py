@@ -5,7 +5,7 @@ from toda_scenario_engine_v5 import detect_scenarios
 from toda_ticket_engine_v5 import build_head_conditionals, build_tickets, build_upset_tickets
 from toda_sab_engine_v5 import judge_sab
 
-ENGINE_ID="toda_prediction_engine_v5_20260808_attack_fix"
+ENGINE_ID="toda_prediction_engine_v5_20260809_entry_tide_fix"
 MASTER_ID="Toda_AI_MASTER_v3_1_COMPLETE_ONE_FILE"
 
 CLASS_BONUS={"A1":2.25,"A2":1.20,"B1":0.0,"B2":-1.15}
@@ -110,6 +110,8 @@ class TodaPredictionEngineV5:
         }
         return {
             "engine":ENGINE_ID,"master":MASTER_ID,
+            "tidePhase":context.get("tide_phase") or "",
+            "tideType":context.get("tide_type") or "",
             "win":win,"second":second,"third":third,
             "secondByHead":second_by_head,"thirdByHead":third_by_head,
             "scenarios":scenarios,"oneWeak":one_weak,
