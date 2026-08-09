@@ -5,7 +5,7 @@ from toda_scenario_engine_v5 import detect_scenarios
 from toda_ticket_engine_v5 import build_head_conditionals, build_tickets, build_upset_tickets
 from toda_sab_engine_v5 import judge_sab
 
-ENGINE_ID="toda_prediction_engine_v5_20260809_entry_tide_fix"
+ENGINE_ID="toda_prediction_engine_v5_20260809_scenario_temp_ticket_fix"
 MASTER_ID="Toda_AI_MASTER_v3_1_COMPLETE_ONE_FILE"
 
 CLASS_BONUS={"A1":2.25,"A2":1.20,"B1":0.0,"B2":-1.15}
@@ -15,6 +15,27 @@ def _positive_or(value, fallback):
     """Treat zero/negative site sentinel values as missing, not literal performance zero."""
     v=num(value, fallback)
     return v if v > 0 else fallback
+
+def _win_temperature(win_raw, scenarios, racers, profiles):
+    ranked=sorted(LANES,key=lambda lane:win_raw[str(lane)],reverse=True)
+    head=ranked[0]
+    gap=win_raw[str(head)]-win_raw[str(ranked[1])]
+    head_scenario=next((s for s in scenarios if int(s["head"])==head),None)
+    evidence=(head_scenario or {}).get("evidence") or {}
+    evidence_count=num(evidence.get("evidenceCount"),0)
+    profile=profiles[str(head)]
+    racer=next(r for r in racers if int(r["lane"])==head)
+    course_win=num(profile.get("win_rate"),0)
+    if head==2:
+        kimarite=num(racer.get("boaters_sashi_rate"),0)+.35*num(racer.get("boaters_makuri_rate"),0)+.20*num(racer.get("boaters_makuri_sashi_rate"),0)
+    else:
+        kimarite=num(racer.get("boaters_makuri_rate"),0)+num(racer.get("boaters_makuri_sashi_rate"),0)+.25*num(racer.get("boaters_sashi_rate"),0)
+    contradictions=int(course_win<=0)+int(head!=1 and kimarite<=0)
+    head_count=len({int(s["head"]) for s in scenarios})
+    if gap>=4 and (head==1 or evidence_count>=4): return .58
+    if head_count>=3 or gap<1 or contradictions>=2: return .80
+    if head_count>=2 or gap<2.5 or contradictions: return .73
+    return .60 if gap>=3 and evidence_count>=3 else .70
 
 class TodaPredictionEngineV5:
     def __init__(self, master_dir=None):
@@ -84,7 +105,8 @@ class TodaPredictionEngineV5:
         scenarios,one_weak=detect_scenarios(racers,profiles,scores,context)
         win_raw=dict(scores)
         for s in scenarios: win_raw[str(s["head"])] += s["weight"]*1.28
-        win=exp_softmax(win_raw,.50)
+        temperature=_win_temperature(win_raw,scenarios,racers,profiles)
+        win=exp_softmax(win_raw,.25/temperature)
         second_by_head={}; third_by_head={}
         for h in LANES:
             s=next((x for x in scenarios if x["head"]==h),None)
@@ -112,6 +134,7 @@ class TodaPredictionEngineV5:
             "engine":ENGINE_ID,"master":MASTER_ID,
             "tidePhase":context.get("tide_phase") or "",
             "tideType":context.get("tide_type") or "",
+            "softmaxTemperature":temperature,
             "win":win,"second":second,"third":third,
             "secondByHead":second_by_head,"thirdByHead":third_by_head,
             "scenarios":scenarios,"oneWeak":one_weak,

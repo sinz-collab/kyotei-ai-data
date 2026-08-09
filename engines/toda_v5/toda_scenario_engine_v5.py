@@ -57,6 +57,39 @@ def attack_profile(r, lane):
     }
 
 
+def _attack_evidence(lane, racer, profile, attack, inside, one_weak):
+    kimarite_min = 6 if lane == 2 else 5
+    course_win = num(profile.get("win_rate"), 0)
+    course_fit = num(profile.get("top3_vs_course_avg"), 0)
+    if lane == 2:
+        inside_break = one_weak or inside["sashare"] >= 12
+    else:
+        inside_break = one_weak or inside["makurare"] + inside["makurareZashi"] >= 18
+    signals = {
+        "kimarite": attack["headRate"] >= kimarite_min,
+        "courseWin": course_win >= 10,
+        "courseFit": course_fit >= 5,
+        "st": _st(racer, profile) <= .18,
+        "insideBreak": inside_break,
+    }
+    evidence_count = sum(1 for matched in signals.values() if matched)
+    # Attack ability alone is not enough to promote the actor to a head candidate.
+    head_eligible = (signals["kimarite"] or signals["courseWin"]) and evidence_count >= 3
+    if attack["headRate"] <= 0 and course_win <= 0:
+        head_eligible = False
+    contradictions = []
+    if attack["headRate"] <= 0: contradictions.append("kimarite_zero")
+    if course_win <= 0: contradictions.append("course_win_zero")
+    if course_fit <= -12: contradictions.append("course_fit_negative")
+    if _st(racer, profile) > .19: contradictions.append("st_slow")
+    return {
+        "signals": signals,
+        "evidenceCount": evidence_count,
+        "headEligible": head_eligible,
+        "contradictions": contradictions,
+    }
+
+
 def detect_scenarios(racers, profiles, base_scores, context):
     by = {int(r["lane"]): r for r in racers}
     s = []
@@ -87,8 +120,8 @@ def detect_scenarios(racers, profiles, base_scores, context):
     r2 = by[2]
     p2 = profiles["2"]
     a2 = attack_profile(r2, 2)
-    two_support = a2["headRate"] >= 6 or num(p2.get("win_rate"), 0) >= 12 or str(r2.get("class", "")).startswith("A")
-    if _st(r2, p2) <= .19 and two_support:
+    e2 = _attack_evidence(2, r2, p2, a2, inside, one_weak)
+    if e2["headEligible"]:
         kim = clamp(a2["headRate"] / 20, 0, .45)
         s.append({
             "id": "TWO_SASHI",
@@ -97,13 +130,14 @@ def detect_scenarios(racers, profiles, base_scores, context):
             "weight": clamp((1.08 if one_weak else .62) + kim, .35, 1.30),
             "links": [1, 3, 4, 5, 6],
             "kimarite": a2,
+            "evidence": e2,
         })
 
     r3 = by[3]
     p3 = profiles["3"]
     a3 = attack_profile(r3, 3)
-    three_support = a3["headRate"] >= 5 or base_scores["3"] >= base_scores["2"] - .45
-    if _st(r3, p3) <= .19 and three_support and base_scores["3"] >= base_scores["2"] - .80:
+    e3 = _attack_evidence(3, r3, p3, a3, inside, one_weak)
+    if e3["headEligible"] and base_scores["3"] >= base_scores["2"] - .80:
         label = "3まくり差し" if a3["makuriSashi"] > a3["makuri"] else "3攻め"
         kim = clamp(a3["headRate"] / 18, 0, .48)
         s.append({
@@ -113,13 +147,14 @@ def detect_scenarios(racers, profiles, base_scores, context):
             "weight": clamp((1.08 if one_weak else .60) + kim, .30, 1.30),
             "links": [4, 5, 1, 2, 6],
             "kimarite": a3,
+            "evidence": e3,
         })
 
     r4 = by[4]
     p4 = profiles["4"]
     a4 = attack_profile(r4, 4)
-    four_support = a4["headRate"] >= 5 or base_scores["4"] >= base_scores["3"] - .45
-    if _st(r4, p4) <= .19 and four_support and base_scores["4"] >= base_scores["3"] - .80:
+    e4 = _attack_evidence(4, r4, p4, a4, inside, one_weak)
+    if e4["headEligible"] and base_scores["4"] >= base_scores["3"] - .80:
         kim = clamp(a4["headRate"] / 18, 0, .48)
         s.append({
             "id": "FOUR_KADO",
@@ -128,6 +163,7 @@ def detect_scenarios(racers, profiles, base_scores, context):
             "weight": clamp((1.04 if one_weak else .58) + kim, .30, 1.30),
             "links": [5, 6, 1, 3, 2],
             "kimarite": a4,
+            "evidence": e4,
         })
 
     for lane in (5, 6):

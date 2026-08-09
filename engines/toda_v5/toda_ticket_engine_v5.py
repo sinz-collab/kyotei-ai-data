@@ -17,10 +17,16 @@ def build_tickets(win, second_by_head, third_by_head, scenarios, sab):
     for h in heads[:head_limit]:
         s=smap.get(h,{}); links=s.get("links") or [x for x in LANES if x!=h]
         secs=sorted([x for x in links if x!=h],key=lambda x:second_by_head[str(h)][str(x)],reverse=True)[:3]
+        pairs=[]
         for b in secs:
-            thirds=sorted([x for x in LANES if x not in (h,b)],key=lambda x:third_by_head[str(h)][str(x)],reverse=True)[:2]
+            thirds=sorted([x for x in LANES if x not in (h,b)],key=lambda x:third_by_head[str(h)][str(x)],reverse=True)
+            best_third=third_by_head[str(h)][str(thirds[0])]
             for c in thirds:
-                combo=f"{h}-{b}-{c}"; out.append({"combo":combo,"role":"本線" if len(out)<3 else "展開保険","prob":combo_prob(combo,win,second_by_head,third_by_head),"odds":"-"})
+                if third_by_head[str(h)][str(c)] < best_third*.20: continue
+                pairs.append((second_by_head[str(h)][str(b)]*third_by_head[str(h)][str(c)],b,c))
+        pairs.sort(reverse=True)
+        for _,b,c in pairs[:6]:
+            combo=f"{h}-{b}-{c}"; out.append({"combo":combo,"role":"本線" if len(out)<3 else "展開保険","prob":combo_prob(combo,win,second_by_head,third_by_head),"odds":"-"})
     seen=[]; final=[]
     for x in out:
         if x["combo"] not in seen: seen.append(x["combo"]); final.append(x)
