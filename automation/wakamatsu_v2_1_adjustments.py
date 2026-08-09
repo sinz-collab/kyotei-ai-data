@@ -7,15 +7,21 @@ import json
 import math
 from pathlib import Path
 import re
+import sys
 from typing import Any
 
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ENGINE_DIR = REPO_ROOT / "engines" / "wakamatsu_v2" / "engine"
+if str(ENGINE_DIR) not in sys.path:
+    sys.path.insert(0, str(ENGINE_DIR))
+
 import wakamatsu_engine as core
 
 LANES = (1, 2, 3, 4, 5, 6)
 ENGINE_ID = "wakamatsu_engine_v2.2"
 ENGINE_VERSION = "2.2"
-REPO_ROOT = Path(__file__).resolve().parents[1]
 COURSE_WEIGHTS = (0.35, 0.35, 0.20, 0.10)  # ability, player-course, course, local
 CLASS_WEIGHT = {"A1": 1.18, "A2": 1.08, "B1": 1.00, "B2": 0.60}
 
