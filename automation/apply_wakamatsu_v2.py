@@ -129,11 +129,10 @@ def merge_live_files(
     data_root: Path,
 ) -> dict:
     # Live collector stores raw files outside the publisher repository.
-    live_root = (
-        Path("/opt/sinz-edge/data/live")
-        / target_date
-        / "wakamatsu"
-    )
+    vps_live_root = Path("/opt/sinz-edge/data/live")
+    repo_live_root = data_root / "live"
+    base_live_root = vps_live_root if vps_live_root.exists() else repo_live_root
+    live_root = base_live_root / target_date / "wakamatsu"
 
     for race in payload.get("races") or []:
         race_no = integer(race.get("race"))
@@ -658,6 +657,7 @@ def site_prediction(result: dict, unresolved: list[dict]) -> dict:
             "slitAdjacency": result.get("slit_adjacency_adjustments") or [],
             "escapeRateMultiAttack": result.get("escape_rate_multi_attack") or {},
             "originalExhibitionOuterLink": result.get("original_exhibition_outer_link") or {},
+            "ticketRankAudit": result.get("v22_ticket_rank_audit") or [],
             "oddsUsedForPrediction": False,
         },
     }
