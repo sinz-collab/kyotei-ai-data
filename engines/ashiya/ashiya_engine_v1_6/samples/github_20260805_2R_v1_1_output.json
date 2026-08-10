@@ -1,0 +1,738 @@
+{
+  "engine": {
+    "name": "ashiya_prediction_engine",
+    "version": "1.1.0",
+    "master_version": "v4.2",
+    "stage": "live",
+    "generated_at": "2026-08-05T09:18:54.864777+09:00"
+  },
+  "race": {
+    "date": "2026-08-05",
+    "race_no": 2
+  },
+  "probabilities": [
+    {
+      "lane": 1,
+      "reg_no": "4365",
+      "name": "盛本 真輔",
+      "win": 0.397142,
+      "second": 0.156041,
+      "third": 0.178298,
+      "top3": 0.731481
+    },
+    {
+      "lane": 2,
+      "reg_no": "4995",
+      "name": "田邉 亮蔵",
+      "win": 0.161077,
+      "second": 0.128807,
+      "third": 0.173673,
+      "top3": 0.463558
+    },
+    {
+      "lane": 3,
+      "reg_no": "5147",
+      "name": "田中 勇輔",
+      "win": 0.084573,
+      "second": 0.065128,
+      "third": 0.078153,
+      "top3": 0.227854
+    },
+    {
+      "lane": 4,
+      "reg_no": "4448",
+      "name": "青木 玄太",
+      "win": 0.114044,
+      "second": 0.279558,
+      "third": 0.233249,
+      "top3": 0.626851
+    },
+    {
+      "lane": 5,
+      "reg_no": "5355",
+      "name": "萩原 丈太朗",
+      "win": 0.122248,
+      "second": 0.191727,
+      "third": 0.178533,
+      "top3": 0.492508
+    },
+    {
+      "lane": 6,
+      "reg_no": "5409",
+      "name": "宮本 琉正",
+      "win": 0.120915,
+      "second": 0.178739,
+      "third": 0.158094,
+      "top3": 0.457748
+    }
+  ],
+  "attack_structure": {
+    "attacker": 4,
+    "wall_boat": 2,
+    "dent_boat": 3,
+    "conditional_links": [
+      {
+        "head": 4,
+        "boat": 5,
+        "second_bonus": 0.22272599999999998,
+        "third_bonus": 0.285554,
+        "vigor": 0.5707,
+        "reason": "4攻め時の5直外連動"
+      },
+      {
+        "head": 4,
+        "boat": 6,
+        "second_bonus": 0.3584435151515152,
+        "third_bonus": 0.25726424242424245,
+        "vigor": 0.6863,
+        "reason": "4攻め時の6外差し・展開拾い"
+      },
+      {
+        "head": 4,
+        "boat": 2,
+        "second_bonus": 0.02,
+        "third_bonus": 0.22,
+        "vigor": 0.55,
+        "reason": "3凹み時の2内差し残り"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "scenario_id": "S06",
+      "name": "4カド攻め・5/6外連動",
+      "score": 0.749811393939394,
+      "attacker": 4,
+      "linked_boats": [
+        5,
+        6,
+        1
+      ],
+      "probability": 0.4386
+    },
+    {
+      "scenario_id": "S10",
+      "name": "外攻め不発・内決着",
+      "score": 0.49976356994939375,
+      "attacker": 4,
+      "linked_boats": [
+        1,
+        2,
+        3
+      ],
+      "probability": 0.2923
+    },
+    {
+      "scenario_id": "S07",
+      "name": "4攻め・1内残り",
+      "score": 0.46,
+      "attacker": 4,
+      "linked_boats": [
+        1,
+        2
+      ],
+      "probability": 0.2691
+    }
+  ],
+  "sab": {
+    "grade": "B",
+    "score": 0.5755,
+    "components": {
+      "head_clarity": 1.0,
+      "scenario_agreement": 0.4386,
+      "conditional_stability": 0.0339,
+      "data_completeness": 0.394,
+      "contradiction_risk": 0
+    }
+  },
+  "tickets": {
+    "main": [
+      {
+        "combination": "1-4-5",
+        "score": 0.03991196,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-4-2",
+        "score": 0.03882556,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-4-6",
+        "score": 0.03534269,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-5-4",
+        "score": 0.03271914,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-6-4",
+        "score": 0.02956317,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-5-2",
+        "score": 0.02436216,
+        "reason": "確率上位・頭別シナリオ連動"
+      }
+    ],
+    "deviation": [
+      {
+        "combination": "1-6-5",
+        "score": 0.02262821,
+        "reason": "本線の頭または連下ズレ"
+      },
+      {
+        "combination": "1-5-6",
+        "score": 0.02217674,
+        "reason": "本線の頭または連下ズレ"
+      }
+    ],
+    "upset": [
+      {
+        "combination": "4-6-5",
+        "score": 0.01449344,
+        "reason": "非1頭の展開成立保険"
+      },
+      {
+        "combination": "4-6-2",
+        "score": 0.01337999,
+        "reason": "非1頭の展開成立保険"
+      }
+    ],
+    "all": [
+      {
+        "combination": "1-4-5",
+        "score": 0.03991196,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-4-2",
+        "score": 0.03882556,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-4-6",
+        "score": 0.03534269,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-5-4",
+        "score": 0.03271914,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-6-4",
+        "score": 0.02956317,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-5-2",
+        "score": 0.02436216,
+        "reason": "確率上位・頭別シナリオ連動"
+      },
+      {
+        "combination": "1-6-5",
+        "score": 0.02262821,
+        "reason": "本線の頭または連下ズレ"
+      },
+      {
+        "combination": "1-5-6",
+        "score": 0.02217674,
+        "reason": "本線の頭または連下ズレ"
+      },
+      {
+        "combination": "4-6-5",
+        "score": 0.01449344,
+        "reason": "非1頭の展開成立保険"
+      },
+      {
+        "combination": "4-6-2",
+        "score": 0.01337999,
+        "reason": "非1頭の展開成立保険"
+      }
+    ]
+  },
+  "audit": {
+    "model": {
+      "feature_count": 302,
+      "coverage": 0.394,
+      "missing_features": [
+        "race_date",
+        "source_file",
+        "fan_hit",
+        "fan_name",
+        "fan_branch",
+        "fan_current_grade",
+        "start_is_flying",
+        "start_is_late",
+        "start_is_normal",
+        "entry_minus_lane",
+        "abs_entry_minus_lane",
+        "year",
+        "month",
+        "day",
+        "weekday",
+        "race_time_sec",
+        "exhibition_time_race_mean",
+        "exhibition_time_race_min",
+        "exhibition_time_race_max",
+        "start_timing_race_mean",
+        "start_timing_race_min",
+        "start_timing_race_max",
+        "motor_no_race_mean",
+        "motor_no_race_min",
+        "motor_no_race_max",
+        "boat_no_race_mean",
+        "boat_no_race_min",
+        "boat_no_race_max",
+        "wind_speed_race_mean",
+        "wind_speed_race_min",
+        "wind_speed_race_max",
+        "wave_cm_race_mean",
+        "wave_cm_race_min",
+        "wave_cm_race_max",
+        "wind_x_lane",
+        "wave_x_lane",
+        "wind_x_outer",
+        "wave_x_outer",
+        "start_x_lane",
+        "exhibition_x_lane",
+        "outer_lane_wind_penalty",
+        "ashiya_inside_advantage",
+        "ashiya_lane_escape_bias",
+        "ashiya_outer_risk",
+        "ashiya_mid_balance",
+        "entry_advantage",
+        "entry_disadvantage",
+        "incourse_inner_bonus",
+        "outcourse_outer_risk",
+        "outer_lane_wave_penalty",
+        "strong_wind_outer_penalty",
+        "very_strong_wind_outer_penalty",
+        "high_wave_outer_penalty",
+        "very_high_wave_outer_penalty",
+        "headwind_outer_penalty",
+        "crosswind_outer_penalty",
+        "lane1_headwind_hold",
+        "lane1_wave_hold",
+        "start_x_inner",
+        "start_x_outer",
+        "exhibition_x_inner",
+        "exhibition_x_outer",
+        "entry_x_start",
+        "entry_x_exhibition",
+        "inside_fast_start_bonus",
+        "outside_fast_start_bonus",
+        "outer_count_in_race",
+        "inner_count_in_race",
+        "strong_wind_race_pressure",
+        "wave_race_pressure",
+        "fan_grade_num",
+        "grade_x_lane",
+        "grade_x_inner",
+        "grade_x_outer",
+        "race_time",
+        "high_tide_1_time",
+        "high_tide_1_level",
+        "high_tide_2_time",
+        "high_tide_2_level",
+        "low_tide_1_time",
+        "low_tide_1_level",
+        "low_tide_2_time",
+        "low_tide_2_level",
+        "nearest_tide_time_minutes",
+        "nearest_tide_level",
+        "nearest_tide_type",
+        "nearest_tide_minutes_diff",
+        "high_tide_time",
+        "low_tide_time",
+        "race_time_minutes",
+        "high_tide_1_minutes",
+        "high_tide_2_minutes",
+        "low_tide_1_minutes",
+        "low_tide_2_minutes",
+        "race_time_orig",
+        "entry_course_deviation",
+        "fan_grade_score",
+        "local_advantage_flag",
+        "high_tide_minutes",
+        "low_tide_minutes",
+        "minutes_from_high_tide",
+        "minutes_from_low_tide",
+        "abs_minutes_from_high_tide",
+        "abs_minutes_from_low_tide",
+        "tide_phase",
+        "tide_direction_binary",
+        "tide_speed_proxy",
+        "tide_strength_class",
+        "tide_transition_flag",
+        "tide_level",
+        "tide_effect_inner_bias",
+        "tide_effect_outer_bias",
+        "lane56_third_tide_flag",
+        "lane1_escape_tide_flag",
+        "lane4_attack_tide_flag",
+        "headwind_flag",
+        "tailwind_flag",
+        "crosswind_flag",
+        "wind_strength_class",
+        "wave_class",
+        "wind_x_wave",
+        "wind_stability_index",
+        "exhibition_std_in_race",
+        "exhibition_diff_from_best",
+        "exhibition_best",
+        "exhibition_second_best",
+        "exhibition_third_best",
+        "exhibition_gap_top2",
+        "exhibition_gap_top3",
+        "exhibition_top_flag",
+        "exhibition_top2_flag",
+        "exhibition_top3_flag",
+        "exhibition_outer_boost_flag",
+        "exhibition_inner_escape_flag",
+        "exhibition_type",
+        "start_std",
+        "start_consistency",
+        "exhibition_consistency",
+        "start_fast_flag",
+        "start_slow_flag",
+        "fan_metric_overall",
+        "fan_metric_1st_rate",
+        "fan_metric_2nd_rate",
+        "fan_metric_3rd_rate",
+        "course_specific_win_rate",
+        "course_specific_top3_rate",
+        "style_type",
+        "consistency_index",
+        "pressure_resistance",
+        "comeback_rate",
+        "motor_rank",
+        "motor_trend",
+        "motor_power_class",
+        "motor_outer_boost_flag",
+        "lane_win_rate",
+        "lane_top3_rate",
+        "lane_bias_adjusted",
+        "wind_penalty_outer",
+        "wind_advantage_inner",
+        "wind_rotation_effect",
+        "tide_x_wave_interaction",
+        "tide_x_wind_interaction",
+        "tide_x_course_advantage",
+        "wind_x_course",
+        "wind_x_start_timing",
+        "exhibition_x_course",
+        "exhibition_x_tide",
+        "start_x_wind",
+        "start_x_tide",
+        "motor_x_exhibition",
+        "motor_x_start",
+        "exhibition_lane_advantage",
+        "outer_third_base",
+        "win_score",
+        "second_score",
+        "third_score",
+        "outer_third_boost",
+        "inner_escape_prob",
+        "makuri_success_prob",
+        "sashime_success_prob",
+        "race_balance_index",
+        "chaos_index",
+        "upset_probability"
+      ]
+    },
+    "database": {
+      "model_weight": 0.547,
+      "player_lookups": [
+        {
+          "course": {
+            "player_id": 4365,
+            "player_name": "盛 本 真 輔",
+            "entry_course": 1,
+            "starts": 5,
+            "win_rate": 60.0,
+            "second_rate": 20.0,
+            "third_rate": 20.0,
+            "top3_rate": 100.0,
+            "avg_st": 0.158,
+            "min_st": 0.11,
+            "max_st": 0.2,
+            "top_st_rate": 0.0,
+            "course_avg_top3_rate": 84.17,
+            "top3_vs_course_avg": 15.83,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "course_strength": "得意",
+            "reliability": "C",
+            "reg_no": "4365"
+          },
+          "lane": {
+            "player_id": 4365,
+            "player_name": "盛 本 真 輔",
+            "lane": 1,
+            "starts": 5,
+            "win_rate": 60.0,
+            "second_rate": 20.0,
+            "third_rate": 20.0,
+            "top3_rate": 100.0,
+            "avg_st": 0.158,
+            "min_st": 0.11,
+            "max_st": 0.2,
+            "top_st_rate": 0.0,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "reliability": "C",
+            "reg_no": "4365"
+          },
+          "shift": {
+            "player_id": 4365,
+            "player_name": "盛 本 真 輔",
+            "lane": 1,
+            "entry_course": 1,
+            "starts": 5,
+            "win_rate": 60.0,
+            "second_rate": 20.0,
+            "third_rate": 20.0,
+            "top3_rate": 100.0,
+            "avg_st": 0.158,
+            "min_st": 0.11,
+            "max_st": 0.2,
+            "top_st_rate": 0.0,
+            "course_avg_top3_rate": 84.17,
+            "top3_vs_course_avg": 15.83,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "course_strength": "得意",
+            "reliability": "C",
+            "reg_no": "4365"
+          },
+          "weakness": null,
+          "summary": {
+            "player_id": 4365,
+            "player_name": "盛 本 真 輔",
+            "player_type": "2コース差し/残り型",
+            "primary_course": 2,
+            "starts": 5,
+            "top3_rate": 100.0,
+            "top3_vs_course_avg": 47.31,
+            "course_strength": "得意",
+            "reliability": "C",
+            "reg_no": "4365"
+          }
+        },
+        {
+          "course": {
+            "player_id": 4995,
+            "player_name": "田 邉 亮 蔵",
+            "entry_course": 2,
+            "starts": 7,
+            "win_rate": 14.29,
+            "second_rate": 14.29,
+            "third_rate": 14.29,
+            "top3_rate": 42.86,
+            "avg_st": 0.179,
+            "min_st": 0.04,
+            "max_st": 0.25,
+            "top_st_rate": 14.29,
+            "course_avg_top3_rate": 52.69,
+            "top3_vs_course_avg": -9.83,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "course_strength": "標準",
+            "reliability": "C",
+            "reg_no": "4995"
+          },
+          "lane": {
+            "player_id": 4995,
+            "player_name": "田 邉 亮 蔵",
+            "lane": 2,
+            "starts": 7,
+            "win_rate": 14.29,
+            "second_rate": 14.29,
+            "third_rate": 14.29,
+            "top3_rate": 42.86,
+            "avg_st": 0.179,
+            "min_st": 0.04,
+            "max_st": 0.25,
+            "top_st_rate": 14.29,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "reliability": "C",
+            "reg_no": "4995"
+          },
+          "shift": {
+            "player_id": 4995,
+            "player_name": "田 邉 亮 蔵",
+            "lane": 2,
+            "entry_course": 2,
+            "starts": 7,
+            "win_rate": 14.29,
+            "second_rate": 14.29,
+            "third_rate": 14.29,
+            "top3_rate": 42.86,
+            "avg_st": 0.179,
+            "min_st": 0.04,
+            "max_st": 0.25,
+            "top_st_rate": 14.29,
+            "course_avg_top3_rate": 52.69,
+            "top3_vs_course_avg": -9.83,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "course_strength": "標準",
+            "reliability": "C",
+            "reg_no": "4995"
+          },
+          "weakness": null,
+          "summary": {
+            "player_id": 4995,
+            "player_name": "田 邉 亮 蔵",
+            "player_type": "標準/要当日展示",
+            "primary_course": 6,
+            "starts": 3,
+            "top3_rate": 33.33,
+            "top3_vs_course_avg": 10.27,
+            "course_strength": "少数参考",
+            "reliability": "参考",
+            "reg_no": "4995"
+          }
+        },
+        {
+          "course": null,
+          "lane": {
+            "player_id": 5147,
+            "player_name": "田 中 勇 輔",
+            "lane": 3,
+            "starts": 4,
+            "win_rate": 0.0,
+            "second_rate": 0.0,
+            "third_rate": 0.0,
+            "top3_rate": 0.0,
+            "avg_st": 0.143,
+            "min_st": 0.08,
+            "max_st": 0.23,
+            "top_st_rate": 75.0,
+            "entry_shift_count": 2,
+            "entry_shift_rate": 50.0,
+            "reliability": "参考",
+            "reg_no": "5147"
+          },
+          "shift": null,
+          "weakness": null,
+          "summary": {
+            "player_id": 5147,
+            "player_name": "田 中 勇 輔",
+            "player_type": "標準/要当日展示",
+            "primary_course": 6,
+            "starts": 3,
+            "top3_rate": 33.33,
+            "top3_vs_course_avg": 10.27,
+            "course_strength": "少数参考",
+            "reliability": "参考",
+            "reg_no": "5147"
+          }
+        },
+        {
+          "course": {
+            "player_id": 4448,
+            "player_name": "青 木 玄 太",
+            "entry_course": 4,
+            "starts": 4,
+            "win_rate": 0.0,
+            "second_rate": 50.0,
+            "third_rate": 50.0,
+            "top3_rate": 100.0,
+            "avg_st": 0.19,
+            "min_st": 0.15,
+            "max_st": 0.23,
+            "top_st_rate": 0.0,
+            "course_avg_top3_rate": 49.52,
+            "top3_vs_course_avg": 50.48,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "course_strength": "少数参考",
+            "reliability": "参考",
+            "reg_no": "4448"
+          },
+          "lane": {
+            "player_id": 4448,
+            "player_name": "青 木 玄 太",
+            "lane": 4,
+            "starts": 4,
+            "win_rate": 0.0,
+            "second_rate": 50.0,
+            "third_rate": 50.0,
+            "top3_rate": 100.0,
+            "avg_st": 0.19,
+            "min_st": 0.15,
+            "max_st": 0.23,
+            "top_st_rate": 0.0,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "reliability": "参考",
+            "reg_no": "4448"
+          },
+          "shift": {
+            "player_id": 4448,
+            "player_name": "青 木 玄 太",
+            "lane": 4,
+            "entry_course": 4,
+            "starts": 4,
+            "win_rate": 0.0,
+            "second_rate": 50.0,
+            "third_rate": 50.0,
+            "top3_rate": 100.0,
+            "avg_st": 0.19,
+            "min_st": 0.15,
+            "max_st": 0.23,
+            "top_st_rate": 0.0,
+            "course_avg_top3_rate": 49.52,
+            "top3_vs_course_avg": 50.48,
+            "entry_shift_count": 0,
+            "entry_shift_rate": 0.0,
+            "course_strength": "少数参考",
+            "reliability": "参考",
+            "reg_no": "4448"
+          },
+          "weakness": null,
+          "summary": {
+            "player_id": 4448,
+            "player_name": "青 木 玄 太",
+            "player_type": "標準/要当日展示",
+            "primary_course": 4,
+            "starts": 4,
+            "top3_rate": 100.0,
+            "top3_vs_course_avg": 50.48,
+            "course_strength": "少数参考",
+            "reliability": "参考",
+            "reg_no": "4448"
+          }
+        },
+        {
+          "course": null,
+          "lane": null,
+          "shift": null,
+          "weakness": null,
+          "summary": null
+        },
+        {
+          "course": null,
+          "lane": null,
+          "shift": null,
+          "weakness": null,
+          "summary": null
+        }
+      ]
+    },
+    "entry_changed": false,
+    "actual_entry_complete": true,
+    "odds_used": false,
+    "full_reflection": true,
+    "ticket_count": 10,
+    "duplicate_count": 0,
+    "normalized": true
+  }
+}
