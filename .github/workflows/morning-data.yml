@@ -153,7 +153,9 @@ jobs:
           python-version: "3.12"
 
       - name: Install prediction dependencies
-        run: python -m pip install pandas==2.3.1
+        run: |
+          python -m pip install pandas==2.3.1
+          python -m pip install -r engines/ashiya/ashiya_engine_v1_6/requirements.txt
         
       - name: Download current run artifacts
         uses: actions/download-artifact@v4
@@ -173,6 +175,7 @@ jobs:
           python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
           python automation/apply_wakamatsu_v2.py --date "$TARGET_DATE"
           python automation/apply_omura_v1.py --date "$TARGET_DATE"
+          python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre
 
           python automation/build_site_data.py --date "$TARGET_DATE" \
             | tee build-after-engine.log
@@ -213,6 +216,7 @@ jobs:
             python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
             python automation/apply_wakamatsu_v2.py --date "$TARGET_DATE"
             python automation/apply_omura_v1.py --date "$TARGET_DATE"
+            python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
               | tee "build-after-engine-${attempt}.log"
