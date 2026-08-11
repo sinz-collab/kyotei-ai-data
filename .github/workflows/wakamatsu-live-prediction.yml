@@ -1,0 +1,109 @@
+name: Wakamatsu live prediction
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "data/live/**/wakamatsu/**"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date in YYYY-MM-DD"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wakamatsu-live-prediction-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install prediction dependencies
+        run: python -m pip install pandas==2.3.1
+      - id: dates
+        name: Resolve updated Wakamatsu dates
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_DATE: ${{ inputs.date }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            target_dates="$INPUT_DATE"
+          else
+            if git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              changed_paths="$(git diff --name-only "$BEFORE_SHA" "$AFTER_SHA")"
+            else
+              changed_paths="$(git show --pretty='' --name-only "$AFTER_SHA")"
+            fi
+            target_dates="$(printf '%s\n' "$changed_paths" \
+              | awk -F/ '$1 == "data" && $2 == "live" && $4 == "wakamatsu" {print $3}' \
+              | sort -u)"
+          fi
+
+          if [ -z "$target_dates" ]; then
+            echo "No Wakamatsu live-data date was found." >&2
+            exit 1
+          fi
+          while IFS= read -r target_date; do
+            if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
+              || [ "$(date -d "$target_date" +%F 2>/dev/null)" != "$target_date" ]; then
+              echo "Invalid target date: $target_date" >&2
+              exit 1
+            fi
+          done <<< "$target_dates"
+
+          {
+            echo 'target_dates<<EOF'
+            printf '%s\n' "$target_dates"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+      - name: Recalculate final predictions and rebuild site data
+        shell: bash
+        env:
+          TARGET_DATES: ${{ steps.dates.outputs.target_dates }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r target_date; do
+            python automation/run_wakamatsu_v2_live.py --date "$target_date" \
+              | tee "wakamatsu-live-${target_date}.log"
+          done <<< "$TARGET_DATES"
+      - name: Commit and push generated data
+        shell: bash
+        env:
+          TARGET_DATES: ${{ steps.dates.outputs.target_dates }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/venues/wakamatsu data/manifest.json data/morning_report.json
+          if git diff --cached --quiet; then
+            echo "No Wakamatsu prediction changes."
+            exit 0
+          fi
+          dates_label="$(printf '%s' "$TARGET_DATES" | paste -sd, -)"
+          git commit -m "Update Wakamatsu live predictions ${dates_label}"
+          git push origin HEAD:main
+      - name: Upload live prediction report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wakamatsu-live-prediction-${{ github.run_id }}
+          path: wakamatsu-live-*.log
+          if-no-files-found: warn
+          retention-days: 2

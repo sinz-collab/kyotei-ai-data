@@ -759,6 +759,14 @@ def main() -> int:
     parser.add_argument("--date", required=True)
     parser.add_argument("--source-root", default="work/races")
     parser.add_argument("--data-root", default="data")
+    parser.add_argument(
+        "--live-venue",
+        choices=sorted(PREDICTION_VENUES),
+        help=(
+            "Publish an already-generated venue payload after a live prediction "
+            "update without requiring morning fetch artifacts."
+        ),
+    )
     args = parser.parse_args()
 
     datetime.strptime(args.date, "%Y-%m-%d")
@@ -767,6 +775,71 @@ def main() -> int:
     date_dir = args.date.replace("-", "")
     config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
     configured = {venue["slug"]: venue for venue in config["venues"]}
+
+    if args.live_venue:
+        slug = args.live_venue
+        dated_path = data_root / "venues" / slug / f"{date_dir}.json"
+        if not dated_path.is_file():
+            raise FileNotFoundError(dated_path)
+        payload = json.loads(dated_path.read_text(encoding="utf-8"))
+        if payload.get("date") != args.date or payload.get("venueId") != slug:
+            raise RuntimeError(
+                f"live venue identity mismatch: expected={slug}/{args.date} "
+                f"actual={payload.get('venueId')}/{payload.get('date')}"
+            )
+        prediction_available, reason = prediction_payload_gate(
+            payload,
+            args.date,
+        )
+        if not prediction_available:
+            raise RuntimeError(f"live prediction payload invalid: {reason}")
+
+        serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+        write_text_atomic(data_root / "venues" / slug / "latest.json", serialized)
+
+        now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(timespec="seconds")
+        manifest_path = data_root / "manifest.json"
+        if manifest_path.is_file():
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if manifest.get("date") == args.date:
+                for venue in manifest.get("venues") or []:
+                    if venue.get("slug") != slug:
+                        continue
+                    venue.update(
+                        {
+                            "open": True,
+                            "raceDataAvailable": True,
+                            "race_data_available": True,
+                            "predictionAvailable": True,
+                            "prediction_available": True,
+                            "predictionStatus": "ready",
+                            "prediction_status": "ready",
+                            "predictionReason": "",
+                            "prediction_reason": "",
+                            "dataPath": f"venues/{slug}/{date_dir}.json",
+                            "latestPath": f"venues/{slug}/latest.json",
+                        }
+                    )
+                    venue.pop("availabilityReason", None)
+                    break
+                manifest["updatedAt"] = now
+                write_text_atomic(
+                    manifest_path,
+                    json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                )
+
+        report = {
+            "date": args.date,
+            "createdAt": now,
+            "liveVenue": slug,
+            "predictionAvailable": True,
+            "predictionStatus": "ready",
+            "engine": payload.get("engine"),
+            "engineVersion": payload.get("engineVersion"),
+        }
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
     statuses = {}
     expected_status_paths = {
         source_root / venue["name"] / date_dir / "fetch_status.json"
