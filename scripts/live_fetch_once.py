@@ -31,6 +31,7 @@ PUBLISHER_REPO = Path("/opt/sinz-edge/runtime/publisher-repo")
 HEIWAJIMA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_heiwajima_live_v1.py"
 HEIWAJIMA_DATA_ROOT = PUBLISHER_REPO / "data"
 ASHIYA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_ashiya_live_v1.py"
+ASHIYA_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_ashiya_v16_live.py"
 ASHIYA_DATA_ROOT = PUBLISHER_REPO / "data"
 
 
@@ -142,6 +143,50 @@ async def apply_ashiya_live_data(
         stdout.decode("utf-8", errors="replace").strip(),
         extra={
             "event": "ashiya_live_applied",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+        },
+    )
+
+    prediction_process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(ASHIYA_LIVE_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--race",
+        str(target["race_no"]),
+        "--data-root",
+        str(ASHIYA_DATA_ROOT),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    prediction_stdout, prediction_stderr = (
+        await prediction_process.communicate()
+    )
+
+    if prediction_process.returncode != 0:
+        logger.error(
+            prediction_stderr.decode(
+                "utf-8",
+                errors="replace",
+            ).strip(),
+            extra={
+                "event": "ashiya_live_prediction_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+
+    logger.info(
+        prediction_stdout.decode(
+            "utf-8",
+            errors="replace",
+        ).strip(),
+        extra={
+            "event": "ashiya_live_prediction_complete",
             "venue": target["venue"],
             "race_no": target["race_no"],
         },
