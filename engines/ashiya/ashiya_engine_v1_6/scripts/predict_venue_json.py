@@ -68,8 +68,16 @@ def apply_actual_entry(racers, actual_entry):
     例 [1, 2, 4, 3, 5, 6]
       → 4号艇=3コース、3号艇=4コース。
     """
+    # Reset every boat first. This prevents stale actual_course values from an
+    # earlier payload from surviving when the source says entry_changed=false.
+    for racer in racers:
+        try:
+            racer["actual_course"] = int(racer.get("lane") or 0)
+        except (TypeError, ValueError):
+            pass
+
     if not isinstance(actual_entry, list) or len(actual_entry) != 6:
-        return
+        return False
 
     course_by_lane = {}
 
@@ -77,10 +85,14 @@ def apply_actual_entry(racers, actual_entry):
         try:
             lane = int(lane_value)
         except (TypeError, ValueError):
-            continue
+            return False
 
-        if 1 <= lane <= 6:
-            course_by_lane[lane] = course
+        if not 1 <= lane <= 6 or lane in course_by_lane:
+            return False
+        course_by_lane[lane] = course
+
+    if sorted(course_by_lane) != list(range(1, 7)):
+        return False
 
     for racer in racers:
         try:
@@ -90,6 +102,7 @@ def apply_actual_entry(racers, actual_entry):
 
         if lane in course_by_lane:
             racer["actual_course"] = course_by_lane[lane]
+    return True
 
 
 def build_tide_features(tide, deadline):
@@ -291,6 +304,9 @@ def merge_race_payload(root: dict, race: dict) -> dict:
     payload["race_date"] = race_date
     payload["race_no"] = race_no
     payload["race_time"] = time_to_minutes(deadline) or 0
+    payload["eventDayLabel"] = race.get("eventDayLabel") or root.get("eventDayLabel") or root.get("seriesDay")
+    payload["seriesDay"] = race.get("seriesDay") or root.get("seriesDay") or root.get("eventDayLabel")
+    payload["eventDay"] = race.get("eventDay") or root.get("eventDay")
 
     payload["venue"] = (
         root.get("venue")
@@ -412,7 +428,7 @@ def merge_race_payload(root: dict, race: dict) -> dict:
         or direct.get("actual_entry")
     )
 
-    apply_actual_entry(
+    actual_entry_valid = apply_actual_entry(
         racers,
         actual_entry,
     )
@@ -424,6 +440,12 @@ def merge_race_payload(root: dict, race: dict) -> dict:
                 racer.get("entry_course")
                 or racer.get("lane")
             )
+
+    payload["actual_entry"] = actual_entry if actual_entry_valid else list(range(1, 7))
+    payload["entry_changed"] = any(
+        int(racer.get("actual_course") or racer.get("lane")) != int(racer.get("lane"))
+        for racer in racers
+    )
 
     # -----------------------------
     # 展示
@@ -584,7 +606,7 @@ def main():
 
     out = {
         "engine": "ashiya_prediction_engine",
-        "version": "1.6.0",
+        "version": "1.6.1",
         "date": doc.get("date"),
         "venue": "ashiya",
         "predictions": results,

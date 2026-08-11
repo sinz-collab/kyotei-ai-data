@@ -42,7 +42,7 @@ from predict_venue_json import merge_race_payload
 
 
 ENGINE_NAME = "ashiya_prediction_engine"
-ENGINE_VERSION = "1.6.0"
+ENGINE_VERSION = "1.6.1"
 EXPECTED_RACES = set(range(1, 13))
 
 

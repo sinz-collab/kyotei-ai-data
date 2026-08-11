@@ -1,9 +1,9 @@
-# 芦屋 v1.6 正式採用手順
+# 芦屋 v1.6.1 正式採用手順
 
 1. このディレクトリ一式を `engines/ashiya/ashiya_engine_v1_6/` に配置する。
 2. `ASSET_SHA256.txt` の4資産を照合する。LightGBMモデルを省略・置換しない。
 3. 朝取得後の `data/venues/ashiya/YYYYMMDD.json` を入力として、`scripts/predict_venue_json.py` で12Rを生成するアダプターを接続する。
-4. サイト互換出力では top-level `engine` を `ashiya_prediction_engine_v1.6.0` とし、各Rに win/second/third、SAB、main 6・deviation 2・upset 2を格納する。
+4. サイト互換出力では top-level `engine` を `ashiya_prediction_engine_v1.6.1` とし、各Rに win/second/third、SAB、main 6・deviation 2・upset 2を格納する。
 5. `automation/build_site_data.py` の prediction gate を通過した後だけ `predictionStatus=ready` とする。
 6. オッズは確率・SAB・買い目選定に使用しない。
 7. 進入変更時は actual_course で全再計算する。

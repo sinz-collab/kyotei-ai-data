@@ -98,6 +98,177 @@ def _slit_adjustment(info, db_lookups=None):
         x['outside_adv']=(x['st']-outside[0]['st']) if outside else 0.0
     return info
 
+
+def _median(values):
+    ordered=sorted(values)
+    middle=len(ordered)//2
+    return (ordered[middle-1]+ordered[middle])/2 if len(ordered)%2==0 else ordered[middle]
+
+
+def _field_top_half(info, item, keys):
+    """Whether a lower-is-better exhibition value is in the field's top half."""
+    def value(row):
+        for key in keys:
+            v=as_float(row['racer'].get(key),0.0)
+            if v>0:
+                return v
+        return 0.0
+    current=value(item)
+    field=[value(row) for row in info]
+    field=[v for v in field if v>0]
+    return bool(current and len(field)>=2 and current<=_median(field))
+
+
+def _extract_head_candidates(info, probs, dent):
+    """Select supported head candidates without allowing exhibition ST to veto one."""
+    max_win=max(probs['win'])
+    season_median=_median([_season_score(x['racer']) for x in info])
+    motor_values=[as_float(x['racer'].get('motor_2') or x['racer'].get('motor_2_rate'),33.0) for x in info]
+    motor_median=_median(motor_values)
+    candidates=[]
+    for item in info:
+        win=probs['win'][item['lane']-1]
+        if win < 0.10 and win < max_win*0.40:
+            continue
+        racer=item['racer']
+        evidence=[]
+        grade=str(racer.get('class') or racer.get('grade') or '').upper()
+        if grade in ('A1','A2'):
+            evidence.append('class')
+        nat=as_float(racer.get('nat_win') or racer.get('national_win_rate'),0.0)
+        local=as_float(racer.get('local_win') or racer.get('local_win_rate'),0.0)
+        if local>0 and (nat<=0 or local>=nat):
+            evidence.append('local')
+        if _season_score(racer)>=season_median:
+            evidence.append('meeting_form')
+        if as_float(racer.get('motor_2') or racer.get('motor_2_rate'),33.0)>=motor_median:
+            evidence.append('motor')
+        display_parts=sum([
+            _field_top_half(info,item,('exhibition_time',)),
+            _field_top_half(info,item,('lap_time','sum_lap')),
+            _field_top_half(info,item,('turn_time',)),
+            _field_top_half(info,item,('straight_time',)),
+            _field_top_half(info,item,('sum',)),
+            as_float(racer.get('sum_difference'),0.0)>0,
+        ])
+        if display_parts>=2:
+            evidence.append('exhibition_original')
+        if item['course']<=3:
+            evidence.append('actual_course')
+        if item['attack']>0 or item['sashi']>0:
+            evidence.append('attack_style')
+
+        # Probability eligibility alone is insufficient; require agreement from
+        # at least two independent existing materials. ST is intentionally not a
+        # veto and cannot be the sole supporting material.
+        if len(evidence)<2:
+            continue
+        severity=0.0
+        if dent and item['lane']==dent['lane']:
+            severity=max(0.0,min(1.0,(-item['st_delta']+max(0,item['inside_adv']))/0.16))
+        candidates.append({
+            'lane':item['lane'],'actual_course':item['course'],'win':round(win,8),
+            'evidence':evidence,'dent':bool(dent and item['lane']==dent['lane']),
+            'dent_severity':round(severity,4),
+            # Reuse the existing weak dent multiplier; dent never deletes a head.
+            'scenario_score':round(win*(1-0.22*severity),8),
+        })
+    if not candidates:
+        best=max(info,key=lambda x:x['base'])
+        candidates=[{'lane':best['lane'],'actual_course':best['course'],'win':round(best['base'],8),'evidence':['win_leader','actual_course'],'dent':bool(dent and best['lane']==dent['lane']),'dent_severity':0.0,'scenario_score':round(best['base'],8)}]
+    return sorted(candidates,key=lambda x:(-x['scenario_score'],-x['win'],x['lane']))
+
+
+def _conditional_material_support(info):
+    """Existing non-result materials used to support head-conditioned links.
+
+    This audit is separate from head-candidate extraction and from the marginal
+    probability corrections.  It only controls how strongly a boat can benefit
+    from a race-development link after the head has been fixed.  Exhibition ST
+    deliberately has only a five-percent share.
+    """
+    season_values=[_season_score(x['racer']) for x in info]
+    motor_values=[as_float(x['racer'].get('motor_2') or x['racer'].get('motor_2_rate'),33.0) for x in info]
+    rows={}
+    for item in info:
+        racer=item['racer']
+        grade=str(racer.get('class') or racer.get('grade') or '').upper()
+        class_score={'A1':1.0,'A2':0.82,'B1':0.56,'B2':0.36}.get(grade,0.50)
+        nat=as_float(racer.get('nat_win') or racer.get('national_win_rate'),0.0)
+        local=as_float(racer.get('local_win') or racer.get('local_win_rate'),0.0)
+        local_level=max(0.0,min(1.0,(local-3.0)/5.0)) if local>0 else 0.5
+        local_edge=max(0.0,min(1.0,0.5+(local-nat)/4.0)) if local>0 and nat>0 else 0.5
+        local_score=0.65*local_level+0.35*local_edge
+        season=_season_score(racer)
+        motor=as_float(racer.get('motor_2') or racer.get('motor_2_rate'),33.0)
+        lo=min(motor_values); hi=max(motor_values)
+        motor_score=(motor-lo)/(hi-lo) if hi>lo else 0.5
+        display_parts=[
+            _rank_score(racer.get('exhibition_rank')),
+            _rank_score(racer.get('lap_rank') or racer.get('original_lap_rank')),
+            _rank_score(racer.get('turn_rank') or racer.get('original_turn_rank')),
+            _rank_score(racer.get('straight_rank') or racer.get('original_straight_rank')),
+            _rank_score(racer.get('sum_rank') or racer.get('original_sum_rank')),
+        ]
+        sum_diff=max(-1.0,min(1.0,as_float(racer.get('sum_difference'),0.0)/0.5))
+        exhibition=max(0.0,min(1.0,0.85*(sum(display_parts)/len(display_parts))+0.15*((sum_diff+1.0)/2.0)))
+        styles=kimarite(racer)
+        attack_style=max(0.0,min(1.0,2.5*(styles['sashi']+styles['makuri']+styles['makurizashi'])))
+        st_score=max(0.0,min(1.0,0.5+item.get('st_delta',0.0)/0.16))
+        common=(0.24*class_score+0.17*local_score+0.18*season+
+                0.16*motor_score+0.20*exhibition+0.05*st_score)
+        rows[item['lane']]={
+            'second':round(max(0.0,min(1.0,0.88*common+0.12*attack_style)),6),
+            'third':round(max(0.0,min(1.0,0.94*common+0.06*attack_style)),6),
+            'components':{
+                'class':round(class_score,4),'local':round(local_score,4),
+                'meeting':round(season,4),'motor':round(motor_score,4),
+                'exhibition_original':round(exhibition,4),'attack_style':round(attack_style,4),
+                'exhibition_st_weak':round(st_score,4),
+            },
+        }
+    return rows
+
+
+def _head_scenario(candidate, lane_by_course, candidate_lanes):
+    head=candidate['lane']; course=candidate['actual_course']
+    relations=[]
+    def link(target,role):
+        if target and target!=head and target not in [x['boat'] for x in relations]:
+            relations.append({'boat':target,'role':role})
+    if course==1:
+        link(lane_by_course.get(2),'2差し残り')
+        link(lane_by_course.get(3),'2逃がしからの3浮上')
+        for outer_course in (4,5,6):
+            outer=lane_by_course.get(outer_course)
+            if outer in candidate_lanes:
+                link(outer,'外攻め連動')
+    elif course==2:
+        link(lane_by_course.get(1),'1内残り')
+        link(lane_by_course.get(3),'3連動')
+    elif course==3:
+        link(lane_by_course.get(4),'4直外連動')
+        link(lane_by_course.get(1),'1内残り')
+        link(lane_by_course.get(5),'5展開拾い')
+        link(lane_by_course.get(6),'6展開拾い')
+    elif course==4:
+        link(lane_by_course.get(5),'5外連動')
+        link(lane_by_course.get(6),'6外連動')
+        link(lane_by_course.get(1),'1内残り')
+        link(lane_by_course.get(2),'2内残り')
+    elif course==5:
+        link(lane_by_course.get(6),'6外連動')
+        link(lane_by_course.get(1),'1内残り')
+    else:
+        link(lane_by_course.get(1),'1内残り')
+    return {
+        'scenario_id':f'H{head}C{course}','head':head,'attacker':head,
+        'actual_course':course,'score':candidate['scenario_score'],
+        'dent':candidate['dent'],'dent_severity':candidate['dent_severity'],
+        'linked_boats':[x['boat'] for x in relations],'relations':relations,
+        'evidence':candidate['evidence'],
+    }
+
 def detect(racers, probs, db_lookups=None):
     info = []
     by_lane = {}
@@ -116,6 +287,11 @@ def detect(racers, probs, db_lookups=None):
 
     wall = max((x for x in info if x['course'] in (2, 3)), key=lambda x: (-x['st'], x['base']), default=None)
     dent = max(info, key=lambda x: (x['st'] - 0.14, -x['base']))
+    course_by_lane={x['lane']:x['course'] for x in info}
+    lane_by_course={course:lane for lane,course in course_by_lane.items()}
+    head_candidates=_extract_head_candidates(info,probs,dent)
+    candidate_lanes={x['lane'] for x in head_candidates}
+    head_scenarios=[_head_scenario(x,lane_by_course,candidate_lanes) for x in head_candidates]
     candidates = [x for x in info if x['course'] in (2, 3, 4, 5)]
     attacker = max(candidates, key=lambda x: (0.30*x['attack']+0.30*x['base']+0.20*max(0,x['inside_adv'])+0.12*max(0,x['st_delta'])*x['local_st_reliability']/0.12+0.08*max(0,0.20-x['st'])), default=info[0])
 
@@ -200,11 +376,16 @@ def detect(racers, probs, db_lookups=None):
         x['probability'] = round(w, 4)
     return {
         'attacker': attacker['lane'],
+        'primary_attacker': attacker['lane'],
+        'head_candidates': head_candidates,
+        'head_scenarios': head_scenarios,
+        'conditional_material_support': _conditional_material_support(info),
         'wall_boat': wall['lane'] if wall else None,
         'dent_boat': dent['lane'],
         'scenarios': scenarios,
         'conditional_links': conditional_links,
         'conditional_triplets': conditional_triplets,
+        'course_by_lane': course_by_lane,
         'slit_audit':[{'lane':x['lane'],'course':x['course'],'exhibition_st':round(x['st'],3),'local_course_st':round(x['local_st'],3),'local_st_starts':x['local_st_starts'],'local_st_reliability':round(x['local_st_reliability'],3),'st_delta':round(x['st_delta'],3),'inside_adv':round(x['inside_adv'],3)} for x in info],
         'local_venue_audit': {
             x['lane']: _local_venue_profile(
@@ -284,3 +465,142 @@ def apply(probs, structure):
     for k in out:
         out[k] = normalize(out[k])
     return out
+
+
+def build_head_conditionals(probs, structure):
+    """Build independent 2nd/3rd distributions after fixing each head.
+
+    Marginals remain the foundation, preserving the existing day, SUM,
+    practical-support and exhibition evaluations.  A separate multiplicative
+    layer then applies ``head scenario score x linked-boat material support``.
+    Every contribution is retained in ``scenario_audit`` for regression review.
+    """
+    course_by_lane={as_int(k):as_int(v) for k,v in (structure.get('course_by_lane') or {}).items()}
+    lane_by_course={course:lane for lane,course in course_by_lane.items()}
+    candidates={as_int(x.get('lane')):x for x in structure.get('head_candidates',[])}
+    candidate_lanes=set(candidates)
+    materials={as_int(k):v for k,v in (structure.get('conditional_material_support') or {}).items()}
+    max_scenario=max([as_float(x.get('scenario_score')) for x in candidates.values()] or [1.0])
+    result={}
+
+    for head in range(1,7):
+        course=course_by_lane.get(head,head)
+        candidate=candidates.get(head) or {}
+        relative=(as_float(candidate.get('scenario_score'))/max_scenario) if candidate else 0.0
+        scenario_strength=(0.55+0.45*relative) if candidate else 0.42
+        if course==6:
+            scenario_strength*=0.65
+
+        benefits={lane:{'second':[],'third':[]} for lane in range(1,7)}
+        penalties={lane:{'second':0.0,'third':0.0,'reasons':[]} for lane in range(1,7)}
+
+        def link(target,role,second_weight,third_weight):
+            if not target or target==head:
+                return
+            support=materials.get(target,{'second':0.5,'third':0.5})
+            for place,weight in (('second',second_weight),('third',third_weight)):
+                if weight<=0:
+                    continue
+                material=as_float(support.get(place),0.5)
+                score=scenario_strength*material*weight
+                benefits[target][place].append({
+                    'role':role,'scenario_strength':round(scenario_strength,6),
+                    'linked_boat_support':round(material,6),'role_weight':round(weight,6),
+                    'score':round(score,6),
+                })
+
+        def disadvantage(target,role,second_weight,third_weight):
+            if not target or target==head:
+                return
+            for place,weight in (('second',second_weight),('third',third_weight)):
+                score=scenario_strength*weight
+                penalties[target][place]+=score
+            penalties[target]['reasons'].append(role)
+
+        # All relations use actual course, never frame number.
+        if course==1:
+            link(lane_by_course.get(2),'2差し残り',0.34,0.20)
+            link(lane_by_course.get(3),'2逃がし後の3浮上・3内残り',0.22,0.32)
+            for outer_course in (4,5,6):
+                outer=lane_by_course.get(outer_course)
+                if outer in candidate_lanes:
+                    link(outer,f'{outer_course}コース攻め残り',0.12,0.18)
+                    link(lane_by_course.get(outer_course+1),f'{outer_course}コース攻めの外連動',0.16,0.20)
+        elif course==2:
+            link(lane_by_course.get(1),'1内残り',0.26,0.25)
+            link(lane_by_course.get(3),'3直外連動',0.23,0.22)
+        elif course==3:
+            link(lane_by_course.get(4),'4直外連動',0.38,0.28)
+            link(lane_by_course.get(5),'5展開拾い',0.16,0.31)
+            link(lane_by_course.get(6),'6展開拾い',0.12,0.28)
+            link(lane_by_course.get(1),'1内残り',0.22,0.30)
+            disadvantage(lane_by_course.get(2),'3攻めで2が展開不利',0.18,0.12)
+        elif course==4:
+            link(lane_by_course.get(5),'5直外連動',0.36,0.30)
+            link(lane_by_course.get(6),'6外連動',0.27,0.34)
+            link(lane_by_course.get(1),'1内残り',0.20,0.28)
+            link(lane_by_course.get(2),'2内差し残り',0.18,0.25)
+            disadvantage(lane_by_course.get(3),'4攻めで3が展開不利',0.20,0.14)
+        elif course==5:
+            link(lane_by_course.get(6),'6外連動',0.36,0.32)
+            link(lane_by_course.get(1),'1内残り',0.22,0.30)
+            disadvantage(lane_by_course.get(4),'5攻めで4が展開不利',0.18,0.12)
+        elif course==6:
+            link(lane_by_course.get(1),'6コース頭時の1残り',0.24,0.26)
+            link(lane_by_course.get(2),'内艇の差し残り',0.16,0.24)
+            link(lane_by_course.get(3),'内艇の差し残り',0.12,0.20)
+            disadvantage(lane_by_course.get(5),'6攻めで5が展開不利',0.16,0.10)
+
+        # Preserve the existing bounded attack-specific evidence as an extra
+        # linked role, but still pass it through material support and the head score.
+        for old_link in structure.get('conditional_links',[]):
+            if as_int(old_link.get('head'))==head:
+                link(
+                    as_int(old_link.get('boat')),
+                    str(old_link.get('reason') or 'existing conditional link'),
+                    min(0.45,as_float(old_link.get('second_bonus'))),
+                    min(0.45,as_float(old_link.get('third_bonus'))),
+                )
+
+        second_raw=[]; third_raw=[]; boats_audit=[]
+        for lane in range(1,7):
+            if lane==head:
+                second_raw.append(0.0); third_raw.append(0.0)
+                continue
+            support=materials.get(lane,{'second':0.5,'third':0.5,'components':{}})
+            row={'lane':lane,'material_components':support.get('components',{})}
+            for place,raw_list in (('second',second_raw),('third',third_raw)):
+                marginal=as_float(probs[place][lane-1])
+                material=as_float(support.get(place),0.5)
+                preservation=0.90+0.20*material
+                additions=sum(x['score'] for x in benefits[lane][place])
+                penalty=penalties[lane][place]
+                multiplier=max(0.55,preservation*(1.0+additions-penalty))
+                raw=marginal*multiplier
+                raw_list.append(raw)
+                row[place]={
+                    'marginal':round(marginal,8),'material_support':round(material,6),
+                    'preservation_multiplier':round(preservation,6),
+                    'additions':benefits[lane][place],
+                    'penalty':round(penalty,6),'penalty_reasons':penalties[lane]['reasons'],
+                    'scenario_multiplier':round(multiplier,6),'raw':round(raw,8),
+                }
+            boats_audit.append(row)
+
+        second=normalize(second_raw); third=normalize(third_raw)
+        for row in boats_audit:
+            lane=row['lane']
+            row['second']['conditional']=round(second[lane-1],8)
+            row['second']['delta_from_marginal']=round(second[lane-1]-as_float(probs['second'][lane-1]),8)
+            row['third']['conditional']=round(third[lane-1],8)
+            row['third']['delta_from_marginal']=round(third[lane-1]-as_float(probs['third'][lane-1]),8)
+        result[head]={
+            'second':second,'third':third,
+            'scenario_audit':{
+                'head':head,'actual_course':course,'candidate':bool(candidate),
+                'head_scenario_score':round(as_float(candidate.get('scenario_score')),8),
+                'relative_head_scenario_score':round(relative,6),
+                'scenario_strength':round(scenario_strength,6),'boats':boats_audit,
+            },
+        }
+    return result

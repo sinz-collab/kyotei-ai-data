@@ -70,19 +70,67 @@ def _quality_rank(racer, *keys):
     return 0.5
 
 def day_profile(race):
-    label=str(race.get('seriesDay') or race.get('eventDayLabel') or '')
+    label=str(race.get('eventDayLabel') or race.get('seriesDay') or '')
     day=as_int(race.get('eventDay') or (race.get('race_meta') or {}).get('day_no'),0)
-    final=('最終日' in label) or day>=4
-    if final:
-        return {'name':'final_day','base':0.40,'motor':0.08,'season':0.12,'season_course':0.06,'exhibition':0.14,'environment':0.10,'scenario':0.10}
-    if day<=1 and day>0:
-        return {'name':'opening_day','base':0.40,'motor':0.14,'season':0.06,'season_course':0.00,'exhibition':0.20,'environment':0.10,'scenario':0.10}
-    return {'name':'middle_day','base':0.40,'motor':0.10,'season':0.10,'season_course':0.00,'exhibition':0.20,'environment':0.10,'scenario':0.10}
+    # day >= 4 is not synonymous with the final day. Only the supplied event
+    # label can promote a race to the final-day profile.
+    if '最終日' in label:
+        return {'name':'final_day','day_factor':0.60,'base':0.40,'motor':0.06,'season':0.16,'season_course':0.04,'exhibition':0.14,'environment':0.10,'scenario':0.10}
+    if day <= 1:
+        return {'name':'opening_day','day_factor':1.00,'base':0.40,'motor':0.14,'season':0.04,'season_course':0.00,'exhibition':0.22,'environment':0.10,'scenario':0.10}
+    if day == 2:
+        return {'name':'day_2','day_factor':0.90,'base':0.40,'motor':0.12,'season':0.08,'season_course':0.00,'exhibition':0.20,'environment':0.10,'scenario':0.10}
+    if day == 3:
+        return {'name':'day_3','day_factor':0.80,'base':0.40,'motor':0.10,'season':0.12,'season_course':0.00,'exhibition':0.18,'environment':0.10,'scenario':0.10}
+    return {'name':'middle_day','day_factor':0.70,'base':0.40,'motor':0.08,'season':0.13,'season_course':0.02,'exhibition':0.17,'environment':0.10,'scenario':0.10}
+
+
+def _field_quality(racers, rank_keys, value_keys):
+    """Return 0-1 quality from supplied ranks or lower-is-better raw times."""
+    supplied=[]
+    for racer in racers:
+        rank=next((as_int(racer.get(k),0) for k in rank_keys if 1<=as_int(racer.get(k),0)<=6),0)
+        supplied.append((7-rank)/6 if rank else None)
+    raw=[]
+    for racer in racers:
+        value=next((as_float(racer.get(k),0.0) for k in value_keys if as_float(racer.get(k),0.0)>0),0.0)
+        raw.append(value if value>0 else None)
+    present=sorted(x for x in raw if x is not None)
+    out=[]
+    for ranked,value in zip(supplied,raw):
+        if ranked is not None:
+            out.append(ranked)
+        elif value is None or len(present)<2:
+            out.append(0.5)
+        else:
+            # Average tied rank, mapped identically to an upstream 1-6 rank.
+            before=sum(x<value for x in present)
+            tied=sum(x==value for x in present)
+            rank=before+(tied+1)/2
+            out.append(max(1/6,min(1.0,(7-rank)/6)))
+    return out
+
+
+def _exhibition_scores(racers):
+    """Position-specific exhibition quality without an ST-only boost."""
+    timing=_field_quality(racers,('exhibition_rank',),('exhibition_time',))
+    lap=_field_quality(racers,('lap_rank','original_lap_rank'),('lap_time','sum_lap'))
+    turn=_field_quality(racers,('turn_rank','original_turn_rank'),('turn_time',))
+    straight=_field_quality(racers,('straight_rank','original_straight_rank'),('straight_time',))
+    total=_field_quality(racers,('sum_rank','original_sum_rank'),('sum',))
+    out=[]
+    for i in range(len(racers)):
+        out.append({
+            'win':0.24*timing[i]+0.18*lap[i]+0.14*turn[i]+0.20*straight[i]+0.24*total[i],
+            'second':0.18*timing[i]+0.22*lap[i]+0.24*turn[i]+0.14*straight[i]+0.22*total[i],
+            'third':0.12*timing[i]+0.24*lap[i]+0.28*turn[i]+0.12*straight[i]+0.24*total[i],
+        })
+    return out
 
 def apply_day_adjustment(probs, racers, race):
     profile=day_profile(race)
     out={k:list(v) for k,v in probs.items()}
-    motor=[]; season=[]; same_course=[]; exhibit=[]
+    motor=[]; season=[]; same_course=[]; exhibit=_exhibition_scores(racers); sum_difference=[]
     for r in racers:
         course=as_int(r.get('actual_course') or r.get('entry_course'),as_int(r.get('lane'),1))
         m2=as_float(r.get('motor_2') or r.get('motor_2_rate'),33.0)/100
@@ -91,18 +139,17 @@ def apply_day_adjustment(probs, racers, race):
         ss,sc,rel=_season_components(r,course)
         season.append(0.5+(ss-0.5)*rel)
         same_course.append(0.5+(sc-0.5)*rel)
-        ex=0.34*_quality_rank(r,'exhibition_rank')+0.33*_quality_rank(r,'lap_rank','original_lap_rank')+0.33*_quality_rank(r,'sum_rank','original_sum_rank')
-        exhibit.append(ex)
+        sum_difference.append(max(-1.0,min(1.0,as_float(r.get('sum_difference'),0.0)/0.40)))
     # Convert component quality around neutral 0.5 into bounded multipliers.
     for i in range(len(racers)):
-        q=(profile['motor']*(motor[i]-0.5)+profile['season']*(season[i]-0.5)+profile['season_course']*(same_course[i]-0.5)+profile['exhibition']*(exhibit[i]-0.5))
-        # Final-day exhibition is capped; season has more effect.
-        win_mult=max(0.82,min(1.18,1+1.8*q))
-        sec_mult=max(0.84,min(1.16,1+1.5*q))
-        third_mult=max(0.86,min(1.14,1+1.2*q))
-        out['win'][i]*=win_mult; out['second'][i]*=sec_mult; out['third'][i]*=third_mult
+        common=(profile['motor']*(motor[i]-0.5)+profile['season']*(season[i]-0.5)+profile['season_course']*(same_course[i]-0.5))
+        for key,scale,limit in [('win',1.8,0.05),('second',1.5,0.04),('third',1.2,0.03)]:
+            q=common+profile['exhibition']*(exhibit[i][key]-0.5)
+            bounded=max(1-scale*0.10,min(1+scale*0.10,1+scale*q))
+            diff_mult=1+sum_difference[i]*limit*profile['day_factor']
+            out[key][i]*=bounded*diff_mult
     for k in out: out[k]=normalize(out[k])
-    audit={'profile':profile,'motor_scores':[round(x,4) for x in motor],'season_scores':[round(x,4) for x in season],'same_course_season_scores':[round(x,4) for x in same_course],'exhibition_scores':[round(x,4) for x in exhibit]}
+    audit={'profile':profile,'motor_scores':[round(x,4) for x in motor],'season_scores':[round(x,4) for x in season],'same_course_season_scores':[round(x,4) for x in same_course],'exhibition_scores':[{k:round(v,4) for k,v in x.items()} for x in exhibit],'sum_difference_signed':[round(x,4) for x in sum_difference],'sum_difference_limits':{'win':0.05,'second':0.04,'third':0.03},'normalized_sums':{k:round(sum(out[k]),10) for k in out}}
     return out,audit
 
 GRADE_SCORE={'A1':1.0,'A2':0.78,'B1':0.48,'B2':0.22}
@@ -133,8 +180,14 @@ def apply_practical_support(probs, racers, race):
     Final day emphasizes season evidence over raw motor numbers.
     """
     profile=day_profile(race)
-    final_day=profile['name']=='final_day'
-    weights={'season':0.30,'local':0.25,'class':0.20,'motor':0.15,'season_course':0.10} if final_day else {'season':0.24,'local':0.22,'class':0.20,'motor':0.22,'season_course':0.12}
+    weights_by_profile={
+        'opening_day':{'season':0.18,'local':0.22,'class':0.20,'motor':0.28,'season_course':0.12},
+        'day_2':{'season':0.22,'local':0.22,'class':0.20,'motor':0.24,'season_course':0.12},
+        'day_3':{'season':0.26,'local':0.22,'class':0.20,'motor':0.20,'season_course':0.12},
+        'middle_day':{'season':0.28,'local':0.23,'class':0.20,'motor':0.17,'season_course':0.12},
+        'final_day':{'season':0.32,'local':0.24,'class':0.20,'motor':0.14,'season_course':0.10},
+    }
+    weights=weights_by_profile[profile['name']]
     scores=[]
     out={k:list(v) for k,v in probs.items()}
     for r in racers:
