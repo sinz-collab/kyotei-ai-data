@@ -692,6 +692,12 @@ def apply_wakamatsu_v2(payload: dict, target_date: str) -> dict:
                     )
                     final_prediction["phase"] = "final"
                     final_prediction["finalPredictionStatus"] = "complete"
+                    final_prediction["predictionStage"] = {
+                        "label": "本予想",
+                        "badge": "本予想",
+                        "statusText": "直前・展示を反映して若松v2.2で再精査済み",
+                        "color": "green",
+                    }
                     final_prediction["missingFinalInputs"] = []
 
                     if existing_pre is None:

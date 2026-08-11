@@ -11,6 +11,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_ID = "wakamatsu_engine_v2.2"
 ENGINE_VERSION = "2.2"
+FINAL_PREDICTION_STAGE = {
+    "label": "本予想",
+    "badge": "本予想",
+    "statusText": "直前・展示を反映して若松v2.2で再精査済み",
+    "color": "green",
+}
 
 
 def load_json(path: Path) -> dict:
@@ -118,6 +124,8 @@ def validate_published_data(
             raise RuntimeError(f"active_prediction_not_final: {race_no}")
         if active != final:
             raise RuntimeError(f"active_prediction_not_prediction_final: {race_no}")
+        if final.get("predictionStage") != FINAL_PREDICTION_STAGE:
+            raise RuntimeError(f"prediction_stage_not_final: {race_no}")
 
         tickets = final.get("tickets") or []
         combinations = [ticket.get("combo") for ticket in tickets]
@@ -138,6 +146,7 @@ def validate_published_data(
                 "predictionFinal": True,
                 "activePredictionPhase": active.get("phase"),
                 "finalPredictionStatus": final.get("finalPredictionStatus"),
+                "predictionStage": final.get("predictionStage"),
                 "win": final.get("win"),
                 "second": final.get("second"),
                 "third": final.get("third"),

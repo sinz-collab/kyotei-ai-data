@@ -20,6 +20,7 @@ def prediction(phase: str) -> dict:
         "finalPredictionStatus": "complete" if phase == "final" else "waiting_live_data",
         "engine": runner.ENGINE_ID,
         "engineVersion": runner.ENGINE_VERSION,
+        "predictionStage": runner.FINAL_PREDICTION_STAGE if phase == "final" else None,
         "win": {str(lane): float(lane) for lane in range(1, 7)},
         "second": {str(lane): float(lane + 1) for lane in range(1, 7)},
         "third": {str(lane): float(lane + 2) for lane in range(1, 7)},
@@ -61,6 +62,10 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
             write_json(root / "venues" / "wakamatsu" / "20260811.json", payload)
             report = runner.validate_published_data(root, "2026-08-11", [5])
             self.assertEqual(report["races"][0]["activePredictionPhase"], "final")
+            self.assertEqual(
+                report["races"][0]["predictionStage"]["label"],
+                "本予想",
+            )
             self.assertEqual(len(report["races"][0]["tickets"]), 10)
 
     def test_pipeline_runs_apply_before_build(self):
