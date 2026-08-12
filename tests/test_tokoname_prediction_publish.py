@@ -41,6 +41,7 @@ def prediction() -> dict:
         "prediction_phase": "final",
         "stage": "final",
         "engine_recalculated_after_exhibition": True,
+        "original_exhibition_available": True,
         "engine_run": {
             "completed": True,
             "source_engine": "tokoname_engine_v1.6",
@@ -59,6 +60,7 @@ def prediction() -> dict:
         "tickets": tickets,
         "scenario": {},
         "data_flags": {
+            "original_exhibition_available": True,
             "odds_used_for_probability": False,
             "result_used_for_probability": False,
         },

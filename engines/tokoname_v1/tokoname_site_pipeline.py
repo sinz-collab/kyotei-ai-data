@@ -13,12 +13,13 @@ ENGINE_VERSION = "1.6"
 ENGINE_DIR = Path(__file__).resolve().parent
 DEFAULT_MODEL_DIR = ENGINE_DIR / "models"
 LANES = tuple(range(1, 7))
-LIVE_FILENAMES = (
+REQUIRED_LIVE_FILENAMES = (
     "direct.json",
     "exhibition.json",
-    "original_exhibition.json",
     "odds.json",
 )
+OPTIONAL_LIVE_FILENAMES = ("original_exhibition.json",)
+LIVE_FILENAMES = REQUIRED_LIVE_FILENAMES + OPTIONAL_LIVE_FILENAMES
 
 
 def default_predictor(payload: dict, model_dir: Path) -> dict:
@@ -94,7 +95,7 @@ def validate_live_document(
 
 def load_live_documents(live_race_dir: Path, target_date: str, race_no: int) -> dict:
     documents = {}
-    for filename in LIVE_FILENAMES:
+    for filename in REQUIRED_LIVE_FILENAMES:
         path = live_race_dir / filename
         if not path.is_file():
             raise FileNotFoundError(f"live_file_missing: {path}")
@@ -106,7 +107,43 @@ def load_live_documents(live_race_dir: Path, target_date: str, race_no: int) -> 
             race_no=race_no,
         )
         documents[filename.removesuffix(".json")] = payload
+    documents["original_exhibition"] = load_optional_original_exhibition(
+        live_race_dir,
+        target_date,
+        race_no,
+    )
     return documents
+
+
+def load_optional_original_exhibition(
+    live_race_dir: Path,
+    target_date: str,
+    race_no: int,
+) -> dict | None:
+    path = live_race_dir / "original_exhibition.json"
+    if not path.is_file():
+        return None
+    try:
+        payload = load_json(path)
+        validate_live_document(
+            payload,
+            filename="original_exhibition.json",
+            target_date=target_date,
+            race_no=race_no,
+        )
+    except (OSError, ValueError, TypeError, json.JSONDecodeError):
+        return None
+    entries = payload["data"].get("entries") or []
+    required_measurements = ("lap_time", "turn_time", "straight_time")
+    if any(
+        not all(
+            isinstance(entry.get(key), (int, float)) and entry[key] > 0
+            for key in required_measurements
+        )
+        for entry in entries
+    ):
+        return None
+    return payload
 
 
 def _integer(value: Any) -> int | None:
@@ -242,21 +279,20 @@ def build_engine_input(
 ) -> dict:
     direct = deepcopy(live_documents["direct"])
     exhibition = deepcopy(live_documents["exhibition"])
-    original_exhibition = deepcopy(live_documents["original_exhibition"])
+    original_exhibition = deepcopy(live_documents.get("original_exhibition"))
     odds = deepcopy(live_documents["odds"])
 
     exhibition["data"]["entries"] = sorted(
         exhibition["data"].get("entries") or [],
         key=lambda item: int(item.get("lane") or 0),
     )
-    original_exhibition["data"]["entries"] = sorted(
-        original_exhibition["data"].get("entries") or [],
-        key=lambda item: int(item.get("lane") or 0),
-    )
     if len(exhibition["data"]["entries"]) != 6:
         raise ValueError("exhibition_entries_must_be_6")
-    if len(original_exhibition["data"]["entries"]) != 6:
-        raise ValueError("original_exhibition_entries_must_be_6")
+    if original_exhibition is not None:
+        original_exhibition["data"]["entries"] = sorted(
+            original_exhibition["data"].get("entries") or [],
+            key=lambda item: int(item.get("lane") or 0),
+        )
 
     courses = actual_course_map(direct, exhibition)
     direct_racers = {
@@ -276,7 +312,7 @@ def build_engine_input(
             racer["player_id"] = player_id
         racers.append(racer)
 
-    return {
+    payload = {
         "date": document["date"],
         "eventDay": race.get("eventDay") or document.get("eventDay"),
         "race": {
@@ -288,13 +324,15 @@ def build_engine_input(
         },
         "direct": direct,
         "exhibition": exhibition,
-        "original_exhibition": original_exhibition,
         # The existing engine receives the complete live input bundle. Its
         # probability/scenario/SAB/ticket code does not read odds; odds remain
         # available only for display and input-contract auditing.
         "odds": odds,
         "tide": deepcopy(race.get("tide") or document.get("tide")),
     }
+    if original_exhibition is not None:
+        payload["original_exhibition"] = original_exhibition
+    return payload
 
 
 def normalized_probability_map(rows: list[dict], key: str) -> dict[str, float]:
@@ -313,7 +351,12 @@ def normalized_probability_map(rows: list[dict], key: str) -> dict[str, float]:
     return values
 
 
-def site_prediction(engine_output: dict, *, phase: str) -> dict:
+def site_prediction(
+    engine_output: dict,
+    *,
+    phase: str,
+    original_exhibition_available: bool = False,
+) -> dict:
     if phase not in ("preliminary", "final"):
         raise ValueError(f"prediction_phase_invalid: {phase}")
     if engine_output.get("engine") != "tokoname_engine_v1.6":
@@ -332,12 +375,25 @@ def site_prediction(engine_output: dict, *, phase: str) -> dict:
         "prediction_phase": phase,
         "stage": phase,
         "engine_recalculated_after_exhibition": is_final,
+        "original_exhibition_available": bool(
+            is_final and original_exhibition_available
+        ),
         "engine_run": {
             "completed": True,
             "source_engine": engine_output["engine"],
             "mode": "exhibition_recalculation" if is_final else "morning_preliminary",
             "inputs": (
-                ["morning", "direct", "exhibition", "original_exhibition", "odds"]
+                [
+                    "morning",
+                    "direct",
+                    "exhibition",
+                    *(
+                        ["original_exhibition"]
+                        if original_exhibition_available
+                        else []
+                    ),
+                    "odds",
+                ]
                 if is_final
                 else ["morning"]
             ),
@@ -363,6 +419,9 @@ def site_prediction(engine_output: dict, *, phase: str) -> dict:
         "scenario": deepcopy(engine_output.get("scenario")),
         "data_flags": {
             **deepcopy(engine_output.get("data_flags") or {}),
+            "original_exhibition_available": bool(
+                is_final and original_exhibition_available
+            ),
             "odds_available_for_display": is_final,
             "odds_used_for_probability": False,
             "result_used_for_probability": False,
@@ -386,14 +445,26 @@ def validate_site_prediction(prediction: dict) -> None:
     if phase == "final":
         if prediction.get("engine_recalculated_after_exhibition") is not True:
             raise ValueError("site_final_recalculation_proof_missing")
-        if set(run.get("inputs") or []) != {
+        original_available = prediction.get("original_exhibition_available")
+        if not isinstance(original_available, bool):
+            raise ValueError("original_exhibition_availability_invalid")
+        expected_inputs = {
             "morning",
             "direct",
             "exhibition",
-            "original_exhibition",
             "odds",
-        }:
+        }
+        if original_available:
+            expected_inputs.add("original_exhibition")
+        if set(run.get("inputs") or []) != expected_inputs:
             raise ValueError("site_final_inputs_invalid")
+        if (
+            prediction.get("data_flags", {}).get(
+                "original_exhibition_available"
+            )
+            is not original_available
+        ):
+            raise ValueError("original_exhibition_proof_mismatch")
     for key in ("win", "second", "third"):
         values = (prediction.get("probabilities") or {}).get(key)
         if not isinstance(values, dict) or set(values) != {str(lane) for lane in LANES}:
@@ -455,7 +526,12 @@ def apply_tokoname_predictions(
             )
             engine_input = build_engine_input(updated, race, live_documents)
             output = selected_predictor(engine_input, model_dir)
-            prediction = site_prediction(output, phase="final")
+            original_available = live_documents.get("original_exhibition") is not None
+            prediction = site_prediction(
+                output,
+                phase="final",
+                original_exhibition_available=original_available,
+            )
             race["prediction"] = prediction
             reports.append(
                 {
@@ -466,6 +542,7 @@ def apply_tokoname_predictions(
                     "engine": output.get("engine"),
                     "input_sources": deepcopy(prediction["engine_run"]["inputs"]),
                     "odds_used_for_probability": False,
+                    "original_exhibition_available": original_available,
                     "entry_changed": bool(
                         live_documents["direct"]["data"].get("entry_changed")
                     ),

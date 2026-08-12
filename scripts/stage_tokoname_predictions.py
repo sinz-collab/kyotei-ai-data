@@ -14,11 +14,12 @@ if str(ROOT) not in sys.path:
 
 from engines.tokoname_v1.tokoname_site_pipeline import (
     DEFAULT_MODEL_DIR,
-    LIVE_FILENAMES,
+    REQUIRED_LIVE_FILENAMES,
     apply_tokoname_predictions,
     apply_tokoname_preliminary_predictions,
     atomic_write_json,
     load_json,
+    load_optional_original_exhibition,
     validate_live_document,
     validate_morning_document,
     without_predictions,
@@ -29,7 +30,6 @@ from live_data_hash import content_hash
 PREDICTION_HASH_FILENAMES = (
     "direct.json",
     "exhibition.json",
-    "original_exhibition.json",
 )
 
 
@@ -59,7 +59,7 @@ def overlay_existing_predictions(morning: dict, staged: dict | None) -> dict:
 
 def live_inputs_complete(live_race_dir: Path, target_date: str, race_no: int) -> bool:
     try:
-        for filename in LIVE_FILENAMES:
+        for filename in REQUIRED_LIVE_FILENAMES:
             path = live_race_dir / filename
             if not path.is_file():
                 return False
@@ -88,20 +88,26 @@ def prediction_input_hash(
 ) -> str:
     race = deepcopy(_race_index(morning)[race_no])
     race.pop("prediction", None)
-    return content_hash(
-        {
-            "date": morning.get("date"),
-            "eventDay": race.get("eventDay") or morning.get("eventDay"),
-            "race": race,
-            "tide": race.get("tide") or morning.get("tide"),
-            **{
-                filename.removesuffix(".json"): load_json(live_race_dir / filename)
-                # Odds are deliberately excluded: changing display odds must
-                # never change or retrigger probability/SAB/ticket output.
-                for filename in PREDICTION_HASH_FILENAMES
-            },
-        }
+    inputs = {
+        "date": morning.get("date"),
+        "eventDay": race.get("eventDay") or morning.get("eventDay"),
+        "race": race,
+        "tide": race.get("tide") or morning.get("tide"),
+        **{
+            filename.removesuffix(".json"): load_json(live_race_dir / filename)
+            # Odds are deliberately excluded: changing display odds must
+            # never change or retrigger probability/SAB/ticket output.
+            for filename in PREDICTION_HASH_FILENAMES
+        },
+    }
+    original = load_optional_original_exhibition(
+        live_race_dir,
+        str(morning.get("date") or ""),
+        race_no,
     )
+    if original is not None:
+        inputs["original_exhibition"] = original
+    return content_hash(inputs)
 
 
 def _load_existing(path: Path) -> dict | None:

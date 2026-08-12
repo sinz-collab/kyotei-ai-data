@@ -210,6 +210,11 @@ class TokonameSitePipelineTests(unittest.TestCase):
             self.assertEqual(courses, {1: 1, 2: 3, 3: 2, 4: 4, 5: 5, 6: 6})
             prediction = updated["races"][0]["prediction"]
             self.assertEqual(prediction["engine_version"], ENGINE_VERSION)
+            self.assertTrue(prediction["original_exhibition_available"])
+            self.assertIn(
+                "original_exhibition", prediction["engine_run"]["inputs"]
+            )
+            self.assertIn("original_exhibition", captured["payload"])
             self.assertFalse(prediction["data_flags"]["odds_used_for_probability"])
             for key in ("win", "second", "third"):
                 self.assertAlmostEqual(
@@ -282,6 +287,49 @@ class TokonameSitePipelineTests(unittest.TestCase):
                 set(documents),
                 {"direct", "exhibition", "original_exhibition", "odds"},
             )
+
+    def test_pending_original_exhibition_is_optional_and_not_passed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            live_root = Path(directory)
+            write_live(live_root, 10)
+            original_path = live_root / "10" / "original_exhibition.json"
+            original = json.loads(original_path.read_text(encoding="utf-8"))
+            original.update({"status": "pending", "complete": False})
+            original["data"]["entries"] = []
+            original_path.write_text(json.dumps(original), encoding="utf-8")
+            captured = {}
+
+            def predictor(payload: dict, model_dir: Path) -> dict:
+                captured["payload"] = deepcopy(payload)
+                return fake_predict(payload, model_dir)
+
+            updated, reports = apply_tokoname_predictions(
+                morning(),
+                live_root=live_root,
+                race_numbers=[10],
+                predictor=predictor,
+            )
+
+            prediction = updated["races"][9]["prediction"]
+            self.assertNotIn("original_exhibition", captured["payload"])
+            self.assertEqual(prediction["prediction_phase"], "final")
+            self.assertTrue(prediction["engine_recalculated_after_exhibition"])
+            self.assertTrue(prediction["engine_run"]["completed"])
+            self.assertFalse(prediction["original_exhibition_available"])
+            self.assertFalse(
+                prediction["data_flags"]["original_exhibition_available"]
+            )
+            self.assertNotIn(
+                "original_exhibition", prediction["engine_run"]["inputs"]
+            )
+            self.assertFalse(prediction["data_flags"]["odds_used_for_probability"])
+            self.assertFalse(reports[0]["original_exhibition_available"])
+            for key in ("win", "second", "third"):
+                self.assertAlmostEqual(
+                    sum(prediction["probabilities"][key].values()),
+                    100.0,
+                    places=1,
+                )
 
 
 if __name__ == "__main__":
