@@ -259,7 +259,7 @@ def stage_tokoname_results(
     results: list[dict[str, Any]],
     logger: Any,
 ) -> dict[str, Any] | None:
-    live_items = {"direct", "exhibition", "original_exhibition", "odds"}
+    live_items = {"direct", "exhibition", "odds"}
     race_numbers = sorted(
         {
             int(result["target"]["race_no"])

@@ -496,7 +496,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertIsNone(result)
         self.assertFalse(self.output_root.exists())
 
-    def test_live_hook_runs_only_when_all_four_inputs_are_complete(self) -> None:
+    def test_live_hook_requires_direct_exhibition_and_odds_only(self) -> None:
         class Logger:
             def error(self, *args, **kwargs) -> None:
                 raise AssertionError("unexpected staging error")
@@ -513,9 +513,12 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
                 )
             },
         }
-        incomplete = deepcopy(base)
-        incomplete["items"]["original_exhibition"]["complete"] = False
-        incomplete["items"]["original_exhibition"]["status"] = "partial"
+        optional_original_pending = deepcopy(base)
+        optional_original_pending["items"]["original_exhibition"]["complete"] = False
+        optional_original_pending["items"]["original_exhibition"]["status"] = "pending"
+        missing_odds = deepcopy(base)
+        missing_odds["items"]["odds"]["complete"] = False
+        missing_odds["items"]["odds"]["status"] = "pending"
         with patch(
             "stage_tokoname_predictions.stage_tokoname_predictions"
         ) as staging:
@@ -524,7 +527,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
                     {"morning_data_root": str(self.morning_root)},
                     DATE,
                     self.live_root,
-                    [incomplete],
+                    [missing_odds],
                     Logger(),
                 )
             )
@@ -535,11 +538,73 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
                 {"morning_data_root": str(self.morning_root)},
                 DATE,
                 self.live_root,
-                [base],
+                [optional_original_pending],
                 Logger(),
             )
             self.assertEqual(result, staging.return_value)
             staging.assert_called_once()
+
+    def test_race_10_pending_original_still_generates_final(self) -> None:
+        write_live(self.live_root, 10)
+        original_path = (
+            self.live_root
+            / DATE
+            / "tokoname"
+            / "10"
+            / "original_exhibition.json"
+        )
+        original = json.loads(original_path.read_text(encoding="utf-8"))
+        original.update({"status": "pending", "complete": False})
+        original["data"]["entries"] = []
+        original_path.write_text(json.dumps(original), encoding="utf-8")
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(deepcopy(payload))
+            return fake_predict(payload, model_dir)
+
+        result = self.stage(race_numbers=[10], predictor=predictor)
+        dated = self.output_root / "venues" / "tokoname" / "20260730.json"
+        latest = self.output_root / "venues" / "tokoname" / "latest.json"
+        prediction = json.loads(dated.read_text(encoding="utf-8"))["races"][9][
+            "prediction"
+        ]
+
+        self.assertEqual(result["status"], "updated")
+        self.assertEqual(result["updated_races"], [10])
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn("original_exhibition", calls[0])
+        self.assertEqual(prediction["prediction_phase"], "final")
+        self.assertFalse(prediction["original_exhibition_available"])
+        self.assertTrue(prediction["engine_run"]["completed"])
+        self.assertEqual(
+            prediction["engine_run"]["source_engine"],
+            "tokoname_engine_v1.6",
+        )
+        self.assertFalse(prediction["data_flags"]["odds_used_for_probability"])
+        self.assertEqual(dated.read_bytes(), latest.read_bytes())
+
+    def test_original_exhibition_completion_changes_input_hash(self) -> None:
+        write_live(
+            self.live_root,
+            10,
+            filenames=("direct.json", "exhibition.json", "odds.json"),
+        )
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(deepcopy(payload))
+            return fake_predict(payload, model_dir)
+
+        first = self.stage(race_numbers=[10], predictor=predictor)
+        self.assertEqual(first["updated_races"], [10])
+        self.assertNotIn("original_exhibition", calls[0])
+        write_live(self.live_root, 10, filenames=("original_exhibition.json",))
+        second = self.stage(race_numbers=[10], predictor=predictor)
+
+        self.assertEqual(second["updated_races"], [10])
+        self.assertEqual(len(calls), 2)
+        self.assertIn("original_exhibition", calls[1])
 
 
 if __name__ == "__main__":
