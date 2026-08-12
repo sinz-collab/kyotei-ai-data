@@ -122,7 +122,17 @@ def write_live(root: Path, race_no: int, actual_entry: list[int] | None = None) 
             json.dumps(payload, ensure_ascii=False),
             encoding="utf-8",
         )
-    (race_dir / "odds.json").write_text("{invalid odds on purpose", encoding="utf-8")
+    odds = {
+        f"{first}-{second}-{third}": 10.0
+        for first in range(1, 7)
+        for second in range(1, 7)
+        for third in range(1, 7)
+        if len({first, second, third}) == 3
+    }
+    (race_dir / "odds.json").write_text(
+        json.dumps({**common, "data": {"odds": odds}}),
+        encoding="utf-8",
+    )
 
 
 def fake_predict(payload: dict, model_dir: Path) -> dict:
@@ -154,6 +164,8 @@ def fake_predict(payload: dict, model_dir: Path) -> dict:
         "category": category,
     }
     return {
+        "engine": "tokoname_engine_v1.6",
+        "stage": "preliminary" if payload.get("preliminary") else "final",
         "probabilities": probabilities,
         "sab": {"grade": "A", "score": 70},
         "scenario": {"head": 1},
@@ -261,14 +273,14 @@ class TokonameSitePipelineTests(unittest.TestCase):
                 [{"race": 1, "result": "1-2-3", "ticket_hit": True}],
             )
 
-    def test_live_loader_never_reads_odds_or_result(self) -> None:
+    def test_live_loader_reads_odds_but_never_result(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             live_root = Path(directory)
             write_live(live_root, 1)
             documents = load_live_documents(live_root / "01", DATE, 1)
             self.assertEqual(
                 set(documents),
-                {"direct", "exhibition", "original_exhibition"},
+                {"direct", "exhibition", "original_exhibition", "odds"},
             )
 
 

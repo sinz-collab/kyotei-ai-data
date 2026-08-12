@@ -259,7 +259,7 @@ def stage_tokoname_results(
     results: list[dict[str, Any]],
     logger: Any,
 ) -> dict[str, Any] | None:
-    live_items = {"direct", "exhibition", "original_exhibition"}
+    live_items = {"direct", "exhibition", "original_exhibition", "odds"}
     race_numbers = sorted(
         {
             int(result["target"]["race_no"])
@@ -277,13 +277,25 @@ def stage_tokoname_results(
     try:
         from stage_tokoname_predictions import stage_tokoname_predictions
 
-        return stage_tokoname_predictions(
+        report = stage_tokoname_predictions(
             target_date,
             morning_root=resolve_root(config, "morning_data_root"),
             live_root=live_root,
             output_root=ROOT / "runtime" / "predictions",
             race_numbers=race_numbers,
         )
+        if report.get("engine_invoked_races"):
+            logger.info(
+                json.dumps(report, ensure_ascii=False),
+                extra={
+                    "event": "tokoname_existing_engine_recalculated",
+                    "venue": "tokoname",
+                    "phase": "final",
+                    "races": report["engine_invoked_races"],
+                    "odds_used_for_probability": False,
+                },
+            )
+        return report
     except Exception as exc:
         logger.error(
             f"{type(exc).__name__}: {exc}",

@@ -38,6 +38,22 @@ def prediction() -> dict:
         "reason": None,
         "engine": "tokoname_engine",
         "engine_version": "1.6",
+        "prediction_phase": "final",
+        "stage": "final",
+        "engine_recalculated_after_exhibition": True,
+        "engine_run": {
+            "completed": True,
+            "source_engine": "tokoname_engine_v1.6",
+            "mode": "exhibition_recalculation",
+            "inputs": [
+                "morning",
+                "direct",
+                "exhibition",
+                "original_exhibition",
+                "odds",
+            ],
+        },
+        "predictionStage": {"code": "final", "label": "本予想"},
         "probabilities": probabilities,
         "sab": {"rank": "A"},
         "tickets": tickets,
@@ -190,6 +206,25 @@ class TokonamePredictionPublishTests(unittest.TestCase):
             "status": "unavailable",
             "reason": "engine_failed",
         }
+        self.stage(staged)
+        before = snapshot(self.repo_root)
+
+        result = publish_tokoname_predictions(self.staging_root, self.repo_root)
+
+        self.assertEqual(result["status"], "not_ready")
+        self.assertEqual(snapshot(self.repo_root), before)
+
+    def test_ready_status_without_final_engine_proof_is_not_published(self) -> None:
+        staged = deepcopy(self.original)
+        legacy = prediction()
+        for key in (
+            "prediction_phase",
+            "stage",
+            "engine_recalculated_after_exhibition",
+            "engine_run",
+        ):
+            legacy.pop(key, None)
+        staged["races"][0]["prediction"] = legacy
         self.stage(staged)
         before = snapshot(self.repo_root)
 
