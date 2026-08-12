@@ -190,7 +190,13 @@ def run_pipeline(
 
     expected_races = complete_live_races(resolved_data_root, target_date)
     if not expected_races:
-        raise RuntimeError(f"wakamatsu_complete_live_race_missing: {target_date}")
+        return {
+            "date": target_date,
+            "venue": "wakamatsu",
+            "status": "no_complete_live_races",
+            "completeLiveRaces": [],
+            "races": [],
+        }
 
     commands = [
         [

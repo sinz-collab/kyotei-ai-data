@@ -88,6 +88,35 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
             self.assertTrue(run.call_args_list[1].args[0][1].endswith("build_site_data.py"))
             self.assertIn("--live-venue", run.call_args_list[1].args[0])
 
+    def test_pipeline_succeeds_when_no_live_races_are_complete(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            write_json(root / "venues" / "wakamatsu" / "20260811.json", {})
+            race_root = root / "live" / "2026-08-11" / "wakamatsu" / "05"
+            write_json(
+                race_root / "direct.json",
+                {"complete": True, "status": "complete", "data": {}},
+            )
+            write_json(
+                race_root / "exhibition.json",
+                {"complete": False, "status": "incomplete", "data": {}},
+            )
+
+            with patch.object(runner.subprocess, "run") as run:
+                report = runner.run_pipeline("2026-08-11", root, "python")
+
+            self.assertEqual(
+                report,
+                {
+                    "date": "2026-08-11",
+                    "venue": "wakamatsu",
+                    "status": "no_complete_live_races",
+                    "completeLiveRaces": [],
+                    "races": [],
+                },
+            )
+            run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
