@@ -31,7 +31,12 @@ def isotonic_triplet(w,t2,t3):
     return a[0],a[1],a[2]
 
 def build_features(payload):
-    race=payload['race']; racers=race['racers']; ex=payload['exhibition']['data']['entries']
+    race=payload['race']; racers=race['racers']
+    preliminary=bool(payload.get('preliminary'))
+    if preliminary:
+        ex=[{'lane':int(r['lane']),'start_time':.20,'exhibition_time':6.90} for r in racers]
+    else:
+        ex=payload['exhibition']['data']['entries']
     ex_by={int(x['lane']):x for x in ex}
     sts=[f(ex_by[int(r['lane'])]['start_time'],.20) for r in racers]
     ets=[f(ex_by[int(r['lane'])]['exhibition_time'],6.90) for r in racers]
@@ -59,7 +64,8 @@ def build_features(payload):
 def apply_corrections(payload,p1,p2,p3,st_ranks,et_ranks):
     racers=payload['race']['racers']
     event_day=int(payload.get('eventDay') or payload.get('event_day') or payload.get('race',{}).get('day_no') or 1)
-    orig={int(x['lane']):x for x in payload.get('original_exhibition',{}).get('data',{}).get('entries',[])}
+    preliminary=bool(payload.get('preliminary'))
+    orig={} if preliminary else {int(x['lane']):x for x in payload.get('original_exhibition',{}).get('data',{}).get('entries',[])}
     n=len(racers); dw=np.zeros(n); d2=np.zeros(n); d3=np.zeros(n); reasons=[[] for _ in racers]
 
     # Symmetric class/local-course layer. The base model already includes lane/course,
@@ -130,7 +136,7 @@ def apply_corrections(payload,p1,p2,p3,st_ranks,et_ranks):
         # Start reproducibility layer: exhibition ST is not judged alone.
         # Local ST confirms whether the exhibition slit is reproducible or whether
         # a deliberately conservative exhibition can be corrected in the race.
-        ex_st=f(payload['exhibition']['data']['entries'][i].get('start_time'),.20)
+        ex_st=.20 if preliminary else f(payload['exhibition']['data']['entries'][i].get('start_time'),.20)
         local_st=f(r.get('local_st'),0)
         ex_good=ex_st<=0.15
         ex_bad=ex_st>=0.20
@@ -225,8 +231,8 @@ def apply_corrections(payload,p1,p2,p3,st_ranks,et_ranks):
             dw[0]+=1.0; reasons[0].append('高逃げ率で基礎優位維持')
 
     # Slit interaction.
-    sts=[f(x['start_time'],.20) for x in payload['exhibition']['data']['entries']]
-    if sts[1]-min(sts[2:4])>=0.08:
+    sts=[.20]*6 if preliminary else [f(x['start_time'],.20) for x in payload['exhibition']['data']['entries']]
+    if not preliminary and sts[1]-min(sts[2:4])>=0.08:
         dw[2]+=0.7; dw[3]+=0.5; d2[2]+=0.5; d2[3]+=0.5
         reasons[2].append('2艇遅れによる3攻め余地'); reasons[3].append('2艇遅れによる4連動余地')
 
@@ -317,7 +323,9 @@ def predict(payload,model_dir):
     probs=[{'lane':i+1,'name':racers[i]['name'],'win':round(p1[i],1),'second':round(p2[i],1),'third':round(p3[i],1),'top3':round(p1[i]+p2[i]+p3[i],1),'reasons':reasons[i]} for i in range(6)]
     primary=int(np.argmax(p1))+1
     def pack(xs,cat): return [{'combination':'-'.join(map(str,t)),'score_pct':round(s,3),'category':cat} for s,t in xs]
-    return {'venue':'tokoname','date':payload['date'],'race_no':payload['race']['race'],'engine':'tokoname_engine_v1.6','stage':'final','probabilities':probs,'scenario':{'primary':scenario_name(primary),'head':primary,'head_gap':round(sorted(p1,reverse=True)[0]-sorted(p1,reverse=True)[1],1)},'sab':{'grade':grade,'score':sab_score,'independent_of_ticket_count':True},'tickets':{'main':pack(main,'main'),'deviation':pack(dev,'deviation'),'upset':pack(upset,'upset')},'data_flags':{'entry_change':bool(payload['direct']['data'].get('entry_changed')),'direct':True,'exhibition':True,'original_exhibition':bool(payload.get('original_exhibition')),'setsukan':bool(payload['race'].get('setsukan')),'tide':bool(payload.get('tide'))}}
+    preliminary=bool(payload.get('preliminary'))
+    direct=payload.get('direct') or {}
+    return {'venue':'tokoname','date':payload['date'],'race_no':payload['race']['race'],'engine':'tokoname_engine_v1.6','stage':'preliminary' if preliminary else 'final','probabilities':probs,'scenario':{'primary':scenario_name(primary),'head':primary,'head_gap':round(sorted(p1,reverse=True)[0]-sorted(p1,reverse=True)[1],1)},'sab':{'grade':grade,'score':sab_score,'independent_of_ticket_count':True},'tickets':{'main':pack(main,'main'),'deviation':pack(dev,'deviation'),'upset':pack(upset,'upset')},'data_flags':{'entry_change':False if preliminary else bool(direct.get('data',{}).get('entry_changed')),'direct':not preliminary,'exhibition':not preliminary,'original_exhibition':False if preliminary else bool(payload.get('original_exhibition')),'setsukan':bool(payload['race'].get('setsukan')),'tide':bool(payload.get('tide'))}}
 
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('input'); ap.add_argument('--models',default=str(Path(__file__).resolve().parents[1]/'models')); ap.add_argument('-o','--output')

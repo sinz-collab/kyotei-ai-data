@@ -71,6 +71,7 @@ def write_live(
         "direct.json",
         "exhibition.json",
         "original_exhibition.json",
+        "odds.json",
     ),
 ) -> None:
     race_dir = live_root / DATE / "tokoname" / f"{race_no:02d}"
@@ -122,6 +123,18 @@ def write_live(
                 ]
             },
         },
+        "odds.json": {
+            **common,
+            "data": {
+                "odds": {
+                    f"{first}-{second}-{third}": 10.0
+                    for first in range(1, 7)
+                    for second in range(1, 7)
+                    for third in range(1, 7)
+                    if len({first, second, third}) == 3
+                }
+            },
+        },
     }
     for filename in filenames:
         (race_dir / filename).write_text(
@@ -160,6 +173,8 @@ def fake_predict(payload: dict, model_dir: Path) -> dict:
         "category": category,
     }
     return {
+        "engine": "tokoname_engine_v1.6",
+        "stage": "preliminary" if payload.get("preliminary") else "final",
         "probabilities": probabilities,
         "sab": {"grade": "A", "score": 70},
         "scenario": {"head": 1},
@@ -273,7 +288,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
             **kwargs,
         )
 
-    def test_incomplete_exhibition_is_not_executed_or_written(self) -> None:
+    def test_incomplete_live_inputs_only_generate_preliminary(self) -> None:
         write_live(self.live_root, 1, filenames=("direct.json", "exhibition.json"))
         calls = []
 
@@ -283,9 +298,17 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
 
         before_data = file_snapshot(self.root / "data")
         result = self.stage(race_numbers=[1], predictor=predictor)
-        self.assertEqual(result["status"], "not_ready")
-        self.assertEqual(calls, [])
-        self.assertFalse(self.output_root.exists())
+        self.assertEqual(result["status"], "preliminary")
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(calls[0]["preliminary"])
+        staged = json.loads(
+            (
+                self.output_root / "venues" / "tokoname" / "20260730.json"
+            ).read_text(encoding="utf-8")
+        )
+        prediction = staged["races"][0]["prediction"]
+        self.assertEqual(prediction["prediction_phase"], "preliminary")
+        self.assertFalse(prediction["engine_recalculated_after_exhibition"])
         self.assertEqual(file_snapshot(self.root / "data"), before_data)
 
     def test_only_complete_race_is_generated_and_dated_matches_latest(self) -> None:
@@ -306,6 +329,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
 
         self.assertEqual(result["ready_races"], [1])
         self.assertEqual(result["updated_races"], [1])
+        self.assertEqual(result["engine_invoked_races"], [1])
         self.assertEqual(calls, [1])
         self.assertEqual(dated.read_bytes(), latest.read_bytes())
         self.assertEqual(
@@ -313,6 +337,13 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
             without_predictions(self.source),
         )
         self.assertTrue(staged["races"][0]["prediction"]["input_hash"])
+        prediction = staged["races"][0]["prediction"]
+        self.assertEqual(prediction["prediction_phase"], "final")
+        self.assertTrue(prediction["engine_recalculated_after_exhibition"])
+        self.assertEqual(
+            prediction["engine_run"]["source_engine"],
+            "tokoname_engine_v1.6",
+        )
         self.assertNotIn("prediction", staged["races"][1])
         self.assertEqual(self.morning_path.read_bytes(), original_morning)
         self.assertEqual(file_snapshot(self.root / "data"), before_data)
@@ -383,6 +414,28 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertEqual(result["unchanged_races"], [1])
         self.assertEqual(calls, [1, 2, 2])
 
+    def test_odds_are_passed_for_display_but_do_not_retrigger_engine(self) -> None:
+        write_live(self.live_root, 1)
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(deepcopy(payload))
+            return fake_predict(payload, model_dir)
+
+        first = self.stage(race_numbers=[1], predictor=predictor)
+        self.assertEqual(first["engine_invoked_races"], [1])
+        self.assertEqual(len(calls[0]["odds"]["data"]["odds"]), 120)
+
+        odds_path = self.live_root / DATE / "tokoname" / "01" / "odds.json"
+        odds = json.loads(odds_path.read_text(encoding="utf-8"))
+        odds["data"]["odds"]["1-2-3"] = 99.9
+        odds_path.write_text(json.dumps(odds), encoding="utf-8")
+        second = self.stage(race_numbers=[1], predictor=predictor)
+
+        self.assertEqual(second["status"], "unchanged")
+        self.assertEqual(second["unchanged_races"], [1])
+        self.assertEqual(len(calls), 1)
+
     def test_result_complete_stops_recalculation_and_preserves_prediction(self) -> None:
         write_live(self.live_root, 1)
         first = self.stage(race_numbers=[1])
@@ -443,7 +496,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertIsNone(result)
         self.assertFalse(self.output_root.exists())
 
-    def test_live_hook_runs_only_when_all_three_inputs_are_complete(self) -> None:
+    def test_live_hook_runs_only_when_all_four_inputs_are_complete(self) -> None:
         class Logger:
             def error(self, *args, **kwargs) -> None:
                 raise AssertionError("unexpected staging error")
@@ -452,7 +505,12 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
             "target": {"venue": "tokoname", "race_no": 1},
             "items": {
                 item: {"complete": True, "status": "complete"}
-                for item in ("direct", "exhibition", "original_exhibition")
+                for item in (
+                    "direct",
+                    "exhibition",
+                    "original_exhibition",
+                    "odds",
+                )
             },
         }
         incomplete = deepcopy(base)
