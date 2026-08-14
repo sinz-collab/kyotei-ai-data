@@ -15,7 +15,7 @@ p=TodaPredictionEngineV5().predict(race,{"tide_type":"中潮","tide_phase":"上�
 assert round(sum(p["win"].values()),1)==100
 assert round(sum(p["second"].values()),1)==100
 assert round(sum(p["third"].values()),1)==100
-assert p["engine"].startswith("toda_prediction_engine_v5")
+assert p["engine"] == "toda_prediction_engine_v6_20260814_marginal_conditional_ticket"
 assert p["ai"] and all("combo" in x for x in p["ai"])
 assert p["sourceSummary"]["odds_used_for_probability"] is False
 print("Toda v5 engine test passed")

@@ -40,7 +40,7 @@ for race in payload["races"]:
     if 3 <= int(race["race"]) <= 7:
         predictions[int(race["race"])] = engine.predict({"racers": race["racers"]}, context_for(payload, race))
 
-assert ENGINE_ID == "toda_prediction_engine_v5_20260809_scenario_temp_ticket_fix"
+assert ENGINE_ID == "toda_prediction_engine_v6_20260814_marginal_conditional_ticket"
 assert "TWO_SASHI" not in {scenario["id"] for scenario in predictions[3]["scenarios"]}
 assert predictions[3]["win"]["2"] < 40
 assert predictions[4]["win"]["4"] >= 6

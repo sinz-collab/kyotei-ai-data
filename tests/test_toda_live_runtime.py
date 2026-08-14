@@ -82,7 +82,7 @@ class TodaLiveRuntimeTests(unittest.TestCase):
             self.assertFalse(result["oddsUsedForProbability"])
             self.assertEqual(
                 updated["engine"],
-                "toda_prediction_engine_v5_20260809_scenario_temp_ticket_fix",
+                "toda_prediction_engine_v6_20260814_marginal_conditional_ticket",
             )
             self.assertEqual(prediction["probabilityReviewStatus"], "reviewed")
             self.assertEqual(updated["races"][0]["prediction"]["predictionStage"]["label"], "本予想")
