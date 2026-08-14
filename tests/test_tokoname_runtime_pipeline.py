@@ -15,7 +15,10 @@ sys.path.insert(0, str(ROOT / "scripts"))
 sys.path.insert(0, str(ROOT / "engines" / "tokoname_v1"))
 
 import build_site_data
-from live_fetch_once import stage_tokoname_results
+from live_fetch_once import (
+    stage_tokoname_preliminary_after_morning_sync,
+    stage_tokoname_results,
+)
 from stage_tokoname_predictions import stage_tokoname_predictions
 from tokoname_site_pipeline import DEFAULT_MODEL_DIR, without_predictions
 
@@ -605,6 +608,78 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertEqual(second["updated_races"], [10])
         self.assertEqual(len(calls), 2)
         self.assertIn("original_exhibition", calls[1])
+
+
+class TokonameMorningStagingHookTests(unittest.TestCase):
+    class Logger:
+        def info(self, *args, **kwargs) -> None:
+            pass
+
+        def error(self, *args, **kwargs) -> None:
+            raise AssertionError(f"unexpected staging error: {args}")
+
+    def test_open_same_day_tokoname_stages_preliminary_after_sync(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            morning_root = root / "runtime" / "morning"
+            live_root = root / "data" / "live"
+            output_root = root / "runtime" / "predictions"
+            morning_path = (
+                morning_root / "venues" / "tokoname" / "20260730.json"
+            )
+            morning_path.parent.mkdir(parents=True)
+            morning_path.write_text(
+                json.dumps(morning(), ensure_ascii=False),
+                encoding="utf-8",
+            )
+            manifest_path = morning_root / "manifest.json"
+            manifest_path.write_text(
+                json.dumps(
+                    {
+                        "date": DATE,
+                        "venues": [
+                            {
+                                "slug": "tokoname",
+                                "open": True,
+                                "date": DATE,
+                                "dataPath": "venues/tokoname/20260730.json",
+                            }
+                        ],
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            report = {
+                "status": "preliminary",
+                "date": DATE,
+                "written": True,
+                "updated_races": list(range(1, 13)),
+            }
+
+            with patch(
+                "stage_tokoname_predictions.stage_tokoname_predictions",
+                return_value=report,
+            ) as staging:
+                result = stage_tokoname_preliminary_after_morning_sync(
+                    {
+                        "morning_data_root": str(morning_root),
+                        "live_output_root": str(live_root),
+                    },
+                    DATE,
+                    manifest_path,
+                    live_root,
+                    self.Logger(),
+                    prediction_output_root=output_root,
+                )
+
+            self.assertEqual(result, report)
+            staging.assert_called_once_with(
+                DATE,
+                morning_root=morning_root,
+                live_root=live_root,
+                output_root=output_root,
+            )
 
 
 if __name__ == "__main__":

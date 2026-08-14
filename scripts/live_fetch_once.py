@@ -37,6 +37,73 @@ TODA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_toda_live_v5.py"
 TODA_DATA_ROOT = PUBLISHER_REPO / "data"
 
 
+def stage_tokoname_preliminary_after_morning_sync(
+    config: dict[str, Any],
+    target_date: str,
+    manifest_path: Path,
+    live_root: Path,
+    logger: Any,
+    *,
+    prediction_output_root: Path | None = None,
+) -> dict[str, Any] | None:
+    morning_root = resolve_root(config, "morning_data_root")
+    output_root = prediction_output_root or ROOT / "runtime" / "predictions"
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        venue = next(
+            (
+                item
+                for item in manifest.get("venues") or []
+                if item.get("slug") == "tokoname"
+            ),
+            None,
+        )
+        if (
+            manifest.get("date") != target_date
+            or not venue
+            or venue.get("open") is not True
+            or venue.get("date") != target_date
+        ):
+            return None
+
+        data_path = str(venue.get("dataPath") or "")
+        if not data_path or not (morning_root / data_path).is_file():
+            return None
+
+        from stage_tokoname_predictions import stage_tokoname_predictions
+
+        report = stage_tokoname_predictions(
+            target_date,
+            morning_root=morning_root,
+            live_root=live_root,
+            output_root=output_root,
+        )
+        if report.get("status") == "preliminary":
+            logger.info(
+                json.dumps(report, ensure_ascii=False),
+                extra={
+                    "event": "tokoname_preliminary_staged",
+                    "venue": "tokoname",
+                    "phase": "preliminary",
+                },
+            )
+        return report
+    except Exception as exc:
+        logger.error(
+            f"{type(exc).__name__}: {exc}",
+            extra={
+                "event": "tokoname_preliminary_staging_failed",
+                "venue": "tokoname",
+            },
+        )
+        return {
+            "status": "error",
+            "date": target_date,
+            "written": False,
+            "error": f"{type(exc).__name__}: {exc}",
+        }
+
+
 async def apply_heiwajima_live_prediction(
     target: dict[str, Any],
     race_dir: Path,
@@ -339,6 +406,14 @@ async def run_once(
     today = current.date().isoformat()
     target_root = output_root or resolve_root(config, "live_output_root")
     manifest = manifest_path or ensure_current_morning_data(config, today, logger)
+    if not dry_run:
+        stage_tokoname_preliminary_after_morning_sync(
+            config,
+            today,
+            manifest,
+            target_root,
+            logger,
+        )
     active = detect_active_venues(manifest, today)
     targets = []
     for venue in active:
