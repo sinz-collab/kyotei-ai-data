@@ -43190,69 +43190,2838 @@
       ],
       "prediction": {
         "status": "ready",
-        "reason": null,
         "engine": "ashiya_prediction_engine",
         "engine_version": "1.6.0",
+        "stage": "live",
         "probabilities": {
           "win": {
-            "1": 29.3748,
-            "2": 18.7315,
-            "3": 16.2556,
-            "4": 22.1391,
-            "5": 6.4995,
-            "6": 6.9995
+            "1": 25.3741,
+            "2": 22.3449,
+            "3": 8.4049,
+            "4": 38.4536,
+            "5": 2.2461,
+            "6": 3.1764
           },
           "second": {
-            "1": 18.703,
-            "2": 10.5701,
-            "3": 18.3628,
-            "4": 23.7012,
-            "5": 13.9089,
-            "6": 14.754
+            "1": 23.7851,
+            "2": 17.483,
+            "3": 13.9857,
+            "4": 27.1221,
+            "5": 7.8247,
+            "6": 9.7994
           },
           "third": {
-            "1": 13.4628,
-            "2": 26.3119,
-            "3": 25.5608,
-            "4": 15.1817,
-            "5": 6.8171,
-            "6": 12.6657
+            "1": 12.8477,
+            "2": 33.1396,
+            "3": 21.2576,
+            "4": 14.8483,
+            "5": 7.0779,
+            "6": 10.8289
           }
         },
-        "sab": "見",
+        "sab": {
+          "grade": "B",
+          "score": 0.4885,
+          "components": {
+            "head_clarity": 0.5945,
+            "scenario_agreement": 0.4299,
+            "conditional_stability": 0.0588,
+            "data_completeness": 0.606,
+            "contradiction_risk": 0
+          }
+        },
         "tickets": {
-          "ai": [
-            "1-4-2",
-            "1-4-3",
-            "1-3-2",
-            "4-3-2",
-            "2-4-3",
-            "3-4-2"
-          ],
-          "aiUpset": [
+          "main": [
             "4-1-2",
-            "4-1-3"
-          ],
-          "balance": [
-            "1-6-2",
-            "1-6-3"
-          ],
-          "tickets": [
-            "1-4-2",
-            "1-4-3",
-            "1-3-2",
             "4-3-2",
-            "2-4-3",
-            "3-4-2",
-            "1-6-2",
-            "1-6-3",
+            "1-4-2",
+            "4-2-3",
+            "4-1-3",
+            "2-4-3"
+          ],
+          "deviation": [
+            "4-6-2",
+            "1-4-3"
+          ],
+          "upset": [
+            "4-2-1",
+            "4-5-2"
+          ],
+          "all": [
             "4-1-2",
-            "4-1-3"
+            "4-3-2",
+            "1-4-2",
+            "4-2-3",
+            "4-1-3",
+            "2-4-3",
+            "4-6-2",
+            "1-4-3",
+            "4-2-1",
+            "4-5-2"
           ]
+        },
+        "attack_structure": {
+          "attacker": 4,
+          "wall_boat": 2,
+          "dent_boat": 3,
+          "conditional_links": [
+            {
+              "head": 4,
+              "boat": 2,
+              "second_bonus": 0.02,
+              "third_bonus": 0.22,
+              "vigor": 0.55,
+              "reason": "3凹み時の2内差し残り"
+            }
+          ],
+          "conditional_triplets": [],
+          "slit_audit": [
+            {
+              "lane": 1,
+              "course": 1,
+              "exhibition_st": -0.01,
+              "local_course_st": 0.18,
+              "local_st_starts": 0,
+              "local_st_reliability": 0.0,
+              "st_delta": 0.12,
+              "inside_adv": 0.0
+            },
+            {
+              "lane": 2,
+              "course": 2,
+              "exhibition_st": 0.01,
+              "local_course_st": 0.171,
+              "local_st_starts": 7,
+              "local_st_reliability": 0.583,
+              "st_delta": 0.12,
+              "inside_adv": -0.02
+            },
+            {
+              "lane": 3,
+              "course": 3,
+              "exhibition_st": 0.22,
+              "local_course_st": 0.187,
+              "local_st_starts": 11,
+              "local_st_reliability": 0.917,
+              "st_delta": -0.033,
+              "inside_adv": -0.21
+            },
+            {
+              "lane": 4,
+              "course": 4,
+              "exhibition_st": -0.01,
+              "local_course_st": 0.173,
+              "local_st_starts": 12,
+              "local_st_reliability": 1.0,
+              "st_delta": 0.12,
+              "inside_adv": 0.23
+            },
+            {
+              "lane": 5,
+              "course": 5,
+              "exhibition_st": 0.16,
+              "local_course_st": 0.18,
+              "local_st_starts": 0,
+              "local_st_reliability": 0.0,
+              "st_delta": 0.02,
+              "inside_adv": -0.17
+            },
+            {
+              "lane": 6,
+              "course": 6,
+              "exhibition_st": 0.2,
+              "local_course_st": 0.18,
+              "local_st_starts": 0,
+              "local_st_reliability": 0.0,
+              "st_delta": -0.02,
+              "inside_adv": -0.04
+            }
+          ],
+          "local_venue_audit": {
+            "1": {
+              "score": 0.027395735294117644,
+              "reliability": 0.35,
+              "national_win": 4.63,
+              "local_win": 2.88,
+              "local_2": 6.3,
+              "local_3": 18.8,
+              "venue_edge": -0.875,
+              "st_proxy_starts": 0
+            },
+            "2": {
+              "score": 0.3042513725490197,
+              "reliability": 0.6416666666666667,
+              "national_win": 6.27,
+              "local_win": 5.61,
+              "local_2": 32.6,
+              "local_3": 60.9,
+              "venue_edge": -0.3299999999999996,
+              "st_proxy_starts": 7
+            },
+            "3": {
+              "score": 0.10820402077497666,
+              "reliability": 0.8083333333333332,
+              "national_win": 5.51,
+              "local_win": 3.68,
+              "local_2": 7.3,
+              "local_3": 26.8,
+              "venue_edge": -0.9149999999999998,
+              "st_proxy_starts": 11
+            },
+            "4": {
+              "score": 0.34137940476190476,
+              "reliability": 0.85,
+              "national_win": 5.74,
+              "local_win": 5.03,
+              "local_2": 30.9,
+              "local_3": 47.1,
+              "venue_edge": -0.355,
+              "st_proxy_starts": 12
+            },
+            "5": {
+              "score": 0.06158955882352942,
+              "reliability": 0.35,
+              "national_win": 2.09,
+              "local_win": 2.24,
+              "local_2": 7.9,
+              "local_3": 13.2,
+              "venue_edge": 0.07500000000000018,
+              "st_proxy_starts": 0
+            },
+            "6": {
+              "score": 0.03408397058823529,
+              "reliability": 0.35,
+              "national_win": 1.74,
+              "local_win": 1.31,
+              "local_2": 1.9,
+              "local_3": 1.9,
+              "venue_edge": -0.21499999999999997,
+              "st_proxy_starts": 0
+            }
+          }
+        },
+        "scenarios": [
+          {
+            "scenario_id": "S06",
+            "name": "4カド攻め・5/6外連動",
+            "score": 0.7032076421356421,
+            "attacker": 4,
+            "linked_boats": [
+              5,
+              6,
+              1
+            ],
+            "probability": 0.4299
+          },
+          {
+            "scenario_id": "S10",
+            "name": "外攻め不発・内決着",
+            "score": 0.4725172465524099,
+            "attacker": 4,
+            "linked_boats": [
+              1,
+              2,
+              3
+            ],
+            "probability": 0.2889
+          },
+          {
+            "scenario_id": "S07",
+            "name": "4攻め・1内残り",
+            "score": 0.46,
+            "attacker": 4,
+            "linked_boats": [
+              1,
+              2
+            ],
+            "probability": 0.2812
+          }
+        ],
+        "audit": {
+          "model": {
+            "feature_count": 302,
+            "coverage": 0.606,
+            "missing_features": [
+              "source_file",
+              "fan_hit",
+              "fan_name",
+              "fan_branch",
+              "fan_current_grade",
+              "start_is_flying",
+              "start_is_late",
+              "start_is_normal",
+              "wind_x_lane",
+              "wave_x_lane",
+              "wind_x_outer",
+              "wave_x_outer",
+              "start_x_lane",
+              "exhibition_x_lane",
+              "outer_lane_wind_penalty",
+              "ashiya_inside_advantage",
+              "ashiya_lane_escape_bias",
+              "ashiya_outer_risk",
+              "ashiya_mid_balance",
+              "entry_advantage",
+              "entry_disadvantage",
+              "incourse_inner_bonus",
+              "outcourse_outer_risk",
+              "outer_lane_wave_penalty",
+              "strong_wind_outer_penalty",
+              "very_strong_wind_outer_penalty",
+              "high_wave_outer_penalty",
+              "very_high_wave_outer_penalty",
+              "headwind_outer_penalty",
+              "crosswind_outer_penalty",
+              "lane1_headwind_hold",
+              "lane1_wave_hold",
+              "start_x_inner",
+              "start_x_outer",
+              "exhibition_x_inner",
+              "exhibition_x_outer",
+              "entry_x_start",
+              "entry_x_exhibition",
+              "inside_fast_start_bonus",
+              "outside_fast_start_bonus",
+              "outer_count_in_race",
+              "inner_count_in_race",
+              "strong_wind_race_pressure",
+              "wave_race_pressure",
+              "fan_grade_num",
+              "grade_x_lane",
+              "grade_x_inner",
+              "grade_x_outer",
+              "race_time_orig",
+              "fan_grade_score",
+              "local_advantage_flag",
+              "tide_effect_inner_bias",
+              "tide_effect_outer_bias",
+              "lane56_third_tide_flag",
+              "lane1_escape_tide_flag",
+              "lane4_attack_tide_flag",
+              "headwind_flag",
+              "tailwind_flag",
+              "crosswind_flag",
+              "wind_strength_class",
+              "wave_class",
+              "wind_x_wave",
+              "wind_stability_index",
+              "exhibition_rank_in_race",
+              "exhibition_diff_from_mean",
+              "exhibition_zscore",
+              "exhibition_outer_boost_flag",
+              "exhibition_inner_escape_flag",
+              "exhibition_type",
+              "start_rank_in_race",
+              "start_diff_from_mean",
+              "start_consistency",
+              "exhibition_consistency",
+              "start_fast_flag",
+              "start_slow_flag",
+              "fan_metric_overall",
+              "fan_metric_1st_rate",
+              "fan_metric_2nd_rate",
+              "fan_metric_3rd_rate",
+              "course_specific_win_rate",
+              "course_specific_top3_rate",
+              "style_type",
+              "consistency_index",
+              "pressure_resistance",
+              "comeback_rate",
+              "motor_rank",
+              "motor_diff_from_mean",
+              "motor_trend",
+              "motor_power_class",
+              "motor_outer_boost_flag",
+              "lane_win_rate",
+              "lane_top3_rate",
+              "lane_bias_adjusted",
+              "wind_penalty_outer",
+              "wind_advantage_inner",
+              "wind_rotation_effect",
+              "tide_x_wave_interaction",
+              "tide_x_wind_interaction",
+              "tide_x_course_advantage",
+              "wind_x_course",
+              "wind_x_start_timing",
+              "exhibition_x_course",
+              "exhibition_x_tide",
+              "start_x_wind",
+              "start_x_tide",
+              "motor_x_exhibition",
+              "motor_x_start",
+              "exhibition_lane_advantage",
+              "outer_third_base",
+              "win_score",
+              "second_score",
+              "third_score",
+              "outer_third_boost",
+              "inner_escape_prob",
+              "makuri_success_prob",
+              "sashime_success_prob",
+              "race_balance_index",
+              "chaos_index",
+              "upset_probability"
+            ]
+          },
+          "database": {
+            "model_weight": 0.653,
+            "player_lookups": [
+              {
+                "course": null,
+                "lane": null,
+                "shift": null,
+                "weakness": null,
+                "summary": {
+                  "player_id": 5338,
+                  "player_name": "香 月 大 輝",
+                  "player_type": "標準/要当日展示",
+                  "primary_course": 5,
+                  "starts": 3,
+                  "top3_rate": 33.33,
+                  "top3_vs_course_avg": -4.73,
+                  "course_strength": "少数参考",
+                  "reliability": "参考",
+                  "reg_no": "5338"
+                },
+                "st_course": null
+              },
+              {
+                "course": {
+                  "player_id": 4936,
+                  "player_name": "戸 敷 晃 美",
+                  "entry_course": 2,
+                  "starts": 7,
+                  "win_rate": 14.29,
+                  "second_rate": 0.0,
+                  "third_rate": 42.86,
+                  "top3_rate": 57.14,
+                  "avg_st": 0.171,
+                  "min_st": 0.07,
+                  "max_st": 0.25,
+                  "top_st_rate": 14.29,
+                  "course_avg_top3_rate": 52.69,
+                  "top3_vs_course_avg": 4.45,
+                  "entry_shift_count": 0,
+                  "entry_shift_rate": 0.0,
+                  "course_strength": "やや得意",
+                  "reliability": "C",
+                  "reg_no": "4936"
+                },
+                "lane": {
+                  "player_id": 4936,
+                  "player_name": "戸 敷 晃 美",
+                  "lane": 2,
+                  "starts": 7,
+                  "win_rate": 14.29,
+                  "second_rate": 0.0,
+                  "third_rate": 42.86,
+                  "top3_rate": 57.14,
+                  "avg_st": 0.171,
+                  "min_st": 0.07,
+                  "max_st": 0.25,
+                  "top_st_rate": 14.29,
+                  "entry_shift_count": 0,
+                  "entry_shift_rate": 0.0,
+                  "reliability": "C",
+                  "reg_no": "4936"
+                },
+                "shift": {
+                  "player_id": 4936,
+                  "player_name": "戸 敷 晃 美",
+                  "lane": 2,
+                  "entry_course": 2,
+                  "starts": 7,
+                  "win_rate": 14.29,
+                  "second_rate": 0.0,
+                  "third_rate": 42.86,
+                  "top3_rate": 57.14,
+                  "avg_st": 0.171,
+                  "min_st": 0.07,
+                  "max_st": 0.25,
+                  "top_st_rate": 14.29,
+                  "course_avg_top3_rate": 52.69,
+                  "top3_vs_course_avg": 4.45,
+                  "entry_shift_count": 0,
+                  "entry_shift_rate": 0.0,
+                  "course_strength": "やや得意",
+                  "reliability": "C",
+                  "reg_no": "4936"
+                },
+                "weakness": null,
+                "summary": {
+                  "player_id": 4936,
+                  "player_name": "戸 敷 晃 美",
+                  "player_type": "2コース差し/残り型",
+                  "primary_course": 2,
+                  "starts": 7,
+                  "top3_rate": 57.14,
+                  "top3_vs_course_avg": 4.45,
+                  "course_strength": "やや得意",
+                  "reliability": "C",
+                  "reg_no": "4936"
+                },
+                "st_course": {
+                  "player_id": 4936,
+                  "player_name": "戸 敷 晃 美",
+                  "entry_course": 2,
+                  "starts": 7,
+                  "avg_st": 0.171,
+                  "min_st": 0.07,
+                  "max_st": 0.25,
+                  "top_st_rate": 14.29,
+                  "reliability": "C",
+                  "reg_no": "4936"
+                }
+              },
+              {
+                "course": {
+                  "player_id": 5073,
+                  "player_name": "上 原 健次郎",
+                  "entry_course": 3,
+                  "starts": 11,
+                  "win_rate": 9.09,
+                  "second_rate": 9.09,
+                  "third_rate": 36.36,
+                  "top3_rate": 54.55,
+                  "avg_st": 0.187,
+                  "min_st": 0.1,
+                  "max_st": 0.33,
+                  "top_st_rate": 9.09,
+                  "course_avg_top3_rate": 52.71,
+                  "top3_vs_course_avg": 1.84,
+                  "entry_shift_count": 0,
+                  "entry_shift_rate": 0.0,
+                  "course_strength": "標準",
+                  "reliability": "B",
+                  "reg_no": "5073"
+                },
+                "lane": {
+                  "player_id": 5073,
+                  "player_name": "上 原 健次郎",
+                  "lane": 3,
+                  "starts": 14,
+                  "win_rate": 7.14,
+                  "second_rate": 7.14,
+                  "third_rate": 35.71,
+                  "top3_rate": 50.0,
+                  "avg_st": 0.191,
+                  "min_st": 0.1,
+                  "max_st": 0.33,
+                  "top_st_rate": 7.14,
+                  "entry_shift_count": 3,
+                  "entry_shift_rate": 21.43,
+                  "reliability": "B",
+                  "reg_no": "5073"
+                },
+                "shift": {
+                  "player_id": 5073,
+                  "player_name": "上 原 健次郎",
+                  "lane": 3,
+                  "entry_course": 3,
+                  "starts": 11,
+                  "win_rate": 9.09,
+                  "second_rate": 9.09,
+                  "third_rate": 36.36,
+                  "top3_rate": 54.55,
+                  "avg_st": 0.187,
+                  "min_st": 0.1,
+                  "max_st": 0.33,
+                  "top_st_rate": 9.09,
+                  "course_avg_top3_rate": 52.71,
+                  "top3_vs_course_avg": 1.84,
+                  "entry_shift_count": 0,
+                  "entry_shift_rate": 0.0,
+                  "course_strength": "標準",
+                  "reliability": "B",
+                  "reg_no": "5073"
+                },
+                "weakness": null,
+                "summary": {
+                  "player_id": 5073,
+                  "player_name": "上 原 健次郎",
+                  "player_type": "イン安定型",
+                  "primary_course": 1,
+                  "starts": 7,
+                  "top3_rate": 71.43,
+                  "top3_vs_course_avg": -12.74,
+                  "course_strength": "得意",
+                  "reliability": "C",
+                  "reg_no": "5073"
+                },
+                "st_course": {
+                  "player_id": 5073,
+                  "player_name": "上 原 健次郎",
+                  "entry_course": 3,
+                  "starts": 11,
+                  "avg_st": 0.187,
+                  "min_st": 0.1,
+                  "max_st": 0.33,
+                  "top_st_rate": 9.09,
+                  "reliability": "B",
+                  "reg_no": "5073"
+                }
+              },
+              {
+                "course": {
+                  "player_id": 4551,
+                  "player_name": "三 川 昂 暁",
+                  "entry_course": 4,
+                  "starts": 12,
+                  "win_rate": 16.67,
+                  "second_rate": 33.33,
+                  "third_rate": 16.67,
+                  "top3_rate": 66.67,
+                  "avg_st": 0.173,
+                  "min_st": 0.03,
+                  "max_st": 0.37,
+                  "top_st_rate": 25.0,
+                  "course_avg_top3_rate": 49.52,
+                  "top3_vs_course_avg": 17.15,
+                  "entry_shift_count": 1,
+                  "entry_shift_rate": 8.33,
+                  "course_strength": "得意",
+                  "reliability": "B",
+                  "reg_no": "4551"
+                },
+                "lane": {
+                  "player_id": 4551,
+                  "player_name": "三 川 昂 暁",
+                  "lane": 4,
+                  "starts": 14,
+                  "win_rate": 14.29,
+                  "second_rate": 21.43,
+                  "third_rate": 14.29,
+                  "top3_rate": 50.0,
+                  "avg_st": 0.145,
+                  "min_st": 0.01,
+                  "max_st": 0.37,
+                  "top_st_rate": 35.71,
+                  "entry_shift_count": 3,
+                  "entry_shift_rate": 21.43,
+                  "reliability": "B",
+                  "reg_no": "4551"
+                },
+                "shift": {
+                  "player_id": 4551,
+                  "player_name": "三 川 昂 暁",
+                  "lane": 4,
+                  "entry_course": 4,
+                  "starts": 11,
+                  "win_rate": 18.18,
+                  "second_rate": 27.27,
+                  "third_rate": 18.18,
+                  "top3_rate": 63.64,
+                  "avg_st": 0.167,
+                  "min_st": 0.03,
+                  "max_st": 0.37,
+                  "top_st_rate": 27.27,
+                  "course_avg_top3_rate": 49.52,
+                  "top3_vs_course_avg": 14.12,
+                  "entry_shift_count": 0,
+                  "entry_shift_rate": 0.0,
+                  "course_strength": "得意",
+                  "reliability": "B",
+                  "reg_no": "4551"
+                },
+                "weakness": null,
+                "summary": {
+                  "player_id": 4551,
+                  "player_name": "三 川 昂 暁",
+                  "player_type": "4カド攻撃型",
+                  "primary_course": 4,
+                  "starts": 12,
+                  "top3_rate": 66.67,
+                  "top3_vs_course_avg": 17.15,
+                  "course_strength": "得意",
+                  "reliability": "B",
+                  "reg_no": "4551"
+                },
+                "st_course": {
+                  "player_id": 4551,
+                  "player_name": "三 川 昂 暁",
+                  "entry_course": 4,
+                  "starts": 12,
+                  "avg_st": 0.173,
+                  "min_st": 0.03,
+                  "max_st": 0.37,
+                  "top_st_rate": 25.0,
+                  "reliability": "B",
+                  "reg_no": "4551"
+                }
+              },
+              {
+                "course": null,
+                "lane": {
+                  "player_id": 5382,
+                  "player_name": "山 下 心 一",
+                  "lane": 5,
+                  "starts": 3,
+                  "win_rate": 0.0,
+                  "second_rate": 0.0,
+                  "third_rate": 0.0,
+                  "top3_rate": 0.0,
+                  "avg_st": 0.243,
+                  "min_st": 0.23,
+                  "max_st": 0.25,
+                  "top_st_rate": 0.0,
+                  "entry_shift_count": 3,
+                  "entry_shift_rate": 100.0,
+                  "reliability": "参考",
+                  "reg_no": "5382"
+                },
+                "shift": null,
+                "weakness": null,
+                "summary": {
+                  "player_id": 5382,
+                  "player_name": "山 下 心 一",
+                  "player_type": "標準/要当日展示",
+                  "primary_course": 6,
+                  "starts": 17,
+                  "top3_rate": 0.0,
+                  "top3_vs_course_avg": -23.06,
+                  "course_strength": "苦手",
+                  "reliability": "B",
+                  "reg_no": "5382"
+                },
+                "st_course": null
+              },
+              {
+                "course": null,
+                "lane": null,
+                "shift": null,
+                "weakness": null,
+                "summary": null,
+                "st_course": null
+              }
+            ]
+          },
+          "day_weighting": {
+            "profile": {
+              "name": "final_day",
+              "base": 0.4,
+              "motor": 0.08,
+              "season": 0.12,
+              "season_course": 0.06,
+              "exhibition": 0.14,
+              "environment": 0.1,
+              "scenario": 0.1
+            },
+            "motor_scores": [
+              0.4392,
+              0.369,
+              0.3493,
+              0.3159,
+              0.3665,
+              0.5034
+            ],
+            "season_scores": [
+              0.3,
+              0.45,
+              0.375,
+              0.425,
+              0.0857,
+              0.1143
+            ],
+            "same_course_season_scores": [
+              0.3,
+              0.2,
+              0.4,
+              0.8,
+              0.0,
+              0.16
+            ],
+            "exhibition_scores": [
+              0.5,
+              0.6133,
+              0.67,
+              0.5567,
+              0.3867,
+              0.4433
+            ]
+          },
+          "practical_support": {
+            "profile": "final_day",
+            "weights": {
+              "season": 0.3,
+              "local": 0.25,
+              "class": 0.2,
+              "motor": 0.15,
+              "season_course": 0.1
+            },
+            "field_mean": 0.3404,
+            "scores": [
+              {
+                "lane": 1,
+                "name": "香月 大輝",
+                "total": 0.3075,
+                "season": 0.3,
+                "local": 0.1159,
+                "class": 0.4633,
+                "motor": 0.4392,
+                "season_course": 0.3
+              },
+              {
+                "lane": 2,
+                "name": "戸敷 晃美",
+                "total": 0.4819,
+                "season": 0.45,
+                "local": 0.4839,
+                "class": 0.7527,
+                "motor": 0.369,
+                "season_course": 0.2
+              },
+              {
+                "lane": 3,
+                "name": "上原 健次郎",
+                "total": 0.3878,
+                "season": 0.375,
+                "local": 0.1699,
+                "class": 0.702,
+                "motor": 0.3493,
+                "season_course": 0.4
+              },
+              {
+                "lane": 4,
+                "name": "三川 昂暁",
+                "total": 0.5032,
+                "season": 0.425,
+                "local": 0.4194,
+                "class": 0.7173,
+                "motor": 0.3159,
+                "season_course": 0.8
+              },
+              {
+                "lane": 5,
+                "name": "山下 心一",
+                "total": 0.1854,
+                "season": 0.0857,
+                "local": 0.1837,
+                "class": 0.294,
+                "motor": 0.3665,
+                "season_course": 0.0
+              },
+              {
+                "lane": 6,
+                "name": "安武 一也",
+                "total": 0.1764,
+                "season": 0.1143,
+                "local": 0.0967,
+                "class": 0.132,
+                "motor": 0.5034,
+                "season_course": 0.16
+              }
+            ]
+          },
+          "entry_changed": false,
+          "actual_entry_complete": true,
+          "odds_used": false,
+          "full_reflection": true,
+          "ticket_count": 10,
+          "duplicate_count": 0,
+          "normalized": true
+        },
+        "predictionStage": {
+          "label": "本予想",
+          "badge": "本予想",
+          "statusText": "展示・スリット・直前情報を反映して芦屋v1.6で再精査済み"
+        },
+        "probabilityReviewStatus": "reviewed",
+        "probabilityReview": {
+          "1": {
+            "morningWin": 29.3748,
+            "win": 25.3741,
+            "deltaWin": -4.0007,
+            "morningSecond": 18.703,
+            "second": 23.7851,
+            "deltaSecond": 5.0821,
+            "morningThird": 13.4628,
+            "third": 12.8477,
+            "deltaThird": -0.6151
+          },
+          "2": {
+            "morningWin": 18.7315,
+            "win": 22.3449,
+            "deltaWin": 3.6134,
+            "morningSecond": 10.5701,
+            "second": 17.483,
+            "deltaSecond": 6.9129,
+            "morningThird": 26.3119,
+            "third": 33.1396,
+            "deltaThird": 6.8277
+          },
+          "3": {
+            "morningWin": 16.2556,
+            "win": 8.4049,
+            "deltaWin": -7.8507,
+            "morningSecond": 18.3628,
+            "second": 13.9857,
+            "deltaSecond": -4.3771,
+            "morningThird": 25.5608,
+            "third": 21.2576,
+            "deltaThird": -4.3032
+          },
+          "4": {
+            "morningWin": 22.1391,
+            "win": 38.4536,
+            "deltaWin": 16.3145,
+            "morningSecond": 23.7012,
+            "second": 27.1221,
+            "deltaSecond": 3.4209,
+            "morningThird": 15.1817,
+            "third": 14.8483,
+            "deltaThird": -0.3334
+          },
+          "5": {
+            "morningWin": 6.4995,
+            "win": 2.2461,
+            "deltaWin": -4.2534,
+            "morningSecond": 13.9089,
+            "second": 7.8247,
+            "deltaSecond": -6.0842,
+            "morningThird": 6.8171,
+            "third": 7.0779,
+            "deltaThird": 0.2608
+          },
+          "6": {
+            "morningWin": 6.9995,
+            "win": 3.1764,
+            "deltaWin": -3.8231,
+            "morningSecond": 14.754,
+            "second": 9.7994,
+            "deltaSecond": -4.9546,
+            "morningThird": 12.6657,
+            "third": 10.8289,
+            "deltaThird": -1.8368
+          }
+        },
+        "probabilityFlow": {
+          "baseLabel": "直前前エンジン予想",
+          "realtimeApplied": true,
+          "realtimeLabel": "展示・スリット・直前反映",
+          "reviewed": true,
+          "reviewLabel": "再精査後の調整数字"
         }
       },
-      "live": {},
-      "odds": {},
+      "live": {
+        "direct": {
+          "actual_entry": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
+          "air_temperature": 31.2,
+          "entry_changed": false,
+          "lap_shortened": null,
+          "other_changes": [
+            "部品交換"
+          ],
+          "racers": [
+            {
+              "lane": 1,
+              "name": "香月 大輝",
+              "parts_exchange": [],
+              "player_id": 5338,
+              "tilt": 0,
+              "weight": 52,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 2,
+              "name": "戸敷 晃美",
+              "parts_exchange": [],
+              "player_id": 4936,
+              "tilt": 0,
+              "weight": 47,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 3,
+              "name": "上原 健次郎",
+              "parts_exchange": [],
+              "player_id": 5073,
+              "tilt": 0.5,
+              "weight": 52.4,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 4,
+              "name": "三川 昂暁",
+              "parts_exchange": [],
+              "player_id": 4551,
+              "tilt": 0.5,
+              "weight": 53.3,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 5,
+              "name": "山下 心一",
+              "parts_exchange": [],
+              "player_id": 5382,
+              "tilt": -0.5,
+              "weight": 52.1,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 6,
+              "name": "安武 一也",
+              "parts_exchange": [],
+              "player_id": 5392,
+              "tilt": -0.5,
+              "weight": 52.3,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            }
+          ],
+          "stabilizer": null,
+          "water_temperature": 30.6,
+          "wave_height": 1,
+          "weather": "晴",
+          "wind_direction": 13,
+          "wind_speed": 1,
+          "withdrawals": []
+        },
+        "weather": "晴",
+        "actual_entry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entry_changed": false,
+        "withdrawals": [],
+        "stabilizer": null,
+        "lap_shortened": null,
+        "other_changes": [
+          "部品交換"
+        ],
+        "racers": [
+          {
+            "lane": 1,
+            "name": "香月 大輝",
+            "parts_exchange": [],
+            "player_id": 5338,
+            "tilt": 0,
+            "weight": 52,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 2,
+            "name": "戸敷 晃美",
+            "parts_exchange": [],
+            "player_id": 4936,
+            "tilt": 0,
+            "weight": 47,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 3,
+            "name": "上原 健次郎",
+            "parts_exchange": [],
+            "player_id": 5073,
+            "tilt": 0.5,
+            "weight": 52.4,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 4,
+            "name": "三川 昂暁",
+            "parts_exchange": [],
+            "player_id": 4551,
+            "tilt": 0.5,
+            "weight": 53.3,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 5,
+            "name": "山下 心一",
+            "parts_exchange": [],
+            "player_id": 5382,
+            "tilt": -0.5,
+            "weight": 52.1,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 6,
+            "name": "安武 一也",
+            "parts_exchange": [],
+            "player_id": 5392,
+            "tilt": -0.5,
+            "weight": 52.3,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          }
+        ],
+        "air_temperature": 31.2,
+        "water_temperature": 30.6,
+        "wind_direction": 13,
+        "wind_speed": 1,
+        "wave_height": 1,
+        "exhibition": {
+          "entries": [
+            {
+              "exhibition_course": 1,
+              "exhibition_gap": 0.09,
+              "exhibition_rank": 4,
+              "exhibition_time": 6.81,
+              "lane": 1,
+              "name": "香月 大輝",
+              "player_id": 5338,
+              "start_rank": 1,
+              "start_raw": -0.01,
+              "start_time": -0.01,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 2,
+              "exhibition_gap": 0.05,
+              "exhibition_rank": 2,
+              "exhibition_time": 6.77,
+              "lane": 2,
+              "name": "戸敷 晃美",
+              "player_id": 4936,
+              "start_rank": 3,
+              "start_raw": 0.01,
+              "start_time": 0.01,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 3,
+              "exhibition_gap": 0.0,
+              "exhibition_rank": 1,
+              "exhibition_time": 6.72,
+              "lane": 3,
+              "name": "上原 健次郎",
+              "player_id": 5073,
+              "start_rank": 6,
+              "start_raw": 0.22,
+              "start_time": 0.22,
+              "tilt": 0.5
+            },
+            {
+              "exhibition_course": 4,
+              "exhibition_gap": 0.07,
+              "exhibition_rank": 3,
+              "exhibition_time": 6.79,
+              "lane": 4,
+              "name": "三川 昂暁",
+              "player_id": 4551,
+              "start_rank": 1,
+              "start_raw": -0.01,
+              "start_time": -0.01,
+              "tilt": 0.5
+            },
+            {
+              "exhibition_course": 5,
+              "exhibition_gap": 0.11,
+              "exhibition_rank": 6,
+              "exhibition_time": 6.83,
+              "lane": 5,
+              "name": "山下 心一",
+              "player_id": 5382,
+              "start_rank": 4,
+              "start_raw": 0.16,
+              "start_time": 0.16,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 6,
+              "exhibition_gap": 0.1,
+              "exhibition_rank": 5,
+              "exhibition_time": 6.82,
+              "lane": 6,
+              "name": "安武 一也",
+              "player_id": 5392,
+              "start_rank": 5,
+              "start_raw": 0.2,
+              "start_time": 0.2,
+              "tilt": -0.5
+            }
+          ],
+          "slit_source": [
+            {
+              "course": 1,
+              "lane": 1,
+              "start_raw": -0.01,
+              "start_time": -0.01
+            },
+            {
+              "course": 2,
+              "lane": 2,
+              "start_raw": 0.01,
+              "start_time": 0.01
+            },
+            {
+              "course": 3,
+              "lane": 3,
+              "start_raw": 0.22,
+              "start_time": 0.22
+            },
+            {
+              "course": 4,
+              "lane": 4,
+              "start_raw": -0.01,
+              "start_time": -0.01
+            },
+            {
+              "course": 5,
+              "lane": 5,
+              "start_raw": 0.16,
+              "start_time": 0.16
+            },
+            {
+              "course": 6,
+              "lane": 6,
+              "start_raw": 0.2,
+              "start_time": 0.2
+            }
+          ],
+          "start_order": [
+            1,
+            4,
+            2,
+            5,
+            6,
+            3
+          ]
+        },
+        "original": {
+          "entries": [
+            {
+              "lane": 1,
+              "lap_time": 36.63,
+              "name": "香月 大輝",
+              "player_id": 5338,
+              "straight_time": 7.68,
+              "sum": "43.44",
+              "sum_difference": "0.25",
+              "sum_exhibition": "6.81",
+              "sum_lap": "36.63",
+              "turn_time": 7.59
+            },
+            {
+              "lane": 2,
+              "lap_time": 36.4,
+              "name": "戸敷 晃美",
+              "player_id": 4936,
+              "straight_time": 7.62,
+              "sum": "43.17",
+              "sum_difference": "0.52",
+              "sum_exhibition": "6.77",
+              "sum_lap": "36.40",
+              "turn_time": 7.63
+            },
+            {
+              "lane": 3,
+              "lap_time": 37.35,
+              "name": "上原 健次郎",
+              "player_id": 5073,
+              "straight_time": 7.77,
+              "sum": "44.07",
+              "sum_difference": "-0.38",
+              "sum_exhibition": "6.72",
+              "sum_lap": "37.35",
+              "turn_time": 8.19
+            },
+            {
+              "lane": 4,
+              "lap_time": 36.97,
+              "name": "三川 昂暁",
+              "player_id": 4551,
+              "straight_time": 7.81,
+              "sum": "43.76",
+              "sum_difference": "-0.07",
+              "sum_exhibition": "6.79",
+              "sum_lap": "36.97",
+              "turn_time": 7.91
+            },
+            {
+              "lane": 5,
+              "lap_time": 37.05,
+              "name": "山下 心一",
+              "player_id": 5382,
+              "straight_time": 7.76,
+              "sum": "43.88",
+              "sum_difference": "-0.19",
+              "sum_exhibition": "6.83",
+              "sum_lap": "37.05",
+              "turn_time": 8.17
+            },
+            {
+              "lane": 6,
+              "lap_time": 37.02,
+              "name": "安武 一也",
+              "player_id": 5392,
+              "straight_time": 7.76,
+              "sum": "43.84",
+              "sum_difference": "-0.15",
+              "sum_exhibition": "6.82",
+              "sum_lap": "37.02",
+              "turn_time": 7.9
+            }
+          ],
+          "tab_clicked": true
+        },
+        "original_exhibition": {
+          "entries": [
+            {
+              "lane": 1,
+              "lap_time": 36.63,
+              "name": "香月 大輝",
+              "player_id": 5338,
+              "straight_time": 7.68,
+              "sum": "43.44",
+              "sum_difference": "0.25",
+              "sum_exhibition": "6.81",
+              "sum_lap": "36.63",
+              "turn_time": 7.59
+            },
+            {
+              "lane": 2,
+              "lap_time": 36.4,
+              "name": "戸敷 晃美",
+              "player_id": 4936,
+              "straight_time": 7.62,
+              "sum": "43.17",
+              "sum_difference": "0.52",
+              "sum_exhibition": "6.77",
+              "sum_lap": "36.40",
+              "turn_time": 7.63
+            },
+            {
+              "lane": 3,
+              "lap_time": 37.35,
+              "name": "上原 健次郎",
+              "player_id": 5073,
+              "straight_time": 7.77,
+              "sum": "44.07",
+              "sum_difference": "-0.38",
+              "sum_exhibition": "6.72",
+              "sum_lap": "37.35",
+              "turn_time": 8.19
+            },
+            {
+              "lane": 4,
+              "lap_time": 36.97,
+              "name": "三川 昂暁",
+              "player_id": 4551,
+              "straight_time": 7.81,
+              "sum": "43.76",
+              "sum_difference": "-0.07",
+              "sum_exhibition": "6.79",
+              "sum_lap": "36.97",
+              "turn_time": 7.91
+            },
+            {
+              "lane": 5,
+              "lap_time": 37.05,
+              "name": "山下 心一",
+              "player_id": 5382,
+              "straight_time": 7.76,
+              "sum": "43.88",
+              "sum_difference": "-0.19",
+              "sum_exhibition": "6.83",
+              "sum_lap": "37.05",
+              "turn_time": 8.17
+            },
+            {
+              "lane": 6,
+              "lap_time": 37.02,
+              "name": "安武 一也",
+              "player_id": 5392,
+              "straight_time": 7.76,
+              "sum": "43.84",
+              "sum_difference": "-0.15",
+              "sum_exhibition": "6.82",
+              "sum_lap": "37.02",
+              "turn_time": 7.9
+            }
+          ],
+          "tab_clicked": true
+        },
+        "odds": {
+          "bet_type": "trifecta",
+          "count": 120,
+          "difference": {
+            "changed_count": 120,
+            "changes": [
+              {
+                "combination": "1-2-3",
+                "current": 18.2,
+                "previous": 20.2
+              },
+              {
+                "combination": "1-2-4",
+                "current": 15.3,
+                "previous": 19.4
+              },
+              {
+                "combination": "1-2-5",
+                "current": 60.7,
+                "previous": 55.1
+              },
+              {
+                "combination": "1-2-6",
+                "current": 74.5,
+                "previous": 56.9
+              },
+              {
+                "combination": "1-3-2",
+                "current": 21.5,
+                "previous": 21.4
+              },
+              {
+                "combination": "1-3-4",
+                "current": 18.2,
+                "previous": 19.3
+              },
+              {
+                "combination": "1-3-5",
+                "current": 67.8,
+                "previous": 52.0
+              },
+              {
+                "combination": "1-3-6",
+                "current": 100.5,
+                "previous": 100.4
+              },
+              {
+                "combination": "1-4-2",
+                "current": 19.4,
+                "previous": 20.7
+              },
+              {
+                "combination": "1-4-3",
+                "current": 25.5,
+                "previous": 29.6
+              },
+              {
+                "combination": "1-4-5",
+                "current": 62.8,
+                "previous": 61.2
+              },
+              {
+                "combination": "1-4-6",
+                "current": 95.9,
+                "previous": 100.4
+              },
+              {
+                "combination": "1-5-2",
+                "current": 86.2,
+                "previous": 59.8
+              },
+              {
+                "combination": "1-5-3",
+                "current": 117.7,
+                "previous": 88.0
+              },
+              {
+                "combination": "1-5-4",
+                "current": 106.5,
+                "previous": 77.4
+              },
+              {
+                "combination": "1-5-6",
+                "current": 160.2,
+                "previous": 113.8
+              },
+              {
+                "combination": "1-6-2",
+                "current": 217.4,
+                "previous": 142.8
+              },
+              {
+                "combination": "1-6-3",
+                "current": 229.1,
+                "previous": 147.8
+              },
+              {
+                "combination": "1-6-4",
+                "current": 247.7,
+                "previous": 178.6
+              },
+              {
+                "combination": "1-6-5",
+                "current": 367.4,
+                "previous": 257.1
+              },
+              {
+                "combination": "2-1-3",
+                "current": 37.3,
+                "previous": 38.9
+              },
+              {
+                "combination": "2-1-4",
+                "current": 24.8,
+                "previous": 31.0
+              },
+              {
+                "combination": "2-1-5",
+                "current": 110.4,
+                "previous": 100.4
+              },
+              {
+                "combination": "2-1-6",
+                "current": 162.6,
+                "previous": 115.8
+              },
+              {
+                "combination": "2-3-1",
+                "current": 46.6,
+                "previous": 44.3
+              },
+              {
+                "combination": "2-3-4",
+                "current": 19.8,
+                "previous": 21.9
+              },
+              {
+                "combination": "2-3-5",
+                "current": 154.4,
+                "previous": 156.8
+              },
+              {
+                "combination": "2-3-6",
+                "current": 380.5,
+                "previous": 306.1
+              },
+              {
+                "combination": "2-4-1",
+                "current": 30.5,
+                "previous": 34.2
+              },
+              {
+                "combination": "2-4-3",
+                "current": 17.4,
+                "previous": 18.5
+              },
+              {
+                "combination": "2-4-5",
+                "current": 104.9,
+                "previous": 104.5
+              },
+              {
+                "combination": "2-4-6",
+                "current": 197.3,
+                "previous": 214.3
+              },
+              {
+                "combination": "2-5-1",
+                "current": 219.6,
+                "previous": 158.7
+              },
+              {
+                "combination": "2-5-3",
+                "current": 244.9,
+                "previous": 176.1
+              },
+              {
+                "combination": "2-5-4",
+                "current": 280.3,
+                "previous": 247.2
+              },
+              {
+                "combination": "2-5-6",
+                "current": 484.3,
+                "previous": 367.4
+              },
+              {
+                "combination": "2-6-1",
+                "current": 507.3,
+                "previous": 347.5
+              },
+              {
+                "combination": "2-6-3",
+                "current": 608.8,
+                "previous": 389.6
+              },
+              {
+                "combination": "2-6-4",
+                "current": 426.1,
+                "previous": 313.6
+              },
+              {
+                "combination": "2-6-5",
+                "current": 645.7,
+                "previous": 476.2
+              },
+              {
+                "combination": "3-1-2",
+                "current": 59.8,
+                "previous": 56.9
+              },
+              {
+                "combination": "3-1-4",
+                "current": 35.5,
+                "previous": 32.6
+              },
+              {
+                "combination": "3-1-5",
+                "current": 117.7,
+                "previous": 91.2
+              },
+              {
+                "combination": "3-1-6",
+                "current": 185.3,
+                "previous": 124.8
+              },
+              {
+                "combination": "3-2-1",
+                "current": 72.2,
+                "previous": 72.6
+              },
+              {
+                "combination": "3-2-4",
+                "current": 28.2,
+                "previous": 31.4
+              },
+              {
+                "combination": "3-2-5",
+                "current": 170.4,
+                "previous": 138.2
+              },
+              {
+                "combination": "3-2-6",
+                "current": 409.8,
+                "previous": 285.7
+              },
+              {
+                "combination": "3-4-1",
+                "current": 38.6,
+                "previous": 40.4
+              },
+              {
+                "combination": "3-4-2",
+                "current": 23.4,
+                "previous": 26.2
+              },
+              {
+                "combination": "3-4-5",
+                "current": 88.0,
+                "previous": 107.1
+              },
+              {
+                "combination": "3-4-6",
+                "current": 165.1,
+                "previous": 200.9
+              },
+              {
+                "combination": "3-5-1",
+                "current": 226.6,
+                "previous": 186.3
+              },
+              {
+                "combination": "3-5-2",
+                "current": 239.4,
+                "previous": 194.8
+              },
+              {
+                "combination": "3-5-4",
+                "current": 177.5,
+                "previous": 162.7
+              },
+              {
+                "combination": "3-5-6",
+                "current": 484.3,
+                "previous": 514.3
+              },
+              {
+                "combination": "3-6-1",
+                "current": 665.9,
+                "previous": 443.4
+              },
+              {
+                "combination": "3-6-2",
+                "current": 852.3,
+                "previous": 612.3
+              },
+              {
+                "combination": "3-6-4",
+                "current": 495.5,
+                "previous": 494.5
+              },
+              {
+                "combination": "3-6-5",
+                "current": 1014.0,
+                "previous": 1169.0
+              },
+              {
+                "combination": "4-1-2",
+                "current": 30.1,
+                "previous": 36.3
+              },
+              {
+                "combination": "4-1-3",
+                "current": 35.9,
+                "previous": 38.7
+              },
+              {
+                "combination": "4-1-5",
+                "current": 64.5,
+                "previous": 61.5
+              },
+              {
+                "combination": "4-1-6",
+                "current": 110.4,
+                "previous": 132.5
+              },
+              {
+                "combination": "4-2-1",
+                "current": 31.2,
+                "previous": 34.5
+              },
+              {
+                "combination": "4-2-3",
+                "current": 20.9,
+                "previous": 23.3
+              },
+              {
+                "combination": "4-2-5",
+                "current": 95.9,
+                "previous": 112.8
+              },
+              {
+                "combination": "4-2-6",
+                "current": 130.7,
+                "previous": 132.5
+              },
+              {
+                "combination": "4-3-1",
+                "current": 39.5,
+                "previous": 40.4
+              },
+              {
+                "combination": "4-3-2",
+                "current": 27.9,
+                "previous": 33.6
+              },
+              {
+                "combination": "4-3-5",
+                "current": 110.4,
+                "previous": 117.9
+              },
+              {
+                "combination": "4-3-6",
+                "current": 169.1,
+                "previous": 178.6
+              },
+              {
+                "combination": "4-5-1",
+                "current": 96.8,
+                "previous": 80.3
+              },
+              {
+                "combination": "4-5-2",
+                "current": 124.6,
+                "previous": 129.8
+              },
+              {
+                "combination": "4-5-3",
+                "current": 186.9,
+                "previous": 171.4
+              },
+              {
+                "combination": "4-5-6",
+                "current": 170.4,
+                "previous": 171.4
+              },
+              {
+                "combination": "4-6-1",
+                "current": 215.2,
+                "previous": 169.2
+              },
+              {
+                "combination": "4-6-2",
+                "current": 206.8,
+                "previous": 194.8
+              },
+              {
+                "combination": "4-6-3",
+                "current": 373.8,
+                "previous": 367.4
+              },
+              {
+                "combination": "4-6-5",
+                "current": 276.7,
+                "previous": 267.9
+              },
+              {
+                "combination": "5-1-2",
+                "current": 284.1,
+                "previous": 194.8
+              },
+              {
+                "combination": "5-1-3",
+                "current": 236.7,
+                "previous": 154.9
+              },
+              {
+                "combination": "5-1-4",
+                "current": 208.9,
+                "previous": 149.5
+              },
+              {
+                "combination": "5-1-6",
+                "current": 426.1,
+                "previous": 279.5
+              },
+              {
+                "combination": "5-2-1",
+                "current": 367.4,
+                "previous": 279.5
+              },
+              {
+                "combination": "5-2-3",
+                "current": 308.8,
+                "previous": 204.1
+              },
+              {
+                "combination": "5-2-4",
+                "current": 318.0,
+                "previous": 229.6
+              },
+              {
+                "combination": "5-2-6",
+                "current": 687.4,
+                "previous": 459.2
+              },
+              {
+                "combination": "5-3-1",
+                "current": 361.1,
+                "previous": 233.8
+              },
+              {
+                "combination": "5-3-2",
+                "current": 453.3,
+                "previous": 306.1
+              },
+              {
+                "combination": "5-3-4",
+                "current": 473.5,
+                "previous": 378.2
+              },
+              {
+                "combination": "5-3-6",
+                "current": 852.3,
+                "previous": 559.1
+              },
+              {
+                "combination": "5-4-1",
+                "current": 234.1,
+                "previous": 167.0
+              },
+              {
+                "combination": "5-4-2",
+                "current": 367.4,
+                "previous": 292.2
+              },
+              {
+                "combination": "5-4-3",
+                "current": 463.2,
+                "previous": 401.8
+              },
+              {
+                "combination": "5-4-6",
+                "current": 532.7,
+                "previous": 428.6
+              },
+              {
+                "combination": "5-6-1",
+                "current": 887.9,
+                "previous": 559.1
+              },
+              {
+                "combination": "5-6-2",
+                "current": 887.9,
+                "previous": 612.3
+              },
+              {
+                "combination": "5-6-3",
+                "current": 1253.0,
+                "previous": 989.1
+              },
+              {
+                "combination": "5-6-4",
+                "current": 887.9,
+                "previous": 756.4
+              },
+              {
+                "combination": "6-1-2",
+                "current": 546.4,
+                "previous": 401.8
+              },
+              {
+                "combination": "6-1-3",
+                "current": 1183.0,
+                "previous": 803.7
+              },
+              {
+                "combination": "6-1-4",
+                "current": 819.6,
+                "previous": 612.3
+              },
+              {
+                "combination": "6-1-5",
+                "current": 1121.0,
+                "previous": 803.7
+              },
+              {
+                "combination": "6-2-1",
+                "current": 734.8,
+                "previous": 514.3
+              },
+              {
+                "combination": "6-2-3",
+                "current": 761.0,
+                "previous": 514.3
+              },
+              {
+                "combination": "6-2-4",
+                "current": 852.3,
+                "previous": 642.9
+              },
+              {
+                "combination": "6-2-5",
+                "current": 968.6,
+                "previous": 642.9
+              },
+              {
+                "combination": "6-3-1",
+                "current": 1331.0,
+                "previous": 918.5
+              },
+              {
+                "combination": "6-3-2",
+                "current": 1253.0,
+                "previous": 918.5
+              },
+              {
+                "combination": "6-3-4",
+                "current": 926.5,
+                "previous": 714.4
+              },
+              {
+                "combination": "6-3-5",
+                "current": 968.6,
+                "previous": 918.5
+              },
+              {
+                "combination": "6-4-1",
+                "current": 734.8,
+                "previous": 535.8
+              },
+              {
+                "combination": "6-4-2",
+                "current": 734.8,
+                "previous": 494.5
+              },
+              {
+                "combination": "6-4-3",
+                "current": 968.6,
+                "previous": 756.4
+              },
+              {
+                "combination": "6-4-5",
+                "current": 926.5,
+                "previous": 918.5
+              },
+              {
+                "combination": "6-5-1",
+                "current": 1065.0,
+                "previous": 714.4
+              },
+              {
+                "combination": "6-5-2",
+                "current": 1183.0,
+                "previous": 803.7
+              },
+              {
+                "combination": "6-5-3",
+                "current": 1253.0,
+                "previous": 918.5
+              },
+              {
+                "combination": "6-5-4",
+                "current": 1014.0,
+                "previous": 989.1
+              }
+            ]
+          },
+          "final": false,
+          "missing_count": 0,
+          "odds": {
+            "1-2-3": 18.2,
+            "1-2-4": 15.3,
+            "1-2-5": 60.7,
+            "1-2-6": 74.5,
+            "1-3-2": 21.5,
+            "1-3-4": 18.2,
+            "1-3-5": 67.8,
+            "1-3-6": 100.5,
+            "1-4-2": 19.4,
+            "1-4-3": 25.5,
+            "1-4-5": 62.8,
+            "1-4-6": 95.9,
+            "1-5-2": 86.2,
+            "1-5-3": 117.7,
+            "1-5-4": 106.5,
+            "1-5-6": 160.2,
+            "1-6-2": 217.4,
+            "1-6-3": 229.1,
+            "1-6-4": 247.7,
+            "1-6-5": 367.4,
+            "2-1-3": 37.3,
+            "2-1-4": 24.8,
+            "2-1-5": 110.4,
+            "2-1-6": 162.6,
+            "2-3-1": 46.6,
+            "2-3-4": 19.8,
+            "2-3-5": 154.4,
+            "2-3-6": 380.5,
+            "2-4-1": 30.5,
+            "2-4-3": 17.4,
+            "2-4-5": 104.9,
+            "2-4-6": 197.3,
+            "2-5-1": 219.6,
+            "2-5-3": 244.9,
+            "2-5-4": 280.3,
+            "2-5-6": 484.3,
+            "2-6-1": 507.3,
+            "2-6-3": 608.8,
+            "2-6-4": 426.1,
+            "2-6-5": 645.7,
+            "3-1-2": 59.8,
+            "3-1-4": 35.5,
+            "3-1-5": 117.7,
+            "3-1-6": 185.3,
+            "3-2-1": 72.2,
+            "3-2-4": 28.2,
+            "3-2-5": 170.4,
+            "3-2-6": 409.8,
+            "3-4-1": 38.6,
+            "3-4-2": 23.4,
+            "3-4-5": 88.0,
+            "3-4-6": 165.1,
+            "3-5-1": 226.6,
+            "3-5-2": 239.4,
+            "3-5-4": 177.5,
+            "3-5-6": 484.3,
+            "3-6-1": 665.9,
+            "3-6-2": 852.3,
+            "3-6-4": 495.5,
+            "3-6-5": 1014.0,
+            "4-1-2": 30.1,
+            "4-1-3": 35.9,
+            "4-1-5": 64.5,
+            "4-1-6": 110.4,
+            "4-2-1": 31.2,
+            "4-2-3": 20.9,
+            "4-2-5": 95.9,
+            "4-2-6": 130.7,
+            "4-3-1": 39.5,
+            "4-3-2": 27.9,
+            "4-3-5": 110.4,
+            "4-3-6": 169.1,
+            "4-5-1": 96.8,
+            "4-5-2": 124.6,
+            "4-5-3": 186.9,
+            "4-5-6": 170.4,
+            "4-6-1": 215.2,
+            "4-6-2": 206.8,
+            "4-6-3": 373.8,
+            "4-6-5": 276.7,
+            "5-1-2": 284.1,
+            "5-1-3": 236.7,
+            "5-1-4": 208.9,
+            "5-1-6": 426.1,
+            "5-2-1": 367.4,
+            "5-2-3": 308.8,
+            "5-2-4": 318.0,
+            "5-2-6": 687.4,
+            "5-3-1": 361.1,
+            "5-3-2": 453.3,
+            "5-3-4": 473.5,
+            "5-3-6": 852.3,
+            "5-4-1": 234.1,
+            "5-4-2": 367.4,
+            "5-4-3": 463.2,
+            "5-4-6": 532.7,
+            "5-6-1": 887.9,
+            "5-6-2": 887.9,
+            "5-6-3": 1253.0,
+            "5-6-4": 887.9,
+            "6-1-2": 546.4,
+            "6-1-3": 1183.0,
+            "6-1-4": 819.6,
+            "6-1-5": 1121.0,
+            "6-2-1": 734.8,
+            "6-2-3": 761.0,
+            "6-2-4": 852.3,
+            "6-2-5": 968.6,
+            "6-3-1": 1331.0,
+            "6-3-2": 1253.0,
+            "6-3-4": 926.5,
+            "6-3-5": 968.6,
+            "6-4-1": 734.8,
+            "6-4-2": 734.8,
+            "6-4-3": 968.6,
+            "6-4-5": 926.5,
+            "6-5-1": 1065.0,
+            "6-5-2": 1183.0,
+            "6-5-3": 1253.0,
+            "6-5-4": 1014.0
+          },
+          "sales_status": "on_sale"
+        }
+      },
+      "odds": {
+        "bet_type": "trifecta",
+        "count": 120,
+        "difference": {
+          "changed_count": 120,
+          "changes": [
+            {
+              "combination": "1-2-3",
+              "current": 18.2,
+              "previous": 20.2
+            },
+            {
+              "combination": "1-2-4",
+              "current": 15.3,
+              "previous": 19.4
+            },
+            {
+              "combination": "1-2-5",
+              "current": 60.7,
+              "previous": 55.1
+            },
+            {
+              "combination": "1-2-6",
+              "current": 74.5,
+              "previous": 56.9
+            },
+            {
+              "combination": "1-3-2",
+              "current": 21.5,
+              "previous": 21.4
+            },
+            {
+              "combination": "1-3-4",
+              "current": 18.2,
+              "previous": 19.3
+            },
+            {
+              "combination": "1-3-5",
+              "current": 67.8,
+              "previous": 52.0
+            },
+            {
+              "combination": "1-3-6",
+              "current": 100.5,
+              "previous": 100.4
+            },
+            {
+              "combination": "1-4-2",
+              "current": 19.4,
+              "previous": 20.7
+            },
+            {
+              "combination": "1-4-3",
+              "current": 25.5,
+              "previous": 29.6
+            },
+            {
+              "combination": "1-4-5",
+              "current": 62.8,
+              "previous": 61.2
+            },
+            {
+              "combination": "1-4-6",
+              "current": 95.9,
+              "previous": 100.4
+            },
+            {
+              "combination": "1-5-2",
+              "current": 86.2,
+              "previous": 59.8
+            },
+            {
+              "combination": "1-5-3",
+              "current": 117.7,
+              "previous": 88.0
+            },
+            {
+              "combination": "1-5-4",
+              "current": 106.5,
+              "previous": 77.4
+            },
+            {
+              "combination": "1-5-6",
+              "current": 160.2,
+              "previous": 113.8
+            },
+            {
+              "combination": "1-6-2",
+              "current": 217.4,
+              "previous": 142.8
+            },
+            {
+              "combination": "1-6-3",
+              "current": 229.1,
+              "previous": 147.8
+            },
+            {
+              "combination": "1-6-4",
+              "current": 247.7,
+              "previous": 178.6
+            },
+            {
+              "combination": "1-6-5",
+              "current": 367.4,
+              "previous": 257.1
+            },
+            {
+              "combination": "2-1-3",
+              "current": 37.3,
+              "previous": 38.9
+            },
+            {
+              "combination": "2-1-4",
+              "current": 24.8,
+              "previous": 31.0
+            },
+            {
+              "combination": "2-1-5",
+              "current": 110.4,
+              "previous": 100.4
+            },
+            {
+              "combination": "2-1-6",
+              "current": 162.6,
+              "previous": 115.8
+            },
+            {
+              "combination": "2-3-1",
+              "current": 46.6,
+              "previous": 44.3
+            },
+            {
+              "combination": "2-3-4",
+              "current": 19.8,
+              "previous": 21.9
+            },
+            {
+              "combination": "2-3-5",
+              "current": 154.4,
+              "previous": 156.8
+            },
+            {
+              "combination": "2-3-6",
+              "current": 380.5,
+              "previous": 306.1
+            },
+            {
+              "combination": "2-4-1",
+              "current": 30.5,
+              "previous": 34.2
+            },
+            {
+              "combination": "2-4-3",
+              "current": 17.4,
+              "previous": 18.5
+            },
+            {
+              "combination": "2-4-5",
+              "current": 104.9,
+              "previous": 104.5
+            },
+            {
+              "combination": "2-4-6",
+              "current": 197.3,
+              "previous": 214.3
+            },
+            {
+              "combination": "2-5-1",
+              "current": 219.6,
+              "previous": 158.7
+            },
+            {
+              "combination": "2-5-3",
+              "current": 244.9,
+              "previous": 176.1
+            },
+            {
+              "combination": "2-5-4",
+              "current": 280.3,
+              "previous": 247.2
+            },
+            {
+              "combination": "2-5-6",
+              "current": 484.3,
+              "previous": 367.4
+            },
+            {
+              "combination": "2-6-1",
+              "current": 507.3,
+              "previous": 347.5
+            },
+            {
+              "combination": "2-6-3",
+              "current": 608.8,
+              "previous": 389.6
+            },
+            {
+              "combination": "2-6-4",
+              "current": 426.1,
+              "previous": 313.6
+            },
+            {
+              "combination": "2-6-5",
+              "current": 645.7,
+              "previous": 476.2
+            },
+            {
+              "combination": "3-1-2",
+              "current": 59.8,
+              "previous": 56.9
+            },
+            {
+              "combination": "3-1-4",
+              "current": 35.5,
+              "previous": 32.6
+            },
+            {
+              "combination": "3-1-5",
+              "current": 117.7,
+              "previous": 91.2
+            },
+            {
+              "combination": "3-1-6",
+              "current": 185.3,
+              "previous": 124.8
+            },
+            {
+              "combination": "3-2-1",
+              "current": 72.2,
+              "previous": 72.6
+            },
+            {
+              "combination": "3-2-4",
+              "current": 28.2,
+              "previous": 31.4
+            },
+            {
+              "combination": "3-2-5",
+              "current": 170.4,
+              "previous": 138.2
+            },
+            {
+              "combination": "3-2-6",
+              "current": 409.8,
+              "previous": 285.7
+            },
+            {
+              "combination": "3-4-1",
+              "current": 38.6,
+              "previous": 40.4
+            },
+            {
+              "combination": "3-4-2",
+              "current": 23.4,
+              "previous": 26.2
+            },
+            {
+              "combination": "3-4-5",
+              "current": 88.0,
+              "previous": 107.1
+            },
+            {
+              "combination": "3-4-6",
+              "current": 165.1,
+              "previous": 200.9
+            },
+            {
+              "combination": "3-5-1",
+              "current": 226.6,
+              "previous": 186.3
+            },
+            {
+              "combination": "3-5-2",
+              "current": 239.4,
+              "previous": 194.8
+            },
+            {
+              "combination": "3-5-4",
+              "current": 177.5,
+              "previous": 162.7
+            },
+            {
+              "combination": "3-5-6",
+              "current": 484.3,
+              "previous": 514.3
+            },
+            {
+              "combination": "3-6-1",
+              "current": 665.9,
+              "previous": 443.4
+            },
+            {
+              "combination": "3-6-2",
+              "current": 852.3,
+              "previous": 612.3
+            },
+            {
+              "combination": "3-6-4",
+              "current": 495.5,
+              "previous": 494.5
+            },
+            {
+              "combination": "3-6-5",
+              "current": 1014.0,
+              "previous": 1169.0
+            },
+            {
+              "combination": "4-1-2",
+              "current": 30.1,
+              "previous": 36.3
+            },
+            {
+              "combination": "4-1-3",
+              "current": 35.9,
+              "previous": 38.7
+            },
+            {
+              "combination": "4-1-5",
+              "current": 64.5,
+              "previous": 61.5
+            },
+            {
+              "combination": "4-1-6",
+              "current": 110.4,
+              "previous": 132.5
+            },
+            {
+              "combination": "4-2-1",
+              "current": 31.2,
+              "previous": 34.5
+            },
+            {
+              "combination": "4-2-3",
+              "current": 20.9,
+              "previous": 23.3
+            },
+            {
+              "combination": "4-2-5",
+              "current": 95.9,
+              "previous": 112.8
+            },
+            {
+              "combination": "4-2-6",
+              "current": 130.7,
+              "previous": 132.5
+            },
+            {
+              "combination": "4-3-1",
+              "current": 39.5,
+              "previous": 40.4
+            },
+            {
+              "combination": "4-3-2",
+              "current": 27.9,
+              "previous": 33.6
+            },
+            {
+              "combination": "4-3-5",
+              "current": 110.4,
+              "previous": 117.9
+            },
+            {
+              "combination": "4-3-6",
+              "current": 169.1,
+              "previous": 178.6
+            },
+            {
+              "combination": "4-5-1",
+              "current": 96.8,
+              "previous": 80.3
+            },
+            {
+              "combination": "4-5-2",
+              "current": 124.6,
+              "previous": 129.8
+            },
+            {
+              "combination": "4-5-3",
+              "current": 186.9,
+              "previous": 171.4
+            },
+            {
+              "combination": "4-5-6",
+              "current": 170.4,
+              "previous": 171.4
+            },
+            {
+              "combination": "4-6-1",
+              "current": 215.2,
+              "previous": 169.2
+            },
+            {
+              "combination": "4-6-2",
+              "current": 206.8,
+              "previous": 194.8
+            },
+            {
+              "combination": "4-6-3",
+              "current": 373.8,
+              "previous": 367.4
+            },
+            {
+              "combination": "4-6-5",
+              "current": 276.7,
+              "previous": 267.9
+            },
+            {
+              "combination": "5-1-2",
+              "current": 284.1,
+              "previous": 194.8
+            },
+            {
+              "combination": "5-1-3",
+              "current": 236.7,
+              "previous": 154.9
+            },
+            {
+              "combination": "5-1-4",
+              "current": 208.9,
+              "previous": 149.5
+            },
+            {
+              "combination": "5-1-6",
+              "current": 426.1,
+              "previous": 279.5
+            },
+            {
+              "combination": "5-2-1",
+              "current": 367.4,
+              "previous": 279.5
+            },
+            {
+              "combination": "5-2-3",
+              "current": 308.8,
+              "previous": 204.1
+            },
+            {
+              "combination": "5-2-4",
+              "current": 318.0,
+              "previous": 229.6
+            },
+            {
+              "combination": "5-2-6",
+              "current": 687.4,
+              "previous": 459.2
+            },
+            {
+              "combination": "5-3-1",
+              "current": 361.1,
+              "previous": 233.8
+            },
+            {
+              "combination": "5-3-2",
+              "current": 453.3,
+              "previous": 306.1
+            },
+            {
+              "combination": "5-3-4",
+              "current": 473.5,
+              "previous": 378.2
+            },
+            {
+              "combination": "5-3-6",
+              "current": 852.3,
+              "previous": 559.1
+            },
+            {
+              "combination": "5-4-1",
+              "current": 234.1,
+              "previous": 167.0
+            },
+            {
+              "combination": "5-4-2",
+              "current": 367.4,
+              "previous": 292.2
+            },
+            {
+              "combination": "5-4-3",
+              "current": 463.2,
+              "previous": 401.8
+            },
+            {
+              "combination": "5-4-6",
+              "current": 532.7,
+              "previous": 428.6
+            },
+            {
+              "combination": "5-6-1",
+              "current": 887.9,
+              "previous": 559.1
+            },
+            {
+              "combination": "5-6-2",
+              "current": 887.9,
+              "previous": 612.3
+            },
+            {
+              "combination": "5-6-3",
+              "current": 1253.0,
+              "previous": 989.1
+            },
+            {
+              "combination": "5-6-4",
+              "current": 887.9,
+              "previous": 756.4
+            },
+            {
+              "combination": "6-1-2",
+              "current": 546.4,
+              "previous": 401.8
+            },
+            {
+              "combination": "6-1-3",
+              "current": 1183.0,
+              "previous": 803.7
+            },
+            {
+              "combination": "6-1-4",
+              "current": 819.6,
+              "previous": 612.3
+            },
+            {
+              "combination": "6-1-5",
+              "current": 1121.0,
+              "previous": 803.7
+            },
+            {
+              "combination": "6-2-1",
+              "current": 734.8,
+              "previous": 514.3
+            },
+            {
+              "combination": "6-2-3",
+              "current": 761.0,
+              "previous": 514.3
+            },
+            {
+              "combination": "6-2-4",
+              "current": 852.3,
+              "previous": 642.9
+            },
+            {
+              "combination": "6-2-5",
+              "current": 968.6,
+              "previous": 642.9
+            },
+            {
+              "combination": "6-3-1",
+              "current": 1331.0,
+              "previous": 918.5
+            },
+            {
+              "combination": "6-3-2",
+              "current": 1253.0,
+              "previous": 918.5
+            },
+            {
+              "combination": "6-3-4",
+              "current": 926.5,
+              "previous": 714.4
+            },
+            {
+              "combination": "6-3-5",
+              "current": 968.6,
+              "previous": 918.5
+            },
+            {
+              "combination": "6-4-1",
+              "current": 734.8,
+              "previous": 535.8
+            },
+            {
+              "combination": "6-4-2",
+              "current": 734.8,
+              "previous": 494.5
+            },
+            {
+              "combination": "6-4-3",
+              "current": 968.6,
+              "previous": 756.4
+            },
+            {
+              "combination": "6-4-5",
+              "current": 926.5,
+              "previous": 918.5
+            },
+            {
+              "combination": "6-5-1",
+              "current": 1065.0,
+              "previous": 714.4
+            },
+            {
+              "combination": "6-5-2",
+              "current": 1183.0,
+              "previous": 803.7
+            },
+            {
+              "combination": "6-5-3",
+              "current": 1253.0,
+              "previous": 918.5
+            },
+            {
+              "combination": "6-5-4",
+              "current": 1014.0,
+              "previous": 989.1
+            }
+          ]
+        },
+        "final": false,
+        "missing_count": 0,
+        "odds": {
+          "1-2-3": 18.2,
+          "1-2-4": 15.3,
+          "1-2-5": 60.7,
+          "1-2-6": 74.5,
+          "1-3-2": 21.5,
+          "1-3-4": 18.2,
+          "1-3-5": 67.8,
+          "1-3-6": 100.5,
+          "1-4-2": 19.4,
+          "1-4-3": 25.5,
+          "1-4-5": 62.8,
+          "1-4-6": 95.9,
+          "1-5-2": 86.2,
+          "1-5-3": 117.7,
+          "1-5-4": 106.5,
+          "1-5-6": 160.2,
+          "1-6-2": 217.4,
+          "1-6-3": 229.1,
+          "1-6-4": 247.7,
+          "1-6-5": 367.4,
+          "2-1-3": 37.3,
+          "2-1-4": 24.8,
+          "2-1-5": 110.4,
+          "2-1-6": 162.6,
+          "2-3-1": 46.6,
+          "2-3-4": 19.8,
+          "2-3-5": 154.4,
+          "2-3-6": 380.5,
+          "2-4-1": 30.5,
+          "2-4-3": 17.4,
+          "2-4-5": 104.9,
+          "2-4-6": 197.3,
+          "2-5-1": 219.6,
+          "2-5-3": 244.9,
+          "2-5-4": 280.3,
+          "2-5-6": 484.3,
+          "2-6-1": 507.3,
+          "2-6-3": 608.8,
+          "2-6-4": 426.1,
+          "2-6-5": 645.7,
+          "3-1-2": 59.8,
+          "3-1-4": 35.5,
+          "3-1-5": 117.7,
+          "3-1-6": 185.3,
+          "3-2-1": 72.2,
+          "3-2-4": 28.2,
+          "3-2-5": 170.4,
+          "3-2-6": 409.8,
+          "3-4-1": 38.6,
+          "3-4-2": 23.4,
+          "3-4-5": 88.0,
+          "3-4-6": 165.1,
+          "3-5-1": 226.6,
+          "3-5-2": 239.4,
+          "3-5-4": 177.5,
+          "3-5-6": 484.3,
+          "3-6-1": 665.9,
+          "3-6-2": 852.3,
+          "3-6-4": 495.5,
+          "3-6-5": 1014.0,
+          "4-1-2": 30.1,
+          "4-1-3": 35.9,
+          "4-1-5": 64.5,
+          "4-1-6": 110.4,
+          "4-2-1": 31.2,
+          "4-2-3": 20.9,
+          "4-2-5": 95.9,
+          "4-2-6": 130.7,
+          "4-3-1": 39.5,
+          "4-3-2": 27.9,
+          "4-3-5": 110.4,
+          "4-3-6": 169.1,
+          "4-5-1": 96.8,
+          "4-5-2": 124.6,
+          "4-5-3": 186.9,
+          "4-5-6": 170.4,
+          "4-6-1": 215.2,
+          "4-6-2": 206.8,
+          "4-6-3": 373.8,
+          "4-6-5": 276.7,
+          "5-1-2": 284.1,
+          "5-1-3": 236.7,
+          "5-1-4": 208.9,
+          "5-1-6": 426.1,
+          "5-2-1": 367.4,
+          "5-2-3": 308.8,
+          "5-2-4": 318.0,
+          "5-2-6": 687.4,
+          "5-3-1": 361.1,
+          "5-3-2": 453.3,
+          "5-3-4": 473.5,
+          "5-3-6": 852.3,
+          "5-4-1": 234.1,
+          "5-4-2": 367.4,
+          "5-4-3": 463.2,
+          "5-4-6": 532.7,
+          "5-6-1": 887.9,
+          "5-6-2": 887.9,
+          "5-6-3": 1253.0,
+          "5-6-4": 887.9,
+          "6-1-2": 546.4,
+          "6-1-3": 1183.0,
+          "6-1-4": 819.6,
+          "6-1-5": 1121.0,
+          "6-2-1": 734.8,
+          "6-2-3": 761.0,
+          "6-2-4": 852.3,
+          "6-2-5": 968.6,
+          "6-3-1": 1331.0,
+          "6-3-2": 1253.0,
+          "6-3-4": 926.5,
+          "6-3-5": 968.6,
+          "6-4-1": 734.8,
+          "6-4-2": 734.8,
+          "6-4-3": 968.6,
+          "6-4-5": 926.5,
+          "6-5-1": 1065.0,
+          "6-5-2": 1183.0,
+          "6-5-3": 1253.0,
+          "6-5-4": 1014.0
+        },
+        "sales_status": "on_sale"
+      },
       "result": {}
     },
     {
@@ -62982,141 +65751,154 @@
     },
     "8": {
       "win": {
-        "1": 29.3748,
-        "2": 18.7315,
-        "3": 16.2556,
-        "4": 22.1391,
-        "5": 6.4995,
-        "6": 6.9995
+        "1": 25.3741,
+        "2": 22.3449,
+        "3": 8.4049,
+        "4": 38.4536,
+        "5": 2.2461,
+        "6": 3.1764
       },
       "second": {
-        "1": 18.703,
-        "2": 10.5701,
-        "3": 18.3628,
-        "4": 23.7012,
-        "5": 13.9089,
-        "6": 14.754
+        "1": 23.7851,
+        "2": 17.483,
+        "3": 13.9857,
+        "4": 27.1221,
+        "5": 7.8247,
+        "6": 9.7994
       },
       "third": {
-        "1": 13.4628,
-        "2": 26.3119,
-        "3": 25.5608,
-        "4": 15.1817,
-        "5": 6.8171,
-        "6": 12.6657
+        "1": 12.8477,
+        "2": 33.1396,
+        "3": 21.2576,
+        "4": 14.8483,
+        "5": 7.0779,
+        "6": 10.8289
       },
-      "sab": "見",
+      "sab": "B",
       "sabDetail": {
-        "grade": "見",
-        "score": 0.438,
+        "grade": "B",
+        "score": 0.4885,
         "components": {
-          "head_clarity": 0.3289,
-          "scenario_agreement": 0.5782,
-          "conditional_stability": 0.0341,
-          "data_completeness": 0.5861,
+          "head_clarity": 0.5945,
+          "scenario_agreement": 0.4299,
+          "conditional_stability": 0.0588,
+          "data_completeness": 0.606,
           "contradiction_risk": 0
         }
       },
       "ai": [
-        "1-4-2",
-        "1-4-3",
-        "1-3-2",
+        "4-1-2",
         "4-3-2",
-        "2-4-3",
-        "3-4-2"
+        "1-4-2",
+        "4-2-3",
+        "4-1-3",
+        "2-4-3"
       ],
       "balance": [
-        "1-6-2",
-        "1-6-3"
+        "4-6-2",
+        "1-4-3"
       ],
       "aiUpset": [
-        "4-1-2",
-        "4-1-3"
+        "4-2-1",
+        "4-5-2"
       ],
       "tickets": [
-        "1-4-2",
-        "1-4-3",
-        "1-3-2",
-        "4-3-2",
-        "2-4-3",
-        "3-4-2",
-        "1-6-2",
-        "1-6-3",
         "4-1-2",
-        "4-1-3"
+        "4-3-2",
+        "1-4-2",
+        "4-2-3",
+        "4-1-3",
+        "2-4-3",
+        "4-6-2",
+        "1-4-3",
+        "4-2-1",
+        "4-5-2"
       ],
-      "predictionStage": "pre",
-      "active_prediction_stage": "pre",
+      "predictionStage": {
+        "label": "本予想",
+        "badge": "本予想",
+        "statusText": "展示・スリット・直前情報を反映して芦屋v1.6で再精査済み"
+      },
+      "active_prediction_stage": "live",
       "engine": "ashiya_prediction_engine",
       "engineVersion": "1.6.0",
       "fallback": false,
       "fallbackUsed": false,
       "attackStructure": {
-        "attacker": 2,
+        "attacker": 4,
         "wall_boat": 2,
-        "dent_boat": 6,
-        "conditional_links": [],
+        "dent_boat": 3,
+        "conditional_links": [
+          {
+            "head": 4,
+            "boat": 2,
+            "second_bonus": 0.02,
+            "third_bonus": 0.22,
+            "vigor": 0.55,
+            "reason": "3凹み時の2内差し残り"
+          }
+        ],
         "conditional_triplets": [],
         "slit_audit": [
           {
             "lane": 1,
             "course": 1,
-            "exhibition_st": 0.16,
+            "exhibition_st": -0.01,
             "local_course_st": 0.18,
             "local_st_starts": 0,
             "local_st_reliability": 0.0,
-            "st_delta": 0.02,
+            "st_delta": 0.12,
             "inside_adv": 0.0
           },
           {
             "lane": 2,
             "course": 2,
-            "exhibition_st": 0.16,
+            "exhibition_st": 0.01,
             "local_course_st": 0.171,
             "local_st_starts": 7,
             "local_st_reliability": 0.583,
-            "st_delta": 0.011,
-            "inside_adv": 0.0
+            "st_delta": 0.12,
+            "inside_adv": -0.02
           },
           {
             "lane": 3,
             "course": 3,
-            "exhibition_st": 0.18,
+            "exhibition_st": 0.22,
             "local_course_st": 0.187,
             "local_st_starts": 11,
             "local_st_reliability": 0.917,
-            "st_delta": 0.007,
-            "inside_adv": -0.02
+            "st_delta": -0.033,
+            "inside_adv": -0.21
           },
           {
             "lane": 4,
             "course": 4,
-            "exhibition_st": 0.17,
+            "exhibition_st": -0.01,
             "local_course_st": 0.173,
             "local_st_starts": 12,
             "local_st_reliability": 1.0,
-            "st_delta": 0.003,
-            "inside_adv": 0.01
+            "st_delta": 0.12,
+            "inside_adv": 0.23
           },
           {
             "lane": 5,
             "course": 5,
-            "exhibition_st": 0.17,
+            "exhibition_st": 0.16,
             "local_course_st": 0.18,
             "local_st_starts": 0,
             "local_st_reliability": 0.0,
-            "st_delta": 0.01,
-            "inside_adv": 0.0
+            "st_delta": 0.02,
+            "inside_adv": -0.17
           },
           {
             "lane": 6,
             "course": 6,
-            "exhibition_st": 0.19,
+            "exhibition_st": 0.2,
             "local_course_st": 0.18,
             "local_st_starts": 0,
             "local_st_reliability": 0.0,
-            "st_delta": -0.01,
-            "inside_adv": -0.02
+            "st_delta": -0.02,
+            "inside_adv": -0.04
           }
         ],
         "local_venue_audit": {
@@ -63184,41 +65966,47 @@
       },
       "scenarios": [
         {
-          "scenario_id": "S03",
-          "name": "2差し頭・1内残り",
-          "score": 0.65,
-          "attacker": 2,
+          "scenario_id": "S06",
+          "name": "4カド攻め・5/6外連動",
+          "score": 0.7032076421356421,
+          "attacker": 4,
           "linked_boats": [
-            1,
-            3
+            5,
+            6,
+            1
           ],
-          "probability": 0.5782
+          "probability": 0.4299
         },
         {
           "scenario_id": "S10",
           "name": "外攻め不発・内決着",
-          "score": 0.47412345285246366,
-          "attacker": 2,
+          "score": 0.4725172465524099,
+          "attacker": 4,
           "linked_boats": [
             1,
             2,
             3
           ],
-          "probability": 0.4218
+          "probability": 0.2889
+        },
+        {
+          "scenario_id": "S07",
+          "name": "4攻め・1内残り",
+          "score": 0.46,
+          "attacker": 4,
+          "linked_boats": [
+            1,
+            2
+          ],
+          "probability": 0.2812
         }
       ],
       "audit": {
         "model": {
           "feature_count": 302,
-          "coverage": 0.5861,
+          "coverage": 0.606,
           "missing_features": [
             "source_file",
-            "exhibition_time",
-            "start_timing",
-            "weather",
-            "wind_direction",
-            "wind_speed_mps",
-            "wave_cm",
             "fan_hit",
             "fan_name",
             "fan_branch",
@@ -63340,7 +66128,7 @@
           ]
         },
         "database": {
-          "model_weight": 0.643,
+          "model_weight": 0.653,
           "player_lookups": [
             {
               "course": null,
@@ -63708,11 +66496,11 @@
           ],
           "exhibition_scores": [
             0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.5
+            0.6133,
+            0.67,
+            0.5567,
+            0.3867,
+            0.4433
           ]
         },
         "practical_support": {
@@ -63795,6 +66583,82 @@
         "ticket_count": 10,
         "duplicate_count": 0,
         "normalized": true
+      },
+      "probabilityReviewStatus": "reviewed",
+      "probabilityReview": {
+        "1": {
+          "morningWin": 29.3748,
+          "win": 25.3741,
+          "deltaWin": -4.0007,
+          "morningSecond": 18.703,
+          "second": 23.7851,
+          "deltaSecond": 5.0821,
+          "morningThird": 13.4628,
+          "third": 12.8477,
+          "deltaThird": -0.6151
+        },
+        "2": {
+          "morningWin": 18.7315,
+          "win": 22.3449,
+          "deltaWin": 3.6134,
+          "morningSecond": 10.5701,
+          "second": 17.483,
+          "deltaSecond": 6.9129,
+          "morningThird": 26.3119,
+          "third": 33.1396,
+          "deltaThird": 6.8277
+        },
+        "3": {
+          "morningWin": 16.2556,
+          "win": 8.4049,
+          "deltaWin": -7.8507,
+          "morningSecond": 18.3628,
+          "second": 13.9857,
+          "deltaSecond": -4.3771,
+          "morningThird": 25.5608,
+          "third": 21.2576,
+          "deltaThird": -4.3032
+        },
+        "4": {
+          "morningWin": 22.1391,
+          "win": 38.4536,
+          "deltaWin": 16.3145,
+          "morningSecond": 23.7012,
+          "second": 27.1221,
+          "deltaSecond": 3.4209,
+          "morningThird": 15.1817,
+          "third": 14.8483,
+          "deltaThird": -0.3334
+        },
+        "5": {
+          "morningWin": 6.4995,
+          "win": 2.2461,
+          "deltaWin": -4.2534,
+          "morningSecond": 13.9089,
+          "second": 7.8247,
+          "deltaSecond": -6.0842,
+          "morningThird": 6.8171,
+          "third": 7.0779,
+          "deltaThird": 0.2608
+        },
+        "6": {
+          "morningWin": 6.9995,
+          "win": 3.1764,
+          "deltaWin": -3.8231,
+          "morningSecond": 14.754,
+          "second": 9.7994,
+          "deltaSecond": -4.9546,
+          "morningThird": 12.6657,
+          "third": 10.8289,
+          "deltaThird": -1.8368
+        }
+      },
+      "probabilityFlow": {
+        "baseLabel": "直前前エンジン予想",
+        "realtimeApplied": true,
+        "realtimeLabel": "展示・スリット・直前反映",
+        "reviewed": true,
+        "reviewLabel": "再精査後の調整数字"
       }
     },
     "9": {
