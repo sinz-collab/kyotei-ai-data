@@ -64,6 +64,60 @@ def load_json(path: Path) -> dict:
     return document
 
 
+def ashiya_availability(
+    data_root: Path,
+    expected_date: str,
+) -> tuple[str, str]:
+    """Classify a missing dated JSON using the current morning metadata."""
+    report_path = data_root / "morning_report.json"
+
+    if report_path.is_file():
+        report = load_json(report_path)
+
+        if report.get("date") == expected_date:
+            venue = (report.get("venues") or {}).get("ashiya")
+
+            if isinstance(venue, dict):
+                reason = str(
+                    (venue.get("detail") or {}).get("reason")
+                    or venue.get("predictionReason")
+                    or ""
+                )
+
+                if venue.get("open") or venue.get("raceDataAvailable"):
+                    return "open", reason or "race_data_available"
+
+                if reason == "not_scheduled" or (
+                    not reason
+                    and venue.get("predictionStatus") == "not_running"
+                ):
+                    return "not_open", reason or "not_running"
+
+                return "fetch_failed", reason or "fetch_incomplete"
+
+    manifest_path = data_root / "manifest.json"
+
+    if manifest_path.is_file():
+        manifest = load_json(manifest_path)
+
+        if manifest.get("date") == expected_date:
+            for venue in manifest.get("venues") or []:
+                if not isinstance(venue, dict) or venue.get("slug") != "ashiya":
+                    continue
+
+                reason = str(venue.get("availabilityReason") or "")
+
+                if venue.get("open") or venue.get("raceDataAvailable"):
+                    return "open", reason or "race_data_available"
+
+                if reason in {"", "not_scheduled", "not_running"}:
+                    return "not_open", reason or "not_running"
+
+                return "fetch_failed", reason
+
+    return "unknown", "availability_metadata_missing"
+
+
 def atomic_write_json(
     path: Path,
     payload: dict,
@@ -1041,6 +1095,14 @@ def main() -> int:
         ),
     )
 
+    parser.add_argument(
+        "--require-open",
+        action="store_true",
+        help=(
+            "Fail when Ashiya JSON does not exist instead of skipping."
+        ),
+    )
+
     args = parser.parse_args()
 
     date_key = (
@@ -1068,6 +1130,24 @@ def main() -> int:
         / "ashiya"
         / "latest.json"
     )
+
+    if not dated_path.is_file():
+        message = f"Ashiya data is not open: {dated_path}"
+        availability, reason = ashiya_availability(
+            data_root,
+            args.date,
+        )
+
+        if args.require_open or availability in {
+            "open",
+            "fetch_failed",
+        }:
+            raise FileNotFoundError(
+                f"{message} (availability={availability}, reason={reason})"
+            )
+
+        print(message)
+        return 0
 
     source_payload = load_json(
         dated_path
