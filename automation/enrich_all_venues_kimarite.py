@@ -36,6 +36,7 @@ VENUE_NAMES = {
     "fukuoka": "福岡",
     "karatsu": "唐津",
     "omura": "大村",
+    "biwako": "びわこ",
 }
 
 

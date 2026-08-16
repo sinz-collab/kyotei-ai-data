@@ -897,6 +897,18 @@ def main() -> int:
                 f"fetch status identity mismatch: expected={slug}/{venue['name']}/{args.date} "
                 f"actual={fetch_status.get('slug')}/{fetch_status.get('name')}/{fetch_status.get('date')}"
             )
+        precheck = fetch_status.get("precheck") or {}
+        if str(precheck.get("reason", "")).startswith("precheck_failed:"):
+            raise RuntimeError(f"{slug}: venue precheck failed: {precheck.get('reason')}")
+        if precheck.get("open") is True and not (
+            fetch_status.get("open") is True
+            and fetch_status.get("entryCount") == 12
+        ):
+            raise RuntimeError(
+                f"{slug}: scheduled meeting fetch incomplete: "
+                f"returnCode={fetch_status.get('fetchReturnCode')} "
+                f"entryCount={fetch_status.get('entryCount')}"
+            )
         payload = None
         detail = {
             "reason": fetch_status.get("precheck", {}).get("reason", "fetch_incomplete"),

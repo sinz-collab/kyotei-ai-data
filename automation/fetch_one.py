@@ -157,7 +157,7 @@ def main() -> int:
             json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         print(json.dumps(status, ensure_ascii=False))
-        return 0
+        return 1 if str(precheck.get("reason", "")).startswith("precheck_failed:") else 0
 
     command = [
         sys.executable,
@@ -215,11 +215,12 @@ def main() -> int:
             "tide": fetch_tide(venue, args.date, output_dir),
         }
     )
+    output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "fetch_status.json").write_text(
         json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print(json.dumps(status, ensure_ascii=False))
-    return 0
+    return 0 if status["open"] else 1
 
 
 if __name__ == "__main__":
