@@ -96,6 +96,20 @@ def parse_deadline(lines: list[str], race_no: int) -> str:
     return match.group(1) if match else ""
 
 
+def parse_race_type(lines: list[str]) -> str:
+    """Return the current race type displayed in saved BOATERS ENTRY text."""
+    deadline_re = re.compile(r"^締切\s*[0-9]{1,2}:[0-9]{2}$")
+    for index, line in enumerate(lines):
+        if not deadline_re.fullmatch(line.strip()):
+            continue
+        for candidate in lines[index + 1:]:
+            race_type = candidate.strip()
+            if race_type:
+                return race_type
+        break
+    return ""
+
+
 def parse_racers(lines: list[str]) -> list[dict]:
     season_labels = []
     try:
@@ -714,7 +728,8 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
         lines = entry_lines(entry_path)
         racers = parse_racers(lines)
         deadline = parse_deadline(lines, race_no)
-        if len(racers) != 6 or not deadline:
+        race_type = parse_race_type(lines)
+        if len(racers) != 6 or not deadline or not race_type:
             return None, {"reason": f"invalid_entry_{race_no:02d}", "racers": len(racers)}
         if race_no == 1:
             event_day, event_label = event_day_info(lines, date)
@@ -723,7 +738,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                 "race": race_no,
                 "deadline": deadline,
                 "title": venue["name"],
-                "type": "",
+                "type": race_type,
                 "racers": racers,
                 "entry_changes": [],
                 "eventDayLabel": event_label,
