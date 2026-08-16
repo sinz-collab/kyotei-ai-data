@@ -110,6 +110,22 @@ def parse_race_type(lines: list[str]) -> str:
     return ""
 
 
+def parse_entry_fixed(lines: list[str]) -> bool:
+    """Return whether BOATERS marks the current race as fixed entry."""
+    deadline_re = re.compile(r"^締切\s*[0-9]{1,2}:[0-9]{2}$")
+    for index, line in enumerate(lines):
+        if not deadline_re.fullmatch(line.strip()):
+            continue
+        for candidate in lines[index + 1:]:
+            text = candidate.strip()
+            if text == "出走表":
+                break
+            if "進入固定" in text:
+                return True
+        return False
+    return False
+
+
 def parse_racers(lines: list[str]) -> list[dict]:
     season_labels = []
     try:
@@ -729,6 +745,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
         racers = parse_racers(lines)
         deadline = parse_deadline(lines, race_no)
         race_type = parse_race_type(lines)
+        entry_fixed = parse_entry_fixed(lines)
         if len(racers) != 6 or not deadline or not race_type:
             return None, {"reason": f"invalid_entry_{race_no:02d}", "racers": len(racers)}
         if race_no == 1:
@@ -739,6 +756,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                 "deadline": deadline,
                 "title": venue["name"],
                 "type": race_type,
+                "entryFixed": entry_fixed,
                 "racers": racers,
                 "entry_changes": [],
                 "eventDayLabel": event_label,

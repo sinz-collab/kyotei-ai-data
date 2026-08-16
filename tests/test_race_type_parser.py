@@ -39,6 +39,15 @@ class RaceTypeParserTests(unittest.TestCase):
         self.assertEqual(MODULE.parse_race_type(entry_lines("一般", entry_fixed=True)), "一般")
         self.assertEqual(MODULE.parse_race_type(entry_lines("シーモ特選")), "シーモ特選")
 
+    def test_entry_fixed_comes_from_current_entry_header(self):
+        self.assertTrue(MODULE.parse_entry_fixed(entry_lines("一般", entry_fixed=True)))
+        self.assertFalse(MODULE.parse_entry_fixed(entry_lines("一般")))
+        self.assertFalse(MODULE.parse_entry_fixed(entry_lines("シーモ特選")))
+
+    def test_entry_fixed_ignores_text_after_entry_header(self):
+        lines = entry_lines("一般") + ["進入固定の説明"]
+        self.assertFalse(MODULE.parse_entry_fixed(lines))
+
     def test_common_logic_preserves_all_boaters_labels(self):
         for label in ("優勝戦", "準優勝戦", "選抜戦", "特選", "特別選抜戦", "地域限定タイトル"):
             with self.subTest(label=label):
@@ -77,10 +86,11 @@ class RaceTypeParserTests(unittest.TestCase):
         races = payload["races"]
         self.assertEqual(len(races), 12)
         self.assertEqual([race["type"] for race in races], labels)
+        self.assertEqual([race["entryFixed"] for race in races], [race == 8 for race in range(1, 13)])
         self.assertTrue(all(len(race["racers"]) == 6 for race in races))
         self.assertTrue(
             all(
-                {"race", "deadline", "title", "type", "racers", "entry_changes", "eventDayLabel", "eventDay"}
+                {"race", "deadline", "title", "type", "entryFixed", "racers", "entry_changes", "eventDayLabel", "eventDay"}
                 <= race.keys()
                 for race in races
             )
