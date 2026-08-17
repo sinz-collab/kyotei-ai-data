@@ -73,13 +73,26 @@ class BiwakoFlowTests(unittest.TestCase):
         config = json.loads((ROOT / "automation" / "venues.json").read_text(encoding="utf-8"))
         self.venue = next(item for item in config["venues"] if item["slug"] == "biwako")
 
-    def test_configuration_has_no_tide_or_prediction_engine(self) -> None:
+    def test_configuration_has_no_tide_and_has_prediction_engine(self) -> None:
         self.assertEqual(self.venue, {"slug": "biwako", "name": "びわこ"})
-        self.assertNotIn("biwako", build_site_data.PREDICTION_VENUES)
+        self.assertIn("biwako", build_site_data.PREDICTION_VENUES)
         self.assertEqual(boaters_fetch.normalize_stadium("biwako"), "びわこ")
         self.assertEqual(boaters_fetch.stadium_to_slug("びわこ"), "biwako")
         workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(encoding="utf-8")
         self.assertIn("heiwajima biwako", workflow)
+
+    def test_biwako_player_ids_are_read_from_entry_html(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            html = Path(temporary) / "race_01_entry.html"
+            html.write_text(
+                '"boatNumber":1,"regN":3606,"name":"Racer 1"'
+                '"boatNumber":6,"regN":5460,"name":"Racer 6"',
+                encoding="utf-8",
+            )
+            self.assertEqual(
+                build_site_data.parse_biwako_player_ids(html),
+                {1: 3606, 6: 5460},
+            )
 
     def run_build(self, root: Path, fetch_status: dict, payload: dict | None) -> tuple[dict, Path]:
         source_root = root / "source"
@@ -131,10 +144,10 @@ class BiwakoFlowTests(unittest.TestCase):
             venue = manifest["venues"][0]
             self.assertTrue(venue["open"])
             self.assertEqual(venue["predictionStatus"], "unavailable")
-            self.assertEqual(venue["predictionReason"], "venue_engine_not_registered")
+            self.assertEqual(venue["predictionReason"], "prediction_payload_unavailable")
             document = json.loads((data_root / venue["dataPath"]).read_text(encoding="utf-8"))
             self.assertEqual(len(document["races"]), 12)
-            self.assertIsNone(document["engine"])
+            self.assertEqual(document["engine"], "")
             self.assertEqual(document["preds"], {})
             self.assertEqual(document["tide"], {})
 

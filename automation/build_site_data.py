@@ -21,6 +21,7 @@ PREDICTION_VENUES = {
     "ashiya",
     "omura",
     "karatsu",
+    "biwako",
 }
 
 ALL_VENUES = [
@@ -243,6 +244,20 @@ def parse_racers(lines: list[str]) -> list[dict]:
             racer["hayami"] = hayami
         racers.append(racer)
     return racers if len(racers) == 6 else []
+
+
+def parse_biwako_player_ids(entry_html_path: Path) -> dict[int, int]:
+    """Read BOATERS registration numbers without changing the shared text parser."""
+    if not entry_html_path.is_file():
+        return {}
+    html = entry_html_path.read_text(encoding="utf-8", errors="replace")
+    return {
+        int(lane): int(reg_no)
+        for lane, reg_no in re.findall(
+            r'"boatNumber":([1-6]),"regN":([0-9]{4})',
+            html,
+        )
+    }
 
 
 def event_day_info(lines: list[str], date: str) -> tuple[int | None, str | None]:
@@ -635,6 +650,36 @@ def wakamatsu_race_prediction_is_complete(prediction: object) -> bool:
     ]
     return len(combos) == 10 and len(set(combos)) == 10
 
+
+def biwako_race_prediction_is_complete(prediction: object) -> bool:
+    """Validate and preserve the race-native Biwako v1.1 prediction."""
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("engine") != "biwako_engine_v1.1":
+        return False
+    if str(prediction.get("engineVersion") or "") != "1.1":
+        return False
+    if prediction.get("phase") not in {"preliminary", "final"}:
+        return False
+    if prediction.get("status") != "complete":
+        return False
+    if any(
+        not _probabilities_are_valid(prediction.get(key))
+        for key in ("win", "second", "third")
+    ):
+        return False
+    if not prediction.get("sab"):
+        return False
+    tickets = prediction.get("tickets")
+    if not isinstance(tickets, list) or len(tickets) != 10:
+        return False
+    combos = [
+        ticket.get("combo")
+        for ticket in tickets
+        if isinstance(ticket, dict) and ticket.get("combo")
+    ]
+    return len(combos) == 10 and len(set(combos)) == 10
+
 def attach_independent_race_domains(
     payload: dict,
     slug: str,
@@ -655,6 +700,11 @@ def attach_independent_race_domains(
         elif (
             slug == "wakamatsu"
             and wakamatsu_race_prediction_is_complete(race.get("prediction"))
+        ):
+            native_prediction = deepcopy(race.get("prediction"))
+        elif (
+            slug == "biwako"
+            and biwako_race_prediction_is_complete(race.get("prediction"))
         ):
             native_prediction = deepcopy(race.get("prediction"))
         racers = deepcopy(race.get("racers") or [])
@@ -743,6 +793,12 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             return None, {"reason": f"missing_entry_{race_no:02d}"}
         lines = entry_lines(entry_path)
         racers = parse_racers(lines)
+        if venue["slug"] == "biwako":
+            player_ids = parse_biwako_player_ids(entry_path.with_suffix(".html"))
+            for racer in racers:
+                lane = int(racer.get("lane") or 0)
+                if lane in player_ids:
+                    racer["player_id"] = player_ids[lane]
         deadline = parse_deadline(lines, race_no)
         race_type = parse_race_type(lines)
         entry_fixed = parse_entry_fixed(lines)
