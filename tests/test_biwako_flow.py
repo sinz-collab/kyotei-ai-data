@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import sys
 import tempfile
+import types
 import unittest
 from datetime import datetime
 from pathlib import Path
@@ -15,7 +16,22 @@ sys.path.insert(0, str(ROOT / "automation"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import build_site_data
-import boaters_fetch
+
+# The publish job intentionally installs only the lightweight site-build
+# dependencies.  These tests exercise the venue mapping helpers, not a browser,
+# so provide the minimum import surface when Playwright is absent there.
+try:
+    import boaters_fetch
+except ModuleNotFoundError as exc:
+    if exc.name not in {"playwright", "playwright.async_api"}:
+        raise
+    playwright_stub = types.ModuleType("playwright")
+    playwright_async_stub = types.ModuleType("playwright.async_api")
+    playwright_async_stub.async_playwright = lambda: None
+    playwright_async_stub.TimeoutError = TimeoutError
+    sys.modules["playwright"] = playwright_stub
+    sys.modules["playwright.async_api"] = playwright_async_stub
+    import boaters_fetch
 import fetch_one
 from detect_active_venues import detect_active_venues
 from publish_live_data import copy_changed_live_files
