@@ -725,6 +725,57 @@ def apply_wakamatsu_v2(payload: dict, target_date: str) -> dict:
                             "exhibition_entries",
                             "exhibition_times",
                         ]
+                    probability_review = {}
+                    for lane in LANES:
+                        lane_key = str(lane)
+
+                        pre_win = number(
+                            (existing_pre.get("win") or {}).get(lane_key),
+                            0.0,
+                        )
+                        pre_second = number(
+                            (existing_pre.get("second") or {}).get(lane_key),
+                            0.0,
+                        )
+                        pre_third = number(
+                            (existing_pre.get("third") or {}).get(lane_key),
+                            0.0,
+                        )
+
+                        final_win = number(
+                            (final_prediction.get("win") or {}).get(lane_key),
+                            0.0,
+                        )
+                        final_second = number(
+                            (final_prediction.get("second") or {}).get(lane_key),
+                            0.0,
+                        )
+                        final_third = number(
+                            (final_prediction.get("third") or {}).get(lane_key),
+                            0.0,
+                        )
+
+                        probability_review[lane_key] = {
+                            "morningWin": round(pre_win, 1),
+                            "morningSecond": round(pre_second, 1),
+                            "morningThird": round(pre_third, 1),
+                            "deltaWin": round(final_win - pre_win, 1),
+                            "deltaSecond": round(final_second - pre_second, 1),
+                            "deltaThird": round(final_third - pre_third, 1),
+                        }
+
+                    final_prediction["probabilityReviewStatus"] = "reviewed"
+                    final_prediction["probabilityFlow"] = {
+                        "required": True,
+                        "baseApplied": True,
+                        "baseLabel": "\u76f4\u524d\u524d\u30a8\u30f3\u30b8\u30f3\u4e88\u60f3",
+                        "realtimeApplied": True,
+                        "realtimeLabel": "\u5c55\u793a\u30fb\u30b9\u30ea\u30c3\u30c8\u30fb\u76f4\u524d\u53cd\u6620",
+                        "reviewed": True,
+                        "reviewLabel": "\u518d\u7cbe\u67fb\u5f8c\u306e\u8abf\u6574\u6570\u5b57",
+                        "adjustedRequired": True,
+                    }
+                    final_prediction["probabilityReview"] = probability_review
 
                     race["predictionPre"] = existing_pre
                     race["predictionFinal"] = final_prediction
