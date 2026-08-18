@@ -169,6 +169,7 @@ jobs:
           cp -a data "$RUNNER_TEMP/morning-data-before"
           python -m unittest discover -s tests
           python automation/build_site_data.py --date "$TARGET_DATE" | tee build.log
+          python automation/enrich_motor_recent.py --date "$TARGET_DATE"
           python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
           python automation/apply_toda_v5.py --date "$TARGET_DATE"
           python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
@@ -180,9 +181,8 @@ jobs:
 
           python automation/build_site_data.py --date "$TARGET_DATE" \
             | tee build-after-engine.log
+          python automation/enrich_motor_recent.py --date "$TARGET_DATE"
           python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
-
-          
           python automation/validate_morning_regression.py \
             --before "$RUNNER_TEMP/morning-data-before" \
             --after data
@@ -212,6 +212,7 @@ jobs:
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
               | tee "build-after-sync-${attempt}.log"
+            python automation/enrich_motor_recent.py --date "$TARGET_DATE"
             python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
             python automation/apply_toda_v5.py --date "$TARGET_DATE"
             python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
@@ -223,8 +224,8 @@ jobs:
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
               | tee "build-after-engine-${attempt}.log"
+            python automation/enrich_motor_recent.py --date "$TARGET_DATE"
             python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
-            
             python automation/validate_morning_regression.py \
               --before "$RUNNER_TEMP/morning-data-before-publish" \
               --after data
