@@ -178,6 +178,7 @@ jobs:
           python automation/apply_omura_v1.py --date "$TARGET_DATE"
           python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre
           python automation/run_biwako_v1_1.py --date "$TARGET_DATE" --stage preliminary
+          python automation/run_shimonoseki_v5.py --date "$TARGET_DATE" --stage preliminary
 
           python automation/build_site_data.py --date "$TARGET_DATE" \
             | tee build-after-engine.log
@@ -221,6 +222,7 @@ jobs:
             python automation/apply_omura_v1.py --date "$TARGET_DATE"
             python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre
             python automation/run_biwako_v1_1.py --date "$TARGET_DATE" --stage preliminary
+          python automation/run_shimonoseki_v5.py --date "$TARGET_DATE" --stage preliminary
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
               | tee "build-after-engine-${attempt}.log"

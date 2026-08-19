@@ -22,6 +22,7 @@ PREDICTION_VENUES = {
     "omura",
     "karatsu",
     "biwako",
+    "shimonoseki",
 }
 
 ALL_VENUES = [

@@ -38,6 +38,9 @@ TODA_DATA_ROOT = PUBLISHER_REPO / "data"
 BIWAKO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_biwako_v1_1.py"
 BIWAKO_DATA_ROOT = PUBLISHER_REPO / "data"
 
+SHIMONOSEKI_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_shimonoseki_live_v5.py"
+SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
+
 
 def stage_tokoname_preliminary_after_morning_sync(
     config: dict[str, Any],
@@ -379,6 +382,46 @@ async def apply_biwako_live_prediction(
         },
     )
 
+
+async def apply_shimonoseki_live_prediction(
+    target: dict[str, Any],
+    race_dir: Path,
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "shimonoseki" or fetch_result.get("error"):
+        return
+    items = fetch_result.get("items") or {}
+    required = ("direct", "exhibition", "original_exhibition")
+    if not all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    ):
+        return
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(SHIMONOSEKI_LIVE_APPLIER),
+        "--date", str(target["date"]),
+        "--race", str(target["race_no"]),
+        "--data-root", str(SHIMONOSEKI_DATA_ROOT),
+        "--live-root", str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={"event":"shimonoseki_live_prediction_failed","venue":"shimonoseki","race_no":target["race_no"]},
+        )
+        return
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={"event":"shimonoseki_live_prediction_complete","venue":"shimonoseki","race_no":target["race_no"],"odds_used_for_probability":False},
+    )
+
 def stage_tokoname_results(
     config: dict[str, Any],
     target_date: str,
@@ -551,6 +594,12 @@ async def run_once(
                                     logger,
                                 )
                                 await apply_biwako_live_prediction(
+                                    target,
+                                    race_dir,
+                                    result,
+                                    logger,
+                                )
+                                await apply_shimonoseki_live_prediction(
                                     target,
                                     race_dir,
                                     result,
