@@ -46,10 +46,12 @@ class ShimonosekiV5RegressionTest(unittest.TestCase):
             10:{"win":{"1":49.84,"2":22.23,"3":13.21,"4":10.50,"5":2.67,"6":1.54}, "main":"1-2-4", "upset":"4-5-3"},
         }
         for rn, ref in refs.items():
+            pre = deepcopy(payload["preds"][str(rn)])
             docs = self.live_docs(rn)
             self.engine.apply_final_race(payload, rn, docs["direct"], docs["exhibition"], docs["original_exhibition"])
             race = next(r for r in payload["races"] if r["race"] == rn)
             pred = race["predictionFinal"]
+            site_pred = payload["preds"][str(rn)]
             # Site implementation must stay within the same practical probability band.
             for lane, expected in ref["win"].items():
                 self.assertLessEqual(abs(float(pred["win"][lane]) - expected), 0.85, (rn, lane, pred["win"][lane], expected))
@@ -57,6 +59,12 @@ class ShimonosekiV5RegressionTest(unittest.TestCase):
             self.assertEqual(pred["tickets"]["upset"][0]["combo"], ref["upset"])
             self.assertFalse(pred["debug"]["result_used"])
             self.assertFalse(pred["debug"]["odds_used"])
+            self.assertEqual(
+                site_pred["predictionPre"],
+                {key: pre[key] for key in ("win", "second", "third")},
+            )
+            self.assertEqual(site_pred["probabilityReviewStatus"], "reviewed")
+            self.assertTrue(site_pred["probabilityFlow"]["reviewed"])
 
     def test_10r_attack_link_is_conditional(self):
         payload = self.engine.apply_preliminary_daily(deepcopy(self.source))

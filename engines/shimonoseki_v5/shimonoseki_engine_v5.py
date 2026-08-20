@@ -421,13 +421,16 @@ class ShimonosekiSiteEngineV5:
         }
 
     @staticmethod
-    def legacy_pred(prediction: Mapping[str, Any]) -> dict[str, Any]:
+    def legacy_pred(
+        prediction: Mapping[str, Any],
+        prediction_pre: Mapping[str, Any] | None = None,
+    ) -> dict[str, Any]:
         tickets = prediction["tickets"]
         main = [x["combo"] for x in tickets.get("main", [])]
         deviation = [x["combo"] for x in tickets.get("deviation", [])]
         upset = [x["combo"] for x in tickets.get("upset", [])]
         all10 = main + deviation + upset
-        return {
+        legacy = {
             "win": deepcopy(prediction["win"]),
             "second": deepcopy(prediction["second"]),
             "third": deepcopy(prediction["third"]),
@@ -441,6 +444,14 @@ class ShimonosekiSiteEngineV5:
             "predictionStage": prediction["phase"],
             "fallback": False,
         }
+        if prediction["phase"] == "final" and prediction_pre is not None:
+            legacy["predictionPre"] = {
+                key: deepcopy(prediction_pre[key])
+                for key in ("win", "second", "third")
+            }
+            legacy["probabilityReviewStatus"] = "reviewed"
+            legacy["probabilityFlow"] = {"reviewed": True}
+        return legacy
 
     def apply_preliminary_daily(self, payload: MutableMapping[str, Any], dynamic_motor: Mapping[str, Mapping[str, Any]] | None = None) -> MutableMapping[str, Any]:
         tide_events = list((payload.get("tide") or {}).get("events") or [])
@@ -467,7 +478,7 @@ class ShimonosekiSiteEngineV5:
         final = self.final_race(race, pre, direct, exhibition, original, tide_events)
         race["predictionFinal"] = deepcopy(final)
         race["prediction"] = deepcopy(final)
-        payload.setdefault("preds", {})[str(race_no)] = self.legacy_pred(final)
+        payload.setdefault("preds", {})[str(race_no)] = self.legacy_pred(final, pre)
         payload["engine"] = ENGINE_ID
         payload["engineVersion"] = ENGINE_VERSION
         payload["predictionAvailable"] = True
