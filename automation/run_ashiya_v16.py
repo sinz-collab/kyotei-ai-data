@@ -809,9 +809,18 @@ def merge_predictions(
 
     tide/live/odds/result/racers/setsukan等は
     source_payloadからそのまま保持される。
+
+    stage=pre の再実行時、
+    既に live/final まで進んでいるレースは
+    preliminary へ巻き戻さず既存予想を保持する。
     """
     payload = deepcopy(
         source_payload
+    )
+
+    existing_predictions = (
+        source_payload.get("preds")
+        or {}
     )
 
     predictions = {}
@@ -827,10 +836,106 @@ def merge_predictions(
         or []
     }
 
+    source_race_by_no = {
+        as_race_no(
+            race.get("race")
+            or race.get("race_no")
+        ): race
+        for race in source_payload.get(
+            "races"
+        )
+        or []
+    }
+
     for race_no in range(
         1,
         13,
     ):
+        race_key = str(
+            race_no
+        )
+
+        race = race_by_no.get(
+            race_no
+        )
+
+        if race is None:
+            raise RuntimeError(
+                f"ashiya_{race_no:02d}_merge_race_missing"
+            )
+
+        existing_legacy = (
+            existing_predictions.get(
+                race_key
+            )
+            or {}
+        )
+
+        source_race = (
+            source_race_by_no.get(
+                race_no
+            )
+            or {}
+        )
+
+        existing_native = (
+            source_race.get(
+                "prediction"
+            )
+            or {}
+        )
+
+        legacy_stage = str(
+            existing_legacy.get(
+                "active_prediction_stage"
+            )
+            or ""
+        ).strip().lower()
+
+        native_stage = str(
+            existing_native.get(
+                "stage"
+            )
+            or ""
+        ).strip().lower()
+
+        preserve_advanced_prediction = (
+            stage == "pre"
+            and (
+                legacy_stage in {
+                    "live",
+                    "final",
+                }
+                or native_stage in {
+                    "live",
+                    "final",
+                }
+            )
+        )
+
+        if preserve_advanced_prediction:
+            # 朝pre再生成で、すでに直前反映済みの
+            # live/final予想をpreへ巻き戻さない。
+            if existing_legacy:
+                predictions[
+                    race_key
+                ] = deepcopy(
+                    existing_legacy
+                )
+            else:
+                raise RuntimeError(
+                    f"ashiya_{race_no:02d}_advanced_prediction_legacy_missing"
+                )
+
+            if existing_native:
+                race[
+                    "prediction"
+                ] = deepcopy(
+                    existing_native
+                )
+
+            continue
+
         result = engine_results[
             race_no
         ]
@@ -844,19 +949,8 @@ def merge_predictions(
         )
 
         predictions[
-            str(
-                race_no
-            )
+            race_key
         ] = legacy
-
-        race = race_by_no.get(
-            race_no
-        )
-
-        if race is None:
-            raise RuntimeError(
-                f"ashiya_{race_no:02d}_merge_race_missing"
-            )
 
         # 既存のlive/odds/resultは触らず
         # predictionだけ差し替える。
@@ -885,7 +979,6 @@ def merge_predictions(
     ] = ""
 
     return payload
-
 
 def probability_map_valid(
     values,
