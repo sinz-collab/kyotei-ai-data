@@ -594,6 +594,41 @@ def prediction_envelope(
     }
 
 
+def ashiya_race_prediction_is_complete(prediction: object) -> bool:
+    """Validate and preserve the race-native Ashiya v1.6.1 prediction."""
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("status") != "ready":
+        return False
+    if prediction.get("engine") != "ashiya_prediction_engine":
+        return False
+    if str(prediction.get("engine_version") or "") != "1.6.1":
+        return False
+    if prediction.get("stage") not in {"pre", "live", "final"}:
+        return False
+    probabilities = prediction.get("probabilities")
+    if not isinstance(probabilities, dict) or any(
+        not _probabilities_are_valid(probabilities.get(key))
+        for key in ("win", "second", "third")
+    ):
+        return False
+    sab = prediction.get("sab")
+    if not isinstance(sab, dict) or not sab.get("grade"):
+        return False
+    tickets = prediction.get("tickets")
+    if not isinstance(tickets, dict):
+        return False
+    return all(
+        isinstance(tickets.get(key), list) and len(tickets[key]) == count
+        for key, count in (
+            ("main", 6),
+            ("deviation", 2),
+            ("upset", 2),
+            ("all", 10),
+        )
+    )
+
+
 def tokoname_race_prediction_is_complete(prediction: object) -> bool:
     """Validate the race-native Tokoname prediction without changing legacy venues."""
     if not isinstance(prediction, dict):
@@ -694,6 +729,11 @@ def attach_independent_race_domains(
         prediction = predictions.get(str(race_no)) or {}
         native_prediction = None
         if (
+            slug == "ashiya"
+            and ashiya_race_prediction_is_complete(race.get("prediction"))
+        ):
+            native_prediction = deepcopy(race.get("prediction"))
+        elif (
             slug == "tokoname"
             and tokoname_race_prediction_is_complete(race.get("prediction"))
         ):
