@@ -17,6 +17,7 @@ PREDICTION_VENUES = {
     "omura",
     "karatsu",
     "biwako",
+    "shimonoseki",
 }
 EMPTY = (None, "", [], {})
 
