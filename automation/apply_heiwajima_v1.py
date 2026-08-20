@@ -6,6 +6,7 @@ import math
 import re
 import sqlite3
 import sys
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -450,6 +451,7 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
     from heiwajima_prediction_engine import calculate
 
     player_index = build_player_index()
+    existing_predictions = deepcopy(payload.get("preds") or {})
     predictions: dict[str, dict] = {}
     failures = []
     for race in payload["races"]:
@@ -482,6 +484,10 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
                 prediction["liveApplied"] = False
             if not prediction_complete(prediction):
                 raise RuntimeError("prediction_output_incomplete")
+            existing_prediction = existing_predictions.get(str(race_no)) or {}
+            for preserved_key in ("odds", "result", "realtime", "prediction_history", "active_prediction_stage"):
+                if preserved_key in existing_prediction:
+                    prediction[preserved_key] = deepcopy(existing_prediction[preserved_key])
             predictions[str(race_no)] = prediction
         except Exception as exc:  # One incomplete race must fail the full venue publication.
             failures.append({"race": race_no, "error": f"{type(exc).__name__}: {exc}"})
