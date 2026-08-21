@@ -38,7 +38,7 @@ TODA_DATA_ROOT = PUBLISHER_REPO / "data"
 BIWAKO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_biwako_v1_1.py"
 BIWAKO_DATA_ROOT = PUBLISHER_REPO / "data"
 
-SHIMONOSEKI_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_shimonoseki_live_v6.py"
+SHIMONOSEKI_LIVE_APPLIER = ROOT / "automation" / "apply_shimonoseki_live_v6.py"
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
 
 
