@@ -1,0 +1,261 @@
+{
+  "note": "The tide integration case uses synthetic bracketing tide events only to verify the code path. It is not asserted as the historical 2026-08-20 tide table.",
+  "r5_without_tide_events": {
+    "win": {
+      "1": 16.81,
+      "2": 47.11,
+      "3": 12.18,
+      "4": 4.15,
+      "5": 3.6,
+      "6": 16.15
+    },
+    "second": {
+      "1": 24.66,
+      "2": 15.35,
+      "3": 14.48,
+      "4": 8.61,
+      "5": 13.12,
+      "6": 23.78
+    },
+    "third": {
+      "1": 25.76,
+      "2": 10.67,
+      "3": 17.83,
+      "4": 14.39,
+      "5": 15.7,
+      "6": 15.64
+    },
+    "sab": "A",
+    "tickets": {
+      "main": [
+        {
+          "combo": "2-6-1",
+          "score": 2.8858
+        },
+        {
+          "combo": "2-1-3",
+          "score": 2.0714
+        },
+        {
+          "combo": "2-6-3",
+          "score": 1.9975
+        },
+        {
+          "combo": "2-1-5",
+          "score": 1.8239
+        },
+        {
+          "combo": "2-1-6",
+          "score": 1.8169
+        },
+        {
+          "combo": "2-6-5",
+          "score": 1.7588
+        }
+      ],
+      "deviation": [
+        {
+          "combo": "2-3-1",
+          "score": 1.7572
+        },
+        {
+          "combo": "2-1-4",
+          "score": 1.6717
+        }
+      ],
+      "upset": [
+        {
+          "combo": "3-6-1",
+          "score": 0.7461
+        },
+        {
+          "combo": "3-1-4",
+          "score": 0.5835
+        }
+      ],
+      "scenarioHead": 3
+    }
+  },
+  "r5_tide_integration_test": {
+    "win": {
+      "1": 15.97,
+      "2": 48.02,
+      "3": 12.3,
+      "4": 4.2,
+      "5": 3.6,
+      "6": 15.91
+    },
+    "second": {
+      "1": 25.0,
+      "2": 15.64,
+      "3": 14.18,
+      "4": 8.35,
+      "5": 13.09,
+      "6": 23.75
+    },
+    "third": {
+      "1": 25.74,
+      "2": 10.43,
+      "3": 17.35,
+      "4": 14.6,
+      "5": 15.84,
+      "6": 16.04
+    },
+    "sab": "S",
+    "tickets": {
+      "main": [
+        {
+          "combo": "2-6-1",
+          "score": 2.9356
+        },
+        {
+          "combo": "2-1-3",
+          "score": 2.0829
+        },
+        {
+          "combo": "2-6-3",
+          "score": 1.9787
+        },
+        {
+          "combo": "2-1-6",
+          "score": 1.9256
+        },
+        {
+          "combo": "2-1-5",
+          "score": 1.9016
+        },
+        {
+          "combo": "2-6-5",
+          "score": 1.8065
+        }
+      ],
+      "deviation": [
+        {
+          "combo": "2-1-4",
+          "score": 1.7527
+        },
+        {
+          "combo": "2-3-1",
+          "score": 1.7527
+        }
+      ],
+      "upset": [
+        {
+          "combo": "3-6-1",
+          "score": 0.7519
+        },
+        {
+          "combo": "3-1-4",
+          "score": 0.6061
+        }
+      ],
+      "scenarioHead": 3
+    }
+  },
+  "tide_debug": {
+    "tide": {
+      "progress": 0.5472222222222223,
+      "factors": {
+        "1": {
+          "first": 1.0131153736293905,
+          "second": 1.0191214463521894,
+          "third": 0.9738861147377743
+        },
+        "2": {
+          "first": 0.9796960732948046,
+          "second": 0.9987009385021318,
+          "third": 1.0221834567457013
+        },
+        "3": {
+          "first": 0.9935839458109986,
+          "second": 0.9979815180198824,
+          "third": 1.0048920970914126
+        },
+        "4": {
+          "first": 0.9441006044297419,
+          "second": 1.0140261864736642,
+          "third": 0.9956026284128106
+        },
+        "5": {
+          "first": 1.0033787862539865,
+          "second": 0.9793308024346423,
+          "third": 0.969896742286847
+        },
+        "6": {
+          "first": 1.0061673749696673,
+          "second": 0.9691806443966735,
+          "third": 1.0106770932572886
+        }
+      },
+      "direction": "falling",
+      "bucket0": "falling_mid",
+      "bucket1": "falling_late",
+      "weight": 0.1888888888888891
+    },
+    "wind_speed": 3.0,
+    "wave_height": 3.0,
+    "roughness": 0.0,
+    "direction_text": "",
+    "nw_final_rule": false
+  },
+  "compound_attack_debug": {
+    "5": {
+      "course": 3,
+      "count": 2,
+      "reasons": [
+        "motor_up",
+        "series_top3"
+      ],
+      "delta": [
+        0,
+        0,
+        0
+      ],
+      "attack_rate": 0.0
+    },
+    "1": {
+      "course": 4,
+      "count": 4,
+      "reasons": [
+        "motor_up",
+        "series_top3",
+        "slit_inner+.03",
+        "sum_ok"
+      ],
+      "delta": [
+        0,
+        0,
+        0
+      ],
+      "attack_rate": 0.0
+    },
+    "3": {
+      "course": 5,
+      "count": 5,
+      "reasons": [
+        "motor_up",
+        "series_top3",
+        "slit_inner+.03",
+        "sum_ok",
+        "attack_type"
+      ],
+      "delta": [
+        2.5,
+        1.0,
+        0.5
+      ],
+      "attack_rate": 10.0
+    }
+  },
+  "checks": {
+    "no_result_used": true,
+    "no_odds_used": true,
+    "ticket_count": 10,
+    "ticket_unique": 10,
+    "probability_sums": {
+      "win": 100.0,
+      "second": 100.0,
+      "third": 99.99
+    }
+  }
+}
