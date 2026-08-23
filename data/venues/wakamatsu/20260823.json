@@ -9786,58 +9786,58 @@
         "engine": "wakamatsu_engine_v2.2",
         "engineVersion": "2.2",
         "win": {
-          "1": 24.68,
-          "2": 17.99,
-          "3": 11.67,
-          "4": 24.29,
-          "5": 9.14,
-          "6": 12.23
+          "1": 23.54,
+          "2": 22.95,
+          "3": 12.62,
+          "4": 21.71,
+          "5": 6.04,
+          "6": 13.14
         },
         "second": {
-          "1": 19.49,
-          "2": 23.46,
-          "3": 14.18,
-          "4": 19.15,
-          "5": 8.48,
-          "6": 15.24
+          "1": 19.34,
+          "2": 25.52,
+          "3": 14.55,
+          "4": 18.06,
+          "5": 9.33,
+          "6": 13.2
         },
         "third": {
-          "1": 15.01,
-          "2": 18.76,
-          "3": 16.03,
-          "4": 14.14,
-          "5": 14.84,
-          "6": 21.22
+          "1": 15.04,
+          "2": 19.46,
+          "3": 16.28,
+          "4": 13.37,
+          "5": 12.71,
+          "6": 23.14
         },
         "top3": {
-          "1": 59.17,
-          "2": 60.21,
-          "3": 41.88,
-          "4": 57.58,
-          "5": 32.46,
-          "6": 48.7
+          "1": 57.91,
+          "2": 67.94,
+          "3": 43.45,
+          "4": 53.13,
+          "5": 28.07,
+          "6": 49.49
         },
         "sab": "B",
         "sabDetail": {
           "grade": "B",
-          "score": 0.2684,
-          "head_concentration": 0.2467,
-          "head_gap": 0.0039,
-          "scenario_top": 0.2378,
-          "ticket_coverage_10": 0.1853,
-          "entry_change_penalty": false,
-          "entry_change_severity": 0.0,
+          "score": 0.1331,
+          "head_concentration": 0.2354,
+          "head_gap": 0.0058,
+          "scenario_top": 0.2233,
+          "ticket_coverage_10": 0.2019,
+          "entry_change_penalty": true,
+          "entry_change_severity": 0.2533,
           "first_day_penalty": false,
-          "low_escape_attack_penalty": 0.075,
+          "low_escape_attack_penalty": 0.11,
           "grade_cap": "A",
           "meaning": "prediction reproducibility/confidence; independent from ticket count"
         },
-        "confidence": 26.8,
+        "confidence": 13.3,
         "ai": [
           {
             "combo": "1-2-6",
             "role": "本線",
-            "probability": 2.39,
+            "probability": 2.684,
             "scenarioTags": [
               "nige",
               "direct_outside_link"
@@ -9845,9 +9845,39 @@
             "odds": "-"
           },
           {
+            "combo": "4-2-6",
+            "role": "本線",
+            "probability": 2.398,
+            "scenarioTags": [
+              "course4_attack",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-4-6",
+            "role": "本線",
+            "probability": 2.38,
+            "scenarioTags": [
+              "course2_attack",
+              "course4_preferred_outer_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-6",
+            "role": "本線",
+            "probability": 2.107,
+            "scenarioTags": [
+              "course2_attack",
+              "inside_remain"
+            ],
+            "odds": "-"
+          },
+          {
             "combo": "1-4-6",
             "role": "本線",
-            "probability": 2.182,
+            "probability": 2.078,
             "scenarioTags": [
               "nige",
               "course4_preferred_outer_link"
@@ -9855,18 +9885,9 @@
             "odds": "-"
           },
           {
-            "combo": "4-2-6",
-            "role": "本線",
-            "probability": 2.094,
-            "scenarioTags": [
-              "course4_attack"
-            ],
-            "odds": "-"
-          },
-          {
             "combo": "1-2-3",
             "role": "本線",
-            "probability": 1.805,
+            "probability": 1.888,
             "scenarioTags": [
               "nige",
               "direct_outside_link"
@@ -9875,40 +9896,22 @@
           },
           {
             "combo": "4-1-6",
-            "role": "本線",
-            "probability": 1.78,
+            "role": "ズレ対応",
+            "probability": 1.804,
             "scenarioTags": [
               "course4_attack",
-              "inside_remain"
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
             ],
             "odds": "-"
           },
           {
-            "combo": "2-4-6",
-            "role": "本線",
-            "probability": 1.758,
+            "combo": "2-3-6",
+            "role": "ズレ対応",
+            "probability": 1.676,
             "scenarioTags": [
               "course2_attack",
-              "course4_preferred_outer_link"
-            ],
-            "odds": "-"
-          },
-          {
-            "combo": "1-2-5",
-            "role": "ズレ対応",
-            "probability": 1.671,
-            "scenarioTags": [
-              "nige",
-              "direct_outside_link"
-            ],
-            "odds": "-"
-          },
-          {
-            "combo": "4-2-5",
-            "role": "ズレ対応",
-            "probability": 1.64,
-            "scenarioTags": [
-              "course4_attack",
               "direct_outside_link"
             ],
             "odds": "-"
@@ -9916,22 +9919,24 @@
         ],
         "aiUpset": [
           {
-            "combo": "1-4-2",
+            "combo": "2-1-3",
             "role": "荒れ対応",
-            "probability": 1.613,
+            "probability": 1.627,
             "scenarioTags": [
-              "nige",
-              "direct_outside_link"
+              "course2_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
             ],
             "odds": "-"
           },
           {
-            "combo": "4-2-1",
+            "combo": "1-2-4",
             "role": "荒れ対応",
-            "probability": 1.599,
+            "probability": 1.55,
             "scenarioTags": [
-              "course4_attack",
-              "inside_remain"
+              "nige",
+              "direct_outside_link"
             ],
             "odds": "-"
           }
@@ -9940,7 +9945,7 @@
           {
             "combo": "1-2-6",
             "role": "本線",
-            "probability": 2.39,
+            "probability": 2.684,
             "scenarioTags": [
               "nige",
               "direct_outside_link"
@@ -9948,9 +9953,39 @@
             "odds": "-"
           },
           {
+            "combo": "4-2-6",
+            "role": "本線",
+            "probability": 2.398,
+            "scenarioTags": [
+              "course4_attack",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-4-6",
+            "role": "本線",
+            "probability": 2.38,
+            "scenarioTags": [
+              "course2_attack",
+              "course4_preferred_outer_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-6",
+            "role": "本線",
+            "probability": 2.107,
+            "scenarioTags": [
+              "course2_attack",
+              "inside_remain"
+            ],
+            "odds": "-"
+          },
+          {
             "combo": "1-4-6",
             "role": "本線",
-            "probability": 2.182,
+            "probability": 2.078,
             "scenarioTags": [
               "nige",
               "course4_preferred_outer_link"
@@ -9958,18 +9993,9 @@
             "odds": "-"
           },
           {
-            "combo": "4-2-6",
-            "role": "本線",
-            "probability": 2.094,
-            "scenarioTags": [
-              "course4_attack"
-            ],
-            "odds": "-"
-          },
-          {
             "combo": "1-2-3",
             "role": "本線",
-            "probability": 1.805,
+            "probability": 1.888,
             "scenarioTags": [
               "nige",
               "direct_outside_link"
@@ -9978,74 +10004,58 @@
           },
           {
             "combo": "4-1-6",
-            "role": "本線",
-            "probability": 1.78,
+            "role": "ズレ対応",
+            "probability": 1.804,
             "scenarioTags": [
               "course4_attack",
-              "inside_remain"
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
             ],
             "odds": "-"
           },
           {
-            "combo": "2-4-6",
-            "role": "本線",
-            "probability": 1.758,
+            "combo": "2-3-6",
+            "role": "ズレ対応",
+            "probability": 1.676,
             "scenarioTags": [
               "course2_attack",
-              "course4_preferred_outer_link"
+              "direct_outside_link"
             ],
             "odds": "-"
           },
           {
-            "combo": "1-2-5",
-            "role": "ズレ対応",
-            "probability": 1.671,
+            "combo": "2-1-3",
+            "role": "荒れ対応",
+            "probability": 1.627,
+            "scenarioTags": [
+              "course2_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "probability": 1.55,
             "scenarioTags": [
               "nige",
               "direct_outside_link"
-            ],
-            "odds": "-"
-          },
-          {
-            "combo": "4-2-5",
-            "role": "ズレ対応",
-            "probability": 1.64,
-            "scenarioTags": [
-              "course4_attack",
-              "direct_outside_link"
-            ],
-            "odds": "-"
-          },
-          {
-            "combo": "1-4-2",
-            "role": "荒れ対応",
-            "probability": 1.613,
-            "scenarioTags": [
-              "nige",
-              "direct_outside_link"
-            ],
-            "odds": "-"
-          },
-          {
-            "combo": "4-2-1",
-            "role": "荒れ対応",
-            "probability": 1.599,
-            "scenarioTags": [
-              "course4_attack",
-              "inside_remain"
             ],
             "odds": "-"
           }
         ],
         "scenarios": {
-          "nige": 0.23780230444360081,
-          "makuri_4": 0.1631035612408197,
-          "sashi_2": 0.14758781883477787,
-          "makurizashi_4": 0.1306746970563256,
-          "outer_attack": 0.09970317463311305,
-          "makuri_3": 0.09420220751852416,
-          "makurizashi_3": 0.0844262399262928,
-          "chaos": 0.04249999634654611
+          "sashi_2": 0.22332134273754128,
+          "nige": 0.19478780895139047,
+          "makuri_4": 0.12519903933599383,
+          "makuri_3": 0.12319848077019631,
+          "makurizashi_4": 0.10130327871501088,
+          "makurizashi_3": 0.10063895354299988,
+          "outer_attack": 0.07681390209017304,
+          "chaos": 0.054737193856694295
         },
         "raceContext": {
           "time_band": "昼/序盤",
@@ -10053,10 +10063,10 @@
           "tide_phase": "rising",
           "tide_zone": "mid",
           "water_type": "3攻め型",
-          "wind_dir": null,
-          "wind_speed": 0.0,
-          "wave_height": 0.0,
-          "entry_changed": false,
+          "wind_dir": 8,
+          "wind_speed": 2.0,
+          "wave_height": 2.0,
+          "entry_changed": true,
           "event_day": 2,
           "race_stage": "day2",
           "minutes_to_low_tide": -108,
@@ -10222,8 +10232,8 @@
         ],
         "readability": {
           "axisLane": 1,
-          "secondHeadLane": 4,
-          "axisGap": 0.39
+          "secondHeadLane": 2,
+          "axisGap": 0.59
         },
         "diagnostics": {
           "playerIdResolution": {
@@ -10252,23 +10262,23 @@
                 "wind": true,
                 "wave": true,
                 "stabilizer": false,
-                "exhibition": false,
+                "exhibition": true,
                 "actualEntry": true,
                 "escapeRate": true,
                 "normalizationTarget": true,
                 "oddsUsed": false
               },
-              "actualEntrySource": "race_input.entry_course",
+              "actualEntrySource": "direct.actual_entry",
               "actualEntry": [
                 1,
                 2,
                 3,
                 4,
-                5,
-                6
+                6,
+                5
               ],
-              "windSpeed": 0.0,
-              "waveHeight": 0.0,
+              "windSpeed": 2.0,
+              "waveHeight": 2.0,
               "stabilizer": null,
               "tideType": "若潮",
               "tidePhase": "rising",
@@ -10287,10 +10297,10 @@
               "1": {
                 "win": {
                   "ability_share": 0.166086,
-                  "player_course_share": 0.58237,
+                  "player_course_share": 0.573665,
                   "course_share": 0.549543,
                   "local_share": 0.20372,
-                  "combined": 0.39224,
+                  "combined": 0.389193,
                   "player_course": {
                     "available": true,
                     "starts": 26,
@@ -10301,10 +10311,10 @@
                 },
                 "second": {
                   "ability_share": 0.165355,
-                  "player_course_share": 0.150668,
+                  "player_course_share": 0.143973,
                   "course_share": 0.176197,
                   "local_share": 0.206336,
-                  "combined": 0.166481,
+                  "combined": 0.164138,
                   "player_course": {
                     "available": true,
                     "starts": 26,
@@ -10315,10 +10325,10 @@
                 },
                 "third": {
                   "ability_share": 0.15697,
-                  "player_course_share": 0.078821,
+                  "player_course_share": 0.072702,
                   "course_share": 0.092836,
                   "local_share": 0.195032,
-                  "combined": 0.120597,
+                  "combined": 0.118455,
                   "player_course": {
                     "available": true,
                     "starts": 26,
@@ -10331,10 +10341,10 @@
               "2": {
                 "win": {
                   "ability_share": 0.179866,
-                  "player_course_share": 0.126816,
+                  "player_course_share": 0.124921,
                   "course_share": 0.126251,
                   "local_share": 0.18972,
-                  "combined": 0.151561,
+                  "combined": 0.150898,
                   "player_course": {
                     "available": true,
                     "starts": 10,
@@ -10345,10 +10355,10 @@
                 },
                 "second": {
                   "ability_share": 0.178543,
-                  "player_course_share": 0.246542,
+                  "player_course_share": 0.235587,
                   "course_share": 0.237286,
                   "local_share": 0.191147,
-                  "combined": 0.215351,
+                  "combined": 0.211517,
                   "player_course": {
                     "available": true,
                     "starts": 10,
@@ -10359,10 +10369,10 @@
                 },
                 "third": {
                   "ability_share": 0.191993,
-                  "player_course_share": 0.21815,
+                  "player_course_share": 0.201215,
                   "course_share": 0.193665,
                   "local_share": 0.1959,
-                  "combined": 0.201873,
+                  "combined": 0.195946,
                   "player_course": {
                     "available": true,
                     "starts": 10,
@@ -10375,10 +10385,10 @@
               "3": {
                 "win": {
                   "ability_share": 0.128728,
-                  "player_course_share": 0.111715,
+                  "player_course_share": 0.110046,
                   "course_share": 0.122462,
                   "local_share": 0.054394,
-                  "combined": 0.114087,
+                  "combined": 0.113503,
                   "player_course": {
                     "available": false,
                     "fallback": "course_prior"
@@ -10386,10 +10396,10 @@
                 },
                 "second": {
                   "ability_share": 0.131836,
-                  "player_course_share": 0.198908,
+                  "player_course_share": 0.19007,
                   "course_share": 0.214223,
                   "local_share": 0.055135,
-                  "combined": 0.164119,
+                  "combined": 0.161025,
                   "player_course": {
                     "available": false,
                     "fallback": "course_prior"
@@ -10397,10 +10407,10 @@
                 },
                 "third": {
                   "ability_share": 0.129341,
-                  "player_course_share": 0.189589,
+                  "player_course_share": 0.174871,
                   "course_share": 0.199403,
                   "local_share": 0.044654,
-                  "combined": 0.155971,
+                  "combined": 0.15082,
                   "player_course": {
                     "available": false,
                     "fallback": "course_prior"
@@ -10410,10 +10420,10 @@
               "4": {
                 "win": {
                   "ability_share": 0.184456,
-                  "player_course_share": 0.109812,
+                  "player_course_share": 0.108171,
                   "course_share": 0.106796,
                   "local_share": 0.213854,
-                  "combined": 0.145739,
+                  "combined": 0.145164,
                   "player_course": {
                     "available": true,
                     "starts": 6,
@@ -10424,10 +10434,10 @@
                 },
                 "second": {
                   "ability_share": 0.193697,
-                  "player_course_share": 0.172362,
+                  "player_course_share": 0.164703,
                   "course_share": 0.176197,
                   "local_share": 0.228971,
-                  "combined": 0.186257,
+                  "combined": 0.183576,
                   "player_course": {
                     "available": true,
                     "starts": 6,
@@ -10438,10 +10448,10 @@
                 },
                 "third": {
                   "ability_share": 0.188862,
-                  "player_course_share": 0.188859,
+                  "player_course_share": 0.174198,
                   "course_share": 0.190036,
                   "local_share": 0.229725,
-                  "combined": 0.193182,
+                  "combined": 0.188051,
                   "player_course": {
                     "available": true,
                     "starts": 6,
@@ -10454,79 +10464,88 @@
               "5": {
                 "win": {
                   "ability_share": 0.113922,
-                  "player_course_share": 0.053794,
-                  "course_share": 0.058968,
+                  "player_course_share": 0.043067,
+                  "course_share": 0.03598,
                   "local_share": 0.105039,
-                  "combined": 0.080998,
+                  "combined": 0.072646,
                   "player_course": {
-                    "available": false,
-                    "fallback": "course_prior"
+                    "available": true,
+                    "starts": 38,
+                    "reliability": "A",
+                    "shrink": 0.72,
+                    "observed": 0.0526
                   }
                 },
                 "second": {
                   "ability_share": 0.10402,
-                  "player_course_share": 0.106832,
-                  "course_share": 0.115057,
+                  "player_course_share": 0.188354,
+                  "course_share": 0.08104,
                   "local_share": 0.096615,
-                  "combined": 0.106471,
+                  "combined": 0.1282,
                   "player_course": {
-                    "available": false,
-                    "fallback": "course_prior"
+                    "available": true,
+                    "starts": 38,
+                    "reliability": "A",
+                    "shrink": 0.72,
+                    "observed": 0.2632
                   }
                 },
                 "third": {
                   "ability_share": 0.114518,
-                  "player_course_share": 0.166419,
-                  "course_share": 0.175033,
+                  "player_course_share": 0.169534,
+                  "course_share": 0.149028,
                   "local_share": 0.104323,
-                  "combined": 0.143767,
+                  "combined": 0.139656,
                   "player_course": {
-                    "available": false,
-                    "fallback": "course_prior"
+                    "available": true,
+                    "starts": 38,
+                    "reliability": "A",
+                    "shrink": 0.72,
+                    "observed": 0.21050000000000002
                   }
                 }
               },
               "6": {
                 "win": {
                   "ability_share": 0.226942,
-                  "player_course_share": 0.015493,
-                  "course_share": 0.03598,
+                  "player_course_share": 0.040131,
+                  "course_share": 0.058968,
                   "local_share": 0.233271,
-                  "combined": 0.115375,
+                  "combined": 0.128596,
                   "player_course": {
                     "available": true,
-                    "starts": 22,
-                    "reliability": "A",
-                    "shrink": 0.528,
+                    "starts": 14,
+                    "reliability": "B",
+                    "shrink": 0.2427,
                     "observed": 0.0
                   }
                 },
                 "second": {
                   "ability_share": 0.22655,
-                  "player_course_share": 0.124689,
-                  "course_share": 0.08104,
+                  "player_course_share": 0.077312,
+                  "course_share": 0.115057,
                   "local_share": 0.221795,
-                  "combined": 0.161321,
+                  "combined": 0.151543,
                   "player_course": {
                     "available": true,
-                    "starts": 22,
-                    "reliability": "A",
-                    "shrink": 0.528,
-                    "observed": 0.1818
+                    "starts": 14,
+                    "reliability": "B",
+                    "shrink": 0.2427,
+                    "observed": 0.0
                   }
                 },
                 "third": {
                   "ability_share": 0.218317,
-                  "player_course_share": 0.158163,
-                  "course_share": 0.149028,
+                  "player_course_share": 0.207479,
+                  "course_share": 0.175033,
                   "local_share": 0.230367,
-                  "combined": 0.18461,
+                  "combined": 0.207072,
                   "player_course": {
                     "available": true,
-                    "starts": 22,
-                    "reliability": "A",
-                    "shrink": 0.528,
-                    "observed": 0.1818
+                    "starts": 14,
+                    "reliability": "B",
+                    "shrink": 0.2427,
+                    "observed": 0.4286
                   }
                 }
               }
@@ -10702,8 +10721,8 @@
           },
           "validation": {
             "six_boats": true,
-            "win_sum": 1.0,
-            "second_sum": 1.0,
+            "win_sum": 1.000001,
+            "second_sum": 1.000001,
             "third_sum": 1.0,
             "ticket_count": 10,
             "ticket_unique": true,
@@ -10716,23 +10735,38 @@
             "escape_band": "weak",
             "attackers": [
               {
+                "lane": 2,
+                "course": 2,
+                "score": 0.14718233333333336,
+                "details": {
+                  "ability": -0.2632,
+                  "local": 0.0933,
+                  "exhibition": 1.0,
+                  "motor": -0.1801,
+                  "st": 0.0,
+                  "class": 0.25
+                },
+                "share": 0.4806,
+                "win_delta": 0.0344
+              },
+              {
                 "lane": 4,
                 "course": 4,
-                "score": 0.1930704444444444,
+                "score": 0.15907044444444438,
                 "details": {
                   "ability": -0.0942,
                   "local": 0.3967,
-                  "exhibition": 0.0,
+                  "exhibition": -0.2,
                   "motor": 0.2507,
                   "st": 0.6,
                   "class": 0.25
                 },
-                "share": 1.0,
-                "win_delta": 0.0595
+                "share": 0.5194,
+                "win_delta": 0.0371
               }
             ],
-            "course1_win_delta": -0.0595,
-            "multiple_attackers": false
+            "course1_win_delta": -0.0715,
+            "multiple_attackers": true
           },
           "originalExhibitionOuterLink": {
             "original_exhibition_mean": null,
@@ -10740,26 +10774,26 @@
             "course4_outer_link": {
               "active": true,
               "lane4": 4,
-              "lane5": 5,
-              "lane6": 6,
+              "lane5": 6,
+              "lane6": 5,
               "preferred_lane": 6,
-              "score_gap": 0.2242,
+              "score_gap": 0.2842,
               "details": {
-                "5": {
-                  "class": 0.2,
-                  "motor": -0.0159,
-                  "exhibition": 0.0,
-                  "original": 0.0,
-                  "local": -0.6222,
-                  "composite": -0.0062
-                },
                 "6": {
                   "class": 0.65,
                   "motor": -0.0856,
-                  "exhibition": 0.0,
+                  "exhibition": -0.6,
                   "original": 0.0,
                   "local": 0.4444,
-                  "composite": 0.218
+                  "composite": 0.128
+                },
+                "5": {
+                  "class": 0.2,
+                  "motor": -0.0159,
+                  "exhibition": -1.0,
+                  "original": 0.0,
+                  "local": -0.6222,
+                  "composite": -0.1562
                 }
               }
             }
@@ -10768,9 +10802,9 @@
             {
               "rank": 1,
               "ticket": "1-2-6",
-              "probability": 0.02390109,
-              "raw_probability": 0.02303377,
-              "scenario_multiplier": 1.162614,
+              "probability": 0.02683724,
+              "raw_probability": 0.02632071,
+              "scenario_multiplier": 1.154906,
               "scenario_tags": [
                 "nige",
                 "direct_outside_link"
@@ -10778,162 +10812,65 @@
             },
             {
               "rank": 2,
-              "ticket": "1-4-6",
-              "probability": 0.02182413,
-              "raw_probability": 0.01757914,
-              "scenario_multiplier": 1.390985,
+              "ticket": "4-2-6",
+              "probability": 0.02398337,
+              "raw_probability": 0.02330471,
+              "scenario_multiplier": 1.165663,
               "scenario_tags": [
-                "nige",
-                "course4_preferred_outer_link"
+                "course4_attack",
+                "direct_outside_link"
               ]
             },
             {
               "rank": 3,
-              "ticket": "4-2-6",
-              "probability": 0.02094179,
-              "raw_probability": 0.02228527,
-              "scenario_multiplier": 1.05288,
-              "scenario_tags": [
-                "course4_attack"
-              ]
-            },
-            {
-              "rank": 4,
-              "ticket": "1-2-3",
-              "probability": 0.01805333,
-              "raw_probability": 0.01739822,
-              "scenario_multiplier": 1.162614,
-              "scenario_tags": [
-                "nige",
-                "direct_outside_link"
-              ]
-            },
-            {
-              "rank": 5,
-              "ticket": "4-1-6",
-              "probability": 0.01780016,
-              "raw_probability": 0.01753898,
-              "scenario_multiplier": 1.13711,
-              "scenario_tags": [
-                "course4_attack",
-                "inside_remain"
-              ]
-            },
-            {
-              "rank": 6,
               "ticket": "2-4-6",
-              "probability": 0.01758353,
-              "raw_probability": 0.01423991,
-              "scenario_multiplier": 1.383509,
+              "probability": 0.02379853,
+              "raw_probability": 0.01917442,
+              "scenario_multiplier": 1.405835,
               "scenario_tags": [
                 "course2_attack",
                 "course4_preferred_outer_link"
               ]
             },
             {
-              "rank": 7,
-              "ticket": "1-2-5",
-              "probability": 0.01671372,
-              "raw_probability": 0.01610722,
-              "scenario_multiplier": 1.162614,
-              "scenario_tags": [
-                "nige",
-                "direct_outside_link"
-              ]
-            },
-            {
-              "rank": 8,
-              "ticket": "4-2-5",
-              "probability": 0.01640164,
-              "raw_probability": 0.0155838,
-              "scenario_multiplier": 1.179226,
-              "scenario_tags": [
-                "course4_attack",
-                "direct_outside_link"
-              ]
-            },
-            {
-              "rank": 9,
-              "ticket": "1-4-2",
-              "probability": 0.01612876,
-              "raw_probability": 0.01554349,
-              "scenario_multiplier": 1.162614,
-              "scenario_tags": [
-                "nige",
-                "direct_outside_link"
-              ]
-            },
-            {
-              "rank": 10,
-              "ticket": "4-2-1",
-              "probability": 0.01599337,
-              "raw_probability": 0.0157587,
-              "scenario_multiplier": 1.13711,
-              "scenario_tags": [
-                "course4_attack",
-                "inside_remain"
-              ]
-            },
-            {
-              "rank": 11,
-              "ticket": "1-2-4",
-              "probability": 0.01592288,
-              "raw_probability": 0.01534508,
-              "scenario_multiplier": 1.162614,
-              "scenario_tags": [
-                "nige",
-                "direct_outside_link"
-              ]
-            },
-            {
-              "rank": 12,
-              "ticket": "4-2-3",
-              "probability": 0.01581807,
-              "raw_probability": 0.01683285,
-              "scenario_multiplier": 1.05288,
-              "scenario_tags": [
-                "course4_attack"
-              ]
-            },
-            {
-              "rank": 13,
-              "ticket": "4-1-2",
-              "probability": 0.01573891,
-              "raw_probability": 0.01550798,
-              "scenario_multiplier": 1.13711,
-              "scenario_tags": [
-                "course4_attack",
-                "inside_remain"
-              ]
-            },
-            {
-              "rank": 14,
+              "rank": 4,
               "ticket": "2-1-6",
-              "probability": 0.01461433,
-              "raw_probability": 0.01468456,
-              "scenario_multiplier": 1.115067,
+              "probability": 0.02106871,
+              "raw_probability": 0.02106158,
+              "scenario_multiplier": 1.133061,
               "scenario_tags": [
                 "course2_attack",
                 "inside_remain"
               ]
             },
             {
-              "rank": 15,
-              "ticket": "1-6-2",
-              "probability": 0.0142634,
-              "raw_probability": 0.01374581,
-              "scenario_multiplier": 1.162614,
+              "rank": 5,
+              "ticket": "1-4-6",
+              "probability": 0.02077694,
+              "raw_probability": 0.01703157,
+              "scenario_multiplier": 1.381763,
+              "scenario_tags": [
+                "nige",
+                "course4_preferred_outer_link"
+              ]
+            },
+            {
+              "rank": 6,
+              "ticket": "1-2-3",
+              "probability": 0.01888297,
+              "raw_probability": 0.01851953,
+              "scenario_multiplier": 1.154906,
               "scenario_tags": [
                 "nige",
                 "direct_outside_link"
               ]
             },
             {
-              "rank": 16,
-              "ticket": "4-1-5",
-              "probability": 0.01366229,
-              "raw_probability": 0.01226478,
-              "scenario_multiplier": 1.248092,
+              "rank": 7,
+              "ticket": "4-1-6",
+              "probability": 0.01804205,
+              "raw_probability": 0.01656416,
+              "scenario_multiplier": 1.233738,
               "scenario_tags": [
                 "course4_attack",
                 "direct_outside_link",
@@ -10942,11 +10879,113 @@
               ]
             },
             {
+              "rank": 8,
+              "ticket": "2-3-6",
+              "probability": 0.01675779,
+              "raw_probability": 0.01615384,
+              "scenario_multiplier": 1.175026,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 9,
+              "ticket": "2-1-3",
+              "probability": 0.01627101,
+              "raw_probability": 0.01481915,
+              "scenario_multiplier": 1.243648,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link",
+                "inside_remain",
+                "attack_head_inside_second_outside_third"
+              ]
+            },
+            {
+              "rank": 10,
+              "ticket": "1-2-4",
+              "probability": 0.01550042,
+              "raw_probability": 0.01520209,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 11,
+              "ticket": "2-3-1",
+              "probability": 0.01528861,
+              "raw_probability": 0.01049687,
+              "scenario_multiplier": 1.649737,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link",
+                "inside_remain",
+                "attack_head_outside_second_inside_third"
+              ]
+            },
+            {
+              "rank": 12,
+              "ticket": "4-2-3",
+              "probability": 0.01506693,
+              "raw_probability": 0.01639744,
+              "scenario_multiplier": 1.04077,
+              "scenario_tags": [
+                "course4_attack"
+              ]
+            },
+            {
+              "rank": 13,
+              "ticket": "4-2-1",
+              "probability": 0.01502796,
+              "raw_probability": 0.01514355,
+              "scenario_multiplier": 1.124032,
+              "scenario_tags": [
+                "course4_attack",
+                "inside_remain"
+              ]
+            },
+            {
+              "rank": 14,
+              "ticket": "1-2-5",
+              "probability": 0.01473592,
+              "raw_probability": 0.0144523,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 15,
+              "ticket": "1-4-2",
+              "probability": 0.01459825,
+              "raw_probability": 0.01431728,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 16,
+              "ticket": "2-4-3",
+              "probability": 0.01399574,
+              "raw_probability": 0.01349132,
+              "scenario_multiplier": 1.175026,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link"
+              ]
+            },
+            {
               "rank": 17,
-              "ticket": "4-1-3",
-              "probability": 0.01344509,
-              "raw_probability": 0.01324781,
-              "scenario_multiplier": 1.13711,
+              "ticket": "4-1-2",
+              "probability": 0.01381808,
+              "raw_probability": 0.01392437,
+              "scenario_multiplier": 1.124032,
               "scenario_tags": [
                 "course4_attack",
                 "inside_remain"
@@ -10954,48 +10993,486 @@
             },
             {
               "rank": 18,
-              "ticket": "4-6-2",
-              "probability": 0.01249115,
-              "raw_probability": 0.0132925,
-              "scenario_multiplier": 1.05288,
+              "ticket": "4-3-6",
+              "probability": 0.01305286,
+              "raw_probability": 0.0126835,
+              "scenario_multiplier": 1.165663,
               "scenario_tags": [
-                "course4_attack"
+                "course4_attack",
+                "direct_outside_link"
               ]
             },
             {
               "rank": 19,
               "ticket": "1-3-6",
-              "probability": 0.01238687,
-              "raw_probability": 0.01336986,
-              "scenario_multiplier": 1.038048,
+              "probability": 0.01302614,
+              "raw_probability": 0.01430848,
+              "scenario_multiplier": 1.031166,
               "scenario_tags": [
                 "nige"
               ]
             },
             {
               "rank": 20,
-              "ticket": "2-1-3",
-              "probability": 0.01236336,
-              "raw_probability": 0.01109177,
-              "scenario_multiplier": 1.248875,
+              "ticket": "3-2-6",
+              "probability": 0.01249487,
+              "raw_probability": 0.01357532,
+              "scenario_multiplier": 1.042529,
               "scenario_tags": [
-                "course2_attack",
-                "direct_outside_link",
-                "inside_remain"
+                "course3_attack"
               ]
             }
           ],
           "oddsUsedForPrediction": false
         },
-        "phase": "pre",
-        "finalPredictionStatus": "waiting_live_data",
-        "missingFinalInputs": [
-          "exhibition_entries",
-          "exhibition_lanes",
-          "exhibition_times"
-        ]
+        "phase": "final",
+        "finalPredictionStatus": "complete",
+        "predictionStage": {
+          "label": "本予想",
+          "badge": "本予想",
+          "statusText": "直前・展示を反映して若松v2.2で再精査済み",
+          "color": "green"
+        },
+        "missingFinalInputs": [],
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "baseLabel": "直前前エンジン予想",
+          "realtimeApplied": true,
+          "realtimeLabel": "展示・スリット・直前反映",
+          "reviewed": true,
+          "reviewLabel": "再精査後の調整数字",
+          "adjustedRequired": true
+        },
+        "probabilityReview": {
+          "1": {
+            "morningWin": 24.7,
+            "morningSecond": 19.5,
+            "morningThird": 15.0,
+            "deltaWin": -1.1,
+            "deltaSecond": -0.1,
+            "deltaThird": 0.0
+          },
+          "2": {
+            "morningWin": 18.0,
+            "morningSecond": 23.5,
+            "morningThird": 18.8,
+            "deltaWin": 5.0,
+            "deltaSecond": 2.1,
+            "deltaThird": 0.7
+          },
+          "3": {
+            "morningWin": 11.7,
+            "morningSecond": 14.2,
+            "morningThird": 16.0,
+            "deltaWin": 0.9,
+            "deltaSecond": 0.4,
+            "deltaThird": 0.2
+          },
+          "4": {
+            "morningWin": 24.3,
+            "morningSecond": 19.1,
+            "morningThird": 14.1,
+            "deltaWin": -2.6,
+            "deltaSecond": -1.1,
+            "deltaThird": -0.8
+          },
+          "5": {
+            "morningWin": 9.1,
+            "morningSecond": 8.5,
+            "morningThird": 14.8,
+            "deltaWin": -3.1,
+            "deltaSecond": 0.8,
+            "deltaThird": -2.1
+          },
+          "6": {
+            "morningWin": 12.2,
+            "morningSecond": 15.2,
+            "morningThird": 21.2,
+            "deltaWin": 0.9,
+            "deltaSecond": -2.0,
+            "deltaThird": 1.9
+          }
+        }
       },
-      "live": {},
+      "live": {
+        "direct": {
+          "actual_entry": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            5
+          ],
+          "air_temperature": 34,
+          "entry_changed": false,
+          "lap_shortened": null,
+          "other_changes": [
+            "部品交換"
+          ],
+          "racers": [
+            {
+              "lane": 1,
+              "name": "岡部 大輔",
+              "parts_exchange": [],
+              "player_id": 4092,
+              "tilt": 0,
+              "weight": 52.3,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 2,
+              "name": "牧山 敦也",
+              "parts_exchange": [],
+              "player_id": 4981,
+              "tilt": 0,
+              "weight": 52,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 3,
+              "name": "井上 慧人",
+              "parts_exchange": [],
+              "player_id": 5328,
+              "tilt": 0,
+              "weight": 53.4,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 4,
+              "name": "中村 将隆",
+              "parts_exchange": [],
+              "player_id": 4982,
+              "tilt": -0.5,
+              "weight": 53.1,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 5,
+              "name": "小川 晃司",
+              "parts_exchange": [],
+              "player_id": 3352,
+              "tilt": -0.5,
+              "weight": 51,
+              "weight_adjustment": 1,
+              "withdrawn": false
+            },
+            {
+              "lane": 6,
+              "name": "岡瀬 正人",
+              "parts_exchange": [],
+              "player_id": 3746,
+              "tilt": 0,
+              "weight": 52.1,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            }
+          ],
+          "stabilizer": null,
+          "water_temperature": 33,
+          "wave_height": 2,
+          "weather": "晴",
+          "wind_direction": 8,
+          "wind_speed": 2,
+          "withdrawals": []
+        },
+        "weather": {
+          "actual_entry": [
+            1,
+            2,
+            3,
+            4,
+            6,
+            5
+          ],
+          "air_temperature": 34,
+          "entry_changed": false,
+          "lap_shortened": null,
+          "other_changes": [
+            "部品交換"
+          ],
+          "racers": [
+            {
+              "lane": 1,
+              "name": "岡部 大輔",
+              "parts_exchange": [],
+              "player_id": 4092,
+              "tilt": 0,
+              "weight": 52.3,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 2,
+              "name": "牧山 敦也",
+              "parts_exchange": [],
+              "player_id": 4981,
+              "tilt": 0,
+              "weight": 52,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 3,
+              "name": "井上 慧人",
+              "parts_exchange": [],
+              "player_id": 5328,
+              "tilt": 0,
+              "weight": 53.4,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 4,
+              "name": "中村 将隆",
+              "parts_exchange": [],
+              "player_id": 4982,
+              "tilt": -0.5,
+              "weight": 53.1,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 5,
+              "name": "小川 晃司",
+              "parts_exchange": [],
+              "player_id": 3352,
+              "tilt": -0.5,
+              "weight": 51,
+              "weight_adjustment": 1,
+              "withdrawn": false
+            },
+            {
+              "lane": 6,
+              "name": "岡瀬 正人",
+              "parts_exchange": [],
+              "player_id": 3746,
+              "tilt": 0,
+              "weight": 52.1,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            }
+          ],
+          "stabilizer": null,
+          "water_temperature": 33,
+          "wave_height": 2,
+          "weather": "晴",
+          "wind_direction": 8,
+          "wind_speed": 2,
+          "withdrawals": []
+        },
+        "actual_entry": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          5
+        ],
+        "entry_changed": false,
+        "withdrawals": [],
+        "stabilizer": null,
+        "lap_shortened": null,
+        "other_changes": [
+          "部品交換"
+        ],
+        "racers": [
+          {
+            "lane": 1,
+            "name": "岡部 大輔",
+            "parts_exchange": [],
+            "player_id": 4092,
+            "tilt": 0,
+            "weight": 52.3,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 2,
+            "name": "牧山 敦也",
+            "parts_exchange": [],
+            "player_id": 4981,
+            "tilt": 0,
+            "weight": 52,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 3,
+            "name": "井上 慧人",
+            "parts_exchange": [],
+            "player_id": 5328,
+            "tilt": 0,
+            "weight": 53.4,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 4,
+            "name": "中村 将隆",
+            "parts_exchange": [],
+            "player_id": 4982,
+            "tilt": -0.5,
+            "weight": 53.1,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 5,
+            "name": "小川 晃司",
+            "parts_exchange": [],
+            "player_id": 3352,
+            "tilt": -0.5,
+            "weight": 51,
+            "weight_adjustment": 1,
+            "withdrawn": false
+          },
+          {
+            "lane": 6,
+            "name": "岡瀬 正人",
+            "parts_exchange": [],
+            "player_id": 3746,
+            "tilt": 0,
+            "weight": 52.1,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          }
+        ],
+        "exhibition": {
+          "entries": [
+            {
+              "exhibition_course": 1,
+              "exhibition_gap": 0.03,
+              "exhibition_rank": 3,
+              "exhibition_time": 6.94,
+              "lane": 1,
+              "name": "岡部 大輔",
+              "player_id": 4092,
+              "start_rank": 3,
+              "start_raw": 0.1,
+              "start_time": 0.1,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 2,
+              "exhibition_gap": 0.0,
+              "exhibition_rank": 1,
+              "exhibition_time": 6.91,
+              "lane": 2,
+              "name": "牧山 敦也",
+              "player_id": 4981,
+              "start_rank": 4,
+              "start_raw": 0.13,
+              "start_time": 0.13,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 3,
+              "exhibition_gap": 0.01,
+              "exhibition_rank": 2,
+              "exhibition_time": 6.92,
+              "lane": 3,
+              "name": "井上 慧人",
+              "player_id": 5328,
+              "start_rank": 1,
+              "start_raw": 0.07,
+              "start_time": 0.07,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 4,
+              "exhibition_gap": 0.04,
+              "exhibition_rank": 4,
+              "exhibition_time": 6.95,
+              "lane": 4,
+              "name": "中村 将隆",
+              "player_id": 4982,
+              "start_rank": 5,
+              "start_raw": 0.15,
+              "start_time": 0.15,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 6,
+              "exhibition_gap": 0.13,
+              "exhibition_rank": 6,
+              "exhibition_time": 7.04,
+              "lane": 5,
+              "name": "小川 晃司",
+              "player_id": 3352,
+              "start_rank": 6,
+              "start_raw": 0.16,
+              "start_time": 0.16,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 5,
+              "exhibition_gap": 0.09,
+              "exhibition_rank": 5,
+              "exhibition_time": 7.0,
+              "lane": 6,
+              "name": "岡瀬 正人",
+              "player_id": 3746,
+              "start_rank": 2,
+              "start_raw": 0.09,
+              "start_time": 0.09,
+              "tilt": 0
+            }
+          ],
+          "slit_source": [
+            {
+              "course": 1,
+              "lane": 1,
+              "start_raw": 0.1,
+              "start_time": 0.1
+            },
+            {
+              "course": 2,
+              "lane": 2,
+              "start_raw": 0.13,
+              "start_time": 0.13
+            },
+            {
+              "course": 3,
+              "lane": 3,
+              "start_raw": 0.07,
+              "start_time": 0.07
+            },
+            {
+              "course": 4,
+              "lane": 4,
+              "start_raw": 0.15,
+              "start_time": 0.15
+            },
+            {
+              "course": 6,
+              "lane": 5,
+              "start_raw": 0.16,
+              "start_time": 0.16
+            },
+            {
+              "course": 5,
+              "lane": 6,
+              "start_raw": 0.09,
+              "start_time": 0.09
+            }
+          ],
+          "start_order": [
+            3,
+            6,
+            1,
+            2,
+            4,
+            5
+          ]
+        }
+      },
       "odds": {},
       "result": {},
       "motorRecentAvailable": true,
@@ -12851,7 +13328,1534 @@
           "exhibition_times"
         ]
       },
-      "predictionFinal": null
+      "predictionFinal": {
+        "status": "complete",
+        "engine": "wakamatsu_engine_v2.2",
+        "engineVersion": "2.2",
+        "win": {
+          "1": 23.54,
+          "2": 22.95,
+          "3": 12.62,
+          "4": 21.71,
+          "5": 6.04,
+          "6": 13.14
+        },
+        "second": {
+          "1": 19.34,
+          "2": 25.52,
+          "3": 14.55,
+          "4": 18.06,
+          "5": 9.33,
+          "6": 13.2
+        },
+        "third": {
+          "1": 15.04,
+          "2": 19.46,
+          "3": 16.28,
+          "4": 13.37,
+          "5": 12.71,
+          "6": 23.14
+        },
+        "top3": {
+          "1": 57.91,
+          "2": 67.94,
+          "3": 43.45,
+          "4": 53.13,
+          "5": 28.07,
+          "6": 49.49
+        },
+        "sab": "B",
+        "sabDetail": {
+          "grade": "B",
+          "score": 0.1331,
+          "head_concentration": 0.2354,
+          "head_gap": 0.0058,
+          "scenario_top": 0.2233,
+          "ticket_coverage_10": 0.2019,
+          "entry_change_penalty": true,
+          "entry_change_severity": 0.2533,
+          "first_day_penalty": false,
+          "low_escape_attack_penalty": 0.11,
+          "grade_cap": "A",
+          "meaning": "prediction reproducibility/confidence; independent from ticket count"
+        },
+        "confidence": 13.3,
+        "ai": [
+          {
+            "combo": "1-2-6",
+            "role": "本線",
+            "probability": 2.684,
+            "scenarioTags": [
+              "nige",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "4-2-6",
+            "role": "本線",
+            "probability": 2.398,
+            "scenarioTags": [
+              "course4_attack",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-4-6",
+            "role": "本線",
+            "probability": 2.38,
+            "scenarioTags": [
+              "course2_attack",
+              "course4_preferred_outer_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-6",
+            "role": "本線",
+            "probability": 2.107,
+            "scenarioTags": [
+              "course2_attack",
+              "inside_remain"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-6",
+            "role": "本線",
+            "probability": 2.078,
+            "scenarioTags": [
+              "nige",
+              "course4_preferred_outer_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "probability": 1.888,
+            "scenarioTags": [
+              "nige",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-6",
+            "role": "ズレ対応",
+            "probability": 1.804,
+            "scenarioTags": [
+              "course4_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-3-6",
+            "role": "ズレ対応",
+            "probability": 1.676,
+            "scenarioTags": [
+              "course2_attack",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "2-1-3",
+            "role": "荒れ対応",
+            "probability": 1.627,
+            "scenarioTags": [
+              "course2_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "probability": 1.55,
+            "scenarioTags": [
+              "nige",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          }
+        ],
+        "tickets": [
+          {
+            "combo": "1-2-6",
+            "role": "本線",
+            "probability": 2.684,
+            "scenarioTags": [
+              "nige",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "4-2-6",
+            "role": "本線",
+            "probability": 2.398,
+            "scenarioTags": [
+              "course4_attack",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-4-6",
+            "role": "本線",
+            "probability": 2.38,
+            "scenarioTags": [
+              "course2_attack",
+              "course4_preferred_outer_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-6",
+            "role": "本線",
+            "probability": 2.107,
+            "scenarioTags": [
+              "course2_attack",
+              "inside_remain"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-4-6",
+            "role": "本線",
+            "probability": 2.078,
+            "scenarioTags": [
+              "nige",
+              "course4_preferred_outer_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "probability": 1.888,
+            "scenarioTags": [
+              "nige",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "4-1-6",
+            "role": "ズレ対応",
+            "probability": 1.804,
+            "scenarioTags": [
+              "course4_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-3-6",
+            "role": "ズレ対応",
+            "probability": 1.676,
+            "scenarioTags": [
+              "course2_attack",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "2-1-3",
+            "role": "荒れ対応",
+            "probability": 1.627,
+            "scenarioTags": [
+              "course2_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
+            ],
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "probability": 1.55,
+            "scenarioTags": [
+              "nige",
+              "direct_outside_link"
+            ],
+            "odds": "-"
+          }
+        ],
+        "scenarios": {
+          "sashi_2": 0.22332134273754128,
+          "nige": 0.19478780895139047,
+          "makuri_4": 0.12519903933599383,
+          "makuri_3": 0.12319848077019631,
+          "makurizashi_4": 0.10130327871501088,
+          "makurizashi_3": 0.10063895354299988,
+          "outer_attack": 0.07681390209017304,
+          "chaos": 0.054737193856694295
+        },
+        "raceContext": {
+          "time_band": "昼/序盤",
+          "tide_type": "若潮",
+          "tide_phase": "rising",
+          "tide_zone": "mid",
+          "water_type": "3攻め型",
+          "wind_dir": 8,
+          "wind_speed": 2.0,
+          "wave_height": 2.0,
+          "entry_changed": true,
+          "event_day": 2,
+          "race_stage": "day2",
+          "minutes_to_low_tide": -108,
+          "stabilizer": null
+        },
+        "stageWeighting": {
+          "stage": "day2",
+          "motor": 1.15,
+          "exhibition": 0.95,
+          "original": 0.95,
+          "meeting": 0.7,
+          "trend": 0.65
+        },
+        "meetingFormAudit": [
+          {
+            "lane": 1,
+            "player_id": 4092,
+            "available": true,
+            "run_count": 2,
+            "level_score": -0.007347,
+            "trend_score": -0.654444,
+            "recent_score": 0.012917,
+            "stability_score": 0.590972,
+            "trend_label": "falling",
+            "run_scores": [
+              {
+                "day_no": 0,
+                "race_no": 1,
+                "finish": 2,
+                "course": 2,
+                "score": 0.258333
+              },
+              {
+                "day_no": 0,
+                "race_no": 2,
+                "finish": 5,
+                "course": 6,
+                "score": -0.2325
+              }
+            ]
+          },
+          {
+            "lane": 2,
+            "player_id": 4981,
+            "available": true,
+            "run_count": 1,
+            "level_score": 0.607083,
+            "trend_score": 0.0,
+            "recent_score": 0.607083,
+            "stability_score": 1.0,
+            "trend_label": "flat",
+            "run_scores": [
+              {
+                "day_no": 0,
+                "race_no": 1,
+                "finish": 1,
+                "course": 4,
+                "score": 0.607083
+              }
+            ]
+          },
+          {
+            "lane": 3,
+            "player_id": 5328,
+            "available": true,
+            "run_count": 2,
+            "level_score": -0.412622,
+            "trend_score": -0.602778,
+            "recent_score": -0.393958,
+            "stability_score": 0.623264,
+            "trend_label": "falling",
+            "run_scores": [
+              {
+                "day_no": 0,
+                "race_no": 1,
+                "finish": 4,
+                "course": 4,
+                "score": -0.167917
+              },
+              {
+                "day_no": 0,
+                "race_no": 2,
+                "finish": 6,
+                "course": 2,
+                "score": -0.62
+              }
+            ]
+          },
+          {
+            "lane": 4,
+            "player_id": 4982,
+            "available": true,
+            "run_count": 2,
+            "level_score": -0.16057,
+            "trend_score": -1.0,
+            "recent_score": -0.122708,
+            "stability_score": 0.235764,
+            "trend_label": "falling",
+            "run_scores": [
+              {
+                "day_no": 0,
+                "race_no": 1,
+                "finish": 1,
+                "course": 1,
+                "score": 0.335833
+              },
+              {
+                "day_no": 0,
+                "race_no": 2,
+                "finish": 6,
+                "course": 5,
+                "score": -0.58125
+              }
+            ]
+          },
+          {
+            "lane": 5,
+            "player_id": 3352,
+            "available": true,
+            "run_count": 1,
+            "level_score": 0.025833,
+            "trend_score": 0.0,
+            "recent_score": 0.025833,
+            "stability_score": 1.0,
+            "trend_label": "flat",
+            "run_scores": [
+              {
+                "day_no": 0,
+                "race_no": 1,
+                "finish": 4,
+                "course": 6,
+                "score": 0.025833
+              }
+            ]
+          },
+          {
+            "lane": 6,
+            "player_id": 3746,
+            "available": true,
+            "run_count": 2,
+            "level_score": 0.175027,
+            "trend_score": -0.396111,
+            "recent_score": 0.187292,
+            "stability_score": 0.752431,
+            "trend_label": "falling",
+            "run_scores": [
+              {
+                "day_no": 0,
+                "race_no": 1,
+                "finish": 1,
+                "course": 1,
+                "score": 0.335833
+              },
+              {
+                "day_no": 0,
+                "race_no": 2,
+                "finish": 3,
+                "course": 3,
+                "score": 0.03875
+              }
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 2,
+          "axisGap": 0.59
+        },
+        "diagnostics": {
+          "playerIdResolution": {
+            "unresolved": [],
+            "resolvedCount": 6,
+            "unresolvedCount": 0
+          },
+          "fullReflection": {
+            "status": "partial",
+            "engine": "wakamatsu_engine_v2.2",
+            "version": "2.2",
+            "inputAudit": {
+              "version": "2.2",
+              "status": "partial",
+              "missingCritical": [
+                "playerCourseDb"
+              ],
+              "checks": {
+                "playerCourseDb": false,
+                "localStats": true,
+                "meetingForm": true,
+                "motor": true,
+                "tideType": true,
+                "tidePhase": true,
+                "minutesToLow": true,
+                "wind": true,
+                "wave": true,
+                "stabilizer": false,
+                "exhibition": true,
+                "actualEntry": true,
+                "escapeRate": true,
+                "normalizationTarget": true,
+                "oddsUsed": false
+              },
+              "actualEntrySource": "direct.actual_entry",
+              "actualEntry": [
+                1,
+                2,
+                3,
+                4,
+                6,
+                5
+              ],
+              "windSpeed": 2.0,
+              "waveHeight": 2.0,
+              "stabilizer": null,
+              "tideType": "若潮",
+              "tidePhase": "rising",
+              "tideZone": "mid",
+              "minutesToLowTide": -108,
+              "baseFormula": {
+                "ability": 0.35,
+                "playerCourse": 0.35,
+                "wakamatsuCourse": 0.2,
+                "local": 0.1
+              },
+              "meetingFormula": "level/recent priority + trend*sample_confidence; n2=0.50,n3=0.75,n4+=1.00",
+              "ticketFormula": "top10 probability after scenario multiplier; roles 6/2/2"
+            },
+            "baseAudit": {
+              "1": {
+                "win": {
+                  "ability_share": 0.166086,
+                  "player_course_share": 0.573665,
+                  "course_share": 0.549543,
+                  "local_share": 0.20372,
+                  "combined": 0.389193,
+                  "player_course": {
+                    "available": true,
+                    "starts": 26,
+                    "reliability": "A",
+                    "shrink": 0.624,
+                    "observed": 0.6923
+                  }
+                },
+                "second": {
+                  "ability_share": 0.165355,
+                  "player_course_share": 0.143973,
+                  "course_share": 0.176197,
+                  "local_share": 0.206336,
+                  "combined": 0.164138,
+                  "player_course": {
+                    "available": true,
+                    "starts": 26,
+                    "reliability": "A",
+                    "shrink": 0.624,
+                    "observed": 0.15380000000000002
+                  }
+                },
+                "third": {
+                  "ability_share": 0.15697,
+                  "player_course_share": 0.072702,
+                  "course_share": 0.092836,
+                  "local_share": 0.195032,
+                  "combined": 0.118455,
+                  "player_course": {
+                    "available": true,
+                    "starts": 26,
+                    "reliability": "A",
+                    "shrink": 0.624,
+                    "observed": 0.07690000000000001
+                  }
+                }
+              },
+              "2": {
+                "win": {
+                  "ability_share": 0.179866,
+                  "player_course_share": 0.124921,
+                  "course_share": 0.126251,
+                  "local_share": 0.18972,
+                  "combined": 0.150898,
+                  "player_course": {
+                    "available": true,
+                    "starts": 10,
+                    "reliability": "B",
+                    "shrink": 0.1733,
+                    "observed": 0.2
+                  }
+                },
+                "second": {
+                  "ability_share": 0.178543,
+                  "player_course_share": 0.235587,
+                  "course_share": 0.237286,
+                  "local_share": 0.191147,
+                  "combined": 0.211517,
+                  "player_course": {
+                    "available": true,
+                    "starts": 10,
+                    "reliability": "B",
+                    "shrink": 0.1733,
+                    "observed": 0.4
+                  }
+                },
+                "third": {
+                  "ability_share": 0.191993,
+                  "player_course_share": 0.201215,
+                  "course_share": 0.193665,
+                  "local_share": 0.1959,
+                  "combined": 0.195946,
+                  "player_course": {
+                    "available": true,
+                    "starts": 10,
+                    "reliability": "B",
+                    "shrink": 0.1733,
+                    "observed": 0.4
+                  }
+                }
+              },
+              "3": {
+                "win": {
+                  "ability_share": 0.128728,
+                  "player_course_share": 0.110046,
+                  "course_share": 0.122462,
+                  "local_share": 0.054394,
+                  "combined": 0.113503,
+                  "player_course": {
+                    "available": false,
+                    "fallback": "course_prior"
+                  }
+                },
+                "second": {
+                  "ability_share": 0.131836,
+                  "player_course_share": 0.19007,
+                  "course_share": 0.214223,
+                  "local_share": 0.055135,
+                  "combined": 0.161025,
+                  "player_course": {
+                    "available": false,
+                    "fallback": "course_prior"
+                  }
+                },
+                "third": {
+                  "ability_share": 0.129341,
+                  "player_course_share": 0.174871,
+                  "course_share": 0.199403,
+                  "local_share": 0.044654,
+                  "combined": 0.15082,
+                  "player_course": {
+                    "available": false,
+                    "fallback": "course_prior"
+                  }
+                }
+              },
+              "4": {
+                "win": {
+                  "ability_share": 0.184456,
+                  "player_course_share": 0.108171,
+                  "course_share": 0.106796,
+                  "local_share": 0.213854,
+                  "combined": 0.145164,
+                  "player_course": {
+                    "available": true,
+                    "starts": 6,
+                    "reliability": "C",
+                    "shrink": 0.06,
+                    "observed": 0.3333
+                  }
+                },
+                "second": {
+                  "ability_share": 0.193697,
+                  "player_course_share": 0.164703,
+                  "course_share": 0.176197,
+                  "local_share": 0.228971,
+                  "combined": 0.183576,
+                  "player_course": {
+                    "available": true,
+                    "starts": 6,
+                    "reliability": "C",
+                    "shrink": 0.06,
+                    "observed": 0.3333
+                  }
+                },
+                "third": {
+                  "ability_share": 0.188862,
+                  "player_course_share": 0.174198,
+                  "course_share": 0.190036,
+                  "local_share": 0.229725,
+                  "combined": 0.188051,
+                  "player_course": {
+                    "available": true,
+                    "starts": 6,
+                    "reliability": "C",
+                    "shrink": 0.06,
+                    "observed": 0.3333
+                  }
+                }
+              },
+              "5": {
+                "win": {
+                  "ability_share": 0.113922,
+                  "player_course_share": 0.043067,
+                  "course_share": 0.03598,
+                  "local_share": 0.105039,
+                  "combined": 0.072646,
+                  "player_course": {
+                    "available": true,
+                    "starts": 38,
+                    "reliability": "A",
+                    "shrink": 0.72,
+                    "observed": 0.0526
+                  }
+                },
+                "second": {
+                  "ability_share": 0.10402,
+                  "player_course_share": 0.188354,
+                  "course_share": 0.08104,
+                  "local_share": 0.096615,
+                  "combined": 0.1282,
+                  "player_course": {
+                    "available": true,
+                    "starts": 38,
+                    "reliability": "A",
+                    "shrink": 0.72,
+                    "observed": 0.2632
+                  }
+                },
+                "third": {
+                  "ability_share": 0.114518,
+                  "player_course_share": 0.169534,
+                  "course_share": 0.149028,
+                  "local_share": 0.104323,
+                  "combined": 0.139656,
+                  "player_course": {
+                    "available": true,
+                    "starts": 38,
+                    "reliability": "A",
+                    "shrink": 0.72,
+                    "observed": 0.21050000000000002
+                  }
+                }
+              },
+              "6": {
+                "win": {
+                  "ability_share": 0.226942,
+                  "player_course_share": 0.040131,
+                  "course_share": 0.058968,
+                  "local_share": 0.233271,
+                  "combined": 0.128596,
+                  "player_course": {
+                    "available": true,
+                    "starts": 14,
+                    "reliability": "B",
+                    "shrink": 0.2427,
+                    "observed": 0.0
+                  }
+                },
+                "second": {
+                  "ability_share": 0.22655,
+                  "player_course_share": 0.077312,
+                  "course_share": 0.115057,
+                  "local_share": 0.221795,
+                  "combined": 0.151543,
+                  "player_course": {
+                    "available": true,
+                    "starts": 14,
+                    "reliability": "B",
+                    "shrink": 0.2427,
+                    "observed": 0.0
+                  }
+                },
+                "third": {
+                  "ability_share": 0.218317,
+                  "player_course_share": 0.207479,
+                  "course_share": 0.175033,
+                  "local_share": 0.230367,
+                  "combined": 0.207072,
+                  "player_course": {
+                    "available": true,
+                    "starts": 14,
+                    "reliability": "B",
+                    "shrink": 0.2427,
+                    "observed": 0.4286
+                  }
+                }
+              }
+            },
+            "meetingAudit": {
+              "1": {
+                "available": true,
+                "run_count": 2,
+                "level_score": -0.007347,
+                "trend_score": -0.654444,
+                "recent_score": 0.012917,
+                "stability_score": 0.590972,
+                "trend_label": "falling",
+                "run_scores": [
+                  {
+                    "day_no": 0,
+                    "race_no": 1,
+                    "finish": 2,
+                    "course": 2,
+                    "score": 0.258333
+                  },
+                  {
+                    "day_no": 0,
+                    "race_no": 2,
+                    "finish": 5,
+                    "course": 6,
+                    "score": -0.2325
+                  }
+                ],
+                "meeting_weight_v22": 0.9,
+                "trend_confidence_v22": 0.5,
+                "win_delta_v22": -0.003951,
+                "second_delta_v22": 0.002303,
+                "third_delta_v22": 0.001011
+              },
+              "2": {
+                "available": true,
+                "run_count": 1,
+                "level_score": 0.607083,
+                "trend_score": 0.0,
+                "recent_score": 0.607083,
+                "stability_score": 1.0,
+                "trend_label": "flat",
+                "run_scores": [
+                  {
+                    "day_no": 0,
+                    "race_no": 1,
+                    "finish": 1,
+                    "course": 4,
+                    "score": 0.607083
+                  }
+                ],
+                "meeting_weight_v22": 0.9,
+                "trend_confidence_v22": 0.0,
+                "win_delta_v22": 0.029849,
+                "second_delta_v22": 0.020457,
+                "third_delta_v22": 0.015173
+              },
+              "3": {
+                "available": true,
+                "run_count": 2,
+                "level_score": -0.412622,
+                "trend_score": -0.602778,
+                "recent_score": -0.393958,
+                "stability_score": 0.623264,
+                "trend_label": "falling",
+                "run_scores": [
+                  {
+                    "day_no": 0,
+                    "race_no": 1,
+                    "finish": 4,
+                    "course": 4,
+                    "score": -0.167917
+                  },
+                  {
+                    "day_no": 0,
+                    "race_no": 2,
+                    "finish": 6,
+                    "course": 2,
+                    "score": -0.62
+                  }
+                ],
+                "meeting_weight_v22": 0.9,
+                "trend_confidence_v22": 0.5,
+                "win_delta_v22": -0.014592,
+                "second_delta_v22": -0.011596,
+                "third_delta_v22": -0.008605
+              },
+              "4": {
+                "available": true,
+                "run_count": 2,
+                "level_score": -0.16057,
+                "trend_score": -1.0,
+                "recent_score": -0.122708,
+                "stability_score": 0.235764,
+                "trend_label": "falling",
+                "run_scores": [
+                  {
+                    "day_no": 0,
+                    "race_no": 1,
+                    "finish": 1,
+                    "course": 1,
+                    "score": 0.335833
+                  },
+                  {
+                    "day_no": 0,
+                    "race_no": 2,
+                    "finish": 6,
+                    "course": 5,
+                    "score": -0.58125
+                  }
+                ],
+                "meeting_weight_v22": 0.9,
+                "trend_confidence_v22": 0.5,
+                "win_delta_v22": -0.001437,
+                "second_delta_v22": -0.004065,
+                "third_delta_v22": -0.003321
+              },
+              "5": {
+                "available": true,
+                "run_count": 1,
+                "level_score": 0.025833,
+                "trend_score": 0.0,
+                "recent_score": 0.025833,
+                "stability_score": 1.0,
+                "trend_label": "flat",
+                "run_scores": [
+                  {
+                    "day_no": 0,
+                    "race_no": 1,
+                    "finish": 4,
+                    "course": 6,
+                    "score": 0.025833
+                  }
+                ],
+                "meeting_weight_v22": 0.9,
+                "trend_confidence_v22": 0.0,
+                "win_delta_v22": 0.0022,
+                "second_delta_v22": 0.002031,
+                "third_delta_v22": 0.001692
+              },
+              "6": {
+                "available": true,
+                "run_count": 2,
+                "level_score": 0.175027,
+                "trend_score": -0.396111,
+                "recent_score": 0.187292,
+                "stability_score": 0.752431,
+                "trend_label": "falling",
+                "run_scores": [
+                  {
+                    "day_no": 0,
+                    "race_no": 1,
+                    "finish": 1,
+                    "course": 1,
+                    "score": 0.335833
+                  },
+                  {
+                    "day_no": 0,
+                    "race_no": 2,
+                    "finish": 3,
+                    "course": 3,
+                    "score": 0.03875
+                  }
+                ],
+                "meeting_weight_v22": 0.9,
+                "trend_confidence_v22": 0.5,
+                "win_delta_v22": 0.014111,
+                "second_delta_v22": 0.009875,
+                "third_delta_v22": 0.009403
+              }
+            }
+          },
+          "validation": {
+            "six_boats": true,
+            "win_sum": 1.000001,
+            "second_sum": 1.000001,
+            "third_sum": 1.0,
+            "ticket_count": 10,
+            "ticket_unique": true,
+            "odds_used": false
+          },
+          "slitAdjacency": [],
+          "escapeRateMultiAttack": {
+            "active": true,
+            "escape_rate": 52.9,
+            "escape_band": "weak",
+            "attackers": [
+              {
+                "lane": 2,
+                "course": 2,
+                "score": 0.14718233333333336,
+                "details": {
+                  "ability": -0.2632,
+                  "local": 0.0933,
+                  "exhibition": 1.0,
+                  "motor": -0.1801,
+                  "st": 0.0,
+                  "class": 0.25
+                },
+                "share": 0.4806,
+                "win_delta": 0.0344
+              },
+              {
+                "lane": 4,
+                "course": 4,
+                "score": 0.15907044444444438,
+                "details": {
+                  "ability": -0.0942,
+                  "local": 0.3967,
+                  "exhibition": -0.2,
+                  "motor": 0.2507,
+                  "st": 0.6,
+                  "class": 0.25
+                },
+                "share": 0.5194,
+                "win_delta": 0.0371
+              }
+            ],
+            "course1_win_delta": -0.0715,
+            "multiple_attackers": true
+          },
+          "originalExhibitionOuterLink": {
+            "original_exhibition_mean": null,
+            "original_exhibition_adjustments": [],
+            "course4_outer_link": {
+              "active": true,
+              "lane4": 4,
+              "lane5": 6,
+              "lane6": 5,
+              "preferred_lane": 6,
+              "score_gap": 0.2842,
+              "details": {
+                "6": {
+                  "class": 0.65,
+                  "motor": -0.0856,
+                  "exhibition": -0.6,
+                  "original": 0.0,
+                  "local": 0.4444,
+                  "composite": 0.128
+                },
+                "5": {
+                  "class": 0.2,
+                  "motor": -0.0159,
+                  "exhibition": -1.0,
+                  "original": 0.0,
+                  "local": -0.6222,
+                  "composite": -0.1562
+                }
+              }
+            }
+          },
+          "ticketRankAudit": [
+            {
+              "rank": 1,
+              "ticket": "1-2-6",
+              "probability": 0.02683724,
+              "raw_probability": 0.02632071,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 2,
+              "ticket": "4-2-6",
+              "probability": 0.02398337,
+              "raw_probability": 0.02330471,
+              "scenario_multiplier": 1.165663,
+              "scenario_tags": [
+                "course4_attack",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 3,
+              "ticket": "2-4-6",
+              "probability": 0.02379853,
+              "raw_probability": 0.01917442,
+              "scenario_multiplier": 1.405835,
+              "scenario_tags": [
+                "course2_attack",
+                "course4_preferred_outer_link"
+              ]
+            },
+            {
+              "rank": 4,
+              "ticket": "2-1-6",
+              "probability": 0.02106871,
+              "raw_probability": 0.02106158,
+              "scenario_multiplier": 1.133061,
+              "scenario_tags": [
+                "course2_attack",
+                "inside_remain"
+              ]
+            },
+            {
+              "rank": 5,
+              "ticket": "1-4-6",
+              "probability": 0.02077694,
+              "raw_probability": 0.01703157,
+              "scenario_multiplier": 1.381763,
+              "scenario_tags": [
+                "nige",
+                "course4_preferred_outer_link"
+              ]
+            },
+            {
+              "rank": 6,
+              "ticket": "1-2-3",
+              "probability": 0.01888297,
+              "raw_probability": 0.01851953,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 7,
+              "ticket": "4-1-6",
+              "probability": 0.01804205,
+              "raw_probability": 0.01656416,
+              "scenario_multiplier": 1.233738,
+              "scenario_tags": [
+                "course4_attack",
+                "direct_outside_link",
+                "inside_remain",
+                "attack_head_inside_second_outside_third"
+              ]
+            },
+            {
+              "rank": 8,
+              "ticket": "2-3-6",
+              "probability": 0.01675779,
+              "raw_probability": 0.01615384,
+              "scenario_multiplier": 1.175026,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 9,
+              "ticket": "2-1-3",
+              "probability": 0.01627101,
+              "raw_probability": 0.01481915,
+              "scenario_multiplier": 1.243648,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link",
+                "inside_remain",
+                "attack_head_inside_second_outside_third"
+              ]
+            },
+            {
+              "rank": 10,
+              "ticket": "1-2-4",
+              "probability": 0.01550042,
+              "raw_probability": 0.01520209,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 11,
+              "ticket": "2-3-1",
+              "probability": 0.01528861,
+              "raw_probability": 0.01049687,
+              "scenario_multiplier": 1.649737,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link",
+                "inside_remain",
+                "attack_head_outside_second_inside_third"
+              ]
+            },
+            {
+              "rank": 12,
+              "ticket": "4-2-3",
+              "probability": 0.01506693,
+              "raw_probability": 0.01639744,
+              "scenario_multiplier": 1.04077,
+              "scenario_tags": [
+                "course4_attack"
+              ]
+            },
+            {
+              "rank": 13,
+              "ticket": "4-2-1",
+              "probability": 0.01502796,
+              "raw_probability": 0.01514355,
+              "scenario_multiplier": 1.124032,
+              "scenario_tags": [
+                "course4_attack",
+                "inside_remain"
+              ]
+            },
+            {
+              "rank": 14,
+              "ticket": "1-2-5",
+              "probability": 0.01473592,
+              "raw_probability": 0.0144523,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 15,
+              "ticket": "1-4-2",
+              "probability": 0.01459825,
+              "raw_probability": 0.01431728,
+              "scenario_multiplier": 1.154906,
+              "scenario_tags": [
+                "nige",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 16,
+              "ticket": "2-4-3",
+              "probability": 0.01399574,
+              "raw_probability": 0.01349132,
+              "scenario_multiplier": 1.175026,
+              "scenario_tags": [
+                "course2_attack",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 17,
+              "ticket": "4-1-2",
+              "probability": 0.01381808,
+              "raw_probability": 0.01392437,
+              "scenario_multiplier": 1.124032,
+              "scenario_tags": [
+                "course4_attack",
+                "inside_remain"
+              ]
+            },
+            {
+              "rank": 18,
+              "ticket": "4-3-6",
+              "probability": 0.01305286,
+              "raw_probability": 0.0126835,
+              "scenario_multiplier": 1.165663,
+              "scenario_tags": [
+                "course4_attack",
+                "direct_outside_link"
+              ]
+            },
+            {
+              "rank": 19,
+              "ticket": "1-3-6",
+              "probability": 0.01302614,
+              "raw_probability": 0.01430848,
+              "scenario_multiplier": 1.031166,
+              "scenario_tags": [
+                "nige"
+              ]
+            },
+            {
+              "rank": 20,
+              "ticket": "3-2-6",
+              "probability": 0.01249487,
+              "raw_probability": 0.01357532,
+              "scenario_multiplier": 1.042529,
+              "scenario_tags": [
+                "course3_attack"
+              ]
+            }
+          ],
+          "oddsUsedForPrediction": false
+        },
+        "phase": "final",
+        "finalPredictionStatus": "complete",
+        "predictionStage": {
+          "label": "本予想",
+          "badge": "本予想",
+          "statusText": "直前・展示を反映して若松v2.2で再精査済み",
+          "color": "green"
+        },
+        "missingFinalInputs": [],
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "baseLabel": "直前前エンジン予想",
+          "realtimeApplied": true,
+          "realtimeLabel": "展示・スリット・直前反映",
+          "reviewed": true,
+          "reviewLabel": "再精査後の調整数字",
+          "adjustedRequired": true
+        },
+        "probabilityReview": {
+          "1": {
+            "morningWin": 24.7,
+            "morningSecond": 19.5,
+            "morningThird": 15.0,
+            "deltaWin": -1.1,
+            "deltaSecond": -0.1,
+            "deltaThird": 0.0
+          },
+          "2": {
+            "morningWin": 18.0,
+            "morningSecond": 23.5,
+            "morningThird": 18.8,
+            "deltaWin": 5.0,
+            "deltaSecond": 2.1,
+            "deltaThird": 0.7
+          },
+          "3": {
+            "morningWin": 11.7,
+            "morningSecond": 14.2,
+            "morningThird": 16.0,
+            "deltaWin": 0.9,
+            "deltaSecond": 0.4,
+            "deltaThird": 0.2
+          },
+          "4": {
+            "morningWin": 24.3,
+            "morningSecond": 19.1,
+            "morningThird": 14.1,
+            "deltaWin": -2.6,
+            "deltaSecond": -1.1,
+            "deltaThird": -0.8
+          },
+          "5": {
+            "morningWin": 9.1,
+            "morningSecond": 8.5,
+            "morningThird": 14.8,
+            "deltaWin": -3.1,
+            "deltaSecond": 0.8,
+            "deltaThird": -2.1
+          },
+          "6": {
+            "morningWin": 12.2,
+            "morningSecond": 15.2,
+            "morningThird": 21.2,
+            "deltaWin": 0.9,
+            "deltaSecond": -2.0,
+            "deltaThird": 1.9
+          }
+        }
+      },
+      "direct": {
+        "actual_entry": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          5
+        ],
+        "air_temperature": 34,
+        "entry_changed": false,
+        "lap_shortened": null,
+        "other_changes": [
+          "部品交換"
+        ],
+        "racers": [
+          {
+            "lane": 1,
+            "name": "岡部 大輔",
+            "parts_exchange": [],
+            "player_id": 4092,
+            "tilt": 0,
+            "weight": 52.3,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 2,
+            "name": "牧山 敦也",
+            "parts_exchange": [],
+            "player_id": 4981,
+            "tilt": 0,
+            "weight": 52,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 3,
+            "name": "井上 慧人",
+            "parts_exchange": [],
+            "player_id": 5328,
+            "tilt": 0,
+            "weight": 53.4,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 4,
+            "name": "中村 将隆",
+            "parts_exchange": [],
+            "player_id": 4982,
+            "tilt": -0.5,
+            "weight": 53.1,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          },
+          {
+            "lane": 5,
+            "name": "小川 晃司",
+            "parts_exchange": [],
+            "player_id": 3352,
+            "tilt": -0.5,
+            "weight": 51,
+            "weight_adjustment": 1,
+            "withdrawn": false
+          },
+          {
+            "lane": 6,
+            "name": "岡瀬 正人",
+            "parts_exchange": [],
+            "player_id": 3746,
+            "tilt": 0,
+            "weight": 52.1,
+            "weight_adjustment": 0,
+            "withdrawn": false
+          }
+        ],
+        "stabilizer": null,
+        "water_temperature": 33,
+        "wave_height": 2,
+        "weather": "晴",
+        "wind_direction": 8,
+        "wind_speed": 2,
+        "withdrawals": []
+      },
+      "exhibition": {
+        "entries": [
+          {
+            "exhibition_course": 1,
+            "exhibition_gap": 0.03,
+            "exhibition_rank": 3,
+            "exhibition_time": 6.94,
+            "lane": 1,
+            "name": "岡部 大輔",
+            "player_id": 4092,
+            "start_rank": 3,
+            "start_raw": 0.1,
+            "start_time": 0.1,
+            "tilt": 0
+          },
+          {
+            "exhibition_course": 2,
+            "exhibition_gap": 0.0,
+            "exhibition_rank": 1,
+            "exhibition_time": 6.91,
+            "lane": 2,
+            "name": "牧山 敦也",
+            "player_id": 4981,
+            "start_rank": 4,
+            "start_raw": 0.13,
+            "start_time": 0.13,
+            "tilt": 0
+          },
+          {
+            "exhibition_course": 3,
+            "exhibition_gap": 0.01,
+            "exhibition_rank": 2,
+            "exhibition_time": 6.92,
+            "lane": 3,
+            "name": "井上 慧人",
+            "player_id": 5328,
+            "start_rank": 1,
+            "start_raw": 0.07,
+            "start_time": 0.07,
+            "tilt": 0
+          },
+          {
+            "exhibition_course": 4,
+            "exhibition_gap": 0.04,
+            "exhibition_rank": 4,
+            "exhibition_time": 6.95,
+            "lane": 4,
+            "name": "中村 将隆",
+            "player_id": 4982,
+            "start_rank": 5,
+            "start_raw": 0.15,
+            "start_time": 0.15,
+            "tilt": -0.5
+          },
+          {
+            "exhibition_course": 6,
+            "exhibition_gap": 0.13,
+            "exhibition_rank": 6,
+            "exhibition_time": 7.04,
+            "lane": 5,
+            "name": "小川 晃司",
+            "player_id": 3352,
+            "start_rank": 6,
+            "start_raw": 0.16,
+            "start_time": 0.16,
+            "tilt": -0.5
+          },
+          {
+            "exhibition_course": 5,
+            "exhibition_gap": 0.09,
+            "exhibition_rank": 5,
+            "exhibition_time": 7.0,
+            "lane": 6,
+            "name": "岡瀬 正人",
+            "player_id": 3746,
+            "start_rank": 2,
+            "start_raw": 0.09,
+            "start_time": 0.09,
+            "tilt": 0
+          }
+        ],
+        "slit_source": [
+          {
+            "course": 1,
+            "lane": 1,
+            "start_raw": 0.1,
+            "start_time": 0.1
+          },
+          {
+            "course": 2,
+            "lane": 2,
+            "start_raw": 0.13,
+            "start_time": 0.13
+          },
+          {
+            "course": 3,
+            "lane": 3,
+            "start_raw": 0.07,
+            "start_time": 0.07
+          },
+          {
+            "course": 4,
+            "lane": 4,
+            "start_raw": 0.15,
+            "start_time": 0.15
+          },
+          {
+            "course": 6,
+            "lane": 5,
+            "start_raw": 0.16,
+            "start_time": 0.16
+          },
+          {
+            "course": 5,
+            "lane": 6,
+            "start_raw": 0.09,
+            "start_time": 0.09
+          }
+        ],
+        "start_order": [
+          3,
+          6,
+          1,
+          2,
+          4,
+          5
+        ]
+      }
     },
     {
       "race": 3,
@@ -67003,58 +69007,58 @@
       "engine": "wakamatsu_engine_v2.2",
       "engineVersion": "2.2",
       "win": {
-        "1": 24.68,
-        "2": 17.99,
-        "3": 11.67,
-        "4": 24.29,
-        "5": 9.14,
-        "6": 12.23
+        "1": 23.54,
+        "2": 22.95,
+        "3": 12.62,
+        "4": 21.71,
+        "5": 6.04,
+        "6": 13.14
       },
       "second": {
-        "1": 19.49,
-        "2": 23.46,
-        "3": 14.18,
-        "4": 19.15,
-        "5": 8.48,
-        "6": 15.24
+        "1": 19.34,
+        "2": 25.52,
+        "3": 14.55,
+        "4": 18.06,
+        "5": 9.33,
+        "6": 13.2
       },
       "third": {
-        "1": 15.01,
-        "2": 18.76,
-        "3": 16.03,
-        "4": 14.14,
-        "5": 14.84,
-        "6": 21.22
+        "1": 15.04,
+        "2": 19.46,
+        "3": 16.28,
+        "4": 13.37,
+        "5": 12.71,
+        "6": 23.14
       },
       "top3": {
-        "1": 59.17,
-        "2": 60.21,
-        "3": 41.88,
-        "4": 57.58,
-        "5": 32.46,
-        "6": 48.7
+        "1": 57.91,
+        "2": 67.94,
+        "3": 43.45,
+        "4": 53.13,
+        "5": 28.07,
+        "6": 49.49
       },
       "sab": "B",
       "sabDetail": {
         "grade": "B",
-        "score": 0.2684,
-        "head_concentration": 0.2467,
-        "head_gap": 0.0039,
-        "scenario_top": 0.2378,
-        "ticket_coverage_10": 0.1853,
-        "entry_change_penalty": false,
-        "entry_change_severity": 0.0,
+        "score": 0.1331,
+        "head_concentration": 0.2354,
+        "head_gap": 0.0058,
+        "scenario_top": 0.2233,
+        "ticket_coverage_10": 0.2019,
+        "entry_change_penalty": true,
+        "entry_change_severity": 0.2533,
         "first_day_penalty": false,
-        "low_escape_attack_penalty": 0.075,
+        "low_escape_attack_penalty": 0.11,
         "grade_cap": "A",
         "meaning": "prediction reproducibility/confidence; independent from ticket count"
       },
-      "confidence": 26.8,
+      "confidence": 13.3,
       "ai": [
         {
           "combo": "1-2-6",
           "role": "本線",
-          "probability": 2.39,
+          "probability": 2.684,
           "scenarioTags": [
             "nige",
             "direct_outside_link"
@@ -67062,9 +69066,39 @@
           "odds": "-"
         },
         {
+          "combo": "4-2-6",
+          "role": "本線",
+          "probability": 2.398,
+          "scenarioTags": [
+            "course4_attack",
+            "direct_outside_link"
+          ],
+          "odds": "-"
+        },
+        {
+          "combo": "2-4-6",
+          "role": "本線",
+          "probability": 2.38,
+          "scenarioTags": [
+            "course2_attack",
+            "course4_preferred_outer_link"
+          ],
+          "odds": "-"
+        },
+        {
+          "combo": "2-1-6",
+          "role": "本線",
+          "probability": 2.107,
+          "scenarioTags": [
+            "course2_attack",
+            "inside_remain"
+          ],
+          "odds": "-"
+        },
+        {
           "combo": "1-4-6",
           "role": "本線",
-          "probability": 2.182,
+          "probability": 2.078,
           "scenarioTags": [
             "nige",
             "course4_preferred_outer_link"
@@ -67072,18 +69106,9 @@
           "odds": "-"
         },
         {
-          "combo": "4-2-6",
-          "role": "本線",
-          "probability": 2.094,
-          "scenarioTags": [
-            "course4_attack"
-          ],
-          "odds": "-"
-        },
-        {
           "combo": "1-2-3",
           "role": "本線",
-          "probability": 1.805,
+          "probability": 1.888,
           "scenarioTags": [
             "nige",
             "direct_outside_link"
@@ -67092,40 +69117,22 @@
         },
         {
           "combo": "4-1-6",
-          "role": "本線",
-          "probability": 1.78,
+          "role": "ズレ対応",
+          "probability": 1.804,
           "scenarioTags": [
             "course4_attack",
-            "inside_remain"
+            "direct_outside_link",
+            "inside_remain",
+            "attack_head_inside_second_outside_third"
           ],
           "odds": "-"
         },
         {
-          "combo": "2-4-6",
-          "role": "本線",
-          "probability": 1.758,
+          "combo": "2-3-6",
+          "role": "ズレ対応",
+          "probability": 1.676,
           "scenarioTags": [
             "course2_attack",
-            "course4_preferred_outer_link"
-          ],
-          "odds": "-"
-        },
-        {
-          "combo": "1-2-5",
-          "role": "ズレ対応",
-          "probability": 1.671,
-          "scenarioTags": [
-            "nige",
-            "direct_outside_link"
-          ],
-          "odds": "-"
-        },
-        {
-          "combo": "4-2-5",
-          "role": "ズレ対応",
-          "probability": 1.64,
-          "scenarioTags": [
-            "course4_attack",
             "direct_outside_link"
           ],
           "odds": "-"
@@ -67133,22 +69140,24 @@
       ],
       "aiUpset": [
         {
-          "combo": "1-4-2",
+          "combo": "2-1-3",
           "role": "荒れ対応",
-          "probability": 1.613,
+          "probability": 1.627,
           "scenarioTags": [
-            "nige",
-            "direct_outside_link"
+            "course2_attack",
+            "direct_outside_link",
+            "inside_remain",
+            "attack_head_inside_second_outside_third"
           ],
           "odds": "-"
         },
         {
-          "combo": "4-2-1",
+          "combo": "1-2-4",
           "role": "荒れ対応",
-          "probability": 1.599,
+          "probability": 1.55,
           "scenarioTags": [
-            "course4_attack",
-            "inside_remain"
+            "nige",
+            "direct_outside_link"
           ],
           "odds": "-"
         }
@@ -67157,7 +69166,7 @@
         {
           "combo": "1-2-6",
           "role": "本線",
-          "probability": 2.39,
+          "probability": 2.684,
           "scenarioTags": [
             "nige",
             "direct_outside_link"
@@ -67165,9 +69174,39 @@
           "odds": "-"
         },
         {
+          "combo": "4-2-6",
+          "role": "本線",
+          "probability": 2.398,
+          "scenarioTags": [
+            "course4_attack",
+            "direct_outside_link"
+          ],
+          "odds": "-"
+        },
+        {
+          "combo": "2-4-6",
+          "role": "本線",
+          "probability": 2.38,
+          "scenarioTags": [
+            "course2_attack",
+            "course4_preferred_outer_link"
+          ],
+          "odds": "-"
+        },
+        {
+          "combo": "2-1-6",
+          "role": "本線",
+          "probability": 2.107,
+          "scenarioTags": [
+            "course2_attack",
+            "inside_remain"
+          ],
+          "odds": "-"
+        },
+        {
           "combo": "1-4-6",
           "role": "本線",
-          "probability": 2.182,
+          "probability": 2.078,
           "scenarioTags": [
             "nige",
             "course4_preferred_outer_link"
@@ -67175,18 +69214,9 @@
           "odds": "-"
         },
         {
-          "combo": "4-2-6",
-          "role": "本線",
-          "probability": 2.094,
-          "scenarioTags": [
-            "course4_attack"
-          ],
-          "odds": "-"
-        },
-        {
           "combo": "1-2-3",
           "role": "本線",
-          "probability": 1.805,
+          "probability": 1.888,
           "scenarioTags": [
             "nige",
             "direct_outside_link"
@@ -67195,74 +69225,58 @@
         },
         {
           "combo": "4-1-6",
-          "role": "本線",
-          "probability": 1.78,
+          "role": "ズレ対応",
+          "probability": 1.804,
           "scenarioTags": [
             "course4_attack",
-            "inside_remain"
+            "direct_outside_link",
+            "inside_remain",
+            "attack_head_inside_second_outside_third"
           ],
           "odds": "-"
         },
         {
-          "combo": "2-4-6",
-          "role": "本線",
-          "probability": 1.758,
+          "combo": "2-3-6",
+          "role": "ズレ対応",
+          "probability": 1.676,
           "scenarioTags": [
             "course2_attack",
-            "course4_preferred_outer_link"
+            "direct_outside_link"
           ],
           "odds": "-"
         },
         {
-          "combo": "1-2-5",
-          "role": "ズレ対応",
-          "probability": 1.671,
+          "combo": "2-1-3",
+          "role": "荒れ対応",
+          "probability": 1.627,
+          "scenarioTags": [
+            "course2_attack",
+            "direct_outside_link",
+            "inside_remain",
+            "attack_head_inside_second_outside_third"
+          ],
+          "odds": "-"
+        },
+        {
+          "combo": "1-2-4",
+          "role": "荒れ対応",
+          "probability": 1.55,
           "scenarioTags": [
             "nige",
             "direct_outside_link"
-          ],
-          "odds": "-"
-        },
-        {
-          "combo": "4-2-5",
-          "role": "ズレ対応",
-          "probability": 1.64,
-          "scenarioTags": [
-            "course4_attack",
-            "direct_outside_link"
-          ],
-          "odds": "-"
-        },
-        {
-          "combo": "1-4-2",
-          "role": "荒れ対応",
-          "probability": 1.613,
-          "scenarioTags": [
-            "nige",
-            "direct_outside_link"
-          ],
-          "odds": "-"
-        },
-        {
-          "combo": "4-2-1",
-          "role": "荒れ対応",
-          "probability": 1.599,
-          "scenarioTags": [
-            "course4_attack",
-            "inside_remain"
           ],
           "odds": "-"
         }
       ],
       "scenarios": {
-        "nige": 0.23780230444360081,
-        "makuri_4": 0.1631035612408197,
-        "sashi_2": 0.14758781883477787,
-        "makurizashi_4": 0.1306746970563256,
-        "outer_attack": 0.09970317463311305,
-        "makuri_3": 0.09420220751852416,
-        "makurizashi_3": 0.0844262399262928,
-        "chaos": 0.04249999634654611
+        "sashi_2": 0.22332134273754128,
+        "nige": 0.19478780895139047,
+        "makuri_4": 0.12519903933599383,
+        "makuri_3": 0.12319848077019631,
+        "makurizashi_4": 0.10130327871501088,
+        "makurizashi_3": 0.10063895354299988,
+        "outer_attack": 0.07681390209017304,
+        "chaos": 0.054737193856694295
       },
       "raceContext": {
         "time_band": "昼/序盤",
@@ -67270,10 +69284,10 @@
         "tide_phase": "rising",
         "tide_zone": "mid",
         "water_type": "3攻め型",
-        "wind_dir": null,
-        "wind_speed": 0.0,
-        "wave_height": 0.0,
-        "entry_changed": false,
+        "wind_dir": 8,
+        "wind_speed": 2.0,
+        "wave_height": 2.0,
+        "entry_changed": true,
         "event_day": 2,
         "race_stage": "day2",
         "minutes_to_low_tide": -108,
@@ -67439,8 +69453,8 @@
       ],
       "readability": {
         "axisLane": 1,
-        "secondHeadLane": 4,
-        "axisGap": 0.39
+        "secondHeadLane": 2,
+        "axisGap": 0.59
       },
       "diagnostics": {
         "playerIdResolution": {
@@ -67469,23 +69483,23 @@
               "wind": true,
               "wave": true,
               "stabilizer": false,
-              "exhibition": false,
+              "exhibition": true,
               "actualEntry": true,
               "escapeRate": true,
               "normalizationTarget": true,
               "oddsUsed": false
             },
-            "actualEntrySource": "race_input.entry_course",
+            "actualEntrySource": "direct.actual_entry",
             "actualEntry": [
               1,
               2,
               3,
               4,
-              5,
-              6
+              6,
+              5
             ],
-            "windSpeed": 0.0,
-            "waveHeight": 0.0,
+            "windSpeed": 2.0,
+            "waveHeight": 2.0,
             "stabilizer": null,
             "tideType": "若潮",
             "tidePhase": "rising",
@@ -67504,10 +69518,10 @@
             "1": {
               "win": {
                 "ability_share": 0.166086,
-                "player_course_share": 0.58237,
+                "player_course_share": 0.573665,
                 "course_share": 0.549543,
                 "local_share": 0.20372,
-                "combined": 0.39224,
+                "combined": 0.389193,
                 "player_course": {
                   "available": true,
                   "starts": 26,
@@ -67518,10 +69532,10 @@
               },
               "second": {
                 "ability_share": 0.165355,
-                "player_course_share": 0.150668,
+                "player_course_share": 0.143973,
                 "course_share": 0.176197,
                 "local_share": 0.206336,
-                "combined": 0.166481,
+                "combined": 0.164138,
                 "player_course": {
                   "available": true,
                   "starts": 26,
@@ -67532,10 +69546,10 @@
               },
               "third": {
                 "ability_share": 0.15697,
-                "player_course_share": 0.078821,
+                "player_course_share": 0.072702,
                 "course_share": 0.092836,
                 "local_share": 0.195032,
-                "combined": 0.120597,
+                "combined": 0.118455,
                 "player_course": {
                   "available": true,
                   "starts": 26,
@@ -67548,10 +69562,10 @@
             "2": {
               "win": {
                 "ability_share": 0.179866,
-                "player_course_share": 0.126816,
+                "player_course_share": 0.124921,
                 "course_share": 0.126251,
                 "local_share": 0.18972,
-                "combined": 0.151561,
+                "combined": 0.150898,
                 "player_course": {
                   "available": true,
                   "starts": 10,
@@ -67562,10 +69576,10 @@
               },
               "second": {
                 "ability_share": 0.178543,
-                "player_course_share": 0.246542,
+                "player_course_share": 0.235587,
                 "course_share": 0.237286,
                 "local_share": 0.191147,
-                "combined": 0.215351,
+                "combined": 0.211517,
                 "player_course": {
                   "available": true,
                   "starts": 10,
@@ -67576,10 +69590,10 @@
               },
               "third": {
                 "ability_share": 0.191993,
-                "player_course_share": 0.21815,
+                "player_course_share": 0.201215,
                 "course_share": 0.193665,
                 "local_share": 0.1959,
-                "combined": 0.201873,
+                "combined": 0.195946,
                 "player_course": {
                   "available": true,
                   "starts": 10,
@@ -67592,10 +69606,10 @@
             "3": {
               "win": {
                 "ability_share": 0.128728,
-                "player_course_share": 0.111715,
+                "player_course_share": 0.110046,
                 "course_share": 0.122462,
                 "local_share": 0.054394,
-                "combined": 0.114087,
+                "combined": 0.113503,
                 "player_course": {
                   "available": false,
                   "fallback": "course_prior"
@@ -67603,10 +69617,10 @@
               },
               "second": {
                 "ability_share": 0.131836,
-                "player_course_share": 0.198908,
+                "player_course_share": 0.19007,
                 "course_share": 0.214223,
                 "local_share": 0.055135,
-                "combined": 0.164119,
+                "combined": 0.161025,
                 "player_course": {
                   "available": false,
                   "fallback": "course_prior"
@@ -67614,10 +69628,10 @@
               },
               "third": {
                 "ability_share": 0.129341,
-                "player_course_share": 0.189589,
+                "player_course_share": 0.174871,
                 "course_share": 0.199403,
                 "local_share": 0.044654,
-                "combined": 0.155971,
+                "combined": 0.15082,
                 "player_course": {
                   "available": false,
                   "fallback": "course_prior"
@@ -67627,10 +69641,10 @@
             "4": {
               "win": {
                 "ability_share": 0.184456,
-                "player_course_share": 0.109812,
+                "player_course_share": 0.108171,
                 "course_share": 0.106796,
                 "local_share": 0.213854,
-                "combined": 0.145739,
+                "combined": 0.145164,
                 "player_course": {
                   "available": true,
                   "starts": 6,
@@ -67641,10 +69655,10 @@
               },
               "second": {
                 "ability_share": 0.193697,
-                "player_course_share": 0.172362,
+                "player_course_share": 0.164703,
                 "course_share": 0.176197,
                 "local_share": 0.228971,
-                "combined": 0.186257,
+                "combined": 0.183576,
                 "player_course": {
                   "available": true,
                   "starts": 6,
@@ -67655,10 +69669,10 @@
               },
               "third": {
                 "ability_share": 0.188862,
-                "player_course_share": 0.188859,
+                "player_course_share": 0.174198,
                 "course_share": 0.190036,
                 "local_share": 0.229725,
-                "combined": 0.193182,
+                "combined": 0.188051,
                 "player_course": {
                   "available": true,
                   "starts": 6,
@@ -67671,79 +69685,88 @@
             "5": {
               "win": {
                 "ability_share": 0.113922,
-                "player_course_share": 0.053794,
-                "course_share": 0.058968,
+                "player_course_share": 0.043067,
+                "course_share": 0.03598,
                 "local_share": 0.105039,
-                "combined": 0.080998,
+                "combined": 0.072646,
                 "player_course": {
-                  "available": false,
-                  "fallback": "course_prior"
+                  "available": true,
+                  "starts": 38,
+                  "reliability": "A",
+                  "shrink": 0.72,
+                  "observed": 0.0526
                 }
               },
               "second": {
                 "ability_share": 0.10402,
-                "player_course_share": 0.106832,
-                "course_share": 0.115057,
+                "player_course_share": 0.188354,
+                "course_share": 0.08104,
                 "local_share": 0.096615,
-                "combined": 0.106471,
+                "combined": 0.1282,
                 "player_course": {
-                  "available": false,
-                  "fallback": "course_prior"
+                  "available": true,
+                  "starts": 38,
+                  "reliability": "A",
+                  "shrink": 0.72,
+                  "observed": 0.2632
                 }
               },
               "third": {
                 "ability_share": 0.114518,
-                "player_course_share": 0.166419,
-                "course_share": 0.175033,
+                "player_course_share": 0.169534,
+                "course_share": 0.149028,
                 "local_share": 0.104323,
-                "combined": 0.143767,
+                "combined": 0.139656,
                 "player_course": {
-                  "available": false,
-                  "fallback": "course_prior"
+                  "available": true,
+                  "starts": 38,
+                  "reliability": "A",
+                  "shrink": 0.72,
+                  "observed": 0.21050000000000002
                 }
               }
             },
             "6": {
               "win": {
                 "ability_share": 0.226942,
-                "player_course_share": 0.015493,
-                "course_share": 0.03598,
+                "player_course_share": 0.040131,
+                "course_share": 0.058968,
                 "local_share": 0.233271,
-                "combined": 0.115375,
+                "combined": 0.128596,
                 "player_course": {
                   "available": true,
-                  "starts": 22,
-                  "reliability": "A",
-                  "shrink": 0.528,
+                  "starts": 14,
+                  "reliability": "B",
+                  "shrink": 0.2427,
                   "observed": 0.0
                 }
               },
               "second": {
                 "ability_share": 0.22655,
-                "player_course_share": 0.124689,
-                "course_share": 0.08104,
+                "player_course_share": 0.077312,
+                "course_share": 0.115057,
                 "local_share": 0.221795,
-                "combined": 0.161321,
+                "combined": 0.151543,
                 "player_course": {
                   "available": true,
-                  "starts": 22,
-                  "reliability": "A",
-                  "shrink": 0.528,
-                  "observed": 0.1818
+                  "starts": 14,
+                  "reliability": "B",
+                  "shrink": 0.2427,
+                  "observed": 0.0
                 }
               },
               "third": {
                 "ability_share": 0.218317,
-                "player_course_share": 0.158163,
-                "course_share": 0.149028,
+                "player_course_share": 0.207479,
+                "course_share": 0.175033,
                 "local_share": 0.230367,
-                "combined": 0.18461,
+                "combined": 0.207072,
                 "player_course": {
                   "available": true,
-                  "starts": 22,
-                  "reliability": "A",
-                  "shrink": 0.528,
-                  "observed": 0.1818
+                  "starts": 14,
+                  "reliability": "B",
+                  "shrink": 0.2427,
+                  "observed": 0.4286
                 }
               }
             }
@@ -67919,8 +69942,8 @@
         },
         "validation": {
           "six_boats": true,
-          "win_sum": 1.0,
-          "second_sum": 1.0,
+          "win_sum": 1.000001,
+          "second_sum": 1.000001,
           "third_sum": 1.0,
           "ticket_count": 10,
           "ticket_unique": true,
@@ -67933,23 +69956,38 @@
           "escape_band": "weak",
           "attackers": [
             {
+              "lane": 2,
+              "course": 2,
+              "score": 0.14718233333333336,
+              "details": {
+                "ability": -0.2632,
+                "local": 0.0933,
+                "exhibition": 1.0,
+                "motor": -0.1801,
+                "st": 0.0,
+                "class": 0.25
+              },
+              "share": 0.4806,
+              "win_delta": 0.0344
+            },
+            {
               "lane": 4,
               "course": 4,
-              "score": 0.1930704444444444,
+              "score": 0.15907044444444438,
               "details": {
                 "ability": -0.0942,
                 "local": 0.3967,
-                "exhibition": 0.0,
+                "exhibition": -0.2,
                 "motor": 0.2507,
                 "st": 0.6,
                 "class": 0.25
               },
-              "share": 1.0,
-              "win_delta": 0.0595
+              "share": 0.5194,
+              "win_delta": 0.0371
             }
           ],
-          "course1_win_delta": -0.0595,
-          "multiple_attackers": false
+          "course1_win_delta": -0.0715,
+          "multiple_attackers": true
         },
         "originalExhibitionOuterLink": {
           "original_exhibition_mean": null,
@@ -67957,26 +69995,26 @@
           "course4_outer_link": {
             "active": true,
             "lane4": 4,
-            "lane5": 5,
-            "lane6": 6,
+            "lane5": 6,
+            "lane6": 5,
             "preferred_lane": 6,
-            "score_gap": 0.2242,
+            "score_gap": 0.2842,
             "details": {
-              "5": {
-                "class": 0.2,
-                "motor": -0.0159,
-                "exhibition": 0.0,
-                "original": 0.0,
-                "local": -0.6222,
-                "composite": -0.0062
-              },
               "6": {
                 "class": 0.65,
                 "motor": -0.0856,
-                "exhibition": 0.0,
+                "exhibition": -0.6,
                 "original": 0.0,
                 "local": 0.4444,
-                "composite": 0.218
+                "composite": 0.128
+              },
+              "5": {
+                "class": 0.2,
+                "motor": -0.0159,
+                "exhibition": -1.0,
+                "original": 0.0,
+                "local": -0.6222,
+                "composite": -0.1562
               }
             }
           }
@@ -67985,9 +70023,9 @@
           {
             "rank": 1,
             "ticket": "1-2-6",
-            "probability": 0.02390109,
-            "raw_probability": 0.02303377,
-            "scenario_multiplier": 1.162614,
+            "probability": 0.02683724,
+            "raw_probability": 0.02632071,
+            "scenario_multiplier": 1.154906,
             "scenario_tags": [
               "nige",
               "direct_outside_link"
@@ -67995,162 +70033,65 @@
           },
           {
             "rank": 2,
-            "ticket": "1-4-6",
-            "probability": 0.02182413,
-            "raw_probability": 0.01757914,
-            "scenario_multiplier": 1.390985,
+            "ticket": "4-2-6",
+            "probability": 0.02398337,
+            "raw_probability": 0.02330471,
+            "scenario_multiplier": 1.165663,
             "scenario_tags": [
-              "nige",
-              "course4_preferred_outer_link"
+              "course4_attack",
+              "direct_outside_link"
             ]
           },
           {
             "rank": 3,
-            "ticket": "4-2-6",
-            "probability": 0.02094179,
-            "raw_probability": 0.02228527,
-            "scenario_multiplier": 1.05288,
-            "scenario_tags": [
-              "course4_attack"
-            ]
-          },
-          {
-            "rank": 4,
-            "ticket": "1-2-3",
-            "probability": 0.01805333,
-            "raw_probability": 0.01739822,
-            "scenario_multiplier": 1.162614,
-            "scenario_tags": [
-              "nige",
-              "direct_outside_link"
-            ]
-          },
-          {
-            "rank": 5,
-            "ticket": "4-1-6",
-            "probability": 0.01780016,
-            "raw_probability": 0.01753898,
-            "scenario_multiplier": 1.13711,
-            "scenario_tags": [
-              "course4_attack",
-              "inside_remain"
-            ]
-          },
-          {
-            "rank": 6,
             "ticket": "2-4-6",
-            "probability": 0.01758353,
-            "raw_probability": 0.01423991,
-            "scenario_multiplier": 1.383509,
+            "probability": 0.02379853,
+            "raw_probability": 0.01917442,
+            "scenario_multiplier": 1.405835,
             "scenario_tags": [
               "course2_attack",
               "course4_preferred_outer_link"
             ]
           },
           {
-            "rank": 7,
-            "ticket": "1-2-5",
-            "probability": 0.01671372,
-            "raw_probability": 0.01610722,
-            "scenario_multiplier": 1.162614,
-            "scenario_tags": [
-              "nige",
-              "direct_outside_link"
-            ]
-          },
-          {
-            "rank": 8,
-            "ticket": "4-2-5",
-            "probability": 0.01640164,
-            "raw_probability": 0.0155838,
-            "scenario_multiplier": 1.179226,
-            "scenario_tags": [
-              "course4_attack",
-              "direct_outside_link"
-            ]
-          },
-          {
-            "rank": 9,
-            "ticket": "1-4-2",
-            "probability": 0.01612876,
-            "raw_probability": 0.01554349,
-            "scenario_multiplier": 1.162614,
-            "scenario_tags": [
-              "nige",
-              "direct_outside_link"
-            ]
-          },
-          {
-            "rank": 10,
-            "ticket": "4-2-1",
-            "probability": 0.01599337,
-            "raw_probability": 0.0157587,
-            "scenario_multiplier": 1.13711,
-            "scenario_tags": [
-              "course4_attack",
-              "inside_remain"
-            ]
-          },
-          {
-            "rank": 11,
-            "ticket": "1-2-4",
-            "probability": 0.01592288,
-            "raw_probability": 0.01534508,
-            "scenario_multiplier": 1.162614,
-            "scenario_tags": [
-              "nige",
-              "direct_outside_link"
-            ]
-          },
-          {
-            "rank": 12,
-            "ticket": "4-2-3",
-            "probability": 0.01581807,
-            "raw_probability": 0.01683285,
-            "scenario_multiplier": 1.05288,
-            "scenario_tags": [
-              "course4_attack"
-            ]
-          },
-          {
-            "rank": 13,
-            "ticket": "4-1-2",
-            "probability": 0.01573891,
-            "raw_probability": 0.01550798,
-            "scenario_multiplier": 1.13711,
-            "scenario_tags": [
-              "course4_attack",
-              "inside_remain"
-            ]
-          },
-          {
-            "rank": 14,
+            "rank": 4,
             "ticket": "2-1-6",
-            "probability": 0.01461433,
-            "raw_probability": 0.01468456,
-            "scenario_multiplier": 1.115067,
+            "probability": 0.02106871,
+            "raw_probability": 0.02106158,
+            "scenario_multiplier": 1.133061,
             "scenario_tags": [
               "course2_attack",
               "inside_remain"
             ]
           },
           {
-            "rank": 15,
-            "ticket": "1-6-2",
-            "probability": 0.0142634,
-            "raw_probability": 0.01374581,
-            "scenario_multiplier": 1.162614,
+            "rank": 5,
+            "ticket": "1-4-6",
+            "probability": 0.02077694,
+            "raw_probability": 0.01703157,
+            "scenario_multiplier": 1.381763,
+            "scenario_tags": [
+              "nige",
+              "course4_preferred_outer_link"
+            ]
+          },
+          {
+            "rank": 6,
+            "ticket": "1-2-3",
+            "probability": 0.01888297,
+            "raw_probability": 0.01851953,
+            "scenario_multiplier": 1.154906,
             "scenario_tags": [
               "nige",
               "direct_outside_link"
             ]
           },
           {
-            "rank": 16,
-            "ticket": "4-1-5",
-            "probability": 0.01366229,
-            "raw_probability": 0.01226478,
-            "scenario_multiplier": 1.248092,
+            "rank": 7,
+            "ticket": "4-1-6",
+            "probability": 0.01804205,
+            "raw_probability": 0.01656416,
+            "scenario_multiplier": 1.233738,
             "scenario_tags": [
               "course4_attack",
               "direct_outside_link",
@@ -68159,11 +70100,113 @@
             ]
           },
           {
+            "rank": 8,
+            "ticket": "2-3-6",
+            "probability": 0.01675779,
+            "raw_probability": 0.01615384,
+            "scenario_multiplier": 1.175026,
+            "scenario_tags": [
+              "course2_attack",
+              "direct_outside_link"
+            ]
+          },
+          {
+            "rank": 9,
+            "ticket": "2-1-3",
+            "probability": 0.01627101,
+            "raw_probability": 0.01481915,
+            "scenario_multiplier": 1.243648,
+            "scenario_tags": [
+              "course2_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_inside_second_outside_third"
+            ]
+          },
+          {
+            "rank": 10,
+            "ticket": "1-2-4",
+            "probability": 0.01550042,
+            "raw_probability": 0.01520209,
+            "scenario_multiplier": 1.154906,
+            "scenario_tags": [
+              "nige",
+              "direct_outside_link"
+            ]
+          },
+          {
+            "rank": 11,
+            "ticket": "2-3-1",
+            "probability": 0.01528861,
+            "raw_probability": 0.01049687,
+            "scenario_multiplier": 1.649737,
+            "scenario_tags": [
+              "course2_attack",
+              "direct_outside_link",
+              "inside_remain",
+              "attack_head_outside_second_inside_third"
+            ]
+          },
+          {
+            "rank": 12,
+            "ticket": "4-2-3",
+            "probability": 0.01506693,
+            "raw_probability": 0.01639744,
+            "scenario_multiplier": 1.04077,
+            "scenario_tags": [
+              "course4_attack"
+            ]
+          },
+          {
+            "rank": 13,
+            "ticket": "4-2-1",
+            "probability": 0.01502796,
+            "raw_probability": 0.01514355,
+            "scenario_multiplier": 1.124032,
+            "scenario_tags": [
+              "course4_attack",
+              "inside_remain"
+            ]
+          },
+          {
+            "rank": 14,
+            "ticket": "1-2-5",
+            "probability": 0.01473592,
+            "raw_probability": 0.0144523,
+            "scenario_multiplier": 1.154906,
+            "scenario_tags": [
+              "nige",
+              "direct_outside_link"
+            ]
+          },
+          {
+            "rank": 15,
+            "ticket": "1-4-2",
+            "probability": 0.01459825,
+            "raw_probability": 0.01431728,
+            "scenario_multiplier": 1.154906,
+            "scenario_tags": [
+              "nige",
+              "direct_outside_link"
+            ]
+          },
+          {
+            "rank": 16,
+            "ticket": "2-4-3",
+            "probability": 0.01399574,
+            "raw_probability": 0.01349132,
+            "scenario_multiplier": 1.175026,
+            "scenario_tags": [
+              "course2_attack",
+              "direct_outside_link"
+            ]
+          },
+          {
             "rank": 17,
-            "ticket": "4-1-3",
-            "probability": 0.01344509,
-            "raw_probability": 0.01324781,
-            "scenario_multiplier": 1.13711,
+            "ticket": "4-1-2",
+            "probability": 0.01381808,
+            "raw_probability": 0.01392437,
+            "scenario_multiplier": 1.124032,
             "scenario_tags": [
               "course4_attack",
               "inside_remain"
@@ -68171,46 +70214,108 @@
           },
           {
             "rank": 18,
-            "ticket": "4-6-2",
-            "probability": 0.01249115,
-            "raw_probability": 0.0132925,
-            "scenario_multiplier": 1.05288,
+            "ticket": "4-3-6",
+            "probability": 0.01305286,
+            "raw_probability": 0.0126835,
+            "scenario_multiplier": 1.165663,
             "scenario_tags": [
-              "course4_attack"
+              "course4_attack",
+              "direct_outside_link"
             ]
           },
           {
             "rank": 19,
             "ticket": "1-3-6",
-            "probability": 0.01238687,
-            "raw_probability": 0.01336986,
-            "scenario_multiplier": 1.038048,
+            "probability": 0.01302614,
+            "raw_probability": 0.01430848,
+            "scenario_multiplier": 1.031166,
             "scenario_tags": [
               "nige"
             ]
           },
           {
             "rank": 20,
-            "ticket": "2-1-3",
-            "probability": 0.01236336,
-            "raw_probability": 0.01109177,
-            "scenario_multiplier": 1.248875,
+            "ticket": "3-2-6",
+            "probability": 0.01249487,
+            "raw_probability": 0.01357532,
+            "scenario_multiplier": 1.042529,
             "scenario_tags": [
-              "course2_attack",
-              "direct_outside_link",
-              "inside_remain"
+              "course3_attack"
             ]
           }
         ],
         "oddsUsedForPrediction": false
       },
-      "phase": "pre",
-      "finalPredictionStatus": "waiting_live_data",
-      "missingFinalInputs": [
-        "exhibition_entries",
-        "exhibition_lanes",
-        "exhibition_times"
-      ]
+      "phase": "final",
+      "finalPredictionStatus": "complete",
+      "predictionStage": {
+        "label": "本予想",
+        "badge": "本予想",
+        "statusText": "直前・展示を反映して若松v2.2で再精査済み",
+        "color": "green"
+      },
+      "missingFinalInputs": [],
+      "probabilityReviewStatus": "reviewed",
+      "probabilityFlow": {
+        "required": true,
+        "baseApplied": true,
+        "baseLabel": "直前前エンジン予想",
+        "realtimeApplied": true,
+        "realtimeLabel": "展示・スリット・直前反映",
+        "reviewed": true,
+        "reviewLabel": "再精査後の調整数字",
+        "adjustedRequired": true
+      },
+      "probabilityReview": {
+        "1": {
+          "morningWin": 24.7,
+          "morningSecond": 19.5,
+          "morningThird": 15.0,
+          "deltaWin": -1.1,
+          "deltaSecond": -0.1,
+          "deltaThird": 0.0
+        },
+        "2": {
+          "morningWin": 18.0,
+          "morningSecond": 23.5,
+          "morningThird": 18.8,
+          "deltaWin": 5.0,
+          "deltaSecond": 2.1,
+          "deltaThird": 0.7
+        },
+        "3": {
+          "morningWin": 11.7,
+          "morningSecond": 14.2,
+          "morningThird": 16.0,
+          "deltaWin": 0.9,
+          "deltaSecond": 0.4,
+          "deltaThird": 0.2
+        },
+        "4": {
+          "morningWin": 24.3,
+          "morningSecond": 19.1,
+          "morningThird": 14.1,
+          "deltaWin": -2.6,
+          "deltaSecond": -1.1,
+          "deltaThird": -0.8
+        },
+        "5": {
+          "morningWin": 9.1,
+          "morningSecond": 8.5,
+          "morningThird": 14.8,
+          "deltaWin": -3.1,
+          "deltaSecond": 0.8,
+          "deltaThird": -2.1
+        },
+        "6": {
+          "morningWin": 12.2,
+          "morningSecond": 15.2,
+          "morningThird": 21.2,
+          "deltaWin": 0.9,
+          "deltaSecond": -2.0,
+          "deltaThird": 1.9
+        }
+      }
     },
     "3": {
       "status": "complete",
