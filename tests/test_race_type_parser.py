@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import tempfile
 import unittest
@@ -94,6 +95,58 @@ class RaceTypeParserTests(unittest.TestCase):
                 <= race.keys()
                 for race in races
             )
+        )
+
+    def test_build_payload_attaches_only_explicit_boaters_local_st(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source_dir = Path(directory)
+            races_dir = source_dir / "races"
+            races_dir.mkdir()
+            for race_no in range(1, 13):
+                (races_dir / f"race_{race_no:02d}_entry.txt").write_text(
+                    "\n".join(entry_lines("一般")), encoding="utf-8"
+                )
+            (races_dir / "race_01_boaters_local_st.json").write_text(
+                json.dumps(
+                    {
+                        "racers": [
+                            {
+                                "lane": lane,
+                                "boaters_local_avg_st": f"0.{16 + lane:02d}",
+                                "boaters_local_st_rank": f"{lane}.0位",
+                            }
+                            for lane in range(1, 7)
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            with (
+                patch.object(
+                    MODULE,
+                    "parse_racers",
+                    side_effect=lambda _lines: [
+                        {"lane": lane, "name": f"選手{lane}", "avg_st": "0.99"}
+                        for lane in range(1, 7)
+                    ],
+                ),
+                patch.object(MODULE, "event_day_info", return_value=(1, "初日")),
+            ):
+                payload, detail = MODULE.build_payload(
+                    {"slug": "ashiya", "name": "芦屋"}, "2026-08-24", source_dir
+                )
+
+        self.assertEqual(detail, {"reason": "ok"})
+        first = payload["races"][0]["racers"]
+        self.assertEqual(
+            [racer.get("boaters_local_avg_st") for racer in first],
+            ["0.17", "0.18", "0.19", "0.20", "0.21", "0.22"],
+        )
+        self.assertEqual(first[0]["avg_st"], "0.99")
+        self.assertTrue(
+            all("boaters_local_avg_st" not in racer for racer in payload["races"][1]["racers"])
         )
 
 

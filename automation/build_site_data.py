@@ -834,6 +834,27 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             return None, {"reason": f"missing_entry_{race_no:02d}"}
         lines = entry_lines(entry_path)
         racers = parse_racers(lines)
+        local_st_path = source_dir / "races" / f"race_{race_no:02d}_boaters_local_st.json"
+        if local_st_path.is_file():
+            try:
+                local_rows = json.loads(local_st_path.read_text(encoding="utf-8")).get("racers") or []
+            except (OSError, ValueError, json.JSONDecodeError):
+                local_rows = []
+            local_by_lane = {
+                int(row.get("lane") or 0): row
+                for row in local_rows
+                if isinstance(row, dict) and int(row.get("lane") or 0) in range(1, 7)
+            }
+            for racer in racers:
+                local_row = local_by_lane.get(int(racer.get("lane") or 0))
+                if not local_row:
+                    continue
+                local_avg = str(local_row.get("boaters_local_avg_st") or "").strip()
+                if re.fullmatch(r"0?\.\d{2}", local_avg):
+                    racer["boaters_local_avg_st"] = local_avg
+                local_rank = str(local_row.get("boaters_local_st_rank") or "").strip()
+                if local_rank:
+                    racer["boaters_local_st_rank"] = local_rank
         if venue["slug"] == "biwako":
             player_ids = parse_biwako_player_ids(entry_path.with_suffix(".html"))
             for racer in racers:

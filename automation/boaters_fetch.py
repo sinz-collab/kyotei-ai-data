@@ -565,6 +565,7 @@ async def capture_data_page(page, slug: str, date: str, race_no: int, race_dir: 
 
     nav = await goto_page(page, url, wait_ms)
     clicks = await click_data_tabs(page, click_wait_ms)
+    local_start = await capture_boaters_local_start(page, race_dir, race_no, click_wait_ms)
 
     try:
         await page.mouse.wheel(0, 2000)
@@ -584,9 +585,62 @@ async def capture_data_page(page, slug: str, date: str, race_no: int, race_dir: 
         "current_url": page.url,
         "nav": nav,
         "clicks": clicks,
+        "boaters_local_start": local_start,
         "analysis": analysis,
         "saved": {k: v for k, v in saved.items() if k != "text"},
     }
+
+
+async def capture_boaters_local_start(page, race_dir: Path, race_no: int, click_wait_ms: int) -> Dict:
+    """Capture BOATERS 枠別スタート順位 > 当地 without changing the saved data view."""
+    out_path = race_dir / f"race_{race_no:02d}_boaters_local_st.json"
+    result = {"source": "BOATERS 枠別スタート順位 > 当地", "racers": []}
+    try:
+        section = page.locator(".data-start-ranking-section")
+        if await section.count() == 0:
+            result["error"] = "枠別スタート順位セクションが見つかりません"
+        else:
+            local_button = section.get_by_role("button", name="当地", exact=True)
+            if await local_button.count() == 0:
+                result["error"] = "当地ボタンが見つかりません"
+            else:
+                await local_button.first.click()
+                await page.wait_for_timeout(click_wait_ms)
+                racers = await section.evaluate(
+                    r"""
+                    section => [...section.querySelectorAll('a[href^="/racer/"]')].map(a => {
+                      let row = a;
+                      for (let i = 0; i < 6 && row; i += 1, row = row.parentElement) {
+                        const tokens = (row.innerText || '').split(/\n+/).map(x => x.trim()).filter(Boolean);
+                        const lane = tokens.find(x => /^[1-6]$/.test(x));
+                        const avg = tokens.find(x => /^(?:0?\.\d{2}|-)$/.test(x));
+                        const rank = tokens.find(x => /^(?:\d+(?:\.\d+)?位|-)$/.test(x));
+                        if (lane && avg && rank && tokens.length <= 8) {
+                          return {
+                            lane: Number(lane),
+                            name: (a.innerText || '').trim(),
+                            boaters_local_avg_st: avg === '-' ? '' : avg,
+                            boaters_local_st_rank: rank === '-' ? '' : rank,
+                          };
+                        }
+                      }
+                      return null;
+                    }).filter(Boolean)
+                    """
+                )
+                racers = sorted(racers, key=lambda row: int(row.get("lane", 0)))
+                if len(racers) == 6 and [row["lane"] for row in racers] == list(range(1, 7)):
+                    result["racers"] = racers
+                else:
+                    result["error"] = f"当地STの6艇解析に失敗しました: {len(racers)}艇"
+                recent_button = section.get_by_role("button", name="直近10走", exact=True)
+                if await recent_button.count():
+                    await recent_button.first.click()
+                    await page.wait_for_timeout(click_wait_ms)
+    except Exception as exc:
+        result["error"] = repr(exc)
+    out_path.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return {"path": str(out_path), "count": len(result["racers"]), "error": result.get("error", "")}
 
 
 async def capture_motor_page(page, slug: str, date: str, race_no: int, race_dir: Path, wait_ms: int) -> Dict:
