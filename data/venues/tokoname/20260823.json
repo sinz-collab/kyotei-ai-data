@@ -20250,110 +20250,113 @@
         "reason": null,
         "engine": "tokoname_engine",
         "engine_version": "1.6",
-        "prediction_phase": "preliminary",
-        "stage": "preliminary",
-        "engine_recalculated_after_exhibition": false,
+        "prediction_phase": "final",
+        "stage": "final",
+        "engine_recalculated_after_exhibition": true,
         "original_exhibition_available": false,
         "engine_run": {
           "completed": true,
           "source_engine": "tokoname_engine_v1.6",
-          "mode": "morning_preliminary",
+          "mode": "exhibition_recalculation",
           "inputs": [
-            "morning"
+            "morning",
+            "direct",
+            "exhibition",
+            "odds"
           ]
         },
         "predictionStage": {
-          "code": "pre",
-          "label": "仮予想",
-          "statusText": "朝データによる既存常滑エンジンの事前予想",
-          "badge": "仮予想",
-          "color": "yellow"
+          "code": "final",
+          "label": "本予想",
+          "statusText": "既存常滑エンジンで展示・直前情報を再計算済み",
+          "badge": "本予想",
+          "color": "green"
         },
         "probabilities": {
           "win": {
-            "1": 33.0,
-            "2": 23.6,
-            "3": 18.9,
-            "4": 12.3,
-            "5": 6.0,
-            "6": 6.2
+            "1": 23.4,
+            "2": 14.1,
+            "3": 18.0,
+            "4": 21.6,
+            "5": 7.4,
+            "6": 15.5
           },
           "second": {
-            "1": 9.0,
-            "2": 22.8,
-            "3": 23.5,
-            "4": 22.8,
-            "5": 9.4,
-            "6": 12.5
+            "1": 6.2,
+            "2": 20.3,
+            "3": 27.9,
+            "4": 14.9,
+            "5": 16.7,
+            "6": 14.0
           },
           "third": {
-            "1": 4.9,
-            "2": 14.9,
-            "3": 15.7,
-            "4": 21.0,
-            "5": 22.3,
-            "6": 21.2
+            "1": 13.5,
+            "2": 5.3,
+            "3": 17.3,
+            "4": 18.0,
+            "5": 23.1,
+            "6": 22.8
           }
         },
         "sab": {
-          "grade": "B",
-          "score": 64,
+          "grade": "A",
+          "score": 77,
           "independent_of_ticket_count": true
         },
         "tickets": {
           "main": [
             {
               "combination": "1-3-5",
-              "score_pct": 3.002,
+              "score_pct": 2.669,
               "category": "main"
             },
             {
               "combination": "1-3-6",
-              "score_pct": 2.847,
+              "score_pct": 2.632,
               "category": "main"
             },
             {
               "combination": "1-3-4",
-              "score_pct": 2.815,
+              "score_pct": 2.08,
               "category": "main"
             },
             {
               "combination": "1-3-2",
-              "score_pct": 2.005,
+              "score_pct": 0.612,
               "category": "main"
             },
             {
               "combination": "1-2-5",
-              "score_pct": 2.922,
+              "score_pct": 1.941,
               "category": "main"
             },
             {
               "combination": "1-2-6",
-              "score_pct": 2.771,
+              "score_pct": 1.914,
               "category": "main"
             }
           ],
           "deviation": [
             {
-              "combination": "2-1-5",
-              "score_pct": 0.822,
+              "combination": "4-1-5",
+              "score_pct": 0.543,
               "category": "deviation"
             },
             {
-              "combination": "2-1-6",
-              "score_pct": 0.779,
+              "combination": "4-1-6",
+              "score_pct": 0.535,
               "category": "deviation"
             }
           ],
           "upset": [
             {
-              "combination": "2-3-5",
-              "score_pct": 2.143,
+              "combination": "4-3-5",
+              "score_pct": 2.463,
               "category": "upset"
             },
             {
-              "combination": "2-4-5",
-              "score_pct": 2.086,
+              "combination": "4-3-6",
+              "score_pct": 2.429,
               "category": "upset"
             }
           ]
@@ -20361,20 +20364,21 @@
         "scenario": {
           "primary": "1逃げ中心",
           "head": 1,
-          "head_gap": 9.5
+          "head_gap": 1.8
         },
         "data_flags": {
           "entry_change": false,
-          "direct": false,
-          "exhibition": false,
+          "direct": true,
+          "exhibition": true,
           "original_exhibition": false,
           "setsukan": true,
           "tide": true,
           "original_exhibition_available": false,
-          "odds_available_for_display": false,
+          "odds_available_for_display": true,
           "odds_used_for_probability": false,
           "result_used_for_probability": false
-        }
+        },
+        "input_hash": "76a38f0607cdb5276a75ab95f612e88e27b8fca54dc28f2a8ee6aca74cb3536c"
       },
       "live": {},
       "odds": {},
