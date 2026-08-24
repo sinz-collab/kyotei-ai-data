@@ -605,7 +605,19 @@ async def capture_boaters_local_start(page, race_dir: Path, race_no: int, click_
                 result["error"] = "当地ボタンが見つかりません"
             else:
                 await local_button.first.click()
-                await page.wait_for_timeout(click_wait_ms)
+                await page.wait_for_function(
+                    r"""
+                    () => {
+                      const section = document.querySelector('.data-start-ranking-section');
+                      if (!section) return false;
+                      const buttons = [...section.querySelectorAll('button')];
+                      const local = buttons.find(button => (button.innerText || '').trim() === '当地');
+                      if (!local) return false;
+                      return buttons.filter(button => button.className === local.className).length === 1;
+                    }
+                    """,
+                    timeout=max(click_wait_ms, 3_000),
+                )
                 racers = await section.evaluate(
                     r"""
                     section => [...section.querySelectorAll('a[href^="/racer/"]')].map(a => {
