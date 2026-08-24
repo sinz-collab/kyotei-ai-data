@@ -1,0 +1,28 @@
+下関 v6.1 本番切替（Codex用）
+
+1) この完成済みフォルダを engines/shimonoseki_v6_1/ に配置する。
+   予想ロジック本体は変更しない。
+
+2) 現行v6から次の運用資産だけを内容変更せずv6.1へ移す：
+   - build_shimonoseki_motor_recent10_master_v1.py
+   - master/shimonoseki_motor_recent10_master_v1.csv
+   移行後SHA-256を比較すること。
+
+3) automation の下関 preliminary/final 呼び出しを v6.1 runner へ変更する。
+   ENGINE_ID=shimonoseki_engine_v6.1 / ENGINE_VERSION=6.1 を確認する。
+
+4) site app.js で shimonoseki を applyLivePredictionReview() 対象外へ追加する。
+   サーバー本予想へのブラウザ二重補正は禁止。
+
+5) 本予想JSONで predictionPre と probabilityReview(1～6艇×1/2/3着) を確認する。
+   delta = 本予想 - 仮予想、小数1桁。
+
+6) 既存会場回帰、下関12R、live更新、dated/latest一致を確認してから本番切替する。
+
+7) 本番切替成功後にのみ旧 active v6 を退役する：
+   - engines/shimonoseki_v6/ を active tree から削除
+   - run_shimonoseki_v6.py / apply_shimonoseki_live_v6.py の実行参照を削除
+   - repo全体検索で旧 engine_v6.0 / shimonoseki_v6 の実行参照が0件であることを確認
+   Git履歴は残すのでロールバックはcommitから行う。
+
+8) 結果・オッズを予想入力へ追加しない。v6.1本体を改変しない。

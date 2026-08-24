@@ -1,0 +1,18 @@
+kyotei-ai-site/app.js required production change
+================================================
+
+Current browser-side live correction exclusion:
+  ["tokoname", "toda", "wakamatsu"]
+
+Change to:
+  ["tokoname", "toda", "wakamatsu", "shimonoseki"]
+
+Reason:
+Shimonoseki v6.1 final prediction is server-side authoritative. Do NOT run applyLivePredictionReview() on it again.
+This prevents browser double-correction and prevents odds availability from becoming a gate for Shimonoseki prediction changes.
+
+The existing UI already supports probabilityReview fields:
+  morningWin / morningSecond / morningThird
+  win / second / third
+  deltaWin / deltaSecond / deltaThird
+v6.1 engine now emits those fields for all six boats.
