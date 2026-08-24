@@ -23,7 +23,7 @@ def build_dynamic_motor_master(date, source_root, master_dir, work_dir):
     spec=importlib.util.spec_from_file_location('shimo_motor_builder',module_path); mod=importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
     Path(work_dir).mkdir(parents=True,exist_ok=True)
     snapshot=mod.collect_snapshot(raw,date)
-    rows=mod.build_master(Path(master_dir)/'shimonoseki_motor_type_master_v1.csv',snapshot,Path(work_dir)/'motor_master.csv')
+    rows=mod.build_master(Path(master_dir)/'shimonoseki_motor_type_master_v1.csv',snapshot.values(),Path(work_dir)/'motor_master.csv')
     return {str(r.get('motor_no') or '').lstrip('0') or '0':r for r in rows}
 
 def race_dir(root,date,race):

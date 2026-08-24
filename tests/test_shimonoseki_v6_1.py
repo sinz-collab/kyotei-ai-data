@@ -7,7 +7,10 @@ import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
+from engines.shimonoseki_v6_1 import run_shimonoseki_v6_1 as runner_module
 from engines.shimonoseki_v6_1.shimonoseki_engine_v6_1 import (
     ENGINE_ID,
     ENGINE_VERSION,
@@ -186,6 +189,57 @@ class ShimonosekiV61ProductionContractTest(unittest.TestCase):
             self.assertEqual(final_race["predictionPre"], prediction_pre)
             self.assertEqual(final_race["predictionFinal"], final_race["prediction"])
             self.assertEqual(final_race["predictionFinal"], final_payload["preds"]["5"])
+
+    def test_dynamic_motor_snapshot_values_are_passed_as_dict_rows(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            raw_dir = temp_root / "下関" / "20260824" / "races"
+            raw_dir.mkdir(parents=True)
+            (raw_dir / "race_01_motor.txt").write_text("fixture", encoding="utf-8")
+
+            snapshot = {
+                "30": {
+                    "motor_no": "30",
+                    "snapshot_date": "2026-08-24",
+                }
+            }
+            captured = {}
+
+            def build_master(_long_master, history_rows, _out_path):
+                rows = list(history_rows)
+                captured["rows"] = rows
+                for row in rows:
+                    row.get("motor_no")
+                return rows
+
+            fake_module = SimpleNamespace(
+                collect_snapshot=lambda _raw, _date: snapshot,
+                build_master=build_master,
+            )
+            fake_spec = SimpleNamespace(
+                loader=SimpleNamespace(exec_module=lambda _module: None)
+            )
+            with (
+                patch.object(
+                    runner_module.importlib.util,
+                    "spec_from_file_location",
+                    return_value=fake_spec,
+                ),
+                patch.object(
+                    runner_module.importlib.util,
+                    "module_from_spec",
+                    return_value=fake_module,
+                ),
+            ):
+                result = runner_module.build_dynamic_motor_master(
+                    "2026-08-24",
+                    temp_root,
+                    MASTER,
+                    temp_root / "runtime",
+                )
+
+            self.assertEqual(captured["rows"], [snapshot["30"]])
+            self.assertEqual(result, {"30": snapshot["30"]})
 
 
 if __name__ == "__main__":
