@@ -71,6 +71,8 @@ class PlayerIdResolver:
             {
                 normalize_name("\u5ddd\u5408 \u7406\u53f8"): 3839,
                 normalize_name("\u4f50\u85e4 \u4e16\u90a3"): 5359,
+                normalize_name("\u77f3\u5ca1 \u5c06\u592a"): 4550,
+                normalize_name("\u9060\u85e4 \u572d\u543e"): 5186,
             }
         )
 

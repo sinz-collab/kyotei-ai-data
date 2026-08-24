@@ -7,6 +7,7 @@ import sys
 import tempfile
 import types
 import unittest
+from copy import deepcopy
 from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
@@ -132,6 +133,69 @@ class AshiyaNonRunningTests(unittest.TestCase):
 
             with self.assertRaisesRegex(FileNotFoundError, "availability=fetch_failed"):
                 self.invoke(data_root)
+
+    def test_pre_run_rebuilds_legacy_but_preserves_native_live_prediction(self) -> None:
+        probabilities = {
+            str(lane): 100.0 / 6.0
+            for lane in range(1, 7)
+        }
+        tickets = [
+            f"1-2-{index}"
+            for index in range(10)
+        ]
+        native_live = {
+            "stage": "live",
+            "sab": {"grade": "A"},
+            "marker": "keep",
+        }
+        source = {
+            "preds": {
+                str(race_no): {
+                    "sab": "M",
+                    "active_prediction_stage": "morning",
+                    "prediction_history": {"morning": [{"revision": 1}]},
+                }
+                for race_no in range(1, 13)
+            },
+            "races": [
+                {
+                    "race": race_no,
+                    "prediction": deepcopy(native_live),
+                }
+                for race_no in range(1, 13)
+            ],
+        }
+
+        def site_prediction(_result, _race_no, _stage):
+            return (
+                {
+                    "win": probabilities,
+                    "second": probabilities,
+                    "third": probabilities,
+                    "sab": "A",
+                    "tickets": tickets,
+                },
+                {"stage": "pre"},
+            )
+
+        with patch.object(
+            self.runner,
+            "build_site_prediction",
+            side_effect=site_prediction,
+        ):
+            merged = self.runner.merge_predictions(
+                source,
+                {race_no: {} for race_no in range(1, 13)},
+                "pre",
+            )
+
+        self.assertEqual(merged["preds"]["1"]["sab"], "A")
+        self.assertEqual(merged["preds"]["1"]["active_prediction_stage"], "morning")
+        self.assertEqual(
+            merged["preds"]["1"]["prediction_history"],
+            source["preds"]["1"]["prediction_history"],
+        )
+        self.assertEqual(merged["races"][0]["prediction"], native_live)
 
 
 if __name__ == "__main__":

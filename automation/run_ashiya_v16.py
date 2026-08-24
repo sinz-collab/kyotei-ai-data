@@ -899,42 +899,13 @@ def merge_predictions(
             or ""
         ).strip().lower()
 
-        preserve_advanced_prediction = (
+        preserve_advanced_legacy = (
             stage == "pre"
-            and (
-                legacy_stage in {
-                    "live",
-                    "final",
-                }
-                or native_stage in {
-                    "live",
-                    "final",
-                }
-            )
+            and legacy_stage in {
+                "live",
+                "final",
+            }
         )
-
-        if preserve_advanced_prediction:
-            # 朝pre再生成で、すでに直前反映済みの
-            # live/final予想をpreへ巻き戻さない。
-            if existing_legacy:
-                predictions[
-                    race_key
-                ] = deepcopy(
-                    existing_legacy
-                )
-            else:
-                raise RuntimeError(
-                    f"ashiya_{race_no:02d}_advanced_prediction_legacy_missing"
-                )
-
-            if existing_native:
-                race[
-                    "prediction"
-                ] = deepcopy(
-                    existing_native
-                )
-
-            continue
 
         result = engine_results[
             race_no
@@ -948,15 +919,50 @@ def merge_predictions(
             )
         )
 
+        if not preserve_advanced_legacy:
+            for preserved_key in (
+                "realtime",
+                "odds",
+                "result",
+                "prediction_history",
+                "active_prediction_stage",
+            ):
+                if preserved_key in existing_legacy:
+                    legacy[
+                        preserved_key
+                    ] = deepcopy(
+                        existing_legacy[
+                            preserved_key
+                        ]
+                    )
+
         predictions[
             race_key
-        ] = legacy
+        ] = (
+            deepcopy(
+                existing_legacy
+            )
+            if preserve_advanced_legacy
+            else legacy
+        )
 
         # 既存のlive/odds/resultは触らず
         # predictionだけ差し替える。
         race[
             "prediction"
-        ] = native
+        ] = (
+            deepcopy(
+                existing_native
+            )
+            if (
+                stage == "pre"
+                and native_stage in {
+                    "live",
+                    "final",
+                }
+            )
+            else native
+        )
 
     payload[
         "preds"
