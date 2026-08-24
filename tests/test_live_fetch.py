@@ -27,6 +27,7 @@ from publish_live_data import copy_changed_live_files
 from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
+from live_fetch_once import shimonoseki_final_inputs_complete
 
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
@@ -73,6 +74,34 @@ class TimeWindowTests(unittest.TestCase):
     def test_next_day_boundaries(self) -> None:
         self.assertFalse(is_fetch_window(datetime(2026, 7, 25, 8, 19, tzinfo=JST), CONFIG))
         self.assertTrue(is_fetch_window(datetime(2026, 7, 25, 8, 20, tzinfo=JST), CONFIG))
+
+
+class ShimonosekiFinalTriggerTests(unittest.TestCase):
+    def test_complete_saved_inputs_trigger_final_during_result_polling(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            race_dir = Path(temp)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": "complete", "complete": True}),
+                    encoding="utf-8",
+                )
+            result_only = {
+                "result": {"status": "complete", "complete": True},
+            }
+            self.assertTrue(
+                shimonoseki_final_inputs_complete(race_dir, result_only)
+            )
+
+    def test_incomplete_saved_input_does_not_trigger_final(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            race_dir = Path(temp)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                status = "pending" if name == "exhibition" else "complete"
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": status, "complete": status == "complete"}),
+                    encoding="utf-8",
+                )
+            self.assertFalse(shimonoseki_final_inputs_complete(race_dir, {}))
 
 
 class VenueAndRaceTests(unittest.TestCase):

@@ -42,6 +42,27 @@ SHIMONOSEKI_LIVE_APPLIER = ROOT / "automation" / "apply_shimonoseki_live_v6_1.py
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
 
 
+def shimonoseki_final_inputs_complete(
+    race_dir: Path,
+    items: dict[str, Any],
+) -> bool:
+    required = ("direct", "exhibition", "original_exhibition")
+    if all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    ):
+        return True
+    for name in required:
+        try:
+            document = json.loads((race_dir / f"{name}.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return False
+        if document.get("complete") is not True or document.get("status") != "complete":
+            return False
+    return True
+
+
 def stage_tokoname_preliminary_after_morning_sync(
     config: dict[str, Any],
     target_date: str,
@@ -392,12 +413,7 @@ async def apply_shimonoseki_live_prediction(
     if target.get("venue") != "shimonoseki" or fetch_result.get("error"):
         return
     items = fetch_result.get("items") or {}
-    required = ("direct", "exhibition", "original_exhibition")
-    if not all(
-        (items.get(name) or {}).get("complete") is True
-        and (items.get(name) or {}).get("status") == "complete"
-        for name in required
-    ):
+    if not shimonoseki_final_inputs_complete(race_dir, items):
         return
     process = await asyncio.create_subprocess_exec(
         sys.executable,
