@@ -14,6 +14,29 @@ def load_json(p): return json.loads(Path(p).read_text(encoding='utf-8'))
 def atomic_write(p,payload):
     p=Path(p); p.parent.mkdir(parents=True,exist_ok=True); t=p.with_suffix(p.suffix+'.tmp'); t.write_text(json.dumps(payload,ensure_ascii=False,indent=2)+'\n',encoding='utf-8'); t.replace(p)
 
+def shimonoseki_availability(data, date):
+    report=Path(data)/'morning_report.json'
+    if report.is_file():
+        document=load_json(report)
+        venue=(document.get('venues') or {}).get('shimonoseki') if document.get('date')==date else None
+        if isinstance(venue,dict):
+            reason=str((venue.get('detail') or {}).get('reason') or venue.get('predictionReason') or '')
+            if venue.get('open') or venue.get('raceDataAvailable'): return 'open',reason or 'race_data_available'
+            if reason=='not_scheduled' or (not reason and venue.get('predictionStatus')=='not_running'):
+                return 'not_open',reason or 'not_running'
+            return 'fetch_failed',reason or 'fetch_incomplete'
+    manifest=Path(data)/'manifest.json'
+    if manifest.is_file():
+        document=load_json(manifest)
+        if document.get('date')==date:
+            for venue in document.get('venues') or []:
+                if not isinstance(venue,dict) or venue.get('slug')!='shimonoseki': continue
+                reason=str(venue.get('availabilityReason') or '')
+                if venue.get('open') or venue.get('raceDataAvailable'): return 'open',reason or 'race_data_available'
+                if reason in {'','not_scheduled','not_running'}: return 'not_open',reason or 'not_running'
+                return 'fetch_failed',reason
+    return 'unknown','availability_metadata_missing'
+
 def build_dynamic_motor_master(date, source_root, master_dir, work_dir):
     raw=Path(source_root)/'下関'/date.replace('-','')/'races'
     if not raw.is_dir() or not list(raw.glob('race_*_motor.txt')): return {}
@@ -36,6 +59,12 @@ def race_dir(root,date,race):
 def main():
     ap=argparse.ArgumentParser(); ap.add_argument('--date',required=True); ap.add_argument('--stage',choices=('preliminary','final'),required=True); ap.add_argument('--race',type=int); ap.add_argument('--data-root',default='data'); ap.add_argument('--master-dir',default=str(HERE/'master')); ap.add_argument('--source-root',default='work/races'); ap.add_argument('--live-root',default='/opt/sinz-edge/data/live'); ap.add_argument('--no-latest',action='store_true'); a=ap.parse_args()
     data=Path(a.data_root); dated=data/'venues'/'shimonoseki'/f"{a.date.replace('-','')}.json"
+    if not dated.is_file():
+        availability,reason=shimonoseki_availability(data,a.date)
+        if availability=='not_open':
+            print(json.dumps({'venue':'shimonoseki','date':a.date,'stage':a.stage,'race':a.race,'engine':ENGINE_ID,'engineVersion':ENGINE_VERSION,'status':'not_running','availability':'not_open','reason':reason},ensure_ascii=False))
+            return 0
+        raise FileNotFoundError(f'{dated} (availability={availability}, reason={reason})')
     payload=load_json(dated)
     if payload.get('venueId')!='shimonoseki' or payload.get('date')!=a.date: raise RuntimeError('Shimonoseki payload identity mismatch')
     # Production precision gate: the existing recent10 fallback must be migrated before old v6 retirement.
