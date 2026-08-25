@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
+sys.path.insert(0, str(SCRIPTS))
+
 from automation import run_wakamatsu_v2_live as runner
+from live_fetch_once import apply_wakamatsu_live_prediction
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -32,6 +38,44 @@ def prediction(phase: str) -> dict:
 
 
 class WakamatsuLiveRunnerTest(unittest.TestCase):
+    def test_live_fetch_hook_runs_only_with_complete_wakamatsu_inputs(self):
+        class FakeProcess:
+            returncode = 0
+
+            async def communicate(self):
+                return b'{"status": "complete"}', b""
+
+        target = {"venue": "wakamatsu", "date": "2026-08-25", "race_no": 3}
+        complete = {
+            "items": {
+                "direct": {"complete": True, "status": "complete"},
+                "exhibition": {"complete": True, "status": "complete"},
+            }
+        }
+        logger = unittest.mock.Mock()
+        with patch(
+            "asyncio.create_subprocess_exec", return_value=FakeProcess()
+        ) as launch:
+            asyncio.run(apply_wakamatsu_live_prediction(target, complete, logger))
+            asyncio.run(
+                apply_wakamatsu_live_prediction(
+                    target,
+                    {"items": {"direct": complete["items"]["direct"]}},
+                    logger,
+                )
+            )
+            asyncio.run(
+                apply_wakamatsu_live_prediction(
+                    {**target, "venue": "fukuoka"}, complete, logger
+                )
+            )
+
+        launch.assert_called_once()
+        command = launch.call_args.args
+        self.assertTrue(command[1].endswith("run_wakamatsu_v2_live.py"))
+        self.assertEqual(command[2:4], ("--date", "2026-08-25"))
+        self.assertNotIn("odds", command)
+
     def test_complete_live_race_requires_direct_and_exhibition(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

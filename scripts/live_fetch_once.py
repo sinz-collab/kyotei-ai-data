@@ -35,6 +35,8 @@ ASHIYA_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_ashiya_v16_live.py"
 ASHIYA_DATA_ROOT = PUBLISHER_REPO / "data"
 TODA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_toda_live_v5.py"
 TODA_DATA_ROOT = PUBLISHER_REPO / "data"
+WAKAMATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_wakamatsu_v2_live.py"
+WAKAMATSU_DATA_ROOT = PUBLISHER_REPO / "data"
 BIWAKO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_biwako_v1_1.py"
 BIWAKO_DATA_ROOT = PUBLISHER_REPO / "data"
 
@@ -404,6 +406,58 @@ async def apply_biwako_live_prediction(
     )
 
 
+async def apply_wakamatsu_live_prediction(
+    target: dict[str, Any],
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "wakamatsu" or fetch_result.get("error"):
+        return
+
+    items = fetch_result.get("items") or {}
+    required = ("direct", "exhibition")
+    if not all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    ):
+        return
+
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(WAKAMATSU_LIVE_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--data-root",
+        str(WAKAMATSU_DATA_ROOT),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "wakamatsu_live_prediction_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "wakamatsu_live_prediction_complete",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+            "odds_used_for_probability": False,
+        },
+    )
+
+
 async def apply_shimonoseki_live_prediction(
     target: dict[str, Any],
     race_dir: Path,
@@ -606,6 +660,11 @@ async def run_once(
                                 await apply_toda_live_prediction(
                                     target,
                                     race_dir,
+                                    result,
+                                    logger,
+                                )
+                                await apply_wakamatsu_live_prediction(
+                                    target,
                                     result,
                                     logger,
                                 )
