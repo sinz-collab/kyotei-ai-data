@@ -15,6 +15,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from build_site_data import entry_lines, parse_racers
 from tide_type_parser import add_tide_type
 
 
@@ -120,12 +121,25 @@ def fetch_tide(venue: dict, date: str, output_dir: Path) -> dict:
         return {"status": "failed", "reason": f"{type(exc).__name__}:{exc}", "url": url}
 
 
-def count_entries(output_dir: Path) -> int:
+def biwako_entry_is_valid(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    try:
+        return len(parse_racers(entry_lines(path))) == 6
+    except (OSError, ValueError, IndexError):
+        return False
+
+
+def count_entries(output_dir: Path, slug: str = "") -> int:
     race_dir = output_dir / "races"
     count = 0
     for race_no in range(1, 13):
         path = race_dir / f"race_{race_no:02d}_entry.txt"
-        if path.exists() and path.stat().st_size > 500:
+        if slug == "biwako":
+            valid = biwako_entry_is_valid(path)
+        else:
+            valid = path.exists() and path.stat().st_size > 500
+        if valid:
             count += 1
     return count
 
@@ -193,7 +207,7 @@ def main() -> int:
         except Exception as exc:
             return_code = 1
             error = f"{type(exc).__name__}:{exc}"
-        entry_count = count_entries(output_dir)
+        entry_count = count_entries(output_dir, venue["slug"])
         attempt_result = {
             "attempt": attempt,
             "returnCode": return_code,

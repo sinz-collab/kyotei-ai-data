@@ -7,7 +7,7 @@ import types
 import unittest
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from zoneinfo import ZoneInfo
 
 
@@ -80,6 +80,90 @@ class BiwakoFlowTests(unittest.TestCase):
         self.assertEqual(boaters_fetch.stadium_to_slug("びわこ"), "biwako")
         workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(encoding="utf-8")
         self.assertIn("heiwajima biwako", workflow)
+        self.assertIn(
+            "work/races/びわこ/**/races/*_boaters_local_st.json",
+            workflow,
+        )
+        self.assertNotIn(
+            "work/races/**/races/*_boaters_local_st.json",
+            workflow,
+        )
+
+    def test_biwako_entry_count_requires_six_parseable_racers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary)
+            races_dir = output_dir / "races"
+            races_dir.mkdir()
+            for race_no in range(1, 13):
+                (races_dir / f"race_{race_no:02d}_entry.txt").write_text(
+                    "entry data\n" * 100,
+                    encoding="utf-8",
+                )
+
+            def valid_except_race_9(path: Path) -> bool:
+                return path.name != "race_09_entry.txt"
+
+            with patch.object(
+                fetch_one,
+                "biwako_entry_is_valid",
+                side_effect=valid_except_race_9,
+            ):
+                self.assertEqual(fetch_one.count_entries(output_dir, "biwako"), 11)
+
+            with patch.object(fetch_one, "biwako_entry_is_valid", return_value=True):
+                self.assertEqual(fetch_one.count_entries(output_dir, "biwako"), 12)
+
+    def test_other_venues_keep_size_only_entry_count(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output_dir = Path(temporary)
+            races_dir = output_dir / "races"
+            races_dir.mkdir()
+            for race_no in range(1, 13):
+                size = 501 if race_no != 9 else 500
+                (races_dir / f"race_{race_no:02d}_entry.txt").write_text(
+                    "x" * size,
+                    encoding="utf-8",
+                )
+            with patch.object(fetch_one, "biwako_entry_is_valid") as validator:
+                self.assertEqual(fetch_one.count_entries(output_dir, "ashiya"), 11)
+            validator.assert_not_called()
+
+    def test_biwako_incomplete_fetch_uses_only_existing_two_attempts(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config_path = root / "venues.json"
+            config_path.write_text(
+                json.dumps({"venues": [self.venue]}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            completed = Mock(returncode=0)
+            with (
+                patch.object(fetch_one, "CONFIG_PATH", config_path),
+                patch.object(
+                    fetch_one,
+                    "venue_is_open",
+                    return_value={"open": True, "reason": "race_page_found"},
+                ),
+                patch.object(fetch_one.subprocess, "run", return_value=completed) as runner,
+                patch.object(fetch_one, "count_entries", side_effect=[11, 11]),
+                patch.object(fetch_one, "fetch_tide", return_value={"status": "not_configured"}),
+                patch.object(fetch_one.time, "sleep"),
+                patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "fetch_one.py",
+                        "--venue",
+                        "biwako",
+                        "--date",
+                        DATE,
+                        "--root",
+                        str(root / "work"),
+                    ],
+                ),
+            ):
+                self.assertEqual(fetch_one.main(), 1)
+            self.assertEqual(runner.call_count, 2)
 
     def test_biwako_player_ids_are_read_from_entry_html(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
