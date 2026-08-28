@@ -105,6 +105,11 @@ def live_input(live_root: Path) -> tuple[dict, list[str]]:
         "sum_difference",
         lower_is_better=False,
     )
+    lap_scores = relative_scores(
+        original_rows,
+        "lap_time",
+        lower_is_better=True,
+    )
 
     entries = []
     exhibitions = []
@@ -119,6 +124,7 @@ def live_input(live_root: Path) -> tuple[dict, list[str]]:
                 "boat_no": boat_no,
                 # ST is intentionally a very small standalone correction in the engine.
                 "st_delta": float(str(row.get("start_time") or "0").replace("F", "-0") or 0),
+                "lap_score": lap_scores.get(boat_no, 0.0),
                 "straight_score": straight_scores.get(boat_no, 0.0),
                 "turn_score": turn_scores.get(boat_no, 0.0),
                 "sum_score": sum_scores.get(boat_no, 0.0),
@@ -133,9 +139,40 @@ def live_input(live_root: Path) -> tuple[dict, list[str]]:
                 "parts_exchange": direct_row.get("parts_exchange"),
             }
         )
+    exhibition_st = {
+        str(int(row.get("lane"))): float(str(row.get("start_time") or "0").replace("F", "-0") or 0)
+        for row in exhibition_rows if row.get("lane")
+    }
+    st_values = sorted(exhibition_st.values())
+    slit = {}
+    if len(st_values) == 6:
+        second_fastest = st_values[1]
+        median_st = (st_values[2] + st_values[3]) / 2.0
+        for lane in range(1, 7):
+            st = exhibition_st.get(str(lane), 0.99)
+            if st <= second_fastest + 0.02:
+                slit[str(lane)] = "advance"
+            elif st >= median_st + 0.08:
+                slit[str(lane)] = "dent"
+            else:
+                slit[str(lane)] = "neutral"
+
+    straight_pairs = []
+    for row in original_rows:
+        if row.get("lane") and row.get("straight_time") not in (None, "", "-"):
+            try:
+                straight_pairs.append((int(row["lane"]), float(row["straight_time"])))
+            except (TypeError, ValueError):
+                pass
+    straight_pairs.sort(key=lambda x: x[1])
+    straight_rank = {str(lane): rank for rank, (lane, _) in enumerate(straight_pairs, start=1)}
+
     live = {
         "entries": entries,
         "exhibitions": exhibitions,
+        "slit": slit,
+        "exhibition_st": exhibition_st,
+        "straight_rank": straight_rank,
         "weather": {
             "weather": direct_data.get("weather"),
             "wind_direction": direct_data.get("wind_direction"),

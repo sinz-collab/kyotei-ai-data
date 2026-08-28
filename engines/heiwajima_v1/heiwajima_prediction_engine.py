@@ -15,6 +15,12 @@ from heiwajima_race_baseline import race_specific_first_baseline
 from heiwajima_slit_engine import calculate_slit_adjustments
 from heiwajima_class_motor_engine import class_motor_multipliers
 from heiwajima_five_head_engine import five_head_scenario_adjustment
+from heiwajima_v2_5_adjustments import (
+    course_local_interaction,
+    motor_recent_adjustment,
+    original_exhibition_composite,
+    outer_break_adjustment,
+)
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
@@ -359,6 +365,13 @@ def calculate(input_data, loader=None):
         if local:
             sw += clip((rate(local, "win_rate", 0.0) - 0.16) * 0.18, caps["local_logit"])
 
+        local_x = course_local_interaction(b, course)
+        sw += float(local_x["win"])
+        ss += float(local_x["second"])
+        st += float(local_x["third"])
+        if abs(float(local_x["win"])) >= 0.01:
+            reasons.append({"code":"course_local_interaction","delta":round(float(local_x["win"]),4)})
+
         pk, pk_source = _kimarite_source(b, sqlite_pk)
         kw, ks, kt = _kimarite_adjustments(course, pk, pk_source, caps["kimarite_logit"])
         sw += kw
@@ -392,6 +405,13 @@ def calculate(input_data, loader=None):
         ss += sx * 0.80 + mx_second * 0.78
         st += sx * 0.68 + mx_third * 0.65
 
+        mr = motor_recent_adjustment(b, course, bucket)
+        sw += float(mr["win"])
+        ss += float(mr["second"])
+        st += float(mr["third"])
+        if abs(float(mr["win"])) >= 0.01:
+            reasons.append({"code":"motor_recent10","delta":round(float(mr["win"]),4)})
+
         wx = 0.0
         if course == 1:
             wx = water["escape_bias"]
@@ -400,24 +420,33 @@ def calculate(input_data, loader=None):
         elif course in (5, 6):
             st += clip(water["outer_bias"], caps["water_logit"])
 
-        sw += clip(wx * 0.35, caps["water_logit"])
+        water_ratio = 0.20 if water.get("empirical") else 0.35
+        water_delta = clip(wx * water_ratio, caps["water_logit"])
+        sw += water_delta
         if abs(wx) > 0.01:
-            reasons.append({"code": "water_residual", "delta": round(clip(wx * 0.35, caps["water_logit"]), 4)})
+            reasons.append({"code":"water_residual","delta":round(water_delta,4)})
 
         if stage == "final":
-            st_alone = clip(-num(ex.get("st_delta"), 0.0) * 0.08, 0.015)
-            straight = num(ex.get("straight_score"), 0.0)
-            turn = num(ex.get("turn_score"), 0.0)
-            summ = num(ex.get("sum_score"), 0.0)
-            composite = clip((straight * 0.045 + turn * 0.040 + summ * 0.022) * mult["live"], caps["live_logit"])
-            sw += st_alone + composite
-            ss += composite * 0.80
-            st += composite * 0.72
+            st_alone = clip(-num(ex.get("st_delta"), 0.0) * 0.05, 0.010)
+            orig = original_exhibition_composite(ex, mult["live"], caps["live_logit"])
+            sw += st_alone + float(orig["win"])
+            ss += float(orig["second"])
+            st += float(orig["third"])
+            if abs(float(orig["win"])) >= 0.01:
+                reasons.append({"code":"original_exhibition_4factor","delta":round(float(orig["win"]),4)})
 
         slit_adj = slit_adjustments.get(boat, {})
         sw += float(slit_adj.get("win", 0.0))
         ss += float(slit_adj.get("second", 0.0))
         st += float(slit_adj.get("third", 0.0))
+
+        if stage == "final":
+            outer_break = outer_break_adjustment(b, course, live_context, slit_adj, ex, power, bucket)
+            sw += float(outer_break["win"])
+            ss += float(outer_break["second"])
+            st += float(outer_break["third"])
+            if outer_break["signals"]:
+                reasons.append({"code":"outer_break","delta":round(float(outer_break["win"]),4),"signals":list(outer_break["signals"])})
         if boat == 5 and five_head.get("active"):
             sw += float(five_head.get("win_delta", 0.0))
             sw += math.log(float(five_head.get("course_multiplier", 1.0)))

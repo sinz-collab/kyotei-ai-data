@@ -1,11 +1,11 @@
 {
-  "engine_version": "heiwajima_complete_v2_4_20260804",
+  "engine_version": "heiwajima_complete_v2_5_20260828",
   "principles": {
     "odds_used_for_prediction": false,
     "scenario_first": true,
     "exhibition_st_standalone_strong_correction": false,
-    "max_normal_live_shift": 0.03,
-    "max_composite_live_shift": 0.06,
+    "max_normal_live_shift": 0.05,
+    "max_composite_live_shift": 0.1,
     "race_specific_baseline": true,
     "slit_composite": true,
     "five_head_scenario": true
@@ -62,5 +62,26 @@
     "water_residual_ratio": 0.35,
     "five_head_win_cap": 0.06,
     "five_head_scenario_cap": 0.18
+  },
+  "heiwajima_v2_5": {
+    "start_composite_enabled": true,
+    "course_local_interaction_enabled": true,
+    "outer_break_enabled": true,
+    "outer_break_requires_independent_signals": 3,
+    "outer_break_cap_logit": {
+      "4": 0.07,
+      "5": 0.105,
+      "6": 0.135
+    },
+    "original_exhibition_weights": {
+      "lap": 0.3,
+      "turn": 0.3,
+      "straight": 0.25,
+      "sum": 0.15
+    },
+    "motor_recent10_enabled": true,
+    "empirical_tide_wind_db": "heiwajima_tide_wind_summary_v2.csv",
+    "empirical_tide_wind_population": 5304,
+    "odds_used_for_prediction": false
   }
 }

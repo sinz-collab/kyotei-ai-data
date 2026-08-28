@@ -52,7 +52,7 @@ def payload() -> dict:
 
 class MorningConnectorTest(unittest.TestCase):
     def test_generates_twelve_site_compatible_predictions(self) -> None:
-        result = module.apply_heiwajima_v1(payload(), "2026-07-28")
+        result = module.apply_heiwajima_v1(payload(), "2026-07-28", ROOT / "data")
         self.assertEqual(result["engine"], module.ENGINE_ID)
         self.assertEqual(sorted(map(int, result["preds"].keys())), list(range(1, 13)))
         for prediction in result["preds"].values():
@@ -60,6 +60,7 @@ class MorningConnectorTest(unittest.TestCase):
                 self.assertAlmostEqual(sum(prediction[key].values()), 100.0, places=1)
             self.assertFalse(prediction["sourceSummary"]["oddsUsedForProbability"])
             self.assertFalse(prediction["sourceSummary"]["exhibitionStartUsedAlone"])
+            self.assertEqual(len(prediction["ai"]) + len(prediction["aiUpset"]), 10)
             self.assertIn("player_id_unresolved", prediction["missingCodes"])
 
     def test_non_open_venue_can_skip_without_failure(self) -> None:

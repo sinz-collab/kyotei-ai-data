@@ -13,7 +13,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "heiwajima_v1"
 MASTER_DB = ENGINE_DIR / "master_db" / "heiwajima_runtime_master.sqlite"
-ENGINE_ID = "heiwajima_complete_v2_4_20260804"
+ENGINE_ID = "heiwajima_complete_v2_5_20260828"
 MASTER_ID = "heiwajima_runtime_master_v1_20260728"
 LANES = (1, 2, 3, 4, 5, 6)
 
@@ -253,7 +253,21 @@ def engine_input_for(
                 "reg_no": str(reg_no),
                 "player_name": racer.get("name") or "",
                 "actual_course": actual_course,
-                "motor": {"power_score": motor_power_score(racer)},
+                "class": racer.get("class") or "B1",
+                "avg_st": racer.get("avg_st"),
+                "local_st": racer.get("local_st"),
+                "nat_win_score": racer.get("nat_win"),
+                "local_win_score": racer.get("local_win"),
+                "local_2_rate": racer.get("local_2"),
+                "local_3_rate": racer.get("local_3"),
+                "motor_recent": racer.get("motor_recent") or {},
+                "motor": {
+                    "power_score": motor_power_score(racer),
+                    "motor_2": racer.get("motor_2"),
+                    "motor_3": racer.get("motor_3"),
+                    "boat_2": racer.get("boat_2"),
+                    "boat_3": racer.get("boat_3"),
+                },
                 "season": {"form_score": season_form_score(racer)},
             }
         )
@@ -377,8 +391,8 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
             ),
             "comment": f"主シナリオ: {primary_scenario.get('name') or '未確定'} / 軸差 {axis_gap:.1f}pt",
         },
-        # 本線6点＋ズレ対応2点、荒れ対応2点の計10点を保持する。
-        "ai": ai[:8],
+        # 荒れ対応が2点未満でも、残枠を本線・ズレ対応で埋めて計10点を保持する。
+        "ai": ai[: max(0, 10 - min(2, len(ai_upset)))],
         "aiUpset": ai_upset[:2],
         "scenarios": scenarios,
         "headExclusionLog": result.get("head_exclusion_log") or [],
