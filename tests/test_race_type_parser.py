@@ -149,6 +149,85 @@ class RaceTypeParserTests(unittest.TestCase):
             all("boaters_local_avg_st" not in racer for racer in payload["races"][1]["racers"])
         )
 
+    def test_shimonoseki_local_st_merge_validates_identity_and_preserves_existing(self):
+        racers = [
+            {"lane": 1, "player_id": "1111", "name": "既存 選手", "local_st": ".14"},
+            {"lane": 2, "player_id": "2222", "name": "登録 選手", "local_st": "-"},
+            {"lane": 3, "name": "氏名 選手", "local_st": ""},
+            {"lane": 4, "name": "不一致 選手", "local_st": "-"},
+            {"lane": 5, "name": "不正値 選手", "local_st": "-"},
+            {"lane": 6, "name": "空欄 選手", "local_st": "-"},
+        ]
+        rows = [
+            {"lane": 1, "player_id": "1111", "name": "既存選手", "boaters_local_avg_st": "0.20"},
+            {"lane": 2, "player_id": "2222", "name": "別名", "boaters_local_avg_st": "0.16"},
+            {"lane": 3, "name": "氏名選手", "boaters_local_avg_st": "0.18"},
+            {"lane": 4, "name": "別の選手", "boaters_local_avg_st": "0.17"},
+            {"lane": 5, "name": "不正値選手", "boaters_local_avg_st": "invalid"},
+            {"lane": 6, "name": "空欄選手", "boaters_local_avg_st": "-"},
+        ]
+
+        merged = MODULE.merge_shimonoseki_local_st(racers, rows)
+
+        self.assertEqual(merged, 2)
+        self.assertEqual(
+            [racer["local_st"] for racer in racers],
+            [".14", "0.16", "0.18", "-", "-", "-"],
+        )
+
+    def test_build_payload_sets_local_st_only_for_shimonoseki(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source_dir = Path(directory)
+            races_dir = source_dir / "races"
+            races_dir.mkdir()
+            for race_no in range(1, 13):
+                (races_dir / f"race_{race_no:02d}_entry.txt").write_text(
+                    "\n".join(entry_lines("一般")), encoding="utf-8"
+                )
+            (races_dir / "race_01_boaters_local_st.json").write_text(
+                json.dumps(
+                    {
+                        "racers": [
+                            {
+                                "lane": lane,
+                                "name": f"選手{lane}",
+                                "boaters_local_avg_st": f"0.{10 + lane:02d}",
+                            }
+                            for lane in range(1, 7)
+                        ]
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            with (
+                patch.object(
+                    MODULE,
+                    "parse_racers",
+                    side_effect=lambda _lines: [
+                        {"lane": lane, "name": f"選手{lane}", "local_st": "-"}
+                        for lane in range(1, 7)
+                    ],
+                ),
+                patch.object(MODULE, "event_day_info", return_value=(1, "初日")),
+            ):
+                payload, detail = MODULE.build_payload(
+                    {"slug": "shimonoseki", "name": "下関"}, "2026-08-29", source_dir
+                )
+
+        self.assertEqual(detail, {"reason": "ok"})
+        self.assertEqual(
+            [racer["local_st"] for racer in payload["races"][0]["racers"]],
+            ["0.11", "0.12", "0.13", "0.14", "0.15", "0.16"],
+        )
+        self.assertTrue(
+            all(
+                racer["local_st"] == "-"
+                for race in payload["races"][1:]
+                for racer in race["racers"]
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

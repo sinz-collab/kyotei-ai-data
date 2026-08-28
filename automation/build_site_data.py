@@ -247,6 +247,47 @@ def parse_racers(lines: list[str]) -> list[dict]:
     return racers if len(racers) == 6 else []
 
 
+def _valid_local_st(value: object) -> bool:
+    text = str(value or "").strip()
+    return bool(re.fullmatch(r"0?\.\d{2}", text)) and 0.0 < float(text) < 1.0
+
+
+def _normalized_racer_name(value: object) -> str:
+    return re.sub(r"\s+", "", unicodedata.normalize("NFKC", str(value or "")))
+
+
+def _same_racer(racer: dict, local_row: dict) -> bool:
+    racer_id = str(racer.get("player_id") or "").strip()
+    local_id = str(local_row.get("player_id") or "").strip()
+    if racer_id and local_id:
+        return racer_id == local_id
+    racer_name = _normalized_racer_name(racer.get("name"))
+    local_name = _normalized_racer_name(local_row.get("name"))
+    return bool(racer_name and local_name and racer_name == local_name)
+
+
+def merge_shimonoseki_local_st(racers: list[dict], local_rows: list[dict]) -> int:
+    """Merge validated BOATERS 当地ST without relying on lane alone."""
+    local_by_lane = {
+        int(row.get("lane") or 0): row
+        for row in local_rows
+        if isinstance(row, dict) and int(row.get("lane") or 0) in range(1, 7)
+    }
+    merged = 0
+    for racer in racers:
+        if _valid_local_st(racer.get("local_st")):
+            continue
+        local_row = local_by_lane.get(int(racer.get("lane") or 0))
+        if not local_row or not _same_racer(racer, local_row):
+            continue
+        local_st = str(local_row.get("boaters_local_avg_st") or "").strip()
+        if not _valid_local_st(local_st):
+            continue
+        racer["local_st"] = local_st
+        merged += 1
+    return merged
+
+
 def parse_biwako_player_ids(entry_html_path: Path) -> dict[int, int]:
     """Read BOATERS registration numbers without changing the shared text parser."""
     if not entry_html_path.is_file():
@@ -855,6 +896,8 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                 local_rank = str(local_row.get("boaters_local_st_rank") or "").strip()
                 if local_rank:
                     racer["boaters_local_st_rank"] = local_rank
+            if venue["slug"] == "shimonoseki":
+                merge_shimonoseki_local_st(racers, local_rows)
         if venue["slug"] == "biwako":
             player_ids = parse_biwako_player_ids(entry_path.with_suffix(".html"))
             for racer in racers:

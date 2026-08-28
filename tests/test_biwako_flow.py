@@ -84,6 +84,10 @@ class BiwakoFlowTests(unittest.TestCase):
             "work/races/びわこ/**/races/*_boaters_local_st.json",
             workflow,
         )
+        self.assertIn(
+            "work/races/下関/**/races/*_boaters_local_st.json",
+            workflow,
+        )
         self.assertNotIn(
             "work/races/**/races/*_boaters_local_st.json",
             workflow,
