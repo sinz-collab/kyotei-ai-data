@@ -13,7 +13,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "heiwajima_v1"
 MASTER_DB = ENGINE_DIR / "master_db" / "heiwajima_runtime_master.sqlite"
-ENGINE_ID = "heiwajima_complete_v2_5_20260828"
+ENGINE_ID = "heiwajima_complete_v2_6_20260829"
 MASTER_ID = "heiwajima_runtime_master_v1_20260728"
 LANES = (1, 2, 3, 4, 5, 6)
 
@@ -261,6 +261,7 @@ def engine_input_for(
                 "local_2_rate": racer.get("local_2"),
                 "local_3_rate": racer.get("local_3"),
                 "motor_recent": racer.get("motor_recent") or {},
+                "season_runs": racer.get("season_runs") or [],
                 "motor": {
                     "power_score": motor_power_score(racer),
                     "motor_2": racer.get("motor_2"),

@@ -21,6 +21,7 @@ from heiwajima_v2_5_adjustments import (
     original_exhibition_composite,
     outer_break_adjustment,
 )
+from heiwajima_v2_6_section import section_progression_adjustment
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
@@ -405,12 +406,30 @@ def calculate(input_data, loader=None):
         ss += sx * 0.80 + mx_second * 0.78
         st += sx * 0.68 + mx_third * 0.65
 
+        section = section_progression_adjustment(b, course, bucket)
         mr = motor_recent_adjustment(b, course, bucket)
-        sw += float(mr["win"])
-        ss += float(mr["second"])
-        st += float(mr["third"])
-        if abs(float(mr["win"])) >= 0.01:
-            reasons.append({"code":"motor_recent10","delta":round(float(mr["win"]),4)})
+        mr_scale = float(section.get("motor_prior_scale", 1.0))
+        sw += float(mr["win"]) * mr_scale
+        ss += float(mr["second"]) * mr_scale
+        st += float(mr["third"]) * mr_scale
+        if abs(float(mr["win"]) * mr_scale) >= 0.01:
+            reasons.append({"code":"motor_recent10","delta":round(float(mr["win"]) * mr_scale,4),"priorScale":round(mr_scale,4)})
+
+        sw += float(section["win"])
+        ss += float(section["second"])
+        st += float(section["third"])
+        if int(section.get("runs_completed", 0)) > 0:
+            reasons.append({
+                "code":"section_progression_v2_6",
+                "delta":round(float(section["win"]),4),
+                "secondDelta":round(float(section["second"]),4),
+                "thirdDelta":round(float(section["third"]),4),
+                "sectionIndex":round(float(section.get("section_index",0.0)),4),
+                "progressWeight":round(float(section.get("progress_weight",0.0)),4),
+                "runsCompleted":int(section.get("runs_completed",0)),
+                "trend":str(section.get("trend","insufficient")),
+                "trendScore":round(float(section.get("trend_score",0.0)),4),
+            })
 
         wx = 0.0
         if course == 1:

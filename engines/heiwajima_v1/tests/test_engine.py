@@ -17,7 +17,7 @@ def test_entry_change_reanalysis():
     o=calculate(f); assert o["data_completeness"]["entry_changed"] is True
     assert next(x for x in o["probabilities"] if x["boat_no"]==3)["actual_course"]==4
 def test_engine_version_and_scenario_link():
-    o=calculate(sample()); assert o["engine_version"] == "heiwajima_complete_v2_5_20260828"
+    o=calculate(sample()); assert o["engine_version"] == "heiwajima_complete_v2_6_20260829"
     assert all("head" in s and "second" in s and "third" in s for s in o["scenarios"])
 def test_no_extreme_default_inside_bias():
     o=calculate(sample()); p=next(x["win_prob"] for x in o["probabilities"] if x["boat_no"]==1)
