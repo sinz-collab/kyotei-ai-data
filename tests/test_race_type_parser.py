@@ -149,6 +149,57 @@ class RaceTypeParserTests(unittest.TestCase):
             all("boaters_local_avg_st" not in racer for racer in payload["races"][1]["racers"])
         )
 
+    def test_local_st_backfill_preserves_existing_and_ignores_invalid_values(self):
+        racers = [
+            {"lane": 1, "local_st": ".14"},
+            {"lane": 2, "local_st": "0.15"},
+            {"lane": 3, "local_st": "0.16", "boaters_local_avg_st": "0.20"},
+            {"lane": 4, "local_st": "-"},
+            {"lane": 5, "local_st": "invalid"},
+            {"lane": 6, "local_st": ""},
+        ]
+
+        filled = MODULE.backfill_boaters_local_avg_st(racers)
+
+        self.assertEqual(filled, 2)
+        self.assertEqual(
+            [racer.get("boaters_local_avg_st") for racer in racers],
+            [".14", "0.15", "0.20", None, None, None],
+        )
+
+    def test_build_payload_backfills_local_st_for_every_venue(self):
+        racers = [
+            {"lane": lane, "name": f"選手{lane}", "local_st": f"0.{10 + lane:02d}"}
+            for lane in range(1, 7)
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            source_dir = Path(directory)
+            races_dir = source_dir / "races"
+            races_dir.mkdir()
+            for race_no in range(1, 13):
+                (races_dir / f"race_{race_no:02d}_entry.txt").write_text(
+                    "\n".join(entry_lines("一般")), encoding="utf-8"
+                )
+
+            for slug in ("ashiya", "biwako", "heiwajima", "karatsu", "shimonoseki", "tokoname"):
+                with (
+                    patch.object(
+                        MODULE,
+                        "parse_racers",
+                        side_effect=lambda _lines: [dict(racer) for racer in racers],
+                    ),
+                    patch.object(MODULE, "event_day_info", return_value=(1, "初日")),
+                ):
+                    payload, detail = MODULE.build_payload(
+                        {"slug": slug, "name": slug}, "2026-08-30", source_dir
+                    )
+
+                self.assertEqual(detail, {"reason": "ok"})
+                self.assertEqual(
+                    [racer["boaters_local_avg_st"] for racer in payload["races"][0]["racers"]],
+                    ["0.11", "0.12", "0.13", "0.14", "0.15", "0.16"],
+                )
+
     def test_shimonoseki_local_st_merge_validates_identity_and_preserves_existing(self):
         racers = [
             {"lane": 1, "player_id": "1111", "name": "既存 選手", "local_st": ".14"},
