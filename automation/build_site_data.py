@@ -252,6 +252,20 @@ def _valid_local_st(value: object) -> bool:
     return bool(re.fullmatch(r"0?\.\d{2}", text)) and 0.0 < float(text) < 1.0
 
 
+def backfill_boaters_local_avg_st(racers: list[dict]) -> int:
+    """Expose an existing local ST under the site's canonical key."""
+    filled = 0
+    for racer in racers:
+        if _valid_local_st(racer.get("boaters_local_avg_st")):
+            continue
+        local_st = str(racer.get("local_st") or "").strip()
+        if not _valid_local_st(local_st):
+            continue
+        racer["boaters_local_avg_st"] = local_st
+        filled += 1
+    return filled
+
+
 def _normalized_racer_name(value: object) -> str:
     return re.sub(r"\s+", "", unicodedata.normalize("NFKC", str(value or "")))
 
@@ -898,6 +912,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                     racer["boaters_local_st_rank"] = local_rank
             if venue["slug"] == "shimonoseki":
                 merge_shimonoseki_local_st(racers, local_rows)
+        backfill_boaters_local_avg_st(racers)
         if venue["slug"] == "biwako":
             player_ids = parse_biwako_player_ids(entry_path.with_suffix(".html"))
             for racer in racers:
