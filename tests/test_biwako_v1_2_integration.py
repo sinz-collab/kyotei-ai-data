@@ -157,11 +157,15 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
         result = self.apply(payload(), "preliminary")
         self.assertEqual(result["predictionStatus"], "ready")
         self.assertTrue(result["predictionAvailable"])
-        self.assertEqual(result["engine_version"], "biwako_engine_v1.2")
+        self.assertEqual(result["engine_version"], "biwako_engine_v1.2_refined")
         self.assertEqual(len(result["preds"]), 12)
         for prediction in result["preds"].values():
             self.assertEqual(prediction["phase"], "preliminary")
-            self.assertEqual(prediction["engine_version"], "biwako_engine_v1.2")
+            self.assertEqual(prediction["engine_version"], "biwako_engine_v1.2_refined")
+            self.assertEqual(
+                prediction["parameter_version"],
+                "biwako_v1.2_refined_20260831",
+            )
             self.assertEqual(len(prediction["tickets"]), 10)
             self.assertEqual(len({row["combo"] for row in prediction["tickets"]}), 10)
             for key in ("win", "second", "third"):
@@ -191,13 +195,13 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
 
         self.assertTrue(result["predictionAvailable"])
         self.assertEqual(result["predictionStatus"], "ready")
-        self.assertEqual(result["engine_version"], "biwako_engine_v1.2")
+        self.assertEqual(result["engine_version"], "biwako_engine_v1.2_refined")
         self.assertEqual(result["predictionEngine"]["finalRaceCount"], 12)
         for race in result["races"]:
             race_no = str(race["race"])
             final = result["preds"][race_no]
             self.assertEqual(final["phase"], "final")
-            self.assertEqual(final["engine_version"], "biwako_engine_v1.2")
+            self.assertEqual(final["engine_version"], "biwako_engine_v1.2_refined")
             self.assertEqual(race["predictionPre"]["phase"], "preliminary")
             self.assertEqual(race["predictionFinal"], final)
             self.assertEqual(len(final["tickets"]), 10)
@@ -243,6 +247,20 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
         result = self.apply(preliminary, "final", 1)
         self.assertEqual(result["preds"]["1"], before["preds"]["1"])
         self.assertEqual(result["predictionStatus"], "ready")
+
+    def test_entry_change_keeps_probability_and_ticket_contracts(self) -> None:
+        value = payload()
+        value["races"][0]["racers"][0]["actual_course"] = 2
+        value["races"][0]["racers"][1]["actual_course"] = 1
+
+        result = self.apply(value, "preliminary")
+        prediction = result["preds"]["1"]
+
+        self.assertEqual(len(prediction["tickets"]), 10)
+        self.assertEqual(len({row["combo"] for row in prediction["tickets"]}), 10)
+        for key in ("win", "second", "third"):
+            self.assertEqual(len(prediction[key]), 6)
+            self.assertAlmostEqual(sum(prediction[key].values()), 100.0, delta=0.05)
 
 
 if __name__ == "__main__":

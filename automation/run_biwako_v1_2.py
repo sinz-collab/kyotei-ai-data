@@ -16,13 +16,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "biwako_v1_2"
 CONFIG_PATH = REPO_ROOT / "engines" / "biwako_v1_1" / "biwako_correction_v1_1.json"
 DEFAULT_DB_PATH = REPO_ROOT / "data" / "venues" / "biwako" / "db" / "biwako_ai_master.sqlite"
-ENGINE_ID = "biwako_engine_v1.2"
-ENGINE_VERSION = "1.2"
+ENGINE_ID = "biwako_engine_v1.2_refined"
+ENGINE_VERSION = "1.2_refined"
 
 if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
 
-from biwako_prediction_engine_v1_2 import BiwakoPredictionEngineV12  # noqa: E402
+from biwako_prediction_engine_v1_2_refined import (  # noqa: E402
+    BiwakoPredictionEngineV12Refined as BiwakoPredictionEngineV12,
+)
 
 
 def number(value: Any, default: float | None = None) -> float | None:
