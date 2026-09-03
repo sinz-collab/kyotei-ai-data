@@ -148,6 +148,24 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertLessEqual(lane2["win_prob"], 0.215)
         self.assertAlmostEqual(lane2["win_prob"], floor["achieved"], delta=0.001)
 
+    def test_replay_debug_exposes_linear_win_audit_only_when_requested(self) -> None:
+        race_input = self.final_input("2026-09-03", 5)
+        engine = FukuokaPredictionEngineV10()
+        normal = engine.predict(race_input)
+        debug = engine.predict(race_input, debug=True)
+        self.assertNotIn("win_audit", normal["diagnostics"])
+        audit = debug["diagnostics"]["win_audit"]
+        self.assertEqual(len(audit), 6)
+        expected = {
+            "base_win", "course_delta", "local_delta", "motor_delta",
+            "setsukan_delta", "water_delta", "slit_delta",
+            "exhibition_delta", "original_delta", "interaction_delta",
+            "total_delta", "raw_win", "normalized_win",
+        }
+        self.assertTrue(all(expected.issubset(row) for row in audit))
+        self.assertAlmostEqual(sum(row["normalized_win"] for row in audit), 100.0, places=4)
+        self.assertTrue(all(abs(row["total_delta"]) <= 13.0 for row in audit))
+
     def test_original_sum_is_a_small_auxiliary_input(self) -> None:
         strong = self.final_input("2026-09-03", 5)
         weak = deepcopy(strong)

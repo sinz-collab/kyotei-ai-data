@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import permutations
-from math import exp, isfinite, log
+from math import exp, isfinite
 from typing import Any
 
 ENGINE_ID = "fukuoka_engine_v1.0"
@@ -10,6 +10,12 @@ ENGINE_VERSION = "1.0"
 BASE_WIN = {1: 53.35, 2: 14.48, 3: 14.98, 4: 8.70, 5: 4.99, 6: 3.50}
 BASE_SECOND = {1: 20.0, 2: 23.5, 3: 21.5, 4: 16.0, 5: 11.0, 6: 8.0}
 BASE_THIRD = {1: 15.0, 2: 20.0, 3: 21.0, 4: 19.0, 5: 15.0, 6: 10.0}
+WIN_MIN_PERCENT = 0.1
+WIN_DELTA_KEYS = (
+    "course_delta", "local_delta", "motor_delta", "setsukan_delta",
+    "water_delta", "slit_delta", "exhibition_delta", "original_delta",
+    "interaction_delta",
+)
 
 HEAD_LINK = {
     3: {4: 1.20, 1: 1.15, 5: 1.10},
@@ -235,7 +241,7 @@ def slit_structure(by_lane: dict[int, dict], by_course: dict[int, int]) -> dict:
 class FukuokaPredictionEngineV10:
     """福岡 v1.0。オッズ・結果非使用の決定論的ルールエンジン。"""
 
-    def predict(self, race: dict) -> dict:
+    def predict(self, race: dict, debug: bool = False) -> dict:
         boats = sorted(race["boats"], key=lambda b: int(b["lane"]))
         if len(boats) != 6:
             raise ValueError("fukuoka_engine_requires_6_boats")
@@ -249,52 +255,68 @@ class FukuokaPredictionEngineV10:
             b["actual_course"] = course
             by_course[course] = lane
 
-        win_pts = {l: BASE_WIN[b["actual_course"]] for l, b in by_lane.items()}
+        base_win = {l: BASE_WIN[b["actual_course"]] for l, b in by_lane.items()}
+        win_deltas = {
+            lane: {key: 0.0 for key in WIN_DELTA_KEYS}
+            for lane in by_lane
+        }
+
+        def add_win_delta(lane: int, key: str, value: float) -> None:
+            win_deltas[lane][key] += value
+
         sec_pts = {l: BASE_SECOND[b["actual_course"]] for l, b in by_lane.items()}
         thr_pts = {l: BASE_THIRD[b["actual_course"]] for l, b in by_lane.items()}
 
         c1 = by_course.get(1)
         if c1:
-            win_pts[c1] += escape_delta(num(by_lane[c1].get("course_escape_rate"), 53.35))
+            add_win_delta(c1, "course_delta", escape_delta(num(by_lane[c1].get("course_escape_rate"), 53.35)))
 
         attack3 = attack4 = 0.0
         for lane, b in by_lane.items():
             c = b["actual_course"]
             if c == 2:
-                win_pts[lane] += lane2_sashi_delta(num(b.get("course_sashi_rate")))
+                add_win_delta(lane, "course_delta", lane2_sashi_delta(num(b.get("course_sashi_rate"))))
             elif c == 3:
                 attack3 = lane3_attack_delta(num(b.get("course_makuri_rate")), num(b.get("course_makuri_sashi_rate")))
-                win_pts[lane] += attack3
+                add_win_delta(lane, "course_delta", attack3)
             elif c == 4:
                 attack4 = lane4_attack_delta(num(b.get("course_makuri_rate")), num(b.get("course_makuri_sashi_rate")))
-                win_pts[lane] += attack4
+                add_win_delta(lane, "course_delta", attack4)
 
         if c1:
             er = num(by_lane[c1].get("course_escape_rate"), 53.35)
             c3, c4, c5 = by_course.get(3), by_course.get(4), by_course.get(5)
             if er < 37.5 and attack3 >= 2.5 and c3:
-                win_pts[c1] -= 1.0; win_pts[c3] += 1.0
+                add_win_delta(c1, "interaction_delta", -1.0)
+                add_win_delta(c3, "interaction_delta", 1.0)
                 if c4: thr_pts[c4] += 1.0
                 if c5: thr_pts[c5] += 0.5
                 if attack3 >= 5.0:
-                    win_pts[c1] -= 2.0; win_pts[c3] += 1.5
+                    add_win_delta(c1, "interaction_delta", -2.0)
+                    add_win_delta(c3, "interaction_delta", 1.5)
             if er < 37.5 and attack4 >= 2.5 and c4:
-                win_pts[c1] -= 1.0; win_pts[c4] += 1.0
+                add_win_delta(c1, "interaction_delta", -1.0)
+                add_win_delta(c4, "interaction_delta", 1.0)
                 if c5: thr_pts[c5] += 1.0
                 if attack4 >= 4.5:
-                    win_pts[c1] -= 1.0; win_pts[c4] += 1.0
+                    add_win_delta(c1, "interaction_delta", -1.0)
+                    add_win_delta(c4, "interaction_delta", 1.0)
 
             c2 = by_course.get(2)
             d2 = lane2_sashi_delta(num(by_lane[c2].get("course_sashi_rate"))) if c2 else 0.0
             if d2 < 1.0 and attack3 < 1.5 and attack4 < 1.5 and er < 50:
-                win_pts[c1] += abs(escape_delta(er)) * 0.5
+                add_win_delta(c1, "interaction_delta", abs(escape_delta(er)) * 0.5)
 
         day = int(num(race.get("event_day"), 1))
         pre_w, set_w, live_w = SERIES_WEIGHTS.get(min(max(day, 1), 6), SERIES_WEIGHTS[1])
         for lane, b in by_lane.items():
-            pre = local_delta(b) + motor_delta(b.get("motor_grade"), b.get("motor_trend"))
+            local = local_delta(b)
+            motor = motor_delta(b.get("motor_grade"), b.get("motor_trend"))
             sd = setsukan_delta(b.get("setsukan_runs") or [])
-            win_pts[lane] += pre * pre_w + sd * set_w
+            add_win_delta(lane, "local_delta", local * pre_w)
+            add_win_delta(lane, "motor_delta", motor * pre_w)
+            add_win_delta(lane, "setsukan_delta", sd * set_w)
+            pre = local + motor
             sec_pts[lane] += pre * 0.45 * pre_w + sd * 0.65 * set_w
             thr_pts[lane] += pre * 0.25 * pre_w + sd * 0.45 * set_w
 
@@ -304,7 +326,7 @@ class FukuokaPredictionEngineV10:
             water += 0.5 * wave_delta(num(race.get("wave_height")))
             tide = str(race.get("tide_phase") or "").lower()
             water += 0.9 if tide == "rising" else (-0.7 if tide == "falling" else 0.0)
-            win_pts[c1] += clamp(water, -3.5, 3.5)
+            add_win_delta(c1, "water_delta", clamp(water, -3.5, 3.5))
 
         ex = [num(b.get("exhibition_time"), 99) for b in by_lane.values() if b.get("exhibition_time") not in (None, "", "-")]
         laps = [num(b.get("original_lap"), 99) for b in by_lane.values() if b.get("original_lap") not in (None, "", "-")]
@@ -322,32 +344,37 @@ class FukuokaPredictionEngineV10:
             original_sum = None if b.get("original_sum") in (None, "", "-") else num(b.get("original_sum"))
             st = None if b.get("exhibition_st") in (None, "", "-") else num(b.get("exhibition_st"))
 
-            live = rank_bonus(et, ex, True, 1.0, 0.5, -0.5, -1.0)
-            live += 0.35 * rank_bonus(lap, laps, True, 1.5, 0.8, -0.5, -1.2)
-            live += 0.35 * rank_bonus(turn, turns, True, 1.5, 0.8, -0.5, -1.5)
-            live += 0.30 * rank_bonus(straight, straights, True, 1.5, 0.8, -0.4, -1.0)
-            live += 0.15 * rank_bonus(original_sum, sums, True, 0.6, 0.3, -0.2, -0.5)
+            exhibition_component = rank_bonus(et, ex, True, 1.0, 0.5, -0.5, -1.0)
+            original_component = 0.35 * rank_bonus(lap, laps, True, 1.5, 0.8, -0.5, -1.2)
+            original_component += 0.35 * rank_bonus(turn, turns, True, 1.5, 0.8, -0.5, -1.5)
+            original_component += 0.30 * rank_bonus(straight, straights, True, 1.5, 0.8, -0.4, -1.0)
+            original_component += 0.15 * rank_bonus(original_sum, sums, True, 0.6, 0.3, -0.2, -0.5)
+            slit_component = 0.0
 
             course = b["actual_course"]
             if course in slit["attackers"]:
                 aptitude = attack3 if course == 3 else attack4
-                live += min(0.55, aptitude * 0.12)
+                slit_component += min(0.55, aptitude * 0.12)
             if course in slit["dented"]:
-                live -= 0.35
+                slit_component -= 0.35
 
             if st is not None and len(sts) >= 4:
                 rank = sorted(sts).index(st)
                 local_st = num(b.get("local_avg_st"), 0.18)
                 strong_local = num(b.get("local_win_rate")) >= max(5.5, num(b.get("national_win_rate")))
                 if rank <= 1:
-                    live += 0.5
+                    slit_component += 0.5
                 elif rank >= 4:
-                    if strong_local and local_st <= 0.16: live -= 0.25
-                    elif local_st <= 0.16: live -= 0.6
-                    else: live -= 1.0
+                    if strong_local and local_st <= 0.16: slit_component -= 0.25
+                    elif local_st <= 0.16: slit_component -= 0.6
+                    else: slit_component -= 1.0
 
-            live = clamp(live, -2.5, 2.5)
-            win_pts[lane] += live * live_w
+            live_unclamped = exhibition_component + original_component + slit_component
+            live = clamp(live_unclamped, -2.5, 2.5)
+            live_scale = live / live_unclamped if live_unclamped else 1.0
+            add_win_delta(lane, "exhibition_delta", exhibition_component * live_scale * live_w)
+            add_win_delta(lane, "original_delta", original_component * live_scale * live_w)
+            add_win_delta(lane, "slit_delta", slit_component * live_scale * live_w)
             sec_pts[lane] += live * 0.85 * live_w
 
             c = b["actual_course"]
@@ -369,6 +396,22 @@ class FukuokaPredictionEngineV10:
                 if target_lane is not None:
                     thr_pts[target_lane] += bonus
 
+        live_applied = any((ex, laps, turns, straights, sums, sts))
+        delta_limit = 13.0 if live_applied else 10.0
+        uncapped_total_deltas = {
+            lane: sum(win_deltas[lane].values())
+            for lane in by_lane
+        }
+        total_deltas = {
+            lane: clamp(total, -delta_limit, delta_limit)
+            for lane, total in uncapped_total_deltas.items()
+        }
+        raw_win = {
+            lane: max(WIN_MIN_PERCENT, base_win[lane] + total_deltas[lane])
+            for lane in by_lane
+        }
+        win = normalize(raw_win)
+
         c2 = by_course.get(2)
         floor_status = {"activated": False, "target": None, "achieved": None}
         if c1 and c2:
@@ -386,29 +429,59 @@ class FukuokaPredictionEngineV10:
             foot_mid = (et2 in (None, "", "-") or not ex or exhibition_rank <= 3) and original_mid
             er1 = num(by_lane[c1].get("course_escape_rate"), 53.35)
             if st_top and foot_mid and er1 < 72.73:
-                preliminary = softmax(win_pts, 9.0)
                 d2 = lane2_sashi_delta(num(b2.get("course_sashi_rate")))
                 target = clamp(
-                    0.19 + (0.01 if st_rank == 0 else 0.0) + min(0.01, d2 * 0.002),
-                    0.19,
+                    0.20 + (0.005 if st_rank == 0 else 0.0) + min(0.005, d2 * 0.001),
+                    0.20,
                     0.21,
                 )
-                if preliminary[c2] < target:
-                    current = max(1e-9, preliminary[c2])
-                    delta = 9.0 * log(target * (1.0 - current) / (current * (1.0 - target)))
-                    win_pts[c2] += max(0.0, delta)
+                if win[c2] < target:
+                    other_raw = sum(value for lane, value in raw_win.items() if lane != c2)
+                    required_raw = target * other_raw / (1.0 - target)
+                    needed = max(0.0, required_raw - raw_win[c2])
+                    available = max(0.0, delta_limit - total_deltas[c2])
+                    floor_delta = min(needed, available)
+                    win_deltas[c2]["interaction_delta"] += floor_delta
+                    uncapped_total_deltas[c2] += floor_delta
+                    total_deltas[c2] += floor_delta
+                    raw_win[c2] = max(WIN_MIN_PERCENT, base_win[c2] + total_deltas[c2])
+                    win = normalize(raw_win)
                 floor_status = {
                     "activated": True,
                     "target": round(target, 4),
-                    "achieved": round(softmax(win_pts, 9.0)[c2], 4),
+                    "achieved": round(win[c2], 4),
                 }
 
-        win = softmax(win_pts, 9.0)
         second = softmax(sec_pts, 8.0)
         third = softmax(thr_pts, 7.5)
         tickets = self._tickets(by_lane, by_course, win, second, third)
         fit = self._fit(by_lane, race, win)
         grade = "S" if fit >= 85 else ("A" if fit >= 70 else ("B" if fit >= 55 else "C"))
+
+        diagnostics = {
+            "odds_used": False,
+            "result_used": False,
+            "conditional_ticket_model": True,
+            "win_normalization": "linear_percent_points",
+            "win_delta_limit": delta_limit,
+            "weak_four_linkage": {"5": 1.10, "6": 1.08, "1": 1.05, "protected_max": 1},
+            "motor_adjustment_bounds": [-4.0, 4.0],
+            "slit_structure": slit,
+            "lane2_floor": floor_status,
+            "original_sum_used": bool(sums),
+            "protected_four_ticket": tickets.get("protected_four_ticket"),
+        }
+        if debug:
+            diagnostics["win_audit"] = [{
+                "lane": lane,
+                "actual_course": by_lane[lane]["actual_course"],
+                "base_win": round(base_win[lane], 6),
+                **{key: round(win_deltas[lane][key], 6) for key in WIN_DELTA_KEYS},
+                "uncapped_total_delta": round(uncapped_total_deltas[lane], 6),
+                "total_delta": round(total_deltas[lane], 6),
+                "raw_win": round(raw_win[lane], 6),
+                "normalized_win": round(win[lane] * 100.0, 6),
+            } for lane in range(1, 7)]
 
         return {
             "engine": ENGINE_ID,
@@ -422,17 +495,7 @@ class FukuokaPredictionEngineV10:
             } for lane in range(1, 7)],
             "tickets": tickets,
             "sab": {"grade": grade, "fit": round(fit, 1)},
-            "diagnostics": {
-                "odds_used": False,
-                "result_used": False,
-                "conditional_ticket_model": True,
-                "weak_four_linkage": {"5": 1.10, "6": 1.08, "1": 1.05, "protected_max": 1},
-                "motor_adjustment_bounds": [-4.0, 4.0],
-                "slit_structure": slit,
-                "lane2_floor": floor_status,
-                "original_sum_used": bool(sums),
-                "protected_four_ticket": tickets.get("protected_four_ticket"),
-            },
+            "diagnostics": diagnostics,
         }
 
     def _second_given_head(self, h, second, by_lane, by_course):
