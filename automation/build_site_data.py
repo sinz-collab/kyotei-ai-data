@@ -23,6 +23,7 @@ PREDICTION_VENUES = {
     "karatsu",
     "biwako",
     "shimonoseki",
+    "fukuoka",
 }
 
 ALL_VENUES = [
@@ -771,6 +772,42 @@ def biwako_race_prediction_is_complete(prediction: object) -> bool:
     ]
     return len(combos) == 10 and len(set(combos)) == 10
 
+
+def fukuoka_race_prediction_is_complete(prediction: object) -> bool:
+    """Validate and preserve the race-native Fukuoka v1.0 prediction."""
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("engine") != "fukuoka_engine_v1.0":
+        return False
+    if str(prediction.get("engineVersion") or "") != "1.0":
+        return False
+    if prediction.get("phase") not in {"preliminary", "final"}:
+        return False
+    if prediction.get("status") != "complete":
+        return False
+    if any(
+        not _probabilities_are_valid(prediction.get(key))
+        for key in ("win", "second", "third")
+    ):
+        return False
+    if not prediction.get("sab"):
+        return False
+    tickets = prediction.get("tickets")
+    if not isinstance(tickets, list) or len(tickets) != 10:
+        return False
+    combos = [
+        ticket.get("combo")
+        for ticket in tickets
+        if isinstance(ticket, dict) and ticket.get("combo")
+    ]
+    diagnostics = prediction.get("diagnostics") or {}
+    return (
+        len(combos) == 10
+        and len(set(combos)) == 10
+        and diagnostics.get("oddsUsedForPrediction") is False
+        and diagnostics.get("resultUsedForPrediction") is False
+    )
+
 def attach_independent_race_domains(
     payload: dict,
     slug: str,
@@ -801,6 +838,11 @@ def attach_independent_race_domains(
         elif (
             slug == "biwako"
             and biwako_race_prediction_is_complete(race.get("prediction"))
+        ):
+            native_prediction = deepcopy(race.get("prediction"))
+        elif (
+            slug == "fukuoka"
+            and fukuoka_race_prediction_is_complete(race.get("prediction"))
         ):
             native_prediction = deepcopy(race.get("prediction"))
         racers = deepcopy(race.get("racers") or [])

@@ -39,6 +39,8 @@ WAKAMATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_wakamatsu_v2_live.p
 WAKAMATSU_DATA_ROOT = PUBLISHER_REPO / "data"
 BIWAKO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_biwako_v1_2.py"
 BIWAKO_DATA_ROOT = PUBLISHER_REPO / "data"
+FUKUOKA_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_fukuoka_v1.py"
+FUKUOKA_DATA_ROOT = PUBLISHER_REPO / "data"
 
 SHIMONOSEKI_LIVE_APPLIER = ROOT / "automation" / "apply_shimonoseki_live_v6_1.py"
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
@@ -406,6 +408,62 @@ async def apply_biwako_live_prediction(
     )
 
 
+async def apply_fukuoka_live_prediction(
+    target: dict[str, Any],
+    race_dir: Path,
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "fukuoka" or fetch_result.get("error"):
+        return
+
+    items = fetch_result.get("items") or {}
+    required = ("direct", "exhibition", "original_exhibition")
+    if not all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    ):
+        return
+
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(FUKUOKA_LIVE_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--stage",
+        "final",
+        "--race",
+        str(target["race_no"]),
+        "--data-root",
+        str(FUKUOKA_DATA_ROOT),
+        "--live-root",
+        str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "fukuoka_live_prediction_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "fukuoka_live_prediction_complete",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+        },
+    )
+
+
 async def apply_wakamatsu_live_prediction(
     target: dict[str, Any],
     fetch_result: dict[str, Any],
@@ -669,6 +727,12 @@ async def run_once(
                                     logger,
                                 )
                                 await apply_biwako_live_prediction(
+                                    target,
+                                    race_dir,
+                                    result,
+                                    logger,
+                                )
+                                await apply_fukuoka_live_prediction(
                                     target,
                                     race_dir,
                                     result,
