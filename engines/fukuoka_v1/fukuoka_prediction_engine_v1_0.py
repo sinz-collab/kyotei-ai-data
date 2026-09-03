@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import permutations
-from math import exp, isfinite
+from math import exp, isfinite, log
 from typing import Any
 
 ENGINE_ID = "fukuoka_engine_v1.0"
@@ -17,6 +17,7 @@ HEAD_LINK = {
 }
 WEAK_FOUR_LINK = {5: 1.10, 6: 1.08, 1: 1.05}
 OUTWARD_SECOND_LINK = {3: {4: 1.05, 5: 1.03}, 4: {5: 1.08, 6: 1.06}, 5: {6: 1.05}}
+SLIT_OUTWARD_THIRD = {3: {4: 0.45, 5: 0.20}, 4: {5: 0.40, 6: 0.18}}
 
 WIND_DIR_DELTA = {
     "N": 0.9, "NE": -1.1, "E": -1.6, "SE": 0.0,
@@ -173,6 +174,64 @@ def wave_delta(wave: float) -> float:
     return -1.1
 
 
+def slit_structure(by_lane: dict[int, dict], by_course: dict[int, int]) -> dict:
+    starts = {
+        course: num(by_lane[lane].get("exhibition_st"), 9.0)
+        for course, lane in by_course.items()
+        if by_lane[lane].get("exhibition_st") not in (None, "", "-")
+    }
+    if len(starts) < 4:
+        return {"peeking": [], "dented": [], "walls": [], "attackers": [], "outward": {}}
+
+    ordered = sorted(starts.values())
+    peeking = {
+        course for course, start in starts.items()
+        if ordered.index(start) <= 1
+        and course > 1
+        and starts.get(course - 1, start) - start >= 0.03
+    }
+    dented = {
+        course for course, start in starts.items()
+        if min(
+            [starts.get(course - 1, start), starts.get(course + 1, start)]
+        ) + 0.08 <= start
+    }
+    walls = set()
+    for course in (2, 3):
+        outer_start = starts.get(course + 1)
+        own_start = starts.get(course)
+        if own_start is not None and outer_start is not None and course not in dented:
+            if own_start <= outer_start + 0.03:
+                walls.add(course)
+
+    attackers = []
+    outward: dict[int, list[int]] = {}
+    for course in (3, 4):
+        lane = by_course.get(course)
+        if lane is None or course not in peeking:
+            continue
+        boat = by_lane[lane]
+        aptitude = (
+            lane3_attack_delta(num(boat.get("course_makuri_rate")), num(boat.get("course_makuri_sashi_rate")))
+            if course == 3
+            else lane4_attack_delta(num(boat.get("course_makuri_rate")), num(boat.get("course_makuri_sashi_rate")))
+        )
+        if aptitude < 1.5:
+            continue
+        inside_course = course - 1
+        if inside_course in walls and inside_course not in dented:
+            continue
+        attackers.append(course)
+        outward[course] = [target for target in SLIT_OUTWARD_THIRD[course] if target in by_course]
+    return {
+        "peeking": sorted(peeking),
+        "dented": sorted(dented),
+        "walls": sorted(walls),
+        "attackers": attackers,
+        "outward": outward,
+    }
+
+
 class FukuokaPredictionEngineV10:
     """福岡 v1.0。オッズ・結果非使用の決定論的ルールエンジン。"""
 
@@ -251,19 +310,30 @@ class FukuokaPredictionEngineV10:
         laps = [num(b.get("original_lap"), 99) for b in by_lane.values() if b.get("original_lap") not in (None, "", "-")]
         turns = [num(b.get("original_turn"), 99) for b in by_lane.values() if b.get("original_turn") not in (None, "", "-")]
         straights = [num(b.get("original_straight"), 99) for b in by_lane.values() if b.get("original_straight") not in (None, "", "-")]
+        sums = [num(b.get("original_sum"), 99) for b in by_lane.values() if b.get("original_sum") not in (None, "", "-")]
         sts = [num(b.get("exhibition_st"), 9) for b in by_lane.values() if b.get("exhibition_st") not in (None, "", "-")]
+        slit = slit_structure(by_lane, by_course)
 
         for lane, b in by_lane.items():
             et = None if b.get("exhibition_time") in (None, "", "-") else num(b.get("exhibition_time"))
             lap = None if b.get("original_lap") in (None, "", "-") else num(b.get("original_lap"))
             turn = None if b.get("original_turn") in (None, "", "-") else num(b.get("original_turn"))
             straight = None if b.get("original_straight") in (None, "", "-") else num(b.get("original_straight"))
+            original_sum = None if b.get("original_sum") in (None, "", "-") else num(b.get("original_sum"))
             st = None if b.get("exhibition_st") in (None, "", "-") else num(b.get("exhibition_st"))
 
             live = rank_bonus(et, ex, True, 1.0, 0.5, -0.5, -1.0)
             live += 0.35 * rank_bonus(lap, laps, True, 1.5, 0.8, -0.5, -1.2)
             live += 0.35 * rank_bonus(turn, turns, True, 1.5, 0.8, -0.5, -1.5)
             live += 0.30 * rank_bonus(straight, straights, True, 1.5, 0.8, -0.4, -1.0)
+            live += 0.15 * rank_bonus(original_sum, sums, True, 0.6, 0.3, -0.2, -0.5)
+
+            course = b["actual_course"]
+            if course in slit["attackers"]:
+                aptitude = attack3 if course == 3 else attack4
+                live += min(0.55, aptitude * 0.12)
+            if course in slit["dented"]:
+                live -= 0.35
 
             if st is not None and len(sts) >= 4:
                 rank = sorted(sts).index(st)
@@ -293,22 +363,45 @@ class FukuokaPredictionEngineV10:
                 elif tr <= 3: thr_pts[lane] += 0.5
                 elif tr == len(turns) - 1: thr_pts[lane] -= 1.5
 
+        for attack_course in slit["attackers"]:
+            for target_course, bonus in SLIT_OUTWARD_THIRD[attack_course].items():
+                target_lane = by_course.get(target_course)
+                if target_lane is not None:
+                    thr_pts[target_lane] += bonus
+
         c2 = by_course.get(2)
+        floor_status = {"activated": False, "target": None, "achieved": None}
         if c1 and c2:
             b2 = by_lane[c2]
             st2, et2 = b2.get("exhibition_st"), b2.get("exhibition_time")
-            st_top = st2 not in (None, "", "-") and len(sts) >= 4 and sorted(sts).index(num(st2)) <= 1
-            foot_mid = et2 in (None, "", "-") or not ex or sorted(ex).index(num(et2)) <= 3
+            st_rank = sorted(sts).index(num(st2)) if st2 not in (None, "", "-") and len(sts) >= 4 else 99
+            exhibition_rank = sorted(ex).index(num(et2)) if et2 not in (None, "", "-") and ex else 0
+            st_top = st_rank <= 1
+            original_ranks = []
+            for key, values in (("original_lap", laps), ("original_turn", turns), ("original_straight", straights)):
+                value = b2.get(key)
+                if value not in (None, "", "-") and values:
+                    original_ranks.append(sorted(values).index(num(value)))
+            original_mid = not original_ranks or sum(rank <= 3 for rank in original_ranks) >= 2
+            foot_mid = (et2 in (None, "", "-") or not ex or exhibition_rank <= 3) and original_mid
             er1 = num(by_lane[c1].get("course_escape_rate"), 53.35)
             if st_top and foot_mid and er1 < 72.73:
                 preliminary = softmax(win_pts, 9.0)
-                if preliminary[c2] < 0.20:
-                    # True probability floor: raise only lane-2 until ~20%, never force it to top.
-                    # Because Fukuoka lane-1 prior is large, a small point bump is not enough.
-                    for _ in range(40):
-                        if softmax(win_pts, 9.0)[c2] >= 0.20:
-                            break
-                        win_pts[c2] += 0.5
+                d2 = lane2_sashi_delta(num(b2.get("course_sashi_rate")))
+                target = clamp(
+                    0.19 + (0.01 if st_rank == 0 else 0.0) + min(0.01, d2 * 0.002),
+                    0.19,
+                    0.21,
+                )
+                if preliminary[c2] < target:
+                    current = max(1e-9, preliminary[c2])
+                    delta = 9.0 * log(target * (1.0 - current) / (current * (1.0 - target)))
+                    win_pts[c2] += max(0.0, delta)
+                floor_status = {
+                    "activated": True,
+                    "target": round(target, 4),
+                    "achieved": round(softmax(win_pts, 9.0)[c2], 4),
+                }
 
         win = softmax(win_pts, 9.0)
         second = softmax(sec_pts, 8.0)
@@ -334,6 +427,11 @@ class FukuokaPredictionEngineV10:
                 "result_used": False,
                 "conditional_ticket_model": True,
                 "weak_four_linkage": {"5": 1.10, "6": 1.08, "1": 1.05, "protected_max": 1},
+                "motor_adjustment_bounds": [-4.0, 4.0],
+                "slit_structure": slit,
+                "lane2_floor": floor_status,
+                "original_sum_used": bool(sums),
+                "protected_four_ticket": tickets.get("protected_four_ticket"),
             },
         }
 
@@ -369,31 +467,24 @@ class FukuokaPredictionEngineV10:
             scored.append((win[h] * p2 * p3, h, s, t))
         scored.sort(reverse=True)
 
-        top_head = max(win, key=win.get)
-        selected, seen = [], set()
-        def add(item):
-            combo = f"{item[1]}-{item[2]}-{item[3]}"
-            if combo not in seen:
-                selected.append(item); seen.add(combo)
-
-        for item in scored:
-            add(item)
-            if len(selected) == 6: break
-        for item in scored:
-            if len(selected) >= 8: break
-            if item[1] != top_head or item[2] != selected[0][2]: add(item)
-        for item in scored:
-            if len(selected) >= 10: break
-            if item[1] != top_head: add(item)
+        # Main/Zure/Ana は条件付き総合順位の上位10点を確定してから役割を割り当てる。
+        selected = list(scored[:10])
+        seen = {item[1:] for item in selected}
 
         # 4連動は最大1点のみ保護。2/3を下げて押し出す設計にはしない。
-        four = [x for x in scored if (by_lane[x[1]]["actual_course"] == 4 or by_lane[x[2]]["actual_course"] == 4) and by_lane[x[3]]["actual_course"] in (5, 6)]
+        four = [
+            x for x in scored
+            if (by_lane[x[1]]["actual_course"] == 4 or by_lane[x[2]]["actual_course"] == 4)
+            and by_lane[x[3]]["actual_course"] in (1, 5, 6)
+        ]
+        protected_four_ticket = None
         if four and selected:
             best4 = four[0]
             if best4[0] >= selected[-1][0] * 0.72:
                 combo = f"{best4[1]}-{best4[2]}-{best4[3]}"
-                if combo not in seen:
+                if best4[1:] not in seen:
                     selected[-1] = best4
+                    protected_four_ticket = combo
 
         selected = sorted(selected[:10], reverse=True)
         rows = []
@@ -405,6 +496,8 @@ class FukuokaPredictionEngineV10:
             "deviation": [r["ticket"] for r in rows[6:8]],
             "upset": [r["ticket"] for r in rows[8:10]],
             "ranked_top10": rows,
+            "protected_four_ticket": protected_four_ticket,
+            "four_protection_candidates": [f"{x[1]}-{x[2]}-{x[3]}" for x in four],
         }
 
     def _fit(self, by_lane, race, win):

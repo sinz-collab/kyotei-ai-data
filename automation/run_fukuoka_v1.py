@@ -153,6 +153,47 @@ def motor_trend(racer: dict) -> str:
     return value if value in {"up", "down", "flat"} else "flat"
 
 
+def motor_grade(racer: dict) -> str:
+    explicit = str(racer.get("motor_grade") or "").upper()
+    if explicit in {"S", "A", "B", "C", "D", "E"}:
+        return explicit
+    recent = racer.get("motor_recent") or {}
+    if not recent or recent.get("available") is not True:
+        return "C"
+
+    score = 0.0
+    top2 = number(recent.get("top2_rate"))
+    top3 = number(recent.get("top3_rate"))
+    exhibition_rank = number(recent.get("avg_exhibition_rank"))
+    if top2 is not None:
+        score += max(-1.2, min(1.2, (top2 - 33.0) / 30.0)) * 1.50
+    if top3 is not None:
+        score += max(-1.2, min(1.2, (top3 - 50.0) / 35.0)) * 1.20
+    if exhibition_rank is not None:
+        score += max(-1.0, min(1.0, (4.0 - exhibition_rank) / 2.5)) * 0.80
+
+    finishes = []
+    for value in recent.get("finishes") or []:
+        parsed = integer(value)
+        if parsed in range(1, 7):
+            finishes.append(parsed)
+    if finishes:
+        recent_average = sum(finishes[-5:]) / len(finishes[-5:])
+        score += max(-1.0, min(1.0, (3.5 - recent_average) / 2.5)) * 0.80
+
+    if score >= 2.50:
+        return "S"
+    if score >= 1.25:
+        return "A"
+    if score >= 0.35:
+        return "B"
+    if score > -0.35:
+        return "C"
+    if score > -1.25:
+        return "D"
+    return "E"
+
+
 def build_engine_input(
     payload: dict,
     race: dict,
@@ -192,7 +233,7 @@ def build_engine_input(
                 "motor_no": integer(racer.get("motor_no")),
                 "motor_top2_rate": number(racer.get("motor_2")),
                 "motor_top3_rate": number(racer.get("motor_3")),
-                "motor_grade": racer.get("motor_grade") or "C",
+                "motor_grade": motor_grade(racer),
                 "motor_trend": motor_trend(racer),
                 "motor_recent": deepcopy(recent),
                 "setsukan_runs": deepcopy(racer.get("season_runs") or []),
