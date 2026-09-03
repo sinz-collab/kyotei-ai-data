@@ -26,6 +26,15 @@ class TestFukuokaV1Integration(unittest.TestCase):
     def live_root(self, day: str) -> Path:
         return ROOT / "data" / "live" / day / "fukuoka"
 
+    def prediction_input_payload(self, day: str) -> dict:
+        payload = self.payload(day)
+        payload["preds"] = {}
+        for race in payload["races"]:
+            race.pop("prediction", None)
+            race.pop("predictionPre", None)
+            race.pop("predictionFinal", None)
+        return payload
+
     def assert_prediction_contract(self, prediction: dict, phase: str) -> None:
         self.assertEqual(prediction["engine"], "fukuoka_engine_v1.0")
         self.assertEqual(prediction["engineVersion"], "1.0")
@@ -47,7 +56,7 @@ class TestFukuokaV1Integration(unittest.TestCase):
     def test_morning_and_live_connection_for_saved_days(self) -> None:
         event_days = {}
         for day in ("2026-09-02", "2026-09-03"):
-            payload = self.payload(day)
+            payload = self.prediction_input_payload(day)
             event_days[day] = payload.get("eventDay")
             preliminary = runner.apply_predictions(
                 deepcopy(payload), day, "preliminary", self.live_root(day)
