@@ -6,6 +6,7 @@ import math
 import re
 import sys
 import unicodedata
+from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,73 @@ def ratio(value: Any) -> float:
 def normalize_name(value: Any) -> str:
     text = unicodedata.normalize("NFKC", str(value or ""))
     return re.sub(r"[\s\u3000・･]+", "", text)
+
+
+def load_complete_live_document(
+    path: Path,
+    target_date: str,
+    race_no: int,
+) -> dict[str, Any] | None:
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if (
+        not isinstance(document, dict)
+        or document.get("complete") is not True
+        or document.get("status") != "complete"
+        or document.get("date") != target_date
+        or document.get("venue") != "omura"
+        or safe_int(document.get("race_no")) != race_no
+        or not isinstance(document.get("data"), dict)
+    ):
+        return None
+    return document
+
+
+def load_live_documents(
+    race_dir: Path,
+    target_date: str,
+    race_no: int,
+) -> dict[str, dict[str, Any]] | None:
+    documents = {
+        name: load_complete_live_document(
+            race_dir / f"{name}.json",
+            target_date,
+            race_no,
+        )
+        for name in ("direct", "exhibition", "original_exhibition")
+    }
+    if any(document is None for document in documents.values()):
+        return None
+    return {
+        name: document
+        for name, document in documents.items()
+        if document is not None
+    }
+
+
+def indexed_live_entries(document: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    return {
+        safe_int(entry.get("lane")): entry
+        for entry in (document.get("data") or {}).get("entries") or []
+        if isinstance(entry, dict) and safe_int(entry.get("lane")) in range(1, 7)
+    }
+
+
+def rank_entries(
+    entries: dict[int, dict[str, Any]],
+    key: str,
+) -> dict[int, int]:
+    if set(entries) != set(range(1, 7)):
+        raise RuntimeError(f"live_{key}_entries_must_be_6")
+    ordered = sorted(
+        entries,
+        key=lambda lane: (safe_float(entries[lane].get(key), math.inf), lane),
+    )
+    if any(not math.isfinite(safe_float(entries[lane].get(key), math.inf)) for lane in ordered):
+        raise RuntimeError(f"live_{key}_missing")
+    return {lane: rank for rank, lane in enumerate(ordered, 1)}
 
 
 def validate_payload(payload: dict[str, Any], target_date: str) -> None:
@@ -360,6 +428,65 @@ def build_engine_input(
     }
 
 
+def apply_live_documents_to_race(
+    race: dict[str, Any],
+    documents: dict[str, dict[str, Any]],
+) -> None:
+    direct = documents["direct"]["data"]
+    exhibition = indexed_live_entries(documents["exhibition"])
+    original = indexed_live_entries(documents["original_exhibition"])
+    if set(exhibition) != set(range(1, 7)):
+        raise RuntimeError("live_exhibition_entries_must_be_6")
+
+    original_ranks = rank_entries(original, "sum")
+    actual_entry = [safe_int(lane) for lane in direct.get("actual_entry") or []]
+    if sorted(actual_entry) != list(range(1, 7)):
+        raise RuntimeError("live_actual_entry_must_be_permutation_1_to_6")
+    course_by_lane = {
+        lane: course for course, lane in enumerate(actual_entry, 1)
+    }
+    direct_racers = {
+        safe_int(entry.get("lane")): entry
+        for entry in direct.get("racers") or []
+        if isinstance(entry, dict) and safe_int(entry.get("lane")) in range(1, 7)
+    }
+
+    racers = race.get("racers") or race.get("entries") or []
+    if len(racers) != 6:
+        raise RuntimeError("omura_live_racers_must_be_6")
+    for racer in racers:
+        lane = safe_int(racer.get("lane"))
+        ex = exhibition.get(lane) or {}
+        direct_racer = direct_racers.get(lane) or {}
+        time_rank = safe_int(ex.get("exhibition_rank"))
+        if time_rank not in range(1, 7):
+            raise RuntimeError(f"live_exhibition_rank_invalid_lane_{lane}")
+        racer["actual_course"] = course_by_lane[lane]
+        racer["entry_course"] = course_by_lane[lane]
+        racer["tilt"] = safe_float(
+            direct_racer.get("tilt", ex.get("tilt")),
+            safe_float(racer.get("tilt")),
+        )
+        racer["exhibition"] = {
+            "time_rank": time_rank,
+            "st": safe_float(ex.get("start_time", ex.get("start_raw")), 9.0),
+            "slit_type": "横一線",
+            "original_sum_rank": original_ranks[lane],
+        }
+
+    race["entry_changes"] = []
+    race["weather"] = deepcopy(direct)
+    race["live"] = {
+        "direct": deepcopy(direct),
+        "weather": deepcopy(direct),
+        "exhibition": deepcopy(documents["exhibition"]["data"]),
+        "original": deepcopy(documents["original_exhibition"]["data"]),
+        "original_exhibition": deepcopy(
+            documents["original_exhibition"]["data"]
+        ),
+    }
+
+
 def ticket_row(item: dict[str, Any], role: str) -> dict[str, Any]:
     combo = str(item.get("ticket") or item.get("combo") or "")
     probability = safe_float(item.get("probability"), 0.0)
@@ -491,6 +618,95 @@ def prediction_complete(prediction: dict[str, Any]) -> bool:
     return True
 
 
+def mark_final_prediction(prediction: dict[str, Any]) -> dict[str, Any]:
+    prediction["phase"] = "final"
+    prediction["finalPredictionStatus"] = "complete"
+    prediction["sourceSummary"].update(
+        {
+            "stage": "live",
+            "liveInputsComplete": True,
+            "liveSources": [
+                "direct",
+                "exhibition",
+                "original_exhibition",
+            ],
+            "oddsUsedForProbability": False,
+        }
+    )
+    prediction["probabilityFlow"]["realtimeApplied"] = True
+    prediction["predictionStage"] = {
+        "label": "本予想",
+        "statusText": "大村v1.9：直前情報3点を反映して再計算済み",
+        "badge": "本予想",
+        "color": "green",
+    }
+    return prediction
+
+
+def apply_omura_live_race(
+    payload: dict[str, Any],
+    target_date: str,
+    race_no: int,
+    race_dir: Path,
+) -> tuple[dict[str, Any], bool]:
+    validate_payload(payload, target_date)
+    if race_no not in range(1, 13):
+        raise ValueError("race_must_be_1_to_12")
+
+    documents = load_live_documents(race_dir, target_date, race_no)
+    if documents is None:
+        return payload, False
+
+    candidate = deepcopy(payload)
+    race = next(
+        item for item in candidate["races"] if safe_int(item.get("race")) == race_no
+    )
+    apply_live_documents_to_race(race, documents)
+
+    if str(ENGINE_SRC) not in sys.path:
+        sys.path.insert(0, str(ENGINE_SRC))
+    from omura_engine import OmuraPredictionEngine
+
+    engine = OmuraPredictionEngine(MASTER_DIR, CONFIG_PATH)
+    player_index = load_player_index()
+    result = engine.predict(build_engine_input(candidate, race, player_index))
+    prediction = mark_final_prediction(site_prediction(result))
+    if not prediction_complete(prediction):
+        raise RuntimeError("prediction_output_incomplete")
+
+    previous = deepcopy(race.get("prediction"))
+    if isinstance(previous, dict) and "predictionPre" not in race:
+        race["predictionPre"] = previous
+    race["predictionFinal"] = deepcopy(prediction)
+    race["prediction"] = deepcopy(prediction)
+
+    predictions = deepcopy(candidate.get("preds") or {})
+    predictions[str(race_no)] = deepcopy(prediction)
+    candidate["preds"] = predictions
+    candidate["engine"] = ENGINE_ID
+    candidate["engineVersion"] = ENGINE_VERSION
+    candidate["predictionStatus"] = "ready"
+    candidate["predictionReason"] = None
+    metadata = deepcopy(candidate.get("predictionEngine") or {})
+    metadata.update(
+        {
+            "id": ENGINE_ID,
+            "version": ENGINE_VERSION,
+            "master": "omura_master_db_v6_1",
+            "generatedBy": "automation/apply_omura_v1.py",
+            "oddsUsedForProbability": False,
+            "exhibitionStartUsedAlone": False,
+            "updatedRaces": [race_no],
+            "finalRaceCount": sum(
+                isinstance(value, dict) and value.get("phase") == "final"
+                for value in predictions.values()
+            ),
+        }
+    )
+    candidate["predictionEngine"] = metadata
+    return candidate, True
+
+
 def apply_omura_v1(
     payload: dict[str, Any],
     target_date: str,
@@ -555,6 +771,13 @@ def main() -> int:
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--data-root", default="data")
     parser.add_argument(
+        "--stage",
+        choices=("morning", "final"),
+        default="morning",
+    )
+    parser.add_argument("--race", type=int)
+    parser.add_argument("--live-root", type=Path)
+    parser.add_argument(
         "--require-open",
         action="store_true",
         help="Fail when Omura JSON does not exist instead of skipping.",
@@ -574,15 +797,56 @@ def main() -> int:
         return 0
 
     payload = json.loads(dated_path.read_text(encoding="utf-8"))
-    payload = apply_omura_v1(payload, args.date)
+    if args.stage == "final":
+        if args.race not in range(1, 13):
+            raise ValueError("final_stage_requires_race_1_to_12")
+        race_dir = args.live_root or (
+            data_root
+            / "live"
+            / args.date
+            / "omura"
+            / f"{args.race:02d}"
+        )
+        payload, updated = apply_omura_live_race(
+            payload,
+            args.date,
+            args.race,
+            race_dir,
+        )
+        if not updated:
+            print(
+                json.dumps(
+                    {
+                        "date": args.date,
+                        "venue": "omura",
+                        "stage": "final",
+                        "race": args.race,
+                        "status": "waiting_live_data",
+                        "updated": False,
+                    },
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+            return 0
+    else:
+        payload = apply_omura_v1(payload, args.date)
 
     atomic_write_json(dated_path, payload)
-    atomic_write_json(latest_path, payload)
+    latest = (
+        json.loads(latest_path.read_text(encoding="utf-8"))
+        if latest_path.is_file()
+        else None
+    )
+    if latest is None or latest.get("date") == args.date:
+        atomic_write_json(latest_path, payload)
 
     summary = {
         "date": args.date,
         "engine": payload["engine"],
         "engineVersion": payload["engineVersion"],
+        "stage": args.stage,
+        "race": args.race,
         "raceCount": len(payload["preds"]),
         "datedPath": str(dated_path),
         "latestPath": str(latest_path),
