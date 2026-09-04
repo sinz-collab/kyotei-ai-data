@@ -35,6 +35,8 @@ def replay(day: str) -> dict:
                 for boat in debug_prediction["boats"]
             },
             "winAudit": debug_prediction["diagnostics"]["win_audit"],
+            "conditionalSecondAudit": debug_prediction["diagnostics"]["conditional_second_audit"],
+            "conditionalThirdAudit": debug_prediction["diagnostics"]["conditional_third_audit"],
             "result": actual,
             "hit": actual in tickets,
         })

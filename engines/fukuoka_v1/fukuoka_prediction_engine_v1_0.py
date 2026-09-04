@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import permutations
-from math import exp, isfinite
+from math import isfinite
 from typing import Any
 
 ENGINE_ID = "fukuoka_engine_v1.0"
@@ -15,6 +15,18 @@ WIN_DELTA_KEYS = (
     "course_delta", "local_delta", "motor_delta", "setsukan_delta",
     "water_delta", "slit_delta", "exhibition_delta", "original_delta",
     "interaction_delta",
+)
+CONDITIONAL_MIN_PERCENT = 0.1
+SECOND_DELTA_LIMIT = 6.0
+THIRD_DELTA_LIMIT = 8.0
+LINK_POINT_SCALE = 10.0
+SECOND_DELTA_KEYS = (
+    "local_delta", "motor_delta", "setsukan_delta", "slit_delta",
+    "exhibition_delta", "original_delta",
+)
+THIRD_DELTA_KEYS = (
+    "course_delta", "turn_delta", "st_delta", "outside_delta",
+    "original_delta", "local_delta", "motor_delta", "setsukan_delta",
 )
 
 HEAD_LINK = {
@@ -59,10 +71,21 @@ def normalize(scores: dict[int, float]) -> dict[int, float]:
     return {k: v / total for k, v in clean.items()}
 
 
-def softmax(scores: dict[int, float], temperature: float) -> dict[int, float]:
-    m = max(scores.values())
-    ex = {k: exp((v - m) / max(temperature, 1e-6)) for k, v in scores.items()}
-    return normalize(ex)
+def normalize_remaining(scores: dict[int, float], excluded: set[int]) -> dict[int, float]:
+    clean = {
+        lane: max(CONDITIONAL_MIN_PERCENT, float(value))
+        for lane, value in scores.items()
+        if lane not in excluded
+    }
+    total = sum(clean.values())
+    return {
+        lane: (0.0 if lane in excluded else clean[lane] / total)
+        for lane in scores
+    }
+
+
+def link_points(multiplier: float) -> float:
+    return max(0.0, (multiplier - 1.0) * LINK_POINT_SCALE)
 
 
 def rank_bonus(value: float | None, values: list[float], good_low: bool,
@@ -264,8 +287,20 @@ class FukuokaPredictionEngineV10:
         def add_win_delta(lane: int, key: str, value: float) -> None:
             win_deltas[lane][key] += value
 
-        sec_pts = {l: BASE_SECOND[b["actual_course"]] for l, b in by_lane.items()}
-        thr_pts = {l: BASE_THIRD[b["actual_course"]] for l, b in by_lane.items()}
+        second_deltas = {
+            lane: {key: 0.0 for key in SECOND_DELTA_KEYS}
+            for lane in by_lane
+        }
+        third_deltas = {
+            lane: {key: 0.0 for key in THIRD_DELTA_KEYS}
+            for lane in by_lane
+        }
+
+        def add_second_delta(lane: int, key: str, value: float) -> None:
+            second_deltas[lane][key] += value
+
+        def add_third_delta(lane: int, key: str, value: float) -> None:
+            third_deltas[lane][key] += value
 
         c1 = by_course.get(1)
         if c1:
@@ -289,15 +324,15 @@ class FukuokaPredictionEngineV10:
             if er < 37.5 and attack3 >= 2.5 and c3:
                 add_win_delta(c1, "interaction_delta", -1.0)
                 add_win_delta(c3, "interaction_delta", 1.0)
-                if c4: thr_pts[c4] += 1.0
-                if c5: thr_pts[c5] += 0.5
+                if c4: add_third_delta(c4, "outside_delta", 1.0)
+                if c5: add_third_delta(c5, "outside_delta", 0.5)
                 if attack3 >= 5.0:
                     add_win_delta(c1, "interaction_delta", -2.0)
                     add_win_delta(c3, "interaction_delta", 1.5)
             if er < 37.5 and attack4 >= 2.5 and c4:
                 add_win_delta(c1, "interaction_delta", -1.0)
                 add_win_delta(c4, "interaction_delta", 1.0)
-                if c5: thr_pts[c5] += 1.0
+                if c5: add_third_delta(c5, "outside_delta", 1.0)
                 if attack4 >= 4.5:
                     add_win_delta(c1, "interaction_delta", -1.0)
                     add_win_delta(c4, "interaction_delta", 1.0)
@@ -316,9 +351,12 @@ class FukuokaPredictionEngineV10:
             add_win_delta(lane, "local_delta", local * pre_w)
             add_win_delta(lane, "motor_delta", motor * pre_w)
             add_win_delta(lane, "setsukan_delta", sd * set_w)
-            pre = local + motor
-            sec_pts[lane] += pre * 0.45 * pre_w + sd * 0.65 * set_w
-            thr_pts[lane] += pre * 0.25 * pre_w + sd * 0.45 * set_w
+            add_second_delta(lane, "local_delta", local * 0.45 * pre_w)
+            add_second_delta(lane, "motor_delta", motor * 0.45 * pre_w)
+            add_second_delta(lane, "setsukan_delta", sd * 0.65 * set_w)
+            add_third_delta(lane, "local_delta", local * 0.25 * pre_w)
+            add_third_delta(lane, "motor_delta", motor * 0.25 * pre_w)
+            add_third_delta(lane, "setsukan_delta", sd * 0.45 * set_w)
 
         if c1:
             water = WIND_DIR_DELTA.get(str(race.get("wind_direction") or "").upper(), 0.0)
@@ -375,26 +413,32 @@ class FukuokaPredictionEngineV10:
             add_win_delta(lane, "exhibition_delta", exhibition_component * live_scale * live_w)
             add_win_delta(lane, "original_delta", original_component * live_scale * live_w)
             add_win_delta(lane, "slit_delta", slit_component * live_scale * live_w)
-            sec_pts[lane] += live * 0.85 * live_w
+            add_second_delta(lane, "exhibition_delta", exhibition_component * live_scale * 0.85 * live_w)
+            add_second_delta(lane, "original_delta", original_component * live_scale * 0.85 * live_w)
+            add_second_delta(lane, "slit_delta", slit_component * live_scale * 0.85 * live_w)
 
             c = b["actual_course"]
-            thr_pts[lane] += {3: 1.5, 4: 1.0, 5: 0.5, 6: 0.25}.get(c, 0.0)
+            add_third_delta(lane, "course_delta", {3: 1.5, 4: 1.0, 5: 0.5, 6: 0.25}.get(c, 0.0))
             if st is not None and len(sts) >= 4:
                 sr = sorted(sts).index(st)
-                if sr <= 1: thr_pts[lane] += 1.5
-                elif sr <= 2: thr_pts[lane] += 1.0
-                elif sr >= 4: thr_pts[lane] -= 0.5
+                if sr <= 1: add_third_delta(lane, "st_delta", 1.5)
+                elif sr <= 2: add_third_delta(lane, "st_delta", 1.0)
+                elif sr >= 4: add_third_delta(lane, "st_delta", -0.5)
             if turn is not None and len(turns) >= 4:
                 tr = sorted(turns).index(turn)
-                if tr <= 1: thr_pts[lane] += 1.5
-                elif tr <= 3: thr_pts[lane] += 0.5
-                elif tr == len(turns) - 1: thr_pts[lane] -= 1.5
+                if tr <= 1: add_third_delta(lane, "turn_delta", 1.5)
+                elif tr <= 3: add_third_delta(lane, "turn_delta", 0.5)
+                elif tr == len(turns) - 1: add_third_delta(lane, "turn_delta", -1.5)
+            third_original = 0.35 * rank_bonus(lap, laps, True, 1.5, 0.8, -0.5, -1.2)
+            third_original += 0.30 * rank_bonus(straight, straights, True, 1.5, 0.8, -0.4, -1.0)
+            third_original += 0.15 * rank_bonus(original_sum, sums, True, 0.6, 0.3, -0.2, -0.5)
+            add_third_delta(lane, "original_delta", third_original * live_w)
 
         for attack_course in slit["attackers"]:
             for target_course, bonus in SLIT_OUTWARD_THIRD[attack_course].items():
                 target_lane = by_course.get(target_course)
                 if target_lane is not None:
-                    thr_pts[target_lane] += bonus
+                    add_third_delta(target_lane, "outside_delta", bonus)
 
         live_applied = any((ex, laps, turns, straights, sums, sts))
         delta_limit = 13.0 if live_applied else 10.0
@@ -452,9 +496,28 @@ class FukuokaPredictionEngineV10:
                     "achieved": round(win[c2], 4),
                 }
 
-        second = softmax(sec_pts, 8.0)
-        third = softmax(thr_pts, 7.5)
-        tickets = self._tickets(by_lane, by_course, win, second, third)
+        second_raw = {
+            lane: max(
+                CONDITIONAL_MIN_PERCENT,
+                BASE_SECOND[by_lane[lane]["actual_course"]]
+                + clamp(sum(second_deltas[lane].values()), -SECOND_DELTA_LIMIT, SECOND_DELTA_LIMIT),
+            )
+            for lane in by_lane
+        }
+        third_raw = {
+            lane: max(
+                CONDITIONAL_MIN_PERCENT,
+                BASE_THIRD[by_lane[lane]["actual_course"]]
+                + clamp(sum(third_deltas[lane].values()), -THIRD_DELTA_LIMIT, THIRD_DELTA_LIMIT),
+            )
+            for lane in by_lane
+        }
+        second = normalize(second_raw)
+        third = normalize(third_raw)
+        tickets = self._tickets(
+            by_lane, by_course, win, second_raw, third_raw,
+            second_deltas, third_deltas,
+        )
         fit = self._fit(by_lane, race, win)
         grade = "S" if fit >= 85 else ("A" if fit >= 70 else ("B" if fit >= 55 else "C"))
 
@@ -463,8 +526,18 @@ class FukuokaPredictionEngineV10:
             "result_used": False,
             "conditional_ticket_model": True,
             "win_normalization": "linear_percent_points",
+            "second_normalization": "linear_percent_points_remaining_five",
+            "third_normalization": "linear_percent_points_remaining_four",
             "win_delta_limit": delta_limit,
-            "weak_four_linkage": {"5": 1.10, "6": 1.08, "1": 1.05, "protected_max": 1},
+            "second_delta_limit": SECOND_DELTA_LIMIT,
+            "third_delta_limit": THIRD_DELTA_LIMIT,
+            "weak_four_linkage": {
+                "mode": "linear_points",
+                "5": link_points(1.10),
+                "6": link_points(1.08),
+                "1": link_points(1.05),
+                "protected_max": 1,
+            },
             "motor_adjustment_bounds": [-4.0, 4.0],
             "slit_structure": slit,
             "lane2_floor": floor_status,
@@ -482,6 +555,21 @@ class FukuokaPredictionEngineV10:
                 "raw_win": round(raw_win[lane], 6),
                 "normalized_win": round(win[lane] * 100.0, 6),
             } for lane in range(1, 7)]
+            second_audit = []
+            third_audit = []
+            for head in range(1, 7):
+                self._second_given_head(
+                    head, second_raw, by_lane, by_course,
+                    second_deltas, second_audit,
+                )
+                for second_lane in range(1, 7):
+                    if second_lane != head:
+                        self._third_given_pair(
+                            head, second_lane, third_raw, by_lane, by_course,
+                            third_deltas, third_audit,
+                        )
+            diagnostics["conditional_second_audit"] = second_audit
+            diagnostics["conditional_third_audit"] = third_audit
 
         return {
             "engine": ENGINE_ID,
@@ -498,35 +586,167 @@ class FukuokaPredictionEngineV10:
             "diagnostics": diagnostics,
         }
 
-    def _second_given_head(self, h, second, by_lane, by_course):
-        weights = {l: (second[l] if l != h else 0.0) for l in range(1, 7)}
-        for target_course, mul in HEAD_LINK.get(by_lane[h]["actual_course"], {}).items():
+    def _second_given_head(
+        self, h, second_raw, by_lane, by_course,
+        component_deltas=None, audit_rows=None,
+    ):
+        scenario = {lane: 0.0 for lane in range(1, 7)}
+        for target_course, multiplier in HEAD_LINK.get(by_lane[h]["actual_course"], {}).items():
             lane = by_course.get(target_course)
-            if lane and lane != h: weights[lane] *= mul
-        return normalize(weights)
+            if lane and lane != h:
+                scenario[lane] += link_points(multiplier)
 
-    def _third_given_pair(self, h, s, third, by_lane, by_course):
-        weights = {l: (third[l] if l not in (h, s) else 0.0) for l in range(1, 7)}
+        raw = {}
+        totals = {}
+        for lane in range(1, 7):
+            if lane == h:
+                raw[lane] = 0.0
+                totals[lane] = 0.0
+                continue
+            course = by_lane[lane]["actual_course"]
+            base = BASE_SECOND[course]
+            existing = second_raw[lane] - base
+            total = clamp(existing + scenario[lane], -SECOND_DELTA_LIMIT, SECOND_DELTA_LIMIT)
+            totals[lane] = total
+            raw[lane] = max(CONDITIONAL_MIN_PERCENT, base + total)
+
+        probabilities = normalize_remaining(raw, {h})
+        if audit_rows is not None:
+            for lane in range(1, 7):
+                if lane == h:
+                    continue
+                parts = (component_deltas or {}).get(lane, {})
+                audit_rows.append({
+                    "head": h,
+                    "lane": lane,
+                    "actual_course": by_lane[lane]["actual_course"],
+                    "base_second": round(BASE_SECOND[by_lane[lane]["actual_course"]], 6),
+                    "scenario_delta": round(scenario[lane], 6),
+                    "slit_delta": round(parts.get("slit_delta", 0.0), 6),
+                    "motor_delta": round(parts.get("motor_delta", 0.0), 6),
+                    "exhibition_delta": round(parts.get("exhibition_delta", 0.0), 6),
+                    "local_delta": round(parts.get("local_delta", 0.0), 6),
+                    "setsukan_delta": round(parts.get("setsukan_delta", 0.0), 6),
+                    "original_delta": round(parts.get("original_delta", 0.0), 6),
+                    "total_delta": round(totals[lane], 6),
+                    "raw_second": round(raw[lane], 6),
+                    "normalized_second": round(probabilities[lane] * 100.0, 6),
+                })
+        return probabilities
+
+    def _third_given_pair(
+        self, h, s, third_raw, by_lane, by_course,
+        component_deltas=None, audit_rows=None,
+    ):
+        excluded = {h, s}
         hcourse = by_lane[h]["actual_course"]
-        for target_course, mul in HEAD_LINK.get(hcourse, {}).items():
-            lane = by_course.get(target_course)
-            if lane and lane not in (h, s): weights[lane] *= mul
+        scourse = by_lane[s]["actual_course"]
+        linkage = {lane: 0.0 for lane in range(1, 7)}
 
-        if hcourse == 4 or by_lane[s]["actual_course"] == 4:
-            for target_course, mul in WEAK_FOUR_LINK.items():
+        for target_course, multiplier in HEAD_LINK.get(hcourse, {}).items():
+            lane = by_course.get(target_course)
+            if lane and lane not in excluded:
+                linkage[lane] += link_points(multiplier)
+
+        weak_four = hcourse == 4 or scourse == 4
+        if weak_four:
+            for target_course, multiplier in WEAK_FOUR_LINK.items():
                 lane = by_course.get(target_course)
-                if lane and lane not in (h, s): weights[lane] *= mul
+                if lane and lane not in excluded:
+                    linkage[lane] += link_points(multiplier)
 
-        for target_course, mul in OUTWARD_SECOND_LINK.get(by_lane[s]["actual_course"], {}).items():
+        for target_course, multiplier in OUTWARD_SECOND_LINK.get(scourse, {}).items():
             lane = by_course.get(target_course)
-            if lane and lane not in (h, s): weights[lane] *= mul
-        return normalize(weights)
+            if lane and lane not in excluded:
+                linkage[lane] += link_points(multiplier)
 
-    def _tickets(self, by_lane, by_course, win, second, third):
+        pre_link_raw = {
+            lane: (
+                0.0 if lane in excluded else max(CONDITIONAL_MIN_PERCENT, third_raw[lane])
+            )
+            for lane in range(1, 7)
+        }
+        pre_link_probabilities = normalize_remaining(pre_link_raw, excluded)
+        totals = {}
+        raw = {}
+        for lane in range(1, 7):
+            if lane in excluded:
+                totals[lane] = 0.0
+                raw[lane] = 0.0
+                continue
+            course = by_lane[lane]["actual_course"]
+            base = BASE_THIRD[course]
+            existing = third_raw[lane] - base
+            total = clamp(existing + linkage[lane], -THIRD_DELTA_LIMIT, THIRD_DELTA_LIMIT)
+            totals[lane] = total
+            raw[lane] = max(CONDITIONAL_MIN_PERCENT, base + total)
+
+        probabilities = normalize_remaining(raw, excluded)
+        protected = {lane: 0.0 for lane in range(1, 7)}
+        if weak_four:
+            protected_lanes = [
+                lane for course in (2, 3)
+                if (lane := by_course.get(course)) is not None and lane not in excluded
+            ]
+            protected_share = sum(pre_link_probabilities[lane] for lane in protected_lanes)
+            other_raw = sum(
+                value for lane, value in raw.items()
+                if lane not in excluded and lane not in protected_lanes
+            )
+            target_total = other_raw / max(1e-9, 1.0 - protected_share)
+            for lane in protected_lanes:
+                required = pre_link_probabilities[lane] * target_total
+                course = by_lane[lane]["actual_course"]
+                maximum = BASE_THIRD[course] + THIRD_DELTA_LIMIT
+                raised = min(maximum, max(raw[lane], required))
+                delta = raised - raw[lane]
+                if delta > 1e-12:
+                    protected[lane] += delta
+                    linkage[lane] += delta
+                    totals[lane] += delta
+                    raw[lane] = raised
+            probabilities = normalize_remaining(raw, excluded)
+
+        if audit_rows is not None:
+            for lane in range(1, 7):
+                if lane in excluded:
+                    continue
+                parts = (component_deltas or {}).get(lane, {})
+                audit_rows.append({
+                    "head": h,
+                    "second": s,
+                    "lane": lane,
+                    "actual_course": by_lane[lane]["actual_course"],
+                    "base_third": round(BASE_THIRD[by_lane[lane]["actual_course"]], 6),
+                    "course_delta": round(parts.get("course_delta", 0.0), 6),
+                    "turn_delta": round(parts.get("turn_delta", 0.0), 6),
+                    "st_delta": round(parts.get("st_delta", 0.0), 6),
+                    "linkage_delta": round(linkage[lane], 6),
+                    "outside_delta": round(parts.get("outside_delta", 0.0), 6),
+                    "original_delta": round(parts.get("original_delta", 0.0), 6),
+                    "local_delta": round(parts.get("local_delta", 0.0), 6),
+                    "motor_delta": round(parts.get("motor_delta", 0.0), 6),
+                    "setsukan_delta": round(parts.get("setsukan_delta", 0.0), 6),
+                    "linkage_protection_delta": round(protected[lane], 6),
+                    "pre_link_normalized": round(pre_link_probabilities[lane] * 100.0, 6),
+                    "total_delta": round(totals[lane], 6),
+                    "raw_third": round(raw[lane], 6),
+                    "normalized_third": round(probabilities[lane] * 100.0, 6),
+                })
+        return probabilities
+
+    def _tickets(
+        self, by_lane, by_course, win, second_raw, third_raw,
+        second_deltas=None, third_deltas=None,
+    ):
         scored = []
         for h, s, t in permutations(range(1, 7), 3):
-            p2 = self._second_given_head(h, second, by_lane, by_course)[s]
-            p3 = self._third_given_pair(h, s, third, by_lane, by_course)[t]
+            p2 = self._second_given_head(
+                h, second_raw, by_lane, by_course, second_deltas,
+            )[s]
+            p3 = self._third_given_pair(
+                h, s, third_raw, by_lane, by_course, third_deltas,
+            )[t]
             scored.append((win[h] * p2 * p3, h, s, t))
         scored.sort(reverse=True)
 

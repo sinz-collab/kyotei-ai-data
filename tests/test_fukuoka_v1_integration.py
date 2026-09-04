@@ -154,6 +154,8 @@ class TestFukuokaV1Integration(unittest.TestCase):
         normal = engine.predict(race_input)
         debug = engine.predict(race_input, debug=True)
         self.assertNotIn("win_audit", normal["diagnostics"])
+        self.assertNotIn("conditional_second_audit", normal["diagnostics"])
+        self.assertNotIn("conditional_third_audit", normal["diagnostics"])
         audit = debug["diagnostics"]["win_audit"]
         self.assertEqual(len(audit), 6)
         expected = {
@@ -165,6 +167,23 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertTrue(all(expected.issubset(row) for row in audit))
         self.assertAlmostEqual(sum(row["normalized_win"] for row in audit), 100.0, places=4)
         self.assertTrue(all(abs(row["total_delta"]) <= 13.0 for row in audit))
+        second_audit = debug["diagnostics"]["conditional_second_audit"]
+        third_audit = debug["diagnostics"]["conditional_third_audit"]
+        self.assertEqual(len(second_audit), 30)
+        self.assertEqual(len(third_audit), 120)
+        second_fields = {
+            "base_second", "scenario_delta", "slit_delta", "motor_delta",
+            "exhibition_delta", "total_delta", "raw_second", "normalized_second",
+        }
+        third_fields = {
+            "base_third", "course_delta", "turn_delta", "st_delta",
+            "linkage_delta", "outside_delta", "original_delta", "total_delta",
+            "raw_third", "normalized_third",
+        }
+        self.assertTrue(all(second_fields.issubset(row) for row in second_audit))
+        self.assertTrue(all(third_fields.issubset(row) for row in third_audit))
+        self.assertTrue(all(abs(row["total_delta"]) <= 6.0 for row in second_audit))
+        self.assertTrue(all(abs(row["total_delta"]) <= 8.0 for row in third_audit))
 
     def test_original_sum_is_a_small_auxiliary_input(self) -> None:
         strong = self.final_input("2026-09-03", 5)
@@ -196,12 +215,16 @@ class TestFukuokaV1Integration(unittest.TestCase):
     def test_conditional_top_nine_is_not_removed_by_role_assignment(self) -> None:
         race_input = self.final_input("2026-09-03", 6)
         engine = FukuokaPredictionEngineV10()
-        result = engine.predict(race_input)
-        boats = {boat["lane"]: boat for boat in race_input["boats"]}
-        courses = {boat["actual_course"]: boat["lane"] for boat in race_input["boats"]}
+        result = engine.predict(race_input, debug=True)
         win = {row["lane"]: row["win_prob"] for row in result["boats"]}
-        second = {row["lane"]: row["second_prob"] for row in result["boats"]}
-        third = {row["lane"]: row["third_prob"] for row in result["boats"]}
+        second = {
+            (row["head"], row["lane"]): row["normalized_second"] / 100.0
+            for row in result["diagnostics"]["conditional_second_audit"]
+        }
+        third = {
+            (row["head"], row["second"], row["lane"]): row["normalized_third"] / 100.0
+            for row in result["diagnostics"]["conditional_third_audit"]
+        }
         scored = []
         for head in range(1, 7):
             for second_lane in range(1, 7):
@@ -210,8 +233,8 @@ class TestFukuokaV1Integration(unittest.TestCase):
                         continue
                     score = (
                         win[head]
-                        * engine._second_given_head(head, second, boats, courses)[second_lane]
-                        * engine._third_given_pair(head, second_lane, third, boats, courses)[third_lane]
+                        * second[(head, second_lane)]
+                        * third[(head, second_lane, third_lane)]
                     )
                     scored.append((score, f"{head}-{second_lane}-{third_lane}"))
         raw_top_nine = {ticket for _, ticket in sorted(scored, reverse=True)[:9]}

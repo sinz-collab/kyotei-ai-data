@@ -1,3 +1,4 @@
+import inspect
 import unittest
 from unittest.mock import patch
 
@@ -60,15 +61,83 @@ class TestFukuokaV10(unittest.TestCase):
         self.assertEqual(r["diagnostics"]["win_normalization"], "linear_percent_points")
 
     def test_win_generation_does_not_use_softmax(self):
-        uniform = {lane: 1.0 / 6.0 for lane in range(1, 7)}
-        with (
-            patch.object(engine_module, "softmax", return_value=uniform),
-            patch.object(engine_module, "wind_speed_delta", return_value=0.0),
-            patch.object(engine_module, "wave_delta", return_value=0.0),
-        ):
-            r = self.e.predict(self.unadjusted_race())
-        lane1 = next(row for row in r["boats"] if row["actual_course"] == 1)
-        self.assertAlmostEqual(lane1["win_prob"] * 100.0, 53.35, places=2)
+        self.assertNotIn("softmax", inspect.getsource(self.e.predict))
+
+    def test_conditional_second_and_third_do_not_use_softmax(self):
+        self.assertNotIn("softmax", inspect.getsource(self.e._second_given_head))
+        self.assertNotIn("softmax", inspect.getsource(self.e._third_given_pair))
+
+    def test_conditional_probabilities_normalize_over_remaining_boats(self):
+        result = self.e.predict({"event_day": 2, "boats": [boat(i) for i in range(1, 7)]}, debug=True)
+        second_rows = result["diagnostics"]["conditional_second_audit"]
+        third_rows = result["diagnostics"]["conditional_third_audit"]
+        for head in range(1, 7):
+            self.assertAlmostEqual(
+                sum(row["normalized_second"] for row in second_rows if row["head"] == head),
+                100.0,
+                places=4,
+            )
+            for second_lane in range(1, 7):
+                if second_lane != head:
+                    self.assertAlmostEqual(
+                        sum(
+                            row["normalized_third"] for row in third_rows
+                            if row["head"] == head and row["second"] == second_lane
+                        ),
+                        100.0,
+                        places=4,
+                    )
+
+    def test_low_win_probability_does_not_reduce_conditional_third(self):
+        strong = self.unadjusted_race()
+        weak = self.unadjusted_race()
+        strong["boats"][0]["course_escape_rate"] = 85.0
+        weak["boats"][0]["course_escape_rate"] = 5.0
+        strong_rows = self.e.predict(strong, debug=True)["diagnostics"]["conditional_third_audit"]
+        weak_rows = self.e.predict(weak, debug=True)["diagnostics"]["conditional_third_audit"]
+        strong_map = {(r["head"], r["second"], r["lane"]): r["normalized_third"] for r in strong_rows}
+        weak_map = {(r["head"], r["second"], r["lane"]): r["normalized_third"] for r in weak_rows}
+        self.assertEqual(strong_map, weak_map)
+
+    def test_four_link_and_two_three_protection_are_linear(self):
+        result = self.e.predict({"event_day": 2, "boats": [boat(i) for i in range(1, 7)]}, debug=True)
+        second_rows = result["diagnostics"]["conditional_second_audit"]
+        third_rows = result["diagnostics"]["conditional_third_audit"]
+        four_to_one = next(row for row in second_rows if row["head"] == 4 and row["lane"] == 1)
+        self.assertGreater(four_to_one["scenario_delta"], 0.0)
+        four_to_one_third = next(
+            row for row in third_rows
+            if row["head"] == 4 and row["second"] == 2 and row["lane"] == 1
+        )
+        self.assertGreater(four_to_one_third["linkage_delta"], 0.0)
+        protected = [
+            row for row in third_rows
+            if row["head"] == 4 and row["second"] == 1 and row["actual_course"] in (2, 3)
+        ]
+        self.assertEqual(len(protected), 2)
+        for row in protected:
+            self.assertGreaterEqual(row["normalized_third"], row["pre_link_normalized"] - 1e-5)
+
+    def test_attackers_add_outward_third_points(self):
+        boats = [boat(i) for i in range(1, 7)]
+        starts = {1: 0.06, 2: 0.16, 3: 0.02, 4: 0.15, 5: 0.08, 6: 0.09}
+        for row in boats:
+            row["exhibition_st"] = starts[row["lane"]]
+        boats[2].update(course_makuri_rate=20.0, course_makuri_sashi_rate=5.0)
+        result3 = self.e.predict({"event_day": 2, "boats": boats}, debug=True)
+        rows3 = result3["diagnostics"]["conditional_third_audit"]
+        self.assertTrue(any(row["actual_course"] == 4 and row["outside_delta"] > 0 for row in rows3))
+        self.assertTrue(any(row["actual_course"] == 5 and row["outside_delta"] > 0 for row in rows3))
+
+        starts = {1: 0.06, 2: 0.05, 3: 0.16, 4: 0.02, 5: 0.08, 6: 0.09}
+        for row in boats:
+            row["exhibition_st"] = starts[row["lane"]]
+        boats[2].update(course_makuri_rate=0.0, course_makuri_sashi_rate=0.0)
+        boats[3].update(course_makuri_rate=20.0, course_makuri_sashi_rate=5.0)
+        result4 = self.e.predict({"event_day": 2, "boats": boats}, debug=True)
+        rows4 = result4["diagnostics"]["conditional_third_audit"]
+        self.assertTrue(any(row["actual_course"] == 5 and row["outside_delta"] > 0 for row in rows4))
+        self.assertTrue(any(row["actual_course"] == 6 and row["outside_delta"] > 0 for row in rows4))
 
     def test_escape_minus_nine_is_applied_as_percentage_points(self):
         baseline = self.unadjusted_race()
