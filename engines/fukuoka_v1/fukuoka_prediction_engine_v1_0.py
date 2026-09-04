@@ -545,6 +545,7 @@ class FukuokaPredictionEngineV10:
             "protected_four_ticket": tickets.get("protected_four_ticket"),
         }
         if debug:
+            diagnostics["four_protection_near_miss"] = tickets.get("four_protection_near_miss")
             diagnostics["win_audit"] = [{
                 "lane": lane,
                 "actual_course": by_lane[lane]["actual_course"],
@@ -754,22 +755,28 @@ class FukuokaPredictionEngineV10:
         selected = list(scored[:10])
         seen = {item[1:] for item in selected}
 
-        # 4連動は最大1点のみ保護。2/3を下げて押し出す設計にはしない。
+        # 4連動は上位10点内のラベルに限定し、圏外候補を強制挿入しない。
         four = [
             x for x in scored
             if (by_lane[x[1]]["actual_course"] == 4 or by_lane[x[2]]["actual_course"] == 4)
             and by_lane[x[3]]["actual_course"] in (1, 5, 6)
         ]
         protected_four_ticket = None
+        four_protection_near_miss = None
         if four and selected:
             best4 = four[0]
-            if best4[0] >= selected[-1][0] * 0.72:
-                combo = f"{best4[1]}-{best4[2]}-{best4[3]}"
-                if best4[1:] not in seen:
-                    selected[-1] = best4
-                    protected_four_ticket = combo
+            combo = f"{best4[1]}-{best4[2]}-{best4[3]}"
+            if best4[1:] in seen:
+                protected_four_ticket = combo
+            else:
+                rank = scored.index(best4) + 1
+                four_protection_near_miss = {
+                    "ticket": combo,
+                    "rank": rank,
+                    "score": round(best4[0], 8),
+                    "ratio_to_tenth": round(best4[0] / selected[-1][0], 6),
+                }
 
-        selected = sorted(selected[:10], reverse=True)
         rows = []
         for i, (score, h, s, t) in enumerate(selected):
             role = "main" if i < 6 else ("deviation" if i < 8 else "upset")
@@ -780,6 +787,7 @@ class FukuokaPredictionEngineV10:
             "upset": [r["ticket"] for r in rows[8:10]],
             "ranked_top10": rows,
             "protected_four_ticket": protected_four_ticket,
+            "four_protection_near_miss": four_protection_near_miss,
             "four_protection_candidates": [f"{x[1]}-{x[2]}-{x[3]}" for x in four],
         }
 

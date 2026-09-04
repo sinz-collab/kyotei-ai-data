@@ -212,7 +212,7 @@ class TestFukuokaV1Integration(unittest.TestCase):
             inactive_third = next(row["third_prob"] for row in inactive_result["boats"] if row["actual_course"] == course)
             self.assertGreater(active_third, inactive_third)
 
-    def test_conditional_top_nine_is_not_removed_by_role_assignment(self) -> None:
+    def test_conditional_top_ten_is_not_removed_by_role_or_four_protection(self) -> None:
         race_input = self.final_input("2026-09-03", 6)
         engine = FukuokaPredictionEngineV10()
         result = engine.predict(race_input, debug=True)
@@ -237,9 +237,12 @@ class TestFukuokaV1Integration(unittest.TestCase):
                         * third[(head, second_lane, third_lane)]
                     )
                     scored.append((score, f"{head}-{second_lane}-{third_lane}"))
-        raw_top_nine = {ticket for _, ticket in sorted(scored, reverse=True)[:9]}
+        raw_top_ten = {ticket for _, ticket in sorted(scored, reverse=True)[:10]}
         selected = set(result["tickets"]["main"] + result["tickets"]["deviation"] + result["tickets"]["upset"])
-        self.assertTrue(raw_top_nine.issubset(selected))
+        self.assertEqual(raw_top_ten, selected)
+        self.assertIn("1-5-3", selected)
+        self.assertIsNone(result["tickets"]["protected_four_ticket"])
+        self.assertIsNotNone(result["tickets"]["four_protection_near_miss"])
 
     def test_four_to_one_is_a_protection_candidate(self) -> None:
         result = FukuokaPredictionEngineV10().predict(self.final_input("2026-09-03", 5))
