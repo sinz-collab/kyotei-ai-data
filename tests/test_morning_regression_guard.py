@@ -12,7 +12,7 @@ from unittest.mock import patch
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
 
-from validate_morning_regression import validate
+from validate_morning_regression import PREDICTION_VENUES, validate
 import build_site_data as morning_builder
 
 
@@ -95,6 +95,9 @@ def mark_no_prior_meeting_runs(value: dict, race_index: int = 0, lane: int = 4) 
 
 
 class MorningRegressionGuardTests(unittest.TestCase):
+    def test_fukuoka_is_registered_prediction_venue(self) -> None:
+        self.assertIn("fukuoka", PREDICTION_VENUES)
+
     def write_tree(self, root: Path, value: dict, prior: dict | None = None) -> None:
         venue = root / "venues" / "toda"
         venue.mkdir(parents=True)
