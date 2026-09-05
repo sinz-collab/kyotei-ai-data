@@ -774,10 +774,10 @@ def biwako_race_prediction_is_complete(prediction: object) -> bool:
 
 
 def fukuoka_race_prediction_is_complete(prediction: object) -> bool:
-    """Validate and preserve the race-native Fukuoka v1.0 prediction."""
+    """Validate the Fukuoka restore candidate while retaining v1.0 internally."""
     if not isinstance(prediction, dict):
         return False
-    if prediction.get("engine") != "fukuoka_engine_v1.0":
+    if prediction.get("engine") != "fukuoka_restore_candidate_v1":
         return False
     if str(prediction.get("engineVersion") or "") != "1.0":
         return False

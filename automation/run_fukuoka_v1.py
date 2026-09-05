@@ -13,13 +13,19 @@ from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "fukuoka_v1"
-ENGINE_ID = "fukuoka_engine_v1.0"
+RESTORE_ENGINE_DIR = REPO_ROOT / "engines" / "fukuoka_restore_candidate_v1"
+CURRENT_ENGINE_ID = "fukuoka_engine_v1.0"
+CURRENT_ENGINE_VERSION = "1.0"
+ENGINE_ID = "fukuoka_restore_candidate_v1"
 ENGINE_VERSION = "1.0"
 
 if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
+if str(RESTORE_ENGINE_DIR) not in sys.path:
+    sys.path.insert(0, str(RESTORE_ENGINE_DIR))
 
 from fukuoka_prediction_engine_v1_0 import FukuokaPredictionEngineV10  # noqa: E402
+from fukuoka_restore_candidate_v1 import predict_restored  # noqa: E402
 
 
 WIND_16_TO_8 = {
@@ -346,9 +352,9 @@ def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
     }
     return {
         "status": "complete",
-        "engine": ENGINE_ID,
-        "engineVersion": ENGINE_VERSION,
-        "engine_version": ENGINE_VERSION,
+        "engine": CURRENT_ENGINE_ID,
+        "engineVersion": CURRENT_ENGINE_VERSION,
+        "engine_version": CURRENT_ENGINE_VERSION,
         "phase": phase,
         "finalPredictionStatus": "complete" if is_final else "waiting_live_data",
         "predictionStage": stage,
@@ -383,6 +389,109 @@ def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
     }
 
 
+def format_restored_prediction(
+    race: dict,
+    current_prediction: dict,
+    phase: str,
+    documents: dict[str, dict] | None,
+) -> dict:
+    restore_input = {
+        "racers": deepcopy(race.get("racers") or []),
+        "prediction": deepcopy(current_prediction),
+    }
+    if documents is not None:
+        attach_live_domain(restore_input, documents)
+    restored = predict_restored(restore_input)
+    ticket_groups = {"本線": [], "ずらし": [], "穴": []}
+    for ticket in restored["tickets"]:
+        ticket_groups[ticket["role"]].append(
+            {
+                "combo": ticket["combo"],
+                "role": ticket["role"],
+                "prob": round(float(ticket["score"]) * 100.0, 4),
+            }
+        )
+    main = ticket_groups["本線"]
+    zure = ticket_groups["ずらし"]
+    ana = ticket_groups["穴"]
+    is_final = phase == "final"
+    head_scenarios = deepcopy(restored.get("head_scenarios") or {})
+    stage = {
+        "label": "本予想" if is_final else "仮予想",
+        "badge": "本予想" if is_final else "仮予想",
+        "statusText": (
+            "実進入・展示・スリット・オリジナル展示を反映し、福岡v1.0後段の復元候補v1で再予想済み"
+            if is_final
+            else "朝データの福岡v1.0予想を復元候補v1へ接続。LIVE3点complete後に本予想へ更新"
+        ),
+        "color": "green" if is_final else "yellow",
+    }
+    return {
+        "status": "complete",
+        "prediction_status": "complete",
+        "engine": ENGINE_ID,
+        "engineVersion": ENGINE_VERSION,
+        "engine_version": ENGINE_VERSION,
+        "phase": phase,
+        "finalPredictionStatus": "complete" if is_final else "waiting_live_data",
+        "predictionStage": stage,
+        "win": deepcopy(restored["p1"]),
+        "second": deepcopy(current_prediction["second"]),
+        "third": deepcopy(current_prediction["third"]),
+        "SAB": deepcopy(current_prediction["SAB"]),
+        "sab": current_prediction["sab"],
+        "sabDetail": deepcopy(current_prediction["sabDetail"]),
+        "confidence": (current_prediction.get("SAB") or {}).get("fit"),
+        "Main6": deepcopy(restored["Main6"]),
+        "Zure2": deepcopy(restored["Zure2"]),
+        "Ana2": deepcopy(restored["Ana2"]),
+        "ai": main,
+        "balance": zure,
+        "aiUpset": ana,
+        "tickets": main + zure + ana,
+        "scenario": {
+            "model": "restored_conditional_trifecta",
+            "formula": "P1(restored) × P2|P1 × P3|P1,P2",
+            "sourceEngine": CURRENT_ENGINE_ID,
+        },
+        "probabilityFlow": {
+            "required": True,
+            "baseApplied": True,
+            "baseLabel": "福岡v1.0 P1/P2/P3",
+            "realtimeApplied": is_final,
+            "realtimeLabel": "実進入・展示・スリット・オリジナル展示反映",
+            "reviewed": is_final,
+            "reviewLabel": "復元候補v1本予想",
+        },
+        "diagnostics": {
+            "strong2": bool(head_scenarios.get("strong2")),
+            "strong3": bool(head_scenarios.get("strong3")),
+            "strong4": bool(head_scenarios.get("strong4")),
+            "strong6": bool(head_scenarios.get("strong6")),
+            "headScenarios": head_scenarios,
+            "oddsUsedForPrediction": False,
+            "resultUsedForPrediction": False,
+            "odds_used": False,
+            "result_used": False,
+            "liveInputsComplete": is_final,
+            "sourceEngine": CURRENT_ENGINE_ID,
+            "sourceEngineVersion": CURRENT_ENGINE_VERSION,
+        },
+        "odds_used": False,
+        "result_used": False,
+    }
+
+
+def current_prediction_complete(prediction: Any, phase: str | None = None) -> bool:
+    if not isinstance(prediction, dict) or prediction.get("engine") != CURRENT_ENGINE_ID:
+        return False
+    if phase is not None and prediction.get("phase") != phase:
+        return False
+    if any(not isinstance(prediction.get(key), dict) or len(prediction[key]) != 6 for key in ("win", "second", "third")):
+        return False
+    return len(prediction.get("tickets") or []) == 10
+
+
 def prediction_complete(prediction: Any, phase: str | None = None) -> bool:
     if not isinstance(prediction, dict) or prediction.get("engine") != ENGINE_ID:
         return False
@@ -393,12 +502,21 @@ def prediction_complete(prediction: Any, phase: str | None = None) -> bool:
     return len(prediction.get("tickets") or []) == 10
 
 
-def sync_race_prediction(race: dict, prediction: dict, phase: str) -> None:
+def sync_race_prediction(
+    race: dict,
+    prediction: dict,
+    current_prediction: dict,
+    phase: str,
+) -> None:
     if phase == "preliminary":
+        race["predictionCurrentV1Pre"] = deepcopy(current_prediction)
+        race["predictionCurrentV1Final"] = None
         race["predictionPre"] = deepcopy(prediction)
         race["predictionFinal"] = None
     else:
+        race["predictionCurrentV1Final"] = deepcopy(current_prediction)
         race["predictionFinal"] = deepcopy(prediction)
+    race["predictionCurrentV1"] = deepcopy(current_prediction)
     race["prediction"] = deepcopy(prediction)
 
 
@@ -448,7 +566,11 @@ def apply_predictions(
         raise RuntimeError("fukuoka_races_must_be_12")
 
     engine = FukuokaPredictionEngineV10()
-    predictions = deepcopy(payload.get("preds") or {})
+    predictions = {
+        key: deepcopy(value)
+        for key, value in (payload.get("preds") or {}).items()
+        if prediction_complete(value)
+    }
     updated = []
     skipped = []
     for race in races:
@@ -469,13 +591,29 @@ def apply_predictions(
                 skipped.append(race_no)
                 continue
         race_input = build_engine_input(payload, race, documents)
-        prediction = format_prediction(engine.predict(race_input), phase, race_input)
+        current_prediction = format_prediction(engine.predict(race_input), phase, race_input)
+        prediction = format_restored_prediction(
+            race,
+            current_prediction,
+            phase,
+            documents,
+        )
         if phase == "final" and not prediction_complete(race.get("predictionPre"), "preliminary"):
             pre_input = build_engine_input(payload, race)
-            race["predictionPre"] = format_prediction(engine.predict(pre_input), "preliminary", pre_input)
+            current_pre = format_prediction(engine.predict(pre_input), "preliminary", pre_input)
+            race["predictionCurrentV1Pre"] = deepcopy(current_pre)
+            race["predictionPre"] = format_restored_prediction(
+                race,
+                current_pre,
+                "preliminary",
+                None,
+            )
         if phase == "final":
+            current_pre = race.get("predictionCurrentV1Pre")
+            if current_prediction_complete(current_pre, "preliminary"):
+                add_probability_review(current_prediction, current_pre)
             add_probability_review(prediction, race["predictionPre"])
-        sync_race_prediction(race, prediction, phase)
+        sync_race_prediction(race, prediction, current_prediction, phase)
         if documents is not None:
             attach_live_domain(race, documents)
         predictions[str(race_no)] = deepcopy(prediction)
@@ -498,6 +636,8 @@ def apply_predictions(
     payload["predictionEngine"] = {
         "id": ENGINE_ID,
         "version": ENGINE_VERSION,
+        "sourceEngine": CURRENT_ENGINE_ID,
+        "sourceEngineVersion": CURRENT_ENGINE_VERSION,
         "oddsUsedForPrediction": False,
         "resultUsedForPrediction": False,
         "preliminaryRaceCount": sum(

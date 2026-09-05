@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import sys
 import unittest
 from copy import deepcopy
@@ -14,6 +15,7 @@ if str(AUTOMATION) not in sys.path:
 
 import build_site_data  # noqa: E402
 import run_fukuoka_v1 as runner  # noqa: E402
+from fukuoka_restore_candidate_v1 import predict_restored  # noqa: E402
 from fukuoka_prediction_engine_v1_0 import (  # noqa: E402
     FukuokaPredictionEngineV10,
     motor_delta,
@@ -45,10 +47,13 @@ class TestFukuokaV1Integration(unittest.TestCase):
             race.pop("prediction", None)
             race.pop("predictionPre", None)
             race.pop("predictionFinal", None)
+            race.pop("predictionCurrentV1", None)
+            race.pop("predictionCurrentV1Pre", None)
+            race.pop("predictionCurrentV1Final", None)
         return payload
 
     def assert_prediction_contract(self, prediction: dict, phase: str) -> None:
-        self.assertEqual(prediction["engine"], "fukuoka_engine_v1.0")
+        self.assertEqual(prediction["engine"], "fukuoka_restore_candidate_v1")
         self.assertEqual(prediction["engineVersion"], "1.0")
         self.assertEqual(prediction["phase"], phase)
         self.assertEqual(prediction["status"], "complete")
@@ -60,14 +65,36 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertEqual(len(prediction["Ana2"]), 2)
         self.assertEqual(len(prediction["tickets"]), 10)
         self.assertEqual(len({row["combo"] for row in prediction["tickets"]}), 10)
+        for ticket in prediction["tickets"]:
+            lanes = ticket["combo"].split("-")
+            self.assertEqual(len(lanes), 3)
+            self.assertEqual(len(set(lanes)), 3)
+            self.assertTrue(all(lane in {"1", "2", "3", "4", "5", "6"} for lane in lanes))
         self.assertFalse(prediction["diagnostics"]["oddsUsedForPrediction"])
         self.assertFalse(prediction["diagnostics"]["resultUsedForPrediction"])
-        self.assertEqual(prediction["scenario"]["model"], "conditional_trifecta")
+        self.assertFalse(prediction["odds_used"])
+        self.assertFalse(prediction["result_used"])
+        self.assertIsInstance(prediction["confidence"], (int, float))
+        self.assertEqual(prediction["scenario"]["model"], "restored_conditional_trifecta")
         self.assertTrue(build_site_data.fukuoka_race_prediction_is_complete(prediction))
+
+    def assert_current_v1_contract(self, prediction: dict, phase: str) -> None:
+        self.assertEqual(prediction["engine"], "fukuoka_engine_v1.0")
+        self.assertEqual(prediction["engineVersion"], "1.0")
+        self.assertEqual(prediction["phase"], phase)
+        self.assertEqual(len(prediction["tickets"]), 10)
+
+    def test_restore_source_is_the_fixed_code(self) -> None:
+        source = ROOT / "engines" / "fukuoka_restore_candidate_v1" / "fukuoka_restore_candidate_v1.py"
+        canonical_source = source.read_text(encoding="utf-8").replace("\r\n", "\n").encode()
+        self.assertEqual(
+            hashlib.sha256(canonical_source).hexdigest(),
+            "f90c3cc23ba2529c728f6ec197c289826c3cce810b41bccfbedd3cef8f2ba322",
+        )
 
     def test_morning_and_live_connection_for_saved_days(self) -> None:
         event_days = {}
-        for day in ("2026-09-02", "2026-09-03"):
+        for day in ("2026-09-03", "2026-09-05"):
             payload = self.prediction_input_payload(day)
             event_days[day] = payload.get("eventDay")
             preliminary = runner.apply_predictions(
@@ -76,7 +103,9 @@ class TestFukuokaV1Integration(unittest.TestCase):
             self.assertEqual(len(preliminary["preds"]), 12)
             for race in preliminary["races"]:
                 self.assert_prediction_contract(race["predictionPre"], "preliminary")
+                self.assert_current_v1_contract(race["predictionCurrentV1Pre"], "preliminary")
                 self.assertIsNone(race["predictionFinal"])
+                self.assertIsNone(race["predictionCurrentV1Final"])
                 self.assertEqual(race["prediction"], race["predictionPre"])
 
             final = runner.apply_predictions(
@@ -86,6 +115,8 @@ class TestFukuokaV1Integration(unittest.TestCase):
             for race in final["races"]:
                 self.assert_prediction_contract(race["predictionPre"], "preliminary")
                 self.assert_prediction_contract(race["predictionFinal"], "final")
+                self.assert_current_v1_contract(race["predictionCurrentV1Pre"], "preliminary")
+                self.assert_current_v1_contract(race["predictionCurrentV1Final"], "final")
                 self.assertEqual(race["prediction"], race["predictionFinal"])
                 self.assertEqual(race["prediction"]["probabilityReviewStatus"], "reviewed")
                 self.assertTrue(race["prediction"]["probabilityFlow"]["reviewed"])
@@ -93,7 +124,7 @@ class TestFukuokaV1Integration(unittest.TestCase):
                     set(race["live"]),
                     {"direct", "weather", "exhibition", "original", "original_exhibition"},
                 )
-        self.assertEqual(event_days, {"2026-09-02": 1, "2026-09-03": 2})
+        self.assertEqual(event_days, {"2026-09-03": 2, "2026-09-05": 4})
 
     def test_engine_input_never_contains_odds_or_result(self) -> None:
         day = "2026-09-03"
@@ -110,6 +141,21 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertTrue(all(boat.get("actual_course") for boat in engine_input["boats"]))
         self.assertTrue(all(boat.get("exhibition_time") is not None for boat in engine_input["boats"]))
         self.assertTrue(all(boat.get("original_sum") is not None for boat in engine_input["boats"]))
+
+    def test_odds_and_result_cannot_change_restore_candidate(self) -> None:
+        day = "2026-09-03"
+        baseline = self.prediction_input_payload(day)
+        injected = deepcopy(baseline)
+        for race in injected["races"]:
+            race["odds"] = {"1-2-3": 999.9}
+            race["result"] = {"order": "6-5-4"}
+        expected = runner.apply_predictions(
+            baseline, day, "final", self.live_root(day)
+        )
+        actual = runner.apply_predictions(
+            injected, day, "final", self.live_root(day)
+        )
+        self.assertEqual(expected["preds"], actual["preds"])
 
     def test_motor_recent_generates_grades_without_exceeding_existing_bounds(self) -> None:
         race_input = self.final_input("2026-09-03", 1)
@@ -250,23 +296,25 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertTrue(any(ticket.startswith("4-") and ticket.endswith("-1") for ticket in candidates))
 
     def test_replay_results_are_checked_only_after_prediction(self) -> None:
-        for day in ("2026-09-02", "2026-09-03"):
-            payload = runner.apply_predictions(
-                self.payload(day), day, "final", self.live_root(day)
-            )
+        expected = {"2026-09-03": 8, "2026-09-04": 7, "2026-09-05": 8}
+        total = 0
+        for day, expected_hits in expected.items():
+            payload = self.payload(day)
             hits = 0
             for race in payload["races"]:
                 race_no = int(race["race"])
+                restored = predict_restored(race)
                 result_document = json.loads(
                     (self.live_root(day) / f"{race_no:02d}" / "result.json")
                     .read_text(encoding="utf-8")
                 )
                 order = (result_document.get("data") or {}).get("order") or []
                 actual = "-".join(map(str, order[:3]))
-                tickets = {row["combo"] for row in race["prediction"]["tickets"]}
+                tickets = set(restored["Main6"] + restored["Zure2"] + restored["Ana2"])
                 hits += actual in tickets
-            self.assertGreaterEqual(hits, 0)
-            self.assertLessEqual(hits, 12)
+            self.assertEqual(hits, expected_hits)
+            total += hits
+        self.assertEqual(total, 23)
 
 
 if __name__ == "__main__":
