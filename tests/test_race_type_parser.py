@@ -35,6 +35,25 @@ def entry_lines(race_type: str, *, entry_fixed: bool = False) -> list[str]:
 
 
 class RaceTypeParserTests(unittest.TestCase):
+    def test_event_label_from_race_one_header(self):
+        cases = (
+            ("一般", "通常開催", ""),
+            ("SG", "グランプリ", "SG"),
+            ("G1", "周年記念", "G1"),
+            ("G2", "モーターボート大賞", "G2"),
+            ("G3", "企業杯", "G3"),
+            ("一般", "ルーキーシリーズ", "🔰"),
+            ("一般", "オールレディース", "♥️"),
+            ("G3", "オールレディース", "G3｜♥️"),
+            ("G1", "ヤングダービー", "G1｜🔰"),
+        )
+        for grade, title, expected in cases:
+            with self.subTest(grade=grade, title=title):
+                self.assertEqual(
+                    MODULE.parse_event_label(["下関", grade, title, "1R", "女子戦の説明"]),
+                    expected,
+                )
+
     def test_shimonoseki_examples(self):
         self.assertEqual(MODULE.parse_race_type(entry_lines("一般")), "一般")
         self.assertEqual(MODULE.parse_race_type(entry_lines("一般", entry_fixed=True)), "一般")

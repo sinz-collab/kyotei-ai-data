@@ -84,6 +84,35 @@ def entry_lines(path: Path) -> list[str]:
     ]
 
 
+def parse_event_label(lines: list[str]) -> str:
+    """Build the special meeting label from the race 1 entry header."""
+    normalized = [unicodedata.normalize("NFKC", line).strip() for line in lines]
+    first_race = next(
+        (index for index, line in enumerate(normalized) if re.fullmatch(r"1\s*R", line)),
+        len(normalized),
+    )
+    header = [line for line in normalized[:first_race] if line]
+    grade = ""
+    grade_patterns = (
+        ("SG", r"S\s*G"),
+        ("G1", r"G\s*(?:1|I)"),
+        ("G2", r"G\s*(?:2|II)"),
+        ("G3", r"G\s*(?:3|III)"),
+    )
+    for label, pattern in grade_patterns:
+        if any(re.fullmatch(pattern, line, re.IGNORECASE) for line in header):
+            grade = label
+            break
+
+    header_text = "\n".join(header)
+    categories = []
+    if re.search(r"新人|ルーキー|ヤング", header_text):
+        categories.append("🔰")
+    if re.search(r"女子|レディース|ヴィーナス", header_text):
+        categories.append("♥️")
+    return "｜".join(part for part in (grade, *categories) if part)
+
+
 def write_text_atomic(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -925,6 +954,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
     predictions = {}
     event_day: int | None = None
     event_label: str | None = None
+    special_event_label = ""
     for race_no in range(1, 13):
         entry_path = source_dir / "races" / f"race_{race_no:02d}_entry.txt"
         if not entry_path.exists():
@@ -968,6 +998,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             return None, {"reason": f"invalid_entry_{race_no:02d}", "racers": len(racers)}
         if race_no == 1:
             event_day, event_label = event_day_info(lines, date)
+            special_event_label = parse_event_label(lines)
         races.append(
             {
                 "race": race_no,
@@ -999,6 +1030,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             "tide": tide,
             "eventDayLabel": event_label,
             "eventDay": event_day,
+            "eventLabel": special_event_label,
             "eventScheduleLabels": {},
         },
         {"reason": "ok"},
@@ -1198,6 +1230,7 @@ def main() -> int:
             "firstDeadline": payload["races"][0]["deadline"] if race_data_available else "",
             "eventDay": payload.get("eventDay") if race_data_available else None,
             "eventDayLabel": payload.get("eventDayLabel") if race_data_available else None,
+            "eventLabel": payload.get("eventLabel") if race_data_available else "",
             "detail": detail,
         }
 
@@ -1235,6 +1268,8 @@ def main() -> int:
             item["eventDay"] = event_day
         if state.get("eventDayLabel"):
             item["eventDayLabel"] = state["eventDayLabel"]
+        if state.get("eventLabel"):
+            item["eventLabel"] = state["eventLabel"]
         manifest_venues.append(item)
 
     now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(timespec="seconds")
