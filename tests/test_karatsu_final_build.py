@@ -38,6 +38,7 @@ def without_prediction_domains(payload: dict) -> dict:
 class KaratsuFinalBuildTests(unittest.TestCase):
     def test_predictions_survive_the_three_stage_morning_pipeline(self) -> None:
         before_engine = json.loads(SOURCE.read_text(encoding="utf-8"))
+        before_engine.setdefault("eventLabel", "")
 
         with tempfile.TemporaryDirectory() as directory:
             engine_path = Path(directory) / "karatsu.json"
