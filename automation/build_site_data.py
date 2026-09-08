@@ -1252,6 +1252,7 @@ def main() -> int:
             "race_data_available": state.get("raceDataAvailable", state["open"]),
             "predictionAvailable": state.get("predictionAvailable", False),
             "prediction_available": state.get("predictionAvailable", False),
+            "eventLabel": state.get("eventLabel", ""),
         }
         reason = state.get("detail", {}).get("reason", "")
         if reason:
@@ -1268,8 +1269,6 @@ def main() -> int:
             item["eventDay"] = event_day
         if state.get("eventDayLabel"):
             item["eventDayLabel"] = state["eventDayLabel"]
-        if state.get("eventLabel"):
-            item["eventLabel"] = state["eventLabel"]
         manifest_venues.append(item)
 
     now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(timespec="seconds")
