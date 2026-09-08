@@ -465,6 +465,7 @@ def annotate_no_prior_meeting_runs(payload: dict, slug: str, data_root: Path) ->
 def merge_validated_morning_metadata(existing: dict, morning: dict) -> dict:
     """Merge only validated entry metadata; preserve prediction/live/result domains."""
     merged = existing
+    merged["eventLabel"] = morning.get("eventLabel", "")
     existing_races = {
         int(race.get("race") or 0): race
         for race in merged.get("races") or []
