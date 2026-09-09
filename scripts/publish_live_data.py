@@ -55,6 +55,26 @@ def atomic_write_json(path: Path, payload: dict) -> None:
     temporary.replace(path)
 
 
+def validate_staged_json(repo_root: Path) -> list[str]:
+    staged = run(
+        ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
+        repo_root,
+    )
+    if staged.returncode:
+        return [f"staged_file_list_failed: {staged.stderr.strip()}"]
+
+    errors = []
+    for relative in staged.stdout.splitlines():
+        if not relative.lower().endswith(".json"):
+            continue
+        path = repo_root / relative
+        try:
+            json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            errors.append(f"{relative}: {exc}")
+    return errors
+
+
 def race_index(document: dict) -> dict[int, dict]:
     return {
         int(race.get("race") or 0): race
@@ -285,6 +305,12 @@ def main() -> int:
             if staged.returncode:
                 print(staged.stderr)
                 return staged.returncode
+        json_errors = validate_staged_json(publish_repo)
+        if json_errors:
+            print("Refusing to commit invalid staged JSON:", file=sys.stderr)
+            for error in json_errors:
+                print(f"- {error}", file=sys.stderr)
+            return 1
         if run(["git", "diff", "--cached", "--quiet"], publish_repo).returncode == 0:
             print("No publishable data changes.")
             return 0
