@@ -522,6 +522,33 @@ async def apply_omura_live_prediction(
     )
 
 
+async def apply_omura_live_odds(
+    target: dict[str, Any],
+    race_dir: Path,
+    logger: Any,
+) -> None:
+    if target.get("venue") != "omura":
+        return
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(PUBLISHER_REPO / "automation" / "apply_omura_odds.py"),
+        "--date", str(target["date"]),
+        "--race", str(target["race_no"]),
+        "--data-root", str(OMURA_DATA_ROOT),
+        "--live-root", str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    log = logger.error if process.returncode else logger.info
+    log(
+        (stderr if process.returncode else stdout).decode("utf-8", errors="replace").strip(),
+        extra={"event": "omura_live_odds_failed" if process.returncode else "omura_live_odds_complete",
+               "venue": "omura", "race_no": target["race_no"]},
+    )
+
+
 async def apply_wakamatsu_live_prediction(
     target: dict[str, Any],
     fetch_result: dict[str, Any],
@@ -802,6 +829,7 @@ async def run_once(
                                     result,
                                     logger,
                                 )
+                                await apply_omura_live_odds(target, race_dir, logger)
                                 await apply_shimonoseki_live_prediction(
                                     target,
                                     race_dir,
