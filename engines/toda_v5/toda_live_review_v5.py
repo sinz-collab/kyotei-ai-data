@@ -272,6 +272,10 @@ def apply_live_review(prediction, documents):
         "thirdByHead": deepcopy(prediction.get("thirdByHead") or {}),
         "scenarios": deepcopy(prediction.get("scenarios") or []),
     })
+    if "baseWin" not in baseline:
+        baseline["baseWin"] = deepcopy(
+            prediction.get("baseWin") or baseline.get("win") or prediction["win"]
+        )
     original = _rows(documents.get("original_exhibition"), "entries") or []
     exrank = _rank(exhibit, "exhibition_time")
     model_inputs = prediction.get("modelInputs") or {}
