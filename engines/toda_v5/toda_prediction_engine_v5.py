@@ -1,7 +1,7 @@
 from pathlib import Path
 from toda_utils_v5 import LANES, num, clamp, exp_softmax
 from toda_master_loader_v5 import TodaMasterV5
-from toda_scenario_engine_v5 import detect_scenarios
+from toda_scenario_engine_v5 import apply_scenario_mix, detect_scenarios, inside_weakness
 from toda_ticket_engine_v5 import (
     build_head_conditionals,
     build_tickets,
@@ -16,6 +16,41 @@ MASTER_ID = "Toda_AI_MASTER_v3_1_COMPLETE_ONE_FILE"
 
 CLASS_BONUS = {"A1": 2.25, "A2": 1.20, "B1": 0.0, "B2": -1.15}
 LANE_PRIOR = {1: 1.65, 2: .50, 3: .22, 4: .03, 5: -.28, 6: -.58}
+TODA_COURSE_AVG_WIN = {
+    1: 44.813005666705216,
+    2: 17.057057396928048,
+    3: 16.374079676674366,
+    4: 15.418262272412997,
+    5: 7.683431542461006,
+    6: 2.6901005847953217,
+}
+TODA_COURSE_AVG_TOP3 = {1: 73.55, 2: 58.56, 3: 54.29, 4: 51.44, 5: 41.0, 6: 25.64}
+COURSE_PRIOR_STRENGTH = 8.0
+COURSE_SCORE_MAX = 2.0
+COURSE_SCORE_DELTA_SCALE = 14.0
+
+
+def _course_performance(profile, course):
+    """Shrink course results to Toda priors and return one non-duplicated score."""
+    course = int(course)
+    avg_win = TODA_COURSE_AVG_WIN[course]
+    avg_top3 = TODA_COURSE_AVG_TOP3[course]
+    starts = max(0.0, num(profile.get("starts"), 0))
+    confidence = starts / (starts + COURSE_PRIOR_STRENGTH)
+    actual_win = num(profile.get("win_rate"), avg_win)
+    actual_top3 = num(profile.get("top3_rate"), avg_top3)
+    shrunk_win = confidence * actual_win + (1 - confidence) * avg_win
+    shrunk_top3 = confidence * actual_top3 + (1 - confidence) * avg_top3
+    delta = .70 * (shrunk_win - avg_win) + .30 * (shrunk_top3 - avg_top3)
+    return {
+        "score": clamp(delta / COURSE_SCORE_DELTA_SCALE, -COURSE_SCORE_MAX, COURSE_SCORE_MAX),
+        "confidence": confidence,
+        "shrunkWin": shrunk_win,
+        "shrunkTop3": shrunk_top3,
+        "avgWin": avg_win,
+        "avgTop3": avg_top3,
+        "weightedDelta": delta,
+    }
 
 
 def _positive_or(value, fallback):
@@ -74,11 +109,8 @@ class TodaPredictionEngineV5:
         course_st = num(profile.get("avg_st"), 9)
         motor = _positive_or(r.get("motor_2"), 32)
         boat = _positive_or(r.get("boat_2"), 32)
-        top3diff = num(profile.get("top3_vs_course_avg"), 0)
-        strength = str(profile.get("strength") or "")
-        strength_bonus = {"得意": .60, "やや得意": .30, "苦手": -.60}.get(strength, 0)
-        reliability = {"A": 1.0, "B": .75, "C": .45}.get(str(profile.get("reliability") or ""), .4)
-        course_term = clamp(top3diff / 20, -1.4, 1.4) * reliability
+        course = int(r.get("actual_course") or r.get("entry_course") or lane)
+        course_term = _course_performance(profile, course)["score"]
         st_term = clamp((.18 - avg) * 10, -.9, .9)
         if local_st < 1:
             st_term += clamp((.18 - local_st) * 7, -.65, .65)
@@ -92,7 +124,6 @@ class TodaPredictionEngineV5:
             + (boat - 32) * .016
             + st_term
             + course_term
-            + strength_bonus
             + LANE_PRIOR[lane]
             + self._season_form(r)
         )
@@ -135,7 +166,8 @@ class TodaPredictionEngineV5:
         for s in scenarios:
             win_raw[str(s["head"])] += s["weight"] * 1.28
         temperature = _win_temperature(win_raw, scenarios, racers, profiles)
-        win = exp_softmax(win_raw, .25 / temperature)
+        base_win = exp_softmax(scores, .25 / temperature)
+        win, scenario_mix = apply_scenario_mix(base_win, scenarios)
 
         second_by_head = {}
         third_by_head = {}
@@ -168,6 +200,7 @@ class TodaPredictionEngineV5:
             "tidePhase": context.get("tide_phase") or "",
             "tideType": context.get("tide_type") or "",
             "softmaxTemperature": temperature,
+            "baseWin": base_win,
             "win": win,
             "second": second,
             "third": third,
@@ -175,6 +208,10 @@ class TodaPredictionEngineV5:
             "thirdByHead": third_by_head,
             "scenarios": scenarios,
             "oneWeak": one_weak,
+            "insideWeakness": inside_weakness(
+                next(r for r in racers if int(r["lane"]) == 1), profiles["1"]
+            ),
+            "scenarioMix": scenario_mix,
             "sab": sab,
             "confidence": round(clamp(47 + gap * 2 + (8 if sab == "S" else 3 if sab == "A" else 0), 40, 88)),
             "upsetIndex": upset_index,

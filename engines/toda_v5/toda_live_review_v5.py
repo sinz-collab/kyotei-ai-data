@@ -3,7 +3,7 @@ from copy import deepcopy
 from toda_utils_v5 import LANES, num, clamp, normalize_map
 from toda_ticket_engine_v5 import build_tickets, build_upset_tickets, marginal_second, marginal_third
 from toda_sab_engine_v5 import judge_sab
-from toda_scenario_engine_v5 import detect_scenarios, inside_profile, attack_profile
+from toda_scenario_engine_v5 import apply_scenario_mix, detect_scenarios, inside_profile, attack_profile
 
 
 def _rows(doc, key):
@@ -187,17 +187,12 @@ def _review_deltas(racers, exhibit, direct, meta):
     return review
 
 
-def _inside_breakdown(adjusted, meta):
+def _inside_pressure(meta):
     defense = meta["1"]["defenseScore"]
     attacks = sorted([(lane, meta[str(lane)]["headScore"] + .35 * meta[str(lane)].get("matchupScore", 0)) for lane in (2, 3, 4, 5, 6)], key=lambda x: x[1], reverse=True)
     top1, top2 = attacks[0][1], attacks[1][1]
     collapse = clamp(top1 * .68 + top2 * .32 - defense * .55, 0, 1)
-    penalty = clamp(collapse * 5.5, 0, 5.5)
-    adjusted["win"]["1"] -= penalty
-    total = sum(v for _, v in attacks) or 1
-    for lane, score in attacks:
-        adjusted["win"][str(lane)] += penalty * .82 * score / total
-    return collapse, penalty, attacks
+    return collapse, attacks
 
 
 def _residual_boosts(meta, scenarios):
@@ -253,10 +248,12 @@ def _live_scenarios(base_scenarios, racers, profiles, base_scores, context, meta
         if lane in (5, 6) and chain < .42:
             score = 0
         if score >= .42 and lane not in by_head:
-            by_head[lane] = {"id": f"LIVE_ATTACK_{lane}", "label": f"{lane}直前攻め", "head": lane, "weight": clamp(.42 + score * .60, .45, 1.20), "links": [x for x in LANES if x != lane]}
+            by_head[lane] = {"id": f"LIVE_ATTACK_{lane}", "label": f"{lane}直前攻め", "head": lane, "weight": clamp(.42 + score * .60, .45, 1.00), "links": [x for x in LANES if x != lane]}
         if lane in by_head:
-            by_head[lane]["weight"] = clamp(num(by_head[lane].get("weight"), .4) + score * .30, .20, 1.35)
+            by_head[lane]["weight"] = clamp(num(by_head[lane].get("weight"), .4) + score * .30, .20, 1.00)
             by_head[lane]["liveAttack"] = meta[k]
+            by_head[lane]["attackEstablishment"] = clamp(by_head[lane]["weight"], 0, 1)
+            by_head[lane]["kimariteMatchup"] = num(meta[k].get("matchupScore"), 0)
     return sorted(by_head.values(), key=lambda x: x["weight"], reverse=True), one_weak
 
 
@@ -268,6 +265,7 @@ def apply_live_review(prediction, documents):
 
     baseline = prediction.setdefault("_baseline", {
         "win": deepcopy(prediction["win"]),
+        "baseWin": deepcopy(prediction.get("baseWin") or prediction["win"]),
         "second": deepcopy(prediction["second"]),
         "third": deepcopy(prediction["third"]),
         "secondByHead": deepcopy(prediction.get("secondByHead") or {}),
@@ -297,12 +295,23 @@ def apply_live_review(prediction, documents):
 
     meta = _build_live_meta(racers, profiles, exhibit, original, exrank, wind, wave) if racers and len(racers) == 6 else {}
     review = _review_deltas(racers, exhibit, direct, meta)
-    adjusted = {pos: {str(lane): num(baseline[pos][str(lane)]) + review[str(lane)][pos] for lane in LANES} for pos in ("win", "second", "third")}
-    collapse, penalty, attacks = _inside_breakdown(adjusted, meta)
+    adjusted = {
+        pos: {
+            str(lane): num((baseline["baseWin"] if pos == "win" else baseline[pos])[str(lane)])
+            + review[str(lane)][pos]
+            for lane in LANES
+        }
+        for pos in ("win", "second", "third")
+    }
+    collapse, attacks = _inside_pressure(meta)
     scenarios, _ = _live_scenarios(baseline.get("scenarios") or prediction.get("scenarios") or [], racers, profiles, base_scores, context, meta, collapse)
     for pos in adjusted:
         adjusted[pos] = normalize_map(adjusted[pos])
-    prediction["win"] = adjusted["win"]
+    base_leader = int(max(base_scores, key=base_scores.get))
+    live_leader = int(max(review, key=lambda lane: review[lane]["win"]))
+    consensus_lane = base_leader if base_leader == live_leader else None
+    prediction["baseLiveWin"] = deepcopy(adjusted["win"])
+    prediction["win"], scenario_mix = apply_scenario_mix(adjusted["win"], scenarios, consensus_lane)
 
     residual_by_head = _residual_boosts(meta, scenarios)
     prediction["secondByHead"] = _adjust_conditionals(baseline.get("secondByHead"), review, "second", residual_by_head)
@@ -326,12 +335,21 @@ def apply_live_review(prediction, documents):
             "win": prediction["win"][k], "second": prediction["second"][k], "third": prediction["third"][k],
             "deltaWin": round(prediction["win"][k] - baseline["win"][k], 1), "deltaSecond": round(prediction["second"][k] - baseline["second"][k], 1), "deltaThird": round(prediction["third"][k] - baseline["third"][k], 1),
         }
-    prediction["insideBreakdown"] = {"score": round(collapse, 3), "winPenaltyPoints": round(penalty, 2), "lane1Defense": round(meta.get("1", {}).get("defenseScore", 0), 3), "attackers": [{"lane": lane, "headScore": round(score, 3)} for lane, score in attacks]}
+    prediction["insideBreakdown"] = {"score": round(collapse, 3), "winPenaltyPoints": 0.0, "legacyInsideBreakApplied": False, "lane1Defense": round(meta.get("1", {}).get("defenseScore", 0), 3), "attackers": [{"lane": lane, "headScore": round(score, 3)} for lane, score in attacks]}
+    prediction["scenarioMix"] = scenario_mix
+    prediction["baseLiveGuard"] = {
+        "baseLeader": base_leader,
+        "liveLeader": live_leader,
+        "activated": consensus_lane is not None,
+        "consensusLane": consensus_lane,
+        "liveEvaluation": {k: review[k]["win"] for k in map(str, LANES)},
+        "exhibitionStartUsedAlone": False,
+    }
     prediction["entryChangedDetected"] = bool(entry_changed)
     prediction["actualCourseMap"] = {str(k): v for k, v in course_map.items()}
     prediction["liveAttackMeta"] = meta
     prediction["probabilityReviewStatus"] = "reviewed"
     prediction.setdefault("probabilityFlow", {}).update({"realtimeApplied": True, "reviewed": True, "reviewLabel": "確率補正・合算/回り足・決まり手マッチアップ・相手連動・SAB・買い目再計算済み"})
     prediction["predictionStage"] = {"label": "本予想", "statusText": "戸田v6：実進入・展示・合算・回り足・直線・決まり手・攻め連動再計算済み", "badge": "本予想", "color": "green"}
-    prediction["liveReviewMeta"] = {"oddsUsedForProbability": False, "oddsRequiredForReview": False, "exhibitionStartUsedAlone": False, "originalExhibitionApplied": bool(original), "sumAndDifferenceApplied": bool(original), "turnApplied": bool(original), "straightApplied": bool(original), "kimariteMatchupApplied": bool(meta), "insideBreakdownApplied": bool(meta), "entryComparedDirectly": True, "entryChangedDetected": bool(entry_changed), "ticketsRegenerated": True, "headConditionalsRegenerated": True, "publicSecondThirdMarginalized": True}
+    prediction["liveReviewMeta"] = {"oddsUsedForProbability": False, "oddsRequiredForReview": False, "exhibitionStartUsedAlone": False, "originalExhibitionApplied": bool(original), "sumAndDifferenceApplied": bool(original), "turnApplied": bool(original), "straightApplied": bool(original), "kimariteMatchupApplied": bool(meta), "insideBreakdownApplied": False, "scenarioMixAppliedOnce": True, "entryComparedDirectly": True, "entryChangedDetected": bool(entry_changed), "ticketsRegenerated": True, "headConditionalsRegenerated": True, "publicSecondThirdMarginalized": True}
     return True
