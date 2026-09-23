@@ -50,6 +50,7 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
             "items": {
                 "direct": {"complete": True, "status": "complete"},
                 "exhibition": {"complete": True, "status": "complete"},
+                "original_exhibition": {"complete": True, "status": "complete"},
             }
         }
         logger = unittest.mock.Mock()
@@ -72,7 +73,7 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
 
         launch.assert_called_once()
         command = launch.call_args.args
-        self.assertTrue(command[1].endswith("run_wakamatsu_v2_live.py"))
+        self.assertTrue(command[1].endswith("run_wakamatsu_v2_3_live.py"))
         self.assertEqual(command[2:4], ("--date", "2026-08-25"))
         self.assertNotIn("odds", command)
 

@@ -75,7 +75,7 @@ jobs:
         run: |
           set -euo pipefail
           while IFS= read -r target_date; do
-            python automation/run_wakamatsu_v2_live.py --date "$target_date" \
+            python automation/run_wakamatsu_v2_3_live.py --date "$target_date" \
               | tee "wakamatsu-live-${target_date}.log"
           done <<< "$TARGET_DATES"
       - name: Commit and push generated data

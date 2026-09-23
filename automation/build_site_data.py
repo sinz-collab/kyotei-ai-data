@@ -742,12 +742,18 @@ def tokoname_race_prediction_is_complete(prediction: object) -> bool:
 
 
 def wakamatsu_race_prediction_is_complete(prediction: object) -> bool:
-    """Validate and preserve the race-native Wakamatsu v2.1 prediction."""
+    """Validate and preserve supported race-native Wakamatsu predictions."""
     if not isinstance(prediction, dict):
         return False
-    if prediction.get("engine") != "wakamatsu_engine_v2.1":
+    supported = {
+        "wakamatsu_engine_v2.1": "2.1",
+        "wakamatsu_engine_v2.2": "2.2",
+        "wakamatsu_engine_v2.3": "2.3",
+    }
+    engine = prediction.get("engine")
+    if engine not in supported:
         return False
-    if str(prediction.get("engineVersion") or "") != "2.1":
+    if str(prediction.get("engineVersion") or "") != supported[engine]:
         return False
     if prediction.get("phase") not in {"pre", "final"}:
         return False

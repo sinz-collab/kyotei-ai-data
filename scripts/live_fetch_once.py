@@ -35,7 +35,7 @@ ASHIYA_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_ashiya_v16_live.py"
 ASHIYA_DATA_ROOT = PUBLISHER_REPO / "data"
 TODA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_toda_live_v5.py"
 TODA_DATA_ROOT = PUBLISHER_REPO / "data"
-WAKAMATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_wakamatsu_v2_live.py"
+WAKAMATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_wakamatsu_v2_3_live.py"
 WAKAMATSU_DATA_ROOT = PUBLISHER_REPO / "data"
 BIWAKO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_biwako_v1_2.py"
 BIWAKO_DATA_ROOT = PUBLISHER_REPO / "data"
@@ -558,7 +558,7 @@ async def apply_wakamatsu_live_prediction(
         return
 
     items = fetch_result.get("items") or {}
-    required = ("direct", "exhibition")
+    required = ("direct", "exhibition", "original_exhibition")
     if not all(
         (items.get(name) or {}).get("complete") is True
         and (items.get(name) or {}).get("status") == "complete"
