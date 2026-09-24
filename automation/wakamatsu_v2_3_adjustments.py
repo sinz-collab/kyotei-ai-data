@@ -446,6 +446,156 @@ def _rank_tickets(
     return rows
 
 
+def _player_course_fallback_count(prediction: dict[str, Any]) -> int:
+    reflection = (prediction.get("diagnostics") or {}).get("fullReflection") or {}
+    base_audit = reflection.get("baseAudit") or {}
+    count = 0
+    for lane in LANES:
+        lane_audit = base_audit.get(str(lane)) or base_audit.get(lane) or {}
+        player_course_rows = [
+            (lane_audit.get(finish) or {}).get("player_course") or {}
+            for finish in ("win", "second", "third")
+        ]
+        if any(
+            row.get("available") is False and row.get("fallback") == "course_prior"
+            for row in player_course_rows
+        ):
+            count += 1
+    return count
+
+
+def _classify_full_reflection(prediction: dict[str, Any]) -> None:
+    reflection = (prediction.get("diagnostics") or {}).get("fullReflection")
+    if not isinstance(reflection, dict):
+        return
+    base_audit = reflection.get("baseAudit") or {}
+    fallback_count = _player_course_fallback_count(prediction)
+    available_count = 0
+    for lane in LANES:
+        lane_audit = base_audit.get(str(lane)) or base_audit.get(lane) or {}
+        player_course = (lane_audit.get("win") or {}).get("player_course") or {}
+        available_count += player_course.get("available") is True
+
+    input_audit = reflection.get("inputAudit") or {}
+    missing_critical = set(input_audit.get("missingCritical") or [])
+    fallback_only = missing_critical.issubset({"playerCourseDb"})
+    if fallback_count and available_count and fallback_only:
+        status = "complete_with_fallback"
+    elif fallback_count == 0 and available_count == len(LANES) and not missing_critical:
+        status = "complete"
+    else:
+        status = "partial"
+    reflection["status"] = status
+    reflection["playerCourseStatus"] = {
+        "status": status,
+        "availableCount": available_count,
+        "fallbackCount": fallback_count,
+        "fallback": "course_prior" if fallback_count else None,
+    }
+
+
+def _replace_tail_ticket(
+    selected: list[dict[str, Any]],
+    candidate: dict[str, Any],
+    tag: str,
+    protected: set[str],
+) -> str | None:
+    if candidate["combo"] in {row["combo"] for row in selected}:
+        return None
+    for index in (9, 8):
+        if index >= len(selected) or selected[index]["combo"] in protected:
+            continue
+        replaced = selected[index]["combo"]
+        row = deepcopy(candidate)
+        row["scenarioTags"] = list(row["scenarioTags"]) + [tag]
+        selected[index] = row
+        return replaced
+    return None
+
+
+def _three_attack_link_candidate(
+    prediction: dict[str, Any],
+    strong: dict[str, Any],
+    slit: dict[str, Any],
+    by_combo: dict[str, dict[str, Any]],
+    existing: set[str],
+) -> dict[str, Any] | None:
+    win = prediction.get("win") or {}
+    third = prediction.get("third") or {}
+    win_top3 = sorted(LANES, key=lambda lane: (-float(win.get(str(lane), 0.0)), lane))[:3]
+    conditions_met = (
+        (prediction.get("raceContext") or {}).get("water_type") == "3攻め型"
+        and 3 in win_top3
+        and float(win.get("3", 0.0)) >= 10.0
+        and float(third.get("4", 0.0)) >= 10.0
+        and not strong.get("active")
+        and not slit.get("active")
+    )
+    if not conditions_met:
+        return None
+    candidates = [
+        by_combo[combo]
+        for combo in ("1-3-4", "3-1-4", "3-4-1")
+        if combo in by_combo and combo not in existing
+    ]
+    return max(candidates, key=lambda row: row["probability"], default=None)
+
+
+def _development_protection_candidate(
+    prediction: dict[str, Any],
+    entry_by_lane: dict[int, int],
+    by_combo: dict[str, dict[str, Any]],
+) -> tuple[dict[str, Any] | None, int | None, int | None, float | None, str]:
+    win = prediction.get("win") or {}
+    second = prediction.get("second") or {}
+    third = prediction.get("third") or {}
+    scenarios = prediction.get("scenarios") or {}
+    win_top3 = sorted(LANES, key=lambda lane: (-float(win.get(str(lane), 0.0)), lane))[:3]
+
+    attack_candidates = []
+    for lane in win_top3:
+        course = entry_by_lane.get(lane, lane)
+        if lane == 1 or float(win.get(str(lane), 0.0)) < 10.0 or course not in (2, 3, 4):
+            continue
+        if course == 2:
+            scenario_score = float(scenarios.get("sashi_2", 0.0))
+        elif course == 3:
+            scenario_score = float(scenarios.get("makuri_3", 0.0)) + float(
+                scenarios.get("makurizashi_3", 0.0)
+            )
+        else:
+            scenario_score = float(scenarios.get("makuri_4", 0.0)) + float(
+                scenarios.get("makurizashi_4", 0.0)
+            )
+        if scenario_score >= 0.15:
+            attack_candidates.append((scenario_score, float(win.get(str(lane), 0.0)), lane, course))
+    if not attack_candidates:
+        return None, None, None, None, "no_attack_candidate"
+    scenario_score, _, attack_lane, attack_course = max(
+        attack_candidates, key=lambda row: (row[0], row[1], -row[2])
+    )
+
+    second_top3 = sorted(
+        LANES, key=lambda lane: (-float(second.get(str(lane), 0.0)), lane)
+    )[:3]
+    if 1 not in second_top3:
+        return None, attack_lane, attack_course, scenario_score, "lane1_not_second_top3"
+
+    third_top3 = sorted(
+        LANES, key=lambda lane: (-float(third.get(str(lane), 0.0)), lane)
+    )[:3]
+    third_candidates = [
+        lane
+        for lane in third_top3
+        if lane not in (attack_lane, 1) and float(third.get(str(lane), 0.0)) >= 10.0
+    ]
+    if not third_candidates:
+        return None, attack_lane, attack_course, scenario_score, "no_third_candidate"
+    third_lane = max(third_candidates, key=lambda lane: (float(third.get(str(lane), 0.0)), -lane))
+    combo = f"{attack_lane}-1-{third_lane}"
+    return by_combo.get(combo), attack_lane, attack_course, scenario_score, "candidate_ready"
+
+
 def _reserved_attack_tickets(
     slit: dict[str, Any],
     entry_by_lane: dict[int, int],
@@ -473,6 +623,7 @@ def _reserved_attack_tickets(
 def _set_tickets(
     prediction: dict[str, Any],
     entry_by_lane: dict[int, int],
+    strong: dict[str, Any],
     slit: dict[str, Any],
 ) -> None:
     previous_combos = [
@@ -513,6 +664,88 @@ def _set_tickets(
             selected[-1]["scenarioTags"] = list(selected[-1]["scenarioTags"]) + [
                 "v22_core_continuity_rank11"
             ]
+
+    original_selected = [deepcopy(row) for row in selected]
+    protected: set[str] = set(reserved)
+    protection_steps = []
+
+    three_attack = _three_attack_link_candidate(
+        prediction,
+        strong,
+        slit,
+        by_combo,
+        {row["combo"] for row in selected},
+    )
+    if three_attack is not None:
+        replaced = _replace_tail_ticket(
+            selected,
+            three_attack,
+            "three_attack_lane4_link_protected",
+            protected,
+        )
+        if replaced is not None:
+            protected.add(three_attack["combo"])
+            protection_steps.append({
+                "reason": "three_attack_lane4_link",
+                "addedCombo": three_attack["combo"],
+                "replacedCombo": replaced,
+                "attackLane": 3,
+                "attackCourse": entry_by_lane.get(3, 3),
+                "attackScenarioScore": None,
+            })
+
+    fallback_count = _player_course_fallback_count(prediction)
+    original_sab = prediction.get("sab")
+    effective_grade = "A" if original_sab == "S" and fallback_count >= 2 else original_sab
+    original_heads = {row["head"] for row in original_selected}
+    development_reason = "top10_heads_not_concentrated"
+    attack_lane = attack_course = None
+    attack_score = None
+    if len(original_heads) == 1:
+        if effective_grade == "S":
+            development_reason = "s_grade_concentration_kept"
+        else:
+            candidate, attack_lane, attack_course, attack_score, development_reason = (
+                _development_protection_candidate(prediction, entry_by_lane, by_combo)
+            )
+            if candidate is not None:
+                if candidate["combo"] in {row["combo"] for row in selected}:
+                    development_reason = "candidate_already_present"
+                else:
+                    replaced = _replace_tail_ticket(
+                        selected,
+                        candidate,
+                        "same_head_development_protected",
+                        protected,
+                    )
+                    if replaced is not None:
+                        protected.add(candidate["combo"])
+                        development_reason = "same_head_development"
+                        protection_steps.append({
+                            "reason": development_reason,
+                            "addedCombo": candidate["combo"],
+                            "replacedCombo": replaced,
+                            "attackLane": attack_lane,
+                            "attackCourse": attack_course,
+                            "attackScenarioScore": round(float(attack_score), 6),
+                        })
+
+    last_step = protection_steps[-1] if protection_steps else {}
+    reason = "+".join(step["reason"] for step in protection_steps) or development_reason
+    prediction.setdefault("diagnostics", {})["ticketProtection"] = {
+        "applied": bool(protection_steps),
+        "reason": reason,
+        "addedCombo": last_step.get("addedCombo"),
+        "replacedCombo": last_step.get("replacedCombo"),
+        "attackLane": last_step.get("attackLane", attack_lane),
+        "attackCourse": last_step.get("attackCourse", attack_course),
+        "attackScenarioScore": last_step.get("attackScenarioScore", attack_score),
+        "playerCourseFallbackCount": fallback_count,
+        "originalSab": original_sab,
+        "effectiveTicketGrade": effective_grade,
+        "oddsUsed": False,
+        "steps": protection_steps,
+    }
 
     role_names = ["本線"] * 6 + ["ズレ対応"] * 2 + ["荒れ対応"] * 2
     tickets = []
@@ -644,8 +877,9 @@ def apply_v23_to_payload(payload: dict[str, Any]) -> dict[str, Any]:
             final["diagnostics"]["slitAttackOverride"] = slit
             final["diagnostics"]["oddsUsedForPrediction"] = False
             final["diagnostics"]["actualEntryAppliedBeforeBase"] = True
-            _set_tickets(final, entry_by_lane, slit)
+            _classify_full_reflection(final)
             _set_sab(final, strong, slit)
+            _set_tickets(final, entry_by_lane, strong, slit)
             _refresh_readability(final)
             _refresh_probability_review(pre, final)
             final["predictionStage"] = {
@@ -662,8 +896,9 @@ def apply_v23_to_payload(payload: dict[str, Any]) -> dict[str, Any]:
             active["diagnostics"]["slitAttackOverride"] = {"active": False, "attackLane": None}
             active["diagnostics"]["oddsUsedForPrediction"] = False
             active["diagnostics"]["actualEntryAppliedBeforeBase"] = True
-            _set_tickets(active, entry_by_lane, {"active": False})
+            _classify_full_reflection(active)
             _set_sab(active, empty_override, {"active": False})
+            _set_tickets(active, entry_by_lane, empty_override, {"active": False})
             _refresh_readability(active)
 
         for prediction in (pre, final, active):

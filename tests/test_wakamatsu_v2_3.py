@@ -15,6 +15,9 @@ from apply_wakamatsu_v2_3 import apply_wakamatsu_v2_3
 from wakamatsu_v2_3_adjustments import (
     FRONT_THIRD_BY_COURSE,
     _actual_entry_map,
+    _classify_full_reflection,
+    _rank_tickets,
+    _set_tickets,
     _slit_attack,
     _strong_attack,
     classify_tide_zone,
@@ -25,6 +28,44 @@ from wakamatsu_v2_3_adjustments import (
 def load_day(day: str) -> dict:
     path = ROOT / "data" / "venues" / "wakamatsu" / f"{day.replace('-', '')}.json"
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def ticket_prediction(
+    grade: str = "A",
+    fallback_count: int = 0,
+    water_type: str = "通常型",
+    scenarios: dict | None = None,
+) -> dict:
+    base_audit = {}
+    for lane in range(1, 7):
+        player_course = (
+            {"available": False, "fallback": "course_prior"}
+            if lane > 6 - fallback_count
+            else {"available": True, "starts": 12}
+        )
+        base_audit[str(lane)] = {
+            finish: {"player_course": deepcopy(player_course)}
+            for finish in ("win", "second", "third")
+        }
+    return {
+        "win": {"1": 68.0, "2": 12.0, "3": 10.0, "4": 5.0, "5": 3.0, "6": 2.0},
+        "second": {"1": 24.0, "2": 23.0, "3": 20.0, "4": 14.0, "5": 11.0, "6": 8.0},
+        "third": {"1": 10.0, "2": 18.0, "3": 22.0, "4": 20.0, "5": 16.0, "6": 14.0},
+        "scenarios": scenarios or {},
+        "raceContext": {"water_type": water_type},
+        "sab": grade,
+        "tickets": [],
+        "diagnostics": {
+            "fullReflection": {
+                "status": "partial" if fallback_count else "complete",
+                "inputAudit": {
+                    "status": "partial" if fallback_count else "complete",
+                    "missingCritical": ["playerCourseDb"] if fallback_count else [],
+                },
+                "baseAudit": base_audit,
+            }
+        },
+    }
 
 
 class WakamatsuV23UnitTest(unittest.TestCase):
@@ -91,8 +132,90 @@ class WakamatsuV23UnitTest(unittest.TestCase):
                 self.assertIn("4-5-1", [ticket["combo"] for ticket in final["tickets"]])
                 self.assertNotEqual(final["sab"], "S")
 
+    def test_s_concentration_guard_uses_player_course_fallback_threshold(self):
+        entry = {lane: lane for lane in range(1, 7)}
+        scenarios = {"sashi_2": 0.16}
+        for fallback_count, expected_applied, expected_grade in (
+            (1, False, "S"),
+            (2, True, "A"),
+        ):
+            prediction = ticket_prediction("S", fallback_count, scenarios=scenarios)
+            baseline = [row["combo"] for row in _rank_tickets(prediction, entry)[:10]]
+            self.assertEqual({combo.split("-")[0] for combo in baseline}, {"1"})
+            _set_tickets(prediction, entry, {"active": False}, {"active": False})
+            tickets = [row["combo"] for row in prediction["tickets"]]
+            protection = prediction["diagnostics"]["ticketProtection"]
+            self.assertEqual(protection["applied"], expected_applied)
+            self.assertEqual(protection["effectiveTicketGrade"], expected_grade)
+            self.assertEqual(tickets[:6], baseline[:6])
+            self.assertEqual(len(tickets), 10)
+            self.assertEqual(len(set(tickets)), 10)
+            if expected_applied:
+                self.assertEqual(sum(a != b for a, b in zip(tickets, baseline)), 1)
+                self.assertIn(protection["replacedCombo"], baseline[8:10])
+            else:
+                self.assertEqual(tickets, baseline)
+
+    def test_weak_development_condition_keeps_a_and_b_tickets_unchanged(self):
+        entry = {lane: lane for lane in range(1, 7)}
+        for grade in ("A", "B"):
+            prediction = ticket_prediction(grade, scenarios={"sashi_2": 0.149999})
+            baseline = [row["combo"] for row in _rank_tickets(prediction, entry)[:10]]
+            _set_tickets(prediction, entry, {"active": False}, {"active": False})
+            self.assertEqual([row["combo"] for row in prediction["tickets"]], baseline)
+            self.assertFalse(prediction["diagnostics"]["ticketProtection"]["applied"])
+
+    def test_three_attack_protection_survives_later_development_protection(self):
+        entry = {lane: lane for lane in range(1, 7)}
+        prediction = ticket_prediction(
+            "A",
+            fallback_count=2,
+            water_type="3攻め型",
+            scenarios={
+                "sashi_2": 0.20,
+                "makuri_3": 0.08,
+                "makurizashi_3": 0.08,
+            },
+        )
+        baseline = [row["combo"] for row in _rank_tickets(prediction, entry)[:10]]
+        _set_tickets(prediction, entry, {"active": False}, {"active": False})
+        tickets = [row["combo"] for row in prediction["tickets"]]
+        protection = prediction["diagnostics"]["ticketProtection"]
+        three_attack_step = next(
+            step for step in protection["steps"] if step["reason"] == "three_attack_lane4_link"
+        )
+        self.assertIn(three_attack_step["addedCombo"], tickets)
+        self.assertEqual(tickets[:6], baseline[:6])
+        self.assertLessEqual(len(protection["steps"]), 2)
+        self.assertTrue(all(step["replacedCombo"] in baseline[8:10] for step in protection["steps"]))
+
+    def test_full_reflection_distinguishes_course_prior_fallback(self):
+        prediction = ticket_prediction("A", fallback_count=2)
+        _classify_full_reflection(prediction)
+        reflection = prediction["diagnostics"]["fullReflection"]
+        self.assertEqual(reflection["status"], "complete_with_fallback")
+        self.assertEqual(reflection["playerCourseStatus"]["fallbackCount"], 2)
+
+        prediction["diagnostics"]["fullReflection"]["inputAudit"]["missingCritical"].append("motor")
+        _classify_full_reflection(prediction)
+        self.assertEqual(prediction["diagnostics"]["fullReflection"]["status"], "partial")
+
 
 class WakamatsuV23ReplayTest(unittest.TestCase):
+    def test_saved_inputs_keep_probability_and_ticket_contracts(self):
+        for day in ("2026-09-22", "2026-09-23", "2026-09-24"):
+            replay = apply_wakamatsu_v2_3(load_day(day), day)
+            for race in replay["races"]:
+                final = race["predictionFinal"]
+                tickets = [row["combo"] for row in final["tickets"]]
+                self.assertEqual(final["engine"], "wakamatsu_engine_v2.3")
+                self.assertEqual(len(tickets), 10)
+                self.assertEqual(len(set(tickets)), 10)
+                self.assertIs(final["diagnostics"]["oddsUsedForPrediction"], False)
+                self.assertIs(final["diagnostics"]["ticketProtection"]["oddsUsed"], False)
+                for finish in ("win", "second", "third"):
+                    self.assertAlmostEqual(sum(final[finish].values()), 100.0, places=6)
+
     def test_20260923_saved_input_replay(self):
         day = load_day("2026-09-23")
         replay = apply_wakamatsu_v2_3(day, "2026-09-23")
