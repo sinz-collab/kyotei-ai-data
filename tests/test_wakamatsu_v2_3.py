@@ -14,6 +14,8 @@ sys.path.insert(0, str(AUTOMATION))
 from apply_wakamatsu_v2_3 import apply_wakamatsu_v2_3
 from wakamatsu_v2_3_adjustments import (
     FRONT_THIRD_BY_COURSE,
+    _apply_attack_link_corrections,
+    _apply_escape_overweakening_guard,
     _actual_entry_map,
     _classify_full_reflection,
     _rank_tickets,
@@ -69,6 +71,94 @@ def ticket_prediction(
 
 
 class WakamatsuV23UnitTest(unittest.TestCase):
+    @staticmethod
+    def probability_map(values):
+        return {str(lane): value for lane, value in enumerate(values, 1)}
+
+    @staticmethod
+    def ranked_race():
+        return {
+            "live": {
+                "exhibition": {"entries": [
+                    {"lane": lane, "start_rank": lane, "exhibition_rank": lane}
+                    for lane in range(1, 7)
+                ]},
+                "original": {"entries": [
+                    {"lane": lane, "sum": 44.0 + lane / 10.0}
+                    for lane in range(1, 7)
+                ]},
+            }
+        }
+
+    def test_escape_overweakening_guard_caps_at_four_points(self):
+        race = self.ranked_race()
+        prediction = {
+            "win": self.probability_map([42.0, 13.0, 17.0, 14.0, 8.0, 6.0]),
+            "diagnostics": {"escapeRateMultiAttack": {
+                "active": True,
+                "course1_win_delta": -0.08,
+                "attackers": [
+                    {"lane": 3, "share": 0.75},
+                    {"lane": 4, "share": 0.25},
+                ],
+            }},
+        }
+        audit = _apply_escape_overweakening_guard(
+            race, prediction, {"active": False}, {"active": False}
+        )
+        self.assertTrue(audit["active"])
+        self.assertEqual(
+            prediction["win"],
+            self.probability_map([46.0, 13.0, 14.0, 13.0, 8.0, 6.0]),
+        )
+        self.assertAlmostEqual(sum(prediction["win"].values()), 100.0)
+
+    def test_escape_guard_requires_every_condition(self):
+        race = self.ranked_race()
+        race["live"]["exhibition"]["entries"][0]["start_rank"] = 3
+        prediction = {
+            "win": self.probability_map([42.0, 13.0, 17.0, 14.0, 8.0, 6.0]),
+            "diagnostics": {"escapeRateMultiAttack": {
+                "active": True,
+                "course1_win_delta": -0.08,
+                "attackers": [{"lane": 3, "share": 1.0}],
+            }},
+        }
+        before = deepcopy(prediction["win"])
+        audit = _apply_escape_overweakening_guard(
+            race, prediction, {"active": False}, {"active": False}
+        )
+        self.assertFalse(audit["active"])
+        self.assertEqual(prediction["win"], before)
+
+    def test_course3_and_course4_attack_links_use_actual_courses(self):
+        race = self.ranked_race()
+        entry = {1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6}
+        prediction = {
+            "win": self.probability_map([45.0, 10.0, 16.0, 13.0, 9.0, 7.0]),
+            "second": self.probability_map([20.0, 18.0, 17.0, 16.0, 15.0, 14.0]),
+            "third": self.probability_map([13.0, 15.0, 17.0, 18.0, 19.0, 18.0]),
+            "scenarios": {
+                "makuri_3": 0.12, "makurizashi_3": 0.08,
+                "makuri_4": 0.10, "makurizashi_4": 0.08,
+            },
+            "raceContext": {"water_type": "3攻め型"},
+        }
+        audits = _apply_attack_link_corrections(
+            race,
+            prediction,
+            entry,
+            {"active": True, "candidates": [{"active": True, "course": 4}]},
+            {"active": False},
+        )
+        self.assertTrue(audits["course3"]["active"])
+        self.assertTrue(audits["course4"]["active"])
+        self.assertEqual(audits["course3"]["secondAddedPtByLane"], {"1": 1.5, "3": 1.0})
+        self.assertEqual(audits["course3"]["thirdAddedPtByLane"], {"4": 1.5, "5": 1.5, "6": 1.5})
+        self.assertEqual(audits["course4"]["thirdAddedPtByLane"], {"5": 1.5, "6": 1.5})
+        self.assertAlmostEqual(sum(prediction["second"].values()), 100.0)
+        self.assertAlmostEqual(sum(prediction["third"].values()), 100.0)
+
     def test_tide_phase_normalizes_english_and_japanese(self):
         for value in ("rising", "上げ潮", "上げ", "上昇"):
             self.assertEqual(normalize_tide_phase(value), "rising")
@@ -202,6 +292,18 @@ class WakamatsuV23UnitTest(unittest.TestCase):
 
 
 class WakamatsuV23ReplayTest(unittest.TestCase):
+    def test_20260926_races_1_to_11_contract(self):
+        replay = apply_wakamatsu_v2_3(load_day("2026-09-26"), "2026-09-26")
+        races = {int(race["race"]): race for race in replay["races"]}
+        for race_no in range(1, 12):
+            prediction = races[race_no].get("predictionFinal") or races[race_no]["prediction"]
+            tickets = [row["combo"] for row in prediction["tickets"]]
+            self.assertEqual(len(tickets), 10)
+            self.assertEqual(len(set(tickets)), 10)
+            self.assertIs(prediction["diagnostics"]["oddsUsedForPrediction"], False)
+            for finish in ("win", "second", "third"):
+                self.assertAlmostEqual(sum(prediction[finish].values()), 100.0, places=6)
+
     def test_saved_inputs_keep_probability_and_ticket_contracts(self):
         for day in ("2026-09-22", "2026-09-23", "2026-09-24"):
             replay = apply_wakamatsu_v2_3(load_day(day), day)

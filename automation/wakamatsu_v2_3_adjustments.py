@@ -369,6 +369,152 @@ def _slit_attack(
     }
 
 
+def _active_attack_course(override: dict[str, Any], course: int) -> bool:
+    if not override.get("active"):
+        return False
+    if int(override.get("attackCourse") or 0) == course:
+        return True
+    return any(
+        row.get("active") and int(row.get("course") or 0) == course
+        for row in override.get("candidates") or []
+    )
+
+
+def _apply_escape_overweakening_guard(
+    race: dict[str, Any],
+    prediction: dict[str, Any],
+    strong: dict[str, Any],
+    slit: dict[str, Any],
+) -> dict[str, Any]:
+    """Cap the escapeRateMultiAttack lane-1 win penalty at four points."""
+    escape = (prediction.get("diagnostics") or {}).get("escapeRateMultiAttack") or {}
+    exhibition = _ranked_entries(race, "exhibition")
+    original_ranks = _original_ranks(_ranked_entries(race, "original"))
+    course1_delta = float(_number(escape.get("course1_win_delta"), 0.0) or 0.0) * 100.0
+    checks = {
+        "escapeRateMultiAttackActive": bool(escape.get("active")),
+        "lane1PenaltyOver4pt": course1_delta < -4.0,
+        "lane1StartTop2": int((exhibition.get(1) or {}).get("start_rank") or 99) <= 2,
+        "lane1OriginalTop2": original_ranks.get(1, 99) <= 2,
+        "strongAttackInactive": not bool(strong.get("active")),
+        "slitAttackInactive": not bool(slit.get("active")),
+    }
+    audit: dict[str, Any] = {
+        "active": False,
+        "checks": checks,
+        "originalCourse1WinDeltaPt": round(course1_delta, 4),
+        "cappedCourse1WinDeltaPt": max(-4.0, round(course1_delta, 4)),
+    }
+    if not all(checks.values()):
+        return audit
+
+    attackers = [
+        row for row in escape.get("attackers") or []
+        if int(row.get("lane") or 0) in LANES and int(row.get("lane") or 0) != 1
+    ]
+    shares = [max(0.0, float(_number(row.get("share"), 0.0) or 0.0)) for row in attackers]
+    share_total = sum(shares)
+    if not attackers or share_total <= 0.0:
+        audit["reason"] = "attack_share_missing"
+        return audit
+
+    restored = -4.0 - course1_delta
+    win = {str(lane): float((prediction.get("win") or {}).get(str(lane), 0.0)) for lane in LANES}
+    win["1"] += restored
+    returned: dict[str, float] = {}
+    for attacker, share in zip(attackers, shares):
+        lane = str(int(attacker["lane"]))
+        amount = restored * share / share_total
+        win[lane] -= amount
+        returned[lane] = round(amount, 6)
+    prediction["win"] = _normalize_map(win)
+    audit.update({
+        "active": True,
+        "restoredToLane1Pt": round(restored, 6),
+        "returnedFromAttackersPt": returned,
+        "attackShareSource": "escapeRateMultiAttack.attackers[].share",
+        "normalized": True,
+    })
+    return audit
+
+
+def _apply_attack_link_corrections(
+    race: dict[str, Any],
+    prediction: dict[str, Any],
+    entry_by_lane: dict[int, int],
+    strong: dict[str, Any],
+    slit: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply the bounded course-3/course-4 second/third-place links."""
+    by_course = {course: lane for lane, course in entry_by_lane.items()}
+    original_ranks = _original_ranks(_ranked_entries(race, "original"))
+    scenarios = prediction.get("scenarios") or {}
+    water_type = str((prediction.get("raceContext") or {}).get("water_type") or "")
+    audits: dict[str, Any] = {}
+
+    definitions = {
+        3: {
+            "winThreshold": 15.0,
+            "scenarioThreshold": 0.20,
+            "waterType": "3攻め型",
+            "second": {1: 1.5, 3: 1.0},
+            "third": {4: 1.5, 5: 1.5, 6: 1.5},
+        },
+        4: {
+            "winThreshold": 12.0,
+            "scenarioThreshold": 0.18,
+            "waterType": "4浮上型",
+            "second": {1: 1.5, 4: 1.0},
+            "third": {5: 1.5, 6: 1.5},
+        },
+    }
+    for course, rule in definitions.items():
+        attack_lane = by_course.get(course)
+        scenario_share = float(scenarios.get(f"makuri_{course}", 0.0)) + float(
+            scenarios.get(f"makurizashi_{course}", 0.0)
+        )
+        support = {
+            "waterType": water_type == rule["waterType"],
+            "strongAttack": _active_attack_course(strong, course),
+            "slitAttack": _active_attack_course(slit, course),
+            "originalTop2": attack_lane is not None and original_ranks.get(attack_lane, 99) <= 2,
+        }
+        attack_win = float((prediction.get("win") or {}).get(str(attack_lane), 0.0)) if attack_lane else 0.0
+        checks = {
+            "actualCoursePresent": attack_lane is not None,
+            "winThreshold": attack_win >= rule["winThreshold"],
+            "scenarioThreshold": scenario_share >= rule["scenarioThreshold"],
+            "supportAny": any(support.values()),
+        }
+        audit = {
+            "active": False,
+            "attackLane": attack_lane,
+            "attackCourse": course,
+            "winPt": round(attack_win, 6),
+            "scenarioShare": round(scenario_share, 6),
+            "checks": checks,
+            "support": support,
+        }
+        if all(checks.values()):
+            for field in ("second", "third"):
+                values = {
+                    str(lane): float((prediction.get(field) or {}).get(str(lane), 0.0))
+                    for lane in LANES
+                }
+                applied: dict[str, float] = {}
+                for target_course, delta in rule[field].items():
+                    target_lane = by_course.get(target_course)
+                    if target_lane is not None:
+                        values[str(target_lane)] += delta
+                        applied[str(target_lane)] = delta
+                prediction[field] = _normalize_map(values)
+                audit[f"{field}AddedPtByLane"] = applied
+            audit["active"] = True
+            audit["normalized"] = True
+        audits[f"course{course}"] = audit
+    return audits
+
+
 def _combo_probability(combo: tuple[int, int, int], prediction: dict[str, Any]) -> float:
     a, b, c = combo
     win = {lane: float((prediction.get("win") or {}).get(str(lane), 0.0)) / 100.0 for lane in LANES}
@@ -875,6 +1021,12 @@ def apply_v23_to_payload(payload: dict[str, Any]) -> dict[str, Any]:
             slit = _slit_attack(race, final, entry_by_lane)
             final.setdefault("diagnostics", {})["strongAttackOverride"] = strong
             final["diagnostics"]["slitAttackOverride"] = slit
+            final["diagnostics"]["escapeOverweakeningGuard"] = _apply_escape_overweakening_guard(
+                race, final, strong, slit
+            )
+            final["diagnostics"]["attackLinkCorrections"] = _apply_attack_link_corrections(
+                race, final, entry_by_lane, strong, slit
+            )
             final["diagnostics"]["oddsUsedForPrediction"] = False
             final["diagnostics"]["actualEntryAppliedBeforeBase"] = True
             _classify_full_reflection(final)
