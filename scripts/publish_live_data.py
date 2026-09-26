@@ -18,6 +18,7 @@ from engines.tokoname_v1.tokoname_site_pipeline import validate_site_prediction
 
 
 TOKONAME = "tokoname"
+GIT_CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
 
 
 def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -55,24 +56,87 @@ def atomic_write_json(path: Path, payload: dict) -> None:
     temporary.replace(path)
 
 
-def validate_staged_json(repo_root: Path) -> list[str]:
+def staged_paths(repo_root: Path) -> list[str]:
     staged = run(
         ["git", "diff", "--cached", "--name-only", "--diff-filter=ACMR"],
         repo_root,
     )
     if staged.returncode:
-        return [f"staged_file_list_failed: {staged.stderr.strip()}"]
+        raise RuntimeError(f"staged_file_list_failed: {staged.stderr.strip()}")
+    return staged.stdout.splitlines()
 
+
+def invalid_staged_json(repo_root: Path) -> list[tuple[str, str]]:
     errors = []
-    for relative in staged.stdout.splitlines():
+    for relative in staged_paths(repo_root):
         if not relative.lower().endswith(".json"):
             continue
         path = repo_root / relative
         try:
-            json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
-            errors.append(f"{relative}: {exc}")
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            errors.append((relative, f"read_error: {exc}"))
+            continue
+
+        marker = next((value for value in GIT_CONFLICT_MARKERS if value in text), None)
+        if marker is not None:
+            errors.append((relative, f"git_conflict_marker: {marker}"))
+            continue
+        try:
+            json.loads(text)
+        except json.JSONDecodeError as exc:
+            errors.append((relative, f"json_parse_error: {exc}"))
     return errors
+
+
+def venue_from_publish_path(relative: str) -> str | None:
+    parts = Path(relative).parts
+    if len(parts) >= 3 and parts[:2] == ("data", "venues"):
+        return parts[2]
+    if len(parts) >= 4 and parts[:2] == ("data", "live"):
+        return parts[3]
+    return None
+
+
+def isolate_invalid_staged_json(repo_root: Path) -> list[str]:
+    invalid = invalid_staged_json(repo_root)
+    if not invalid:
+        return []
+
+    invalid_paths = {relative for relative, _reason in invalid}
+    invalid_venues = {
+        venue
+        for relative, _reason in invalid
+        if (venue := venue_from_publish_path(relative)) is not None
+    }
+    excluded = [
+        relative
+        for relative in staged_paths(repo_root)
+        if relative in invalid_paths
+        or venue_from_publish_path(relative) in invalid_venues
+    ]
+    if excluded:
+        restored = run(["git", "restore", "--staged", "--", *excluded], repo_root)
+        if restored.returncode:
+            raise RuntimeError(f"invalid_json_unstage_failed: {restored.stderr.strip()}")
+
+    messages = []
+    for relative, reason in invalid:
+        message = f"Skipping invalid JSON: {relative}: {reason}"
+        print(message, file=sys.stderr)
+        messages.append(message)
+    for venue in sorted(invalid_venues):
+        print(f"Skipping venue for this publish run: {venue}", file=sys.stderr)
+    return messages
+
+
+def validate_staged_json(repo_root: Path) -> list[str]:
+    try:
+        invalid = invalid_staged_json(repo_root)
+    except RuntimeError as exc:
+        return [str(exc)]
+
+    return [f"{relative}: {reason}" for relative, reason in invalid]
 
 
 def race_index(document: dict) -> dict[int, dict]:
@@ -305,11 +369,10 @@ def main() -> int:
             if staged.returncode:
                 print(staged.stderr)
                 return staged.returncode
-        json_errors = validate_staged_json(publish_repo)
-        if json_errors:
-            print("Refusing to commit invalid staged JSON:", file=sys.stderr)
-            for error in json_errors:
-                print(f"- {error}", file=sys.stderr)
+        try:
+            isolate_invalid_staged_json(publish_repo)
+        except RuntimeError as exc:
+            print(str(exc), file=sys.stderr)
             return 1
         if run(["git", "diff", "--cached", "--quiet"], publish_repo).returncode == 0:
             print("No publishable data changes.")
