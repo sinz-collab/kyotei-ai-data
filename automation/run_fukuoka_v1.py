@@ -394,6 +394,7 @@ def format_restored_prediction(
     current_prediction: dict,
     phase: str,
     documents: dict[str, dict] | None,
+    morning_prediction: dict | None = None,
 ) -> dict:
     restore_input = {
         "racers": deepcopy(race.get("racers") or []),
@@ -401,7 +402,7 @@ def format_restored_prediction(
     }
     if documents is not None:
         attach_live_domain(restore_input, documents)
-    restored = predict_restored(restore_input)
+    restored = predict_restored(restore_input, morning_prediction=morning_prediction)
     ticket_groups = {"本線": [], "ずらし": [], "穴": []}
     for ticket in restored["tickets"]:
         ticket_groups[ticket["role"]].append(
@@ -416,6 +417,7 @@ def format_restored_prediction(
     ana = ticket_groups["穴"]
     is_final = phase == "final"
     head_scenarios = deepcopy(restored.get("head_scenarios") or {})
+    p1_audit = deepcopy(restored.get("p1_audit") or {})
     stage = {
         "label": "本予想" if is_final else "仮予想",
         "badge": "本予想" if is_final else "仮予想",
@@ -469,6 +471,18 @@ def format_restored_prediction(
             "strong4": bool(head_scenarios.get("strong4")),
             "strong6": bool(head_scenarios.get("strong6")),
             "headScenarios": head_scenarios,
+            "weaknessScore": p1_audit.get("weakness_score"),
+            "staticWeakness": p1_audit.get("static_weakness"),
+            "liveWeakness": p1_audit.get("live_weakness"),
+            "attackPressure": p1_audit.get("attack_pressure"),
+            "baseCut": p1_audit.get("base_cut"),
+            "headScores": {
+                str(lane): score
+                for lane, score in (p1_audit.get("head_scores") or {}).items()
+            },
+            "headDominance": p1_audit.get("head_dominance"),
+            "takeoverActivated": bool(p1_audit.get("takeover")),
+            "takeoverLane": p1_audit.get("takeover_lane"),
             "oddsUsedForPrediction": False,
             "resultUsedForPrediction": False,
             "odds_used": False,
@@ -592,12 +606,6 @@ def apply_predictions(
                 continue
         race_input = build_engine_input(payload, race, documents)
         current_prediction = format_prediction(engine.predict(race_input), phase, race_input)
-        prediction = format_restored_prediction(
-            race,
-            current_prediction,
-            phase,
-            documents,
-        )
         if phase == "final" and not prediction_complete(race.get("predictionPre"), "preliminary"):
             pre_input = build_engine_input(payload, race)
             current_pre = format_prediction(engine.predict(pre_input), "preliminary", pre_input)
@@ -608,6 +616,16 @@ def apply_predictions(
                 "preliminary",
                 None,
             )
+        morning_prediction = (
+            race.get("predictionCurrentV1Pre") if phase == "final" else current_prediction
+        )
+        prediction = format_restored_prediction(
+            race,
+            current_prediction,
+            phase,
+            documents,
+            morning_prediction=morning_prediction,
+        )
         if phase == "final":
             current_pre = race.get("predictionCurrentV1Pre")
             if current_prediction_complete(current_pre, "preliminary"):
