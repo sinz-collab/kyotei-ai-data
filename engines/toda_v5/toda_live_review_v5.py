@@ -337,7 +337,19 @@ def apply_live_review(prediction, documents):
     prediction["confidence"] = round(clamp(47 + gap * 2 + (8 if sab == "S" else 3 if sab == "A" else 0), 40, 88))
     prediction["readability"] = {"axisLane": axis, "comment": f"主軸{axis}号艇／直前・合算・回り足・決まり手連動再計算後"}
     prediction["ai"] = build_tickets(prediction["win"], prediction["secondByHead"], prediction["thirdByHead"], scenarios, sab)
-    prediction["aiUpset"] = build_upset_tickets(prediction["win"], prediction["secondByHead"], prediction["thirdByHead"], scenarios)
+    ticket_combos = {row["combo"] for row in prediction["ai"]}
+    ticket_heads = {int(combo.split("-")[0]) for combo in ticket_combos}
+    prediction["aiUpset"] = build_upset_tickets(
+        prediction["win"],
+        prediction["secondByHead"],
+        prediction["thirdByHead"],
+        scenarios,
+        exclude_combos=ticket_combos,
+        exclude_heads=ticket_heads,
+        limit=2,
+        role="AI荒れ",
+        scenario_only=True,
+    )
     prediction["tickets"] = [x["combo"] for x in prediction["ai"]]
 
     prediction["probabilityReview"] = {}

@@ -120,21 +120,24 @@ def _all_combos_for_head(head, win, second_by_head, third_by_head, scenarios):
     return rows
 
 
-def _drift_second(head, second_by_head, public_second, public_third):
+def _drift_second(head, second_by_head, public_second, public_third, excluded=None):
+    excluded = set(excluded or [])
     ranked = sorted(
         [lane for lane in LANES if lane != head],
         key=lambda lane: num(second_by_head[str(head)][str(lane)]),
         reverse=True,
     )
-    if len(ranked) < 3:
-        return None
     best = num(second_by_head[str(head)][str(ranked[0])])
-    candidates = ranked[2:4]
     candidates = [
-        lane for lane in candidates
-        if num(second_by_head[str(head)][str(lane)]) >= best * .32
-        or num(public_second[str(lane)]) + num(public_third[str(lane)]) >= 22
+        lane for lane in ranked
+        if lane not in excluded
+        and (
+            num(second_by_head[str(head)][str(lane)]) >= best * .32
+            or num(public_second[str(lane)]) + num(public_third[str(lane)]) >= 22
+        )
     ]
+    if not candidates:
+        candidates = [lane for lane in ranked if lane not in excluded]
     if not candidates:
         return None
     return max(
@@ -147,24 +150,105 @@ def _drift_second(head, second_by_head, public_second, public_third):
     )
 
 
+def _drift_third(head, core_rows, selected_combos, win, second_by_head, third_by_head, public_second, public_third):
+    seen_pairs = set()
+    for _, second, _, _ in core_rows:
+        pair = (head, second)
+        if pair in seen_pairs:
+            continue
+        seen_pairs.add(pair)
+        candidates = []
+        conditional = conditional_third(head, second, third_by_head)
+        available = [lane for lane in LANES if lane not in (head, second)]
+        best = max(num(conditional[str(lane)]) for lane in available)
+        for lane in available:
+            combo = f"{head}-{second}-{lane}"
+            if combo in selected_combos:
+                continue
+            conditional_value = num(conditional[str(lane)])
+            public_sum = num(public_second[str(lane)]) + num(public_third[str(lane)])
+            if conditional_value < best * .28 and num(public_third[str(lane)]) < 8 and public_sum < 18:
+                continue
+            score = conditional_value + .40 * num(public_third[str(lane)]) + .15 * num(public_second[str(lane)])
+            candidates.append((score, combo))
+        if candidates:
+            return max(candidates)[1]
+    return None
+
+
+def _scenario_head_priority(head, main_head, win, scenarios):
+    rows = [row for row in scenarios or [] if int(row.get("head", 0)) == head]
+    weight = max([num(row.get("weight"), 0) for row in rows] or [0])
+    score = num(win[str(head)]) / 100.0 + weight
+    if main_head != 1 and head == 1 and any(row.get("id") == "CURRENT_FORM_INSIDE_RESISTANCE" for row in rows):
+        score += 10
+    if main_head == 1 and head != 1 and rows:
+        score += 5 + max(num(row.get("attackEstablishment"), row.get("weight", 0)) for row in rows)
+    if any(row.get("attackChain") for row in rows):
+        score += 3
+    return score
+
+
+def build_upset_tickets(
+    win,
+    second_by_head,
+    third_by_head,
+    scenarios,
+    exclude_combos=None,
+    exclude_heads=None,
+    limit=2,
+    role="シナリオ穴",
+    scenario_only=False,
+):
+    excluded_combos = set(exclude_combos or [])
+    excluded_heads = {int(head) for head in (exclude_heads or [])}
+    main_head = max(LANES, key=lambda lane: num(win[str(lane)]))
+    scenario_heads = {int(row["head"]) for row in scenarios or []}
+    heads = [
+        lane for lane in LANES
+        if lane != main_head
+        and lane not in excluded_heads
+        and (not scenario_only or lane in scenario_heads)
+    ]
+    heads.sort(
+        key=lambda lane: _scenario_head_priority(lane, main_head, win, scenarios),
+        reverse=True,
+    )
+    out = []
+    seen = set(excluded_combos)
+    for head in heads:
+        rows = _all_combos_for_head(head, win, second_by_head, third_by_head, scenarios)
+        for _, _, _, combo in rows:
+            if combo in seen:
+                continue
+            seen.add(combo)
+            out.append({
+                "combo": combo,
+                "role": role,
+                "prob": combo_prob(combo, win, second_by_head, third_by_head),
+                "odds": "-",
+                "scenarioHead": head,
+            })
+            if len(out) >= limit:
+                return out
+    return out
+
+
 def build_tickets(win, second_by_head, third_by_head, scenarios, sab):
     public_second = marginal_second(win, second_by_head)
     public_third = marginal_third(win, second_by_head, third_by_head)
-    heads = _candidate_heads(win, sab)
-    limit = 6 if sab == "S" else 9 if sab == "A" else 10
+    main_head = max(LANES, key=lambda lane: num(win[str(lane)]))
+    ranked_main = _all_combos_for_head(main_head, win, second_by_head, third_by_head, scenarios)
     ranked_all = []
-    by_head = {}
-    for head in heads:
-        rows = _all_combos_for_head(head, win, second_by_head, third_by_head, scenarios)
-        by_head[head] = rows
-        ranked_all.extend(rows)
+    for head in LANES:
+        ranked_all.extend(_all_combos_for_head(head, win, second_by_head, third_by_head, scenarios))
     ranked_all.sort(reverse=True)
 
     selected = []
     seen = set()
 
     def add(combo, role):
-        if combo in seen or len(selected) >= limit:
+        if combo in seen or len(selected) >= 10:
             return
         seen.add(combo)
         selected.append({
@@ -174,52 +258,39 @@ def build_tickets(win, second_by_head, third_by_head, scenarios, sab):
             "odds": "-",
         })
 
-    # Core conditional-probability tickets.
-    core_target = max(4, limit - 2)
-    for prob, second, third, combo in ranked_all:
-        add(combo, "本線" if len(selected) < 3 else "展開保険")
-        if len(selected) >= core_target:
-            break
+    # Six core tickets ranked by exact conditional trifecta probability.
+    core_rows = ranked_all[:6]
+    for _, _, _, combo in core_rows:
+        add(combo, "本線")
 
-    # Clear-axis races keep one extra 2nd-place drift boat instead of filling all
-    # tickets with only the two strongest seconds. This is the 8/14 7R lesson,
-    # implemented structurally rather than fitting that result.
-    axis = max(LANES, key=lambda lane: num(win[str(lane)]))
-    if num(win[str(axis)]) >= 40:
-        drift = _drift_second(axis, second_by_head, public_second, public_third)
-        if drift is not None:
-            third = conditional_third(axis, drift, third_by_head)
-            thirds = sorted(
-                [lane for lane in LANES if lane not in (axis, drift)],
-                key=lambda lane: num(third[str(lane)]),
-                reverse=True,
-            )[:2]
-            for lane in thirds:
-                add(f"{axis}-{drift}-{lane}", "2着ズレ")
+    main_core_rows = [row for row in core_rows if int(row[3].split("-")[0]) == main_head]
+    used_seconds = {second for _, second, _, _ in main_core_rows}
+    drift_second = _drift_second(main_head, second_by_head, public_second, public_third, used_seconds)
+    if drift_second is not None:
+        third = conditional_third(main_head, drift_second, third_by_head)
+        drift_third = max(
+            [lane for lane in LANES if lane not in (main_head, drift_second)],
+            key=lambda lane: num(third[str(lane)]),
+        )
+        add(f"{main_head}-{drift_second}-{drift_third}", "2着ズレ")
+    if len(selected) < 7:
+        fallback = next(combo for _, _, _, combo in ranked_main if combo not in seen)
+        add(fallback, "2着ズレ")
 
-    # Fill any remaining slots by exact conditional trifecta probability.
-    for prob, second, third, combo in ranked_all:
-        add(combo, "展開保険")
-        if len(selected) >= limit:
-            break
+    drift_third = _drift_third(
+        main_head, main_core_rows, seen, win, second_by_head, third_by_head, public_second, public_third
+    )
+    if drift_third is None:
+        drift_third = next(combo for _, _, _, combo in ranked_main if combo not in seen)
+    add(drift_third, "3着ズレ")
 
-    return selected[:limit]
-
-
-def build_upset_tickets(win, second_by_head, third_by_head, scenarios):
-    heads = sorted([x for x in LANES if x != 1], key=lambda x: num(win[str(x)]), reverse=True)[:2]
-    out = []
-    seen = set()
-    for head in heads:
-        rows = _all_combos_for_head(head, win, second_by_head, third_by_head, scenarios)
-        for _, _, _, combo in rows[:4]:
-            if combo in seen:
-                continue
-            seen.add(combo)
-            out.append({
-                "combo": combo,
-                "role": "荒れ対応",
-                "prob": combo_prob(combo, win, second_by_head, third_by_head),
-                "odds": "-",
-            })
-    return out[:8]
+    selected.extend(build_upset_tickets(
+        win,
+        second_by_head,
+        third_by_head,
+        scenarios,
+        exclude_combos=seen,
+        limit=2,
+        role="シナリオ穴",
+    ))
+    return selected[:10]

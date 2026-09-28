@@ -132,6 +132,54 @@ def _sustained_poor_current_form(racer):
     }
 
 
+def current_form_inside_resistance(racer):
+    """Return relative lane-1 resistance from pre-race meet form only."""
+    runs = list(racer.get("season_runs") or [])[-3:]
+    audit = {
+        "availableRuns": len(runs),
+        "finishes": [],
+        "averageFinish": None,
+        "averageST": None,
+        "escapeRate": _rate(racer, "boaters_escape_rate"),
+        "motorTrend": str((racer.get("motor_recent") or {}).get("trend") or ""),
+        "strength": 0.0,
+        "applied": False,
+    }
+    if len(runs) < 3:
+        return audit
+
+    finishes = [int(num(run.get("finish"), 0)) for run in runs]
+    starts = [num(run.get("st"), 9) for run in runs]
+    valid_starts = [value for value in starts if 0 <= value < 1]
+    audit["finishes"] = finishes
+    audit["averageFinish"] = sum(finishes) / len(finishes)
+    audit["averageST"] = sum(valid_starts) / len(valid_starts) if valid_starts else None
+
+    stable_top3 = all(1 <= finish <= 3 for finish in finishes)
+    st_not_poor = bool(valid_starts) and audit["averageST"] <= .20 and max(valid_starts) <= .24
+    if not stable_top3 or not st_not_poor:
+        return audit
+
+    finish_strength = clamp((3.0 - audit["averageFinish"]) / 2.0, 0, 1)
+    st_strength = clamp((.20 - audit["averageST"]) / .10, 0, 1)
+    escape_strength = clamp(
+        (audit["escapeRate"] - TODA_LANE1_ESCAPE_BASELINE) / TODA_LANE1_ESCAPE_BASELINE,
+        0,
+        1,
+    )
+    trend_strength = {"up": 1.0, "flat": .5}.get(audit["motorTrend"], 0.0)
+    audit["strength"] = clamp(
+        .55 * finish_strength
+        + .25 * st_strength
+        + .15 * escape_strength
+        + .05 * trend_strength,
+        0,
+        1,
+    )
+    audit["applied"] = audit["strength"] > 0
+    return audit
+
+
 def _apply_attack_competition(attack_scenarios, by):
     """Order competing 2-4 course attacks without changing boat ability."""
     scenarios_by_head = {int(row["head"]): row for row in attack_scenarios}
@@ -218,8 +266,25 @@ def detect_scenarios(racers, profiles, base_scores, context):
     one_rel = clamp(escape_rel - auxiliary_weakness, -.65, .65)
     one_weak = weak_strength >= .35
 
-    if not one_weak or base_scores["1"] >= max(base_scores[str(i)] for i in (2, 3, 4)) - .25:
-        s.append({"id": "IN_ESCAPE", "label": "1逃げ", "head": 1, "weight": clamp(.86 + one_rel * .22, .35, 1.28), "links": [2, 3, 4, 5, 6], "kimarite": inside})
+    inside_resistance = current_form_inside_resistance(one)
+    regular_inside = not one_weak or base_scores["1"] >= max(base_scores[str(i)] for i in (2, 3, 4)) - .25
+    if regular_inside or inside_resistance["applied"]:
+        weight = clamp(.86 + one_rel * .22, .35, 1.28) if regular_inside else .35
+        if inside_resistance["applied"]:
+            resistance_weight = .48 + inside_resistance["strength"] * .52
+            weight = max(weight, resistance_weight) + inside_resistance["strength"] * .12
+        row = {
+            "id": "CURRENT_FORM_INSIDE_RESISTANCE" if inside_resistance["applied"] else "IN_ESCAPE",
+            "label": "節間好調イン耐性" if inside_resistance["applied"] else "1逃げ",
+            "head": 1,
+            "weight": clamp(weight, .35, 1.28),
+            "links": [2, 3, 4, 5, 6],
+            "kimarite": inside,
+        }
+        if inside_resistance["applied"]:
+            row["insideResistance"] = inside_resistance
+            row["baseScenarioId"] = "IN_ESCAPE" if regular_inside else None
+        s.append(row)
 
     attack_scenarios = []
     for lane in (2, 3, 4):

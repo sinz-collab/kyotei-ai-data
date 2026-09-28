@@ -182,7 +182,19 @@ class TodaPredictionEngineV5:
         third = marginal_third(win, second_by_head, third_by_head)
         sab, axis, gap = judge_sab(win, scenarios, second_by_head, third_by_head)
         tickets = build_tickets(win, second_by_head, third_by_head, scenarios, sab)
-        upset = build_upset_tickets(win, second_by_head, third_by_head, scenarios)
+        ticket_combos = {row["combo"] for row in tickets}
+        ticket_heads = {int(combo.split("-")[0]) for combo in ticket_combos}
+        upset = build_upset_tickets(
+            win,
+            second_by_head,
+            third_by_head,
+            scenarios,
+            exclude_combos=ticket_combos,
+            exclude_heads=ticket_heads,
+            limit=2,
+            role="AI荒れ",
+            scenario_only=True,
+        )
         upset_index = round(clamp(100 - win["1"] + (12 if one_weak else 0), 5, 95), 1)
         tide_profile = self.master.tide_profile(context.get("tide_type"))
         source_summary = {
