@@ -242,15 +242,23 @@ def _live_scenarios(base_scenarios, racers, profiles, base_scores, context, meta
     if 1 in by_head:
         by_head[1]["weight"] = clamp(by_head[1]["weight"] - collapse * .42 + meta["1"]["defenseScore"] * .15, .20, 1.35)
     chain = max(meta[str(lane)]["headScore"] + .35 * meta[str(lane)].get("matchupScore", 0) for lane in (2, 3, 4))
+    two_first_attack = bool(
+        ((by_head.get(2) or {}).get("attackCompetition") or {}).get("firstAttackEstablished")
+    )
     for lane in (2, 3, 4, 5, 6):
         k = str(lane)
         score = meta[k]["headScore"] + .35 * meta[k].get("matchupScore", 0)
         if lane in (5, 6) and chain < .42:
             score = 0
-        if score >= .42 and lane not in by_head:
+        # A live-only 3/4 head is not promoted through an already established
+        # two-course first attack. Live display data remains a small modifier to
+        # pre-existing scenarios, rather than creating a competing head by itself.
+        live_outer_competes_with_two = lane in (3, 4) and two_first_attack
+        if score >= .42 and lane not in by_head and not live_outer_competes_with_two:
             by_head[lane] = {"id": f"LIVE_ATTACK_{lane}", "label": f"{lane}直前攻め", "head": lane, "weight": clamp(.42 + score * .60, .45, 1.00), "links": [x for x in LANES if x != lane]}
         if lane in by_head:
-            by_head[lane]["weight"] = clamp(num(by_head[lane].get("weight"), .4) + score * .30, .20, 1.00)
+            max_weight = max(1.00, num(by_head[lane].get("attackEstablishmentMultiplier"), 1.0))
+            by_head[lane]["weight"] = clamp(num(by_head[lane].get("weight"), .4) + score * .30, .20, max_weight)
             by_head[lane]["liveAttack"] = meta[k]
             by_head[lane]["attackEstablishment"] = clamp(by_head[lane]["weight"], 0, 1)
             by_head[lane]["kimariteMatchup"] = num(meta[k].get("matchupScore"), 0)
@@ -355,5 +363,5 @@ def apply_live_review(prediction, documents):
     prediction["probabilityReviewStatus"] = "reviewed"
     prediction.setdefault("probabilityFlow", {}).update({"realtimeApplied": True, "reviewed": True, "reviewLabel": "確率補正・合算/回り足・決まり手マッチアップ・相手連動・SAB・買い目再計算済み"})
     prediction["predictionStage"] = {"label": "本予想", "statusText": "戸田v6：実進入・展示・合算・回り足・直線・決まり手・攻め連動再計算済み", "badge": "本予想", "color": "green"}
-    prediction["liveReviewMeta"] = {"oddsUsedForProbability": False, "oddsRequiredForReview": False, "exhibitionStartUsedAlone": False, "originalExhibitionApplied": bool(original), "sumAndDifferenceApplied": bool(original), "turnApplied": bool(original), "straightApplied": bool(original), "kimariteMatchupApplied": bool(meta), "insideBreakdownApplied": False, "scenarioMixAppliedOnce": True, "entryComparedDirectly": True, "entryChangedDetected": bool(entry_changed), "ticketsRegenerated": True, "headConditionalsRegenerated": True, "publicSecondThirdMarginalized": True}
+    prediction["liveReviewMeta"] = {"oddsUsedForProbability": False, "oddsUsedForTickets": False, "oddsRequiredForReview": False, "exhibitionStartUsedAlone": False, "originalExhibitionApplied": bool(original), "sumAndDifferenceApplied": bool(original), "turnApplied": bool(original), "straightApplied": bool(original), "kimariteMatchupApplied": bool(meta), "insideBreakdownApplied": False, "scenarioMixAppliedOnce": True, "entryComparedDirectly": True, "entryChangedDetected": bool(entry_changed), "ticketsRegenerated": True, "headConditionalsRegenerated": True, "publicSecondThirdMarginalized": True}
     return True

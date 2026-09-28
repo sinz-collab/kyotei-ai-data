@@ -81,6 +81,7 @@ def apply_toda_live_review(payload: dict, target_date: str, race_no: int, live_r
     pe = payload.setdefault("predictionEngine", {})
     pe["id"] = ENGINE_ID
     pe["oddsUsedForProbability"] = False
+    pe["oddsUsedForTickets"] = False
     pe["publicSecondThirdMarginalized"] = True
     pe["conditionalTicketChain"] = True
     sync_race_prediction(payload, race_no, prediction, ENGINE_ID)

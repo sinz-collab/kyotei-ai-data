@@ -84,6 +84,7 @@ def apply_toda_v5(payload: dict, target_date: str) -> dict:
         "master": "Toda_AI_MASTER_v3_1_COMPLETE_ONE_FILE",
         "generatedBy": "automation/apply_toda_v5.py",
         "oddsUsedForProbability": False,
+        "oddsUsedForTickets": False,
         "exhibitionStartUsedAlone": False,
         "publicSecondThirdMarginalized": True,
         "conditionalTicketChain": True,

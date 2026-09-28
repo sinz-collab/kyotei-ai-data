@@ -4,6 +4,8 @@ from toda_utils_v5 import LANES, num, clamp, normalize_map
 TODA_LANE1_ESCAPE_BASELINE = 44.813005666705216
 SCENARIO_MAX_SHARE = .15
 STRONG_ATTACK_SCENARIO_MAX_SHARE = .20
+TWO_COURSE_FIRST_ATTACK_MULTIPLIER = 1.18
+CURRENT_FORM_COMPETITION_MULTIPLIER = .72
 
 
 def _st(r, profile):
@@ -116,6 +118,64 @@ def _attack_evidence(lane, racer, profile, attack, weak_strength):
     return {"signals": signals, "evidenceCount": evidence_count, "headEligible": head_eligible, "contradictions": contradictions}
 
 
+def _sustained_poor_current_form(racer):
+    """Only consecutive multi-run deterioration qualifies as poor current form."""
+    runs = list(racer.get("season_runs") or [])[-2:]
+    if len(runs) < 2:
+        return False, {"availableRuns": len(runs), "finishes": [], "sustainedPoor": False}
+    finishes = [int(num(run.get("finish"), 0)) for run in runs]
+    sustained_poor = all(finish >= 5 for finish in finishes)
+    return sustained_poor, {
+        "availableRuns": len(runs),
+        "finishes": finishes,
+        "sustainedPoor": sustained_poor,
+    }
+
+
+def _apply_attack_competition(attack_scenarios, by):
+    """Order competing 2-4 course attacks without changing boat ability."""
+    scenarios_by_head = {int(row["head"]): row for row in attack_scenarios}
+    two = scenarios_by_head.get(2)
+    outer = [scenarios_by_head[lane] for lane in (3, 4) if lane in scenarios_by_head]
+    if not two or not outer:
+        return
+
+    evidence = two.get("evidence") or {}
+    signals = evidence.get("signals") or {}
+    first_attack = (
+        int(evidence.get("evidenceCount") or 0) >= 4
+        and bool(signals.get("st"))
+        and bool(signals.get("kimarite") or signals.get("courseWin"))
+    )
+    if not first_attack:
+        return
+
+    two["attackCompetition"] = {
+        "role": "inner_first_attack",
+        "competingHeads": [int(row["head"]) for row in outer],
+        "firstAttackEstablished": True,
+    }
+    two["attackEstablishmentMultiplier"] = TWO_COURSE_FIRST_ATTACK_MULTIPLIER
+    two["weight"] *= TWO_COURSE_FIRST_ATTACK_MULTIPLIER
+
+    for row in outer:
+        lane = int(row["head"])
+        poor, form = _sustained_poor_current_form(by[lane])
+        row["currentForm"] = form
+        row["attackCompetition"] = {
+            "role": "outer_competing_attack",
+            "innerFirstAttackHead": 2,
+            "firstAttackEstablished": True,
+        }
+        if poor:
+            row["attackEstablishmentMultiplier"] = CURRENT_FORM_COMPETITION_MULTIPLIER
+            row["weight"] *= CURRENT_FORM_COMPETITION_MULTIPLIER
+            row["currentFormCompetitionApplied"] = True
+        else:
+            row["attackEstablishmentMultiplier"] = 1.0
+            row["currentFormCompetitionApplied"] = False
+
+
 def _water_scenario_modifier(head, context):
     """Water modifies scenario establishment, never a standalone lane probability."""
     wind = num(context.get("wind_speed"), 0)
@@ -193,6 +253,8 @@ def detect_scenarios(racers, profiles, base_scores, context):
             s.append(row)
             attack_scenarios.append(row)
 
+    _apply_attack_competition(attack_scenarios, by)
+
     # 5/6 head is gated by an established inner attack chain. A weak lane1 alone
     # never promotes an outside winner. No hard cap is applied once the chain and
     # the outside boat's own course/kimarite evidence are both strong.
@@ -215,7 +277,10 @@ def detect_scenarios(racers, profiles, base_scores, context):
             })
 
     for x in s:
-        max_weight = 1.35 if int(x["head"]) == 1 else 1.00
+        if int(x["head"]) == 1:
+            max_weight = 1.35
+        else:
+            max_weight = max(1.00, num(x.get("attackEstablishmentMultiplier"), 1.0))
         x["weight"] = clamp(x["weight"] + _water_scenario_modifier(int(x["head"]), context), .20, max_weight)
         if int(x["head"]) != 1:
             x["attackEstablishment"] = clamp(x["weight"], 0, 1)
@@ -234,6 +299,15 @@ def apply_scenario_mix(base_probabilities, scenarios, consensus_lane=None):
     )
     max_share = STRONG_ATTACK_SCENARIO_MAX_SHARE if strong_attack else SCENARIO_MAX_SHARE
     total_weight = sum(num(x.get("weight"), 0) for x in rows)
+    establishment_multipliers = {str(lane): 1.0 for lane in LANES}
+    for row in attacks:
+        head = str(int(row["head"]))
+        establishment_multipliers[head] *= num(row.get("attackEstablishmentMultiplier"), 1.0)
+    scenario_base_probabilities = normalize_map({
+        str(lane): num(base_probabilities.get(str(lane)), 0)
+        * establishment_multipliers[str(lane)]
+        for lane in LANES
+    })
     head_shares = {str(lane): 0.0 for lane in LANES}
     suppressed = []
     for row in rows:
@@ -264,36 +338,22 @@ def apply_scenario_mix(base_probabilities, scenarios, consensus_lane=None):
         scaled = {k: v * scale for k, v in head_shares.items()}
         applied = sum(scaled.values())
         values = {
-            str(lane): num(base_probabilities.get(str(lane)), 0) * (1 - applied)
+            str(lane): num(scenario_base_probabilities.get(str(lane)), 0) * (1 - applied)
             + scaled[str(lane)] * 100
             for lane in LANES
         }
         return normalize_map(values), scaled, applied
 
-    base_normalized = normalize_map(base_probabilities)
+    base_normalized = scenario_base_probabilities
     base_top = max(base_normalized, key=base_normalized.get)
     mixed_full, _, _ = mix_with_scale(1.0)
     scenario_top = max(mixed_full, key=mixed_full.get)
     flip_attempted = scenario_top != base_top
     flip_margin = mixed_full[scenario_top] - mixed_full[base_top] if flip_attempted else 0.0
-    new_top_rows = [x for x in rows if str(int(x["head"])) == scenario_top]
-    strong_new_top = any(
-        num(x.get("attackEstablishment"), 0) >= .85
-        and num(x.get("kimariteMatchup"), 0) >= .60
-        for x in new_top_rows
-    )
-    flip_allowed = flip_attempted and strong_new_top and flip_margin >= 2.0
+    # A relative scenario may change the leader. Do not impose a TOP1 cap or a
+    # confidence/over-trust guard after the scenario evidence has established.
+    flip_allowed = flip_attempted
     flip_scale = 1.0
-    if flip_attempted and not flip_allowed:
-        low, high = 0.0, 1.0
-        for _ in range(50):
-            middle = (low + high) / 2
-            candidate, _, _ = mix_with_scale(middle)
-            if max(candidate, key=candidate.get) == base_top:
-                low = middle
-            else:
-                high = middle
-        flip_scale = low
 
     mixed, final_head_shares, applied_share = mix_with_scale(flip_scale)
     for row in rows:
@@ -309,6 +369,8 @@ def apply_scenario_mix(base_probabilities, scenarios, consensus_lane=None):
         "consensusLane": int(consensus_lane) if consensus_lane is not None else None,
         "guardSuppressedLanes": sorted(set(suppressed)),
         "headShares": final_head_shares,
+        "attackEstablishmentMultipliers": establishment_multipliers,
+        "scenarioAdjustedBase": scenario_base_probabilities,
         "correctionPoints": correction,
         "baseTop": int(base_top),
         "scenarioTopBeforeFlipGuard": int(scenario_top),

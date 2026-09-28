@@ -31,7 +31,7 @@ class Toda20260918GuardTests(unittest.TestCase):
         self.assertAlmostEqual(strong_audit["maxShare"], .20)
         self.assertAlmostEqual(strong_audit["appliedShare"], .20)
 
-    def test_all_attack_weights_stay_at_or_below_one(self):
+    def test_attack_weights_use_only_the_fixed_first_attack_strength(self):
         racers = [
             {
                 "lane": lane,
@@ -57,7 +57,7 @@ class Toda20260918GuardTests(unittest.TestCase):
         )
         attack_weights = [row["weight"] for row in scenarios if row["head"] != 1]
         self.assertTrue(attack_weights)
-        self.assertLessEqual(max(attack_weights), 1.0)
+        self.assertLessEqual(max(attack_weights), 1.18)
 
     def test_base_live_consensus_guard_boundaries(self):
         base = {str(lane): 100 / 6 for lane in range(1, 7)}
@@ -74,26 +74,26 @@ class Toda20260918GuardTests(unittest.TestCase):
             self.assertAlmostEqual(scenario[0]["scenarioGuardSuppressionRate"], expected)
             self.assertTrue(scenario[0]["scenarioGuardSuppressed"])
 
-    def test_top_flip_allowed_only_for_strong_scenario_with_two_point_margin(self):
+    def test_relative_scenario_can_change_top_without_probability_cap(self):
         base = {"1": 40, "2": 38, "3": 8, "4": 6, "5": 5, "6": 3}
         scenario = [{"head": 2, "weight": 1.0, "attackEstablishment": .90, "kimariteMatchup": .65}]
         result, audit = apply_scenario_mix(base, scenario)
         self.assertTrue(audit["topFlipAttempted"])
         self.assertTrue(audit["topFlipAllowed"])
         self.assertEqual(audit["finalTop"], 2)
-        self.assertGreaterEqual(result["2"] - result["1"], 2.0)
+        self.assertGreater(result["2"], result["1"])
 
-    def test_weak_scenario_cannot_flip_top_and_is_normalized(self):
+    def test_relative_scenario_flip_is_normalized(self):
         base = {"1": 40, "2": 39, "3": 8, "4": 6, "5": 4, "6": 3}
         scenario = [{"head": 2, "weight": 1.0, "attackEstablishment": .84, "kimariteMatchup": .59}]
         result, audit = apply_scenario_mix(base, scenario)
         self.assertTrue(audit["topFlipAttempted"])
-        self.assertFalse(audit["topFlipAllowed"])
-        self.assertEqual(audit["finalTop"], 1)
-        self.assertLess(audit["topFlipScale"], 1.0)
+        self.assertTrue(audit["topFlipAllowed"])
+        self.assertEqual(audit["finalTop"], 2)
+        self.assertEqual(audit["topFlipScale"], 1.0)
         self.assertAlmostEqual(sum(result.values()), 100.0)
 
-    def test_strong_scenario_below_two_point_margin_cannot_flip_top(self):
+    def test_scenario_flip_has_no_two_point_minimum(self):
         base = {"1": 50, "2": 49.9, "3": .025, "4": .025, "5": .025, "6": .025}
         scenarios = [
             {"head": 2, "weight": .1, "attackEstablishment": .90, "kimariteMatchup": .65},
@@ -104,9 +104,9 @@ class Toda20260918GuardTests(unittest.TestCase):
         ]
         result, audit = apply_scenario_mix(base, scenarios)
         self.assertTrue(audit["topFlipAttempted"])
-        self.assertFalse(audit["topFlipAllowed"])
+        self.assertTrue(audit["topFlipAllowed"])
         self.assertLess(audit["topFlipMarginBeforeGuard"], 2.0)
-        self.assertEqual(audit["finalTop"], 1)
+        self.assertEqual(audit["finalTop"], 2)
         self.assertAlmostEqual(sum(result.values()), 100.0)
 
 

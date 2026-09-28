@@ -191,6 +191,7 @@ class TodaPredictionEngineV5:
             "player_course_missing": sum(1 for x in source_status.values() if x["player_course"] == "missing"),
             "tide_summary": "reflected" if tide_profile else "missing",
             "odds_used_for_probability": False,
+            "odds_used_for_tickets": False,
             "exhibition_st_used_alone": False,
             "public_second_third_are_marginals": True,
         }

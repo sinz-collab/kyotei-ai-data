@@ -44,12 +44,12 @@ assert ENGINE_ID == "toda_prediction_engine_v6_20260814_marginal_conditional_tic
 assert "TWO_SASHI" not in {scenario["id"] for scenario in predictions[3]["scenarios"]}
 assert predictions[3]["win"]["2"] < 40
 assert predictions[4]["win"]["4"] >= 6
-assert max(predictions[5]["win"], key=predictions[5]["win"].get) == "4" and predictions[5]["win"]["4"] >= 85
-assert max(predictions[6]["win"], key=predictions[6]["win"].get) == "3" and 55 <= predictions[6]["win"]["3"] <= 82
+assert max(predictions[5]["win"], key=predictions[5]["win"].get) == "4" and predictions[5]["win"]["4"] >= 80
+assert max(predictions[6]["win"], key=predictions[6]["win"].get) == "3" and 45 <= predictions[6]["win"]["3"] <= 82
 assert max(predictions[7]["win"], key=predictions[7]["win"].get) == "1" and predictions[7]["win"]["1"] >= 70
-assert [predictions[r]["softmaxTemperature"] for r in range(3, 8)] == [.80, .73, .58, .73, .58]
+assert [predictions[r]["softmaxTemperature"] for r in range(3, 8)] == [.80, .80, .58, .73, .58]
 assert all(predictions[r]["ai"] for r in range(3, 8))
-assert len(predictions[6]["ai"]) == 6
+assert len(predictions[6]["ai"]) == 10
 
 
 # Joint ranking may retain a useful third candidate beyond the old top-two cutoff,
