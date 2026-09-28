@@ -47,6 +47,7 @@ class TodaCurrentFormAndFixedTicketTests(unittest.TestCase):
             self.assertEqual(roles.count("2着ズレ"), 1)
             self.assertEqual(roles.count("3着ズレ"), 1)
             self.assertEqual(roles.count("シナリオ穴"), 2)
+            self.assertEqual(roles.count("シナリオ穴") + roles.count("展開保険"), 2)
             self.assertTrue(all(row["odds"] == "-" for row in tickets))
 
     def test_good_inside_requires_three_runs_and_stability(self):
@@ -95,6 +96,7 @@ class TodaCurrentFormAndFixedTicketTests(unittest.TestCase):
         normal = build_tickets(win, second, third, self._scenarios(), "A")
         holes = [row for row in normal if row["role"] == "シナリオ穴"]
         self.assertTrue(any(row["combo"].startswith("1-") for row in holes))
+        self.assertTrue(all(row["scenarioIds"] for row in holes))
 
         normal_combos = {row["combo"] for row in normal}
         normal_heads = {int(combo.split("-")[0]) for combo in normal_combos}
@@ -107,6 +109,26 @@ class TodaCurrentFormAndFixedTicketTests(unittest.TestCase):
         )
         self.assertFalse(normal_combos & {row["combo"] for row in upset})
         self.assertTrue(all(int(row["combo"].split("-")[0]) not in normal_heads for row in upset))
+
+    def test_scenario_hole_shortage_is_filled_by_conditional_insurance(self):
+        win = {"1": 42, "2": 21, "3": 14, "4": 11, "5": 7, "6": 5}
+        second, third = self._conditionals()
+        tickets = build_tickets(win, second, third, [], "B")
+        roles = [row["role"] for row in tickets]
+        self.assertEqual(len(tickets), 10)
+        self.assertEqual(len({row["combo"] for row in tickets}), 10)
+        self.assertEqual(roles.count("シナリオ穴"), 0)
+        self.assertEqual(roles.count("展開保険"), 2)
+
+    def test_scenario_holes_use_only_explicit_scenario_heads(self):
+        win = {"1": 42, "2": 21, "3": 14, "4": 11, "5": 7, "6": 5}
+        second, third = self._conditionals()
+        scenarios = [{"id": "FOUR_KADO", "head": 4, "weight": .85, "links": [5, 6, 1, 3, 2]}]
+        tickets = build_tickets(win, second, third, scenarios, "A")
+        holes = [row for row in tickets if row["role"] == "シナリオ穴"]
+        self.assertTrue(holes)
+        self.assertTrue(all(row["combo"].startswith("4-") for row in holes))
+        self.assertTrue(all(row["scenarioIds"] == ["FOUR_KADO"] for row in holes))
 
     def test_ticket_generation_has_no_odds_or_date_race_branch_inputs(self):
         source = inspect.getsource(sys.modules[build_tickets.__module__])

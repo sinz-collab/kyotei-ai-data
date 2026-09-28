@@ -79,7 +79,12 @@ class Toda20260928CurrentFormTicketTests(unittest.TestCase):
             self.assertEqual([ticket["role"] for ticket in prediction["ai"]].count("本線"), 6)
             self.assertEqual([ticket["role"] for ticket in prediction["ai"]].count("2着ズレ"), 1)
             self.assertEqual([ticket["role"] for ticket in prediction["ai"]].count("3着ズレ"), 1)
-            self.assertEqual([ticket["role"] for ticket in prediction["ai"]].count("シナリオ穴"), 2)
+            roles = [ticket["role"] for ticket in prediction["ai"]]
+            self.assertEqual(roles.count("シナリオ穴") + roles.count("展開保険"), 2)
+            scenario_heads = {int(scenario["head"]) for scenario in prediction["scenarios"]}
+            holes = [ticket for ticket in prediction["ai"] if ticket["role"] == "シナリオ穴"]
+            self.assertTrue(all(int(ticket["combo"].split("-")[0]) in scenario_heads for ticket in holes))
+            self.assertTrue(all(ticket["scenarioIds"] for ticket in holes))
             for key in ("win", "second", "third"):
                 self.assertAlmostEqual(sum(prediction[key].values()), 100.0)
             self.assertFalse(prediction["sourceSummary"]["odds_used_for_probability"])

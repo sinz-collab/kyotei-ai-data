@@ -217,6 +217,11 @@ def build_upset_tickets(
     out = []
     seen = set(excluded_combos)
     for head in heads:
+        scenario_ids = [
+            str(row.get("id"))
+            for row in scenarios or []
+            if int(row.get("head", 0)) == head and row.get("id")
+        ]
         rows = _all_combos_for_head(head, win, second_by_head, third_by_head, scenarios)
         for _, _, _, combo in rows:
             if combo in seen:
@@ -228,6 +233,7 @@ def build_upset_tickets(
                 "prob": combo_prob(combo, win, second_by_head, third_by_head),
                 "odds": "-",
                 "scenarioHead": head,
+                "scenarioIds": scenario_ids,
             })
             if len(out) >= limit:
                 return out
@@ -284,7 +290,7 @@ def build_tickets(win, second_by_head, third_by_head, scenarios, sab):
         drift_third = next(combo for _, _, _, combo in ranked_main if combo not in seen)
     add(drift_third, "3着ズレ")
 
-    selected.extend(build_upset_tickets(
+    scenario_holes = build_upset_tickets(
         win,
         second_by_head,
         third_by_head,
@@ -292,5 +298,19 @@ def build_tickets(win, second_by_head, third_by_head, scenarios, sab):
         exclude_combos=seen,
         limit=2,
         role="シナリオ穴",
-    ))
+        scenario_only=True,
+    )
+    for ticket in scenario_holes:
+        if ticket["combo"] in seen or len(selected) >= 10:
+            continue
+        seen.add(ticket["combo"])
+        selected.append(ticket)
+
+    # A scenario label is never attached to an unsupported alternate head.
+    # If fewer than two scenario tickets exist, retain the fixed ten-ticket
+    # contract with the next unused exact conditional-probability candidates.
+    for _, _, _, combo in ranked_all:
+        add(combo, "展開保険")
+        if len(selected) >= 10:
+            break
     return selected[:10]
