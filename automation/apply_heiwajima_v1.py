@@ -132,49 +132,144 @@ def motor_power_score(racer: dict) -> float:
     return round(clamp(score, -3.0, 3.0), 4)
 
 
+def _first_tide_value(*values):
+    for value in values:
+        if value is not None and value != "":
+            return value
+    return None
+
+
+def _tide_level_band(level: float) -> str:
+    # Frozen bands from heiwajima_tide_summary_v1_0_N.csv.
+    if level < 50.0:
+        return "低潮位(<50cm)"
+    if level < 100.0:
+        return "やや低潮位(50-99cm)"
+    if level < 150.0:
+        return "中潮位(100-149cm)"
+    if level < 180.0:
+        return "やや高潮位(150-179cm)"
+    return "高潮位(180cm+)"
+
+
+def _is_low_water_band(value) -> bool:
+    text = str(value or "").lower()
+    return "低潮位" in text or text == "low" or "low" in text
+
+
 def tide_context(payload: dict, race: dict) -> dict:
-    tide = race.get("tide") or payload.get("tide") or {}
+    race_tide = race.get("tide") if isinstance(race.get("tide"), dict) else {}
+    payload_tide = payload.get("tide") if isinstance(payload.get("tide"), dict) else {}
     context = {
-        "tide_type_est": tide.get("tide_type_est") or tide.get("tideType") or tide.get("tide_type"),
-        "tide_direction": tide.get("tide_direction") or tide.get("direction") or tide.get("phase"),
-        "tide_phase": race.get("tide_phase") or tide.get("tide_phase") or tide.get("phase"),
-        "tide_window": race.get("tide_window") or tide.get("tide_window") or tide.get("nearest"),
-        "tide_level_band": race.get("tide_level_band") or tide.get("tide_level_band") or tide.get("band"),
-        "tide_cm_est": race.get("tide_cm_est") or tide.get("tide_cm_est") or tide.get("level"),
+        "tide_type_est": _first_tide_value(
+            race_tide.get("tide_type_est"), race_tide.get("tideType"), race_tide.get("tide_type"),
+            payload_tide.get("tide_type_est"), payload_tide.get("tideType"), payload_tide.get("tide_type"),
+        ),
+        "tide_direction": _first_tide_value(
+            race_tide.get("tide_direction"), race_tide.get("direction"), race_tide.get("phase"),
+            payload_tide.get("tide_direction"), payload_tide.get("direction"), payload_tide.get("phase"),
+        ),
+        "tide_phase": _first_tide_value(
+            race.get("tide_phase"), race_tide.get("tide_phase"), race_tide.get("phase"),
+            payload_tide.get("tide_phase"), payload_tide.get("phase"),
+        ),
+        "tide_window": _first_tide_value(
+            race.get("tide_window"), race_tide.get("tide_window"), race_tide.get("nearest"),
+            payload_tide.get("tide_window"), payload_tide.get("nearest"),
+        ),
+        "tide_level_band": _first_tide_value(
+            race.get("tide_level_band"), race_tide.get("tide_level_band"), race_tide.get("band"),
+            payload_tide.get("tide_level_band"), payload_tide.get("band"),
+        ),
+        "tide_cm_est": _first_tide_value(
+            race.get("tide_cm_est"), race_tide.get("tide_cm_est"), race_tide.get("level"),
+            payload_tide.get("tide_cm_est"), payload_tide.get("level"),
+        ),
+        "minutes_to_low_tide": _first_tide_value(
+            race.get("minutes_to_low_tide"), race_tide.get("minutes_to_low_tide"),
+        ),
+        "minutes_from_previous_tide": _first_tide_value(
+            race.get("minutes_from_previous_tide"), race_tide.get("minutes_from_previous_tide"),
+        ),
+        "next_tide_type": _first_tide_value(race.get("next_tide_type"), race_tide.get("next_tide_type")),
+        "previous_tide_type": _first_tide_value(race.get("previous_tide_type"), race_tide.get("previous_tide_type")),
+        "next_tide_level": _first_tide_value(race.get("next_tide_level"), race_tide.get("next_tide_level")),
+        "previous_tide_level": _first_tide_value(race.get("previous_tide_level"), race_tide.get("previous_tide_level")),
+        "low_water_band": _first_tide_value(race.get("low_water_band"), race_tide.get("low_water_band")),
     }
     events = []
-    for event in tide.get("events") or []:
+    source_events = payload_tide.get("events") or race_tide.get("events") or []
+    for event in source_events:
         match = re.fullmatch(r"(\d{1,2}):(\d{2})", str(event.get("time") or ""))
         if not match:
             continue
+        level = number(event.get("level"), float("nan"))
+        if math.isnan(level):
+            continue
+        raw_type = str(event.get("type") or "")
+        event_type = "干潮" if "干" in raw_type else "満潮" if "満" in raw_type else None
         events.append({
             "minute": int(match.group(1)) * 60 + int(match.group(2)),
-            "level": number(event.get("level"), float("nan")),
+            "level": level,
+            "type": event_type,
         })
-    deadline = re.fullmatch(r"(\d{1,2}):(\d{2})", str(race.get("deadline") or ""))
+    race_time = _first_tide_value(
+        race.get("prediction_time"), race.get("race_time"), race.get("start_time"), race.get("deadline")
+    )
+    deadline = re.fullmatch(r"(\d{1,2}):(\d{2})", str(race_time or ""))
     if deadline and len(events) >= 2:
         race_minute = int(deadline.group(1)) * 60 + int(deadline.group(2))
         events.sort(key=lambda item: item["minute"])
-        low_events = []
+        # Prefer the source event type. Infer only when legacy events omit it.
         for index, event in enumerate(events):
-            previous = events[index - 1]["level"] if index > 0 else float("inf")
-            following = events[index + 1]["level"] if index + 1 < len(events) else float("inf")
-            if event["level"] <= previous and event["level"] <= following:
-                low_events.append(event)
+            if event["type"] is None:
+                previous = events[index - 1]["level"] if index > 0 else float("inf")
+                following = events[index + 1]["level"] if index + 1 < len(events) else float("inf")
+                event["type"] = "干潮" if event["level"] <= previous and event["level"] <= following else "満潮"
+        low_events = [event for event in events if event["type"] == "干潮"]
         upcoming = [event for event in low_events if event["minute"] >= race_minute]
-        if upcoming:
+        if context["minutes_to_low_tide"] is None and upcoming:
             context["minutes_to_low_tide"] = upcoming[0]["minute"] - race_minute
         before = [event for event in events if event["minute"] <= race_minute]
         after = [event for event in events if event["minute"] >= race_minute]
+        if before:
+            previous = before[-1]
+            if context["minutes_from_previous_tide"] is None:
+                context["minutes_from_previous_tide"] = race_minute - previous["minute"]
+            if context["previous_tide_type"] is None:
+                context["previous_tide_type"] = previous["type"]
+            if context["previous_tide_level"] is None:
+                context["previous_tide_level"] = previous["level"]
+        if after:
+            following = after[0]
+            if context["next_tide_type"] is None:
+                context["next_tide_type"] = following["type"]
+            if context["next_tide_level"] is None:
+                context["next_tide_level"] = following["level"]
         if before and after:
             left, right = before[-1], after[0]
             span = max(1, right["minute"] - left["minute"])
             ratio = (race_minute - left["minute"]) / span
-            estimated_level = left["level"] + (right["level"] - left["level"]) * ratio
-            context["tide_cm_est"] = round(estimated_level, 1)
-            context["low_water_band"] = estimated_level < 100.0
-            if not context.get("tide_level_band"):
-                context["tide_level_band"] = "low" if estimated_level < 100.0 else "normal"
+            # A half-cosine follows the zero slope at high/low tide events.
+            progress = (1.0 - math.cos(math.pi * ratio)) / 2.0
+            estimated_level = left["level"] + (right["level"] - left["level"]) * progress
+            if context["tide_cm_est"] is None:
+                context["tide_cm_est"] = round(estimated_level, 1)
+            if context["tide_level_band"] is None:
+                context["tide_level_band"] = _tide_level_band(number(context["tide_cm_est"], estimated_level))
+
+    if context["tide_level_band"] is None and context["tide_cm_est"] is not None:
+        context["tide_level_band"] = _tide_level_band(number(context["tide_cm_est"], 9999.0))
+    if context["low_water_band"] is None:
+        if context["tide_level_band"] is not None:
+            context["low_water_band"] = _is_low_water_band(context["tide_level_band"])
+            context["low_water_band_source"] = "heiwajima_tide_level_band"
+        else:
+            context["low_water_band"] = False
+            context["low_water_band_source"] = "safe_fallback"
+            context["low_water_band_reason"] = "tide_level_band_unavailable"
+    else:
+        context["low_water_band_source"] = "race_existing"
     return context
 
 
@@ -597,6 +692,7 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
             )
             result = calculate(engine_input)
             prediction = site_prediction(result, connector_missing)
+            prediction["tideContext"] = deepcopy(engine_input.get("tide") or {})
             if live_context:
                 prediction["probabilityFlow"]["realtimeApplied"] = True
                 prediction["probabilityFlow"]["realtimeLabel"] = "直前展示・スリット・実進入を反映"

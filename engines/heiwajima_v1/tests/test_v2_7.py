@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import json
 import sys
+import tempfile
 from copy import deepcopy
 from pathlib import Path
 
@@ -55,6 +56,112 @@ def test_s16_strong_medium_and_off() -> None:
     off_boats[5].update({"class": "B1", "nat_win_score": 4.0, "motor_recent": {}, "season_runs": []})
     off = evaluate_s16(off_boats, {})
     assert off["level"] == "off" and off["signalCount"] <= 3
+
+
+def _tide_payload() -> dict:
+    return {
+        "tide": {
+            "events": [
+                {"type": "満潮", "time": "10:00", "level": 180},
+                {"type": "干潮", "time": "13:00", "level": 80},
+                {"type": "満潮", "time": "18:00", "level": 190},
+            ]
+        }
+    }
+
+
+def test_tide_context_s16_boundaries_and_safe_fallback() -> None:
+    boats = _s16_boats()
+    payload = _tide_payload()
+
+    at_120 = connector.tide_context(
+        payload, {"deadline": "11:00", "tide_level_band": "やや低潮位(50-99cm)"}
+    )
+    assert at_120["minutes_to_low_tide"] == 120
+    assert evaluate_s16(boats, at_120)["signals"]["lowTideFit"] is True
+
+    at_121 = connector.tide_context(
+        payload, {"deadline": "10:59", "tide_level_band": "やや低潮位(50-99cm)"}
+    )
+    assert at_121["minutes_to_low_tide"] == 121
+    assert evaluate_s16(boats, at_121)["signals"]["lowTideFit"] is False
+
+    just_before = connector.tide_context(
+        payload, {"deadline": "12:59", "tide_level_band": "やや低潮位(50-99cm)"}
+    )
+    assert just_before["minutes_to_low_tide"] == 1
+    assert evaluate_s16(boats, just_before)["signals"]["lowTideFit"] is True
+
+    after_low = connector.tide_context(
+        payload, {"deadline": "13:01", "tide_level_band": "やや低潮位(50-99cm)"}
+    )
+    assert after_low["minutes_to_low_tide"] is None
+    assert evaluate_s16(boats, after_low)["signals"]["lowTideFit"] is False
+
+    missing = connector.tide_context({}, {"deadline": "12:00"})
+    assert missing["low_water_band"] is False
+    assert missing["low_water_band_source"] == "safe_fallback"
+    assert evaluate_s16(boats, missing)["signals"]["lowTideFit"] is False
+
+
+def test_tide_context_preserves_race_values_and_fills_only_missing() -> None:
+    context = connector.tide_context(
+        _tide_payload(),
+        {
+            "deadline": "12:23",
+            "tide": {"tide_phase": "race-phase", "minutes_to_low_tide": 7},
+            "tide_level_band": "中潮位(100-149cm)",
+            "low_water_band": False,
+            "tide_cm_est": 123.4,
+        },
+    )
+    assert context["tide_phase"] == "race-phase"
+    assert context["minutes_to_low_tide"] == 7
+    assert context["tide_level_band"] == "中潮位(100-149cm)"
+    assert context["low_water_band"] is False
+    assert context["tide_cm_est"] == 123.4
+    assert context["previous_tide_type"] == "満潮"
+    assert context["next_tide_type"] == "干潮"
+
+
+def test_20260930_race4_tide_to_s16_read_only() -> None:
+    fixture = REPO_ROOT / "data" / "venues" / "heiwajima" / "20260930.json"
+    before = hashlib.sha256(fixture.read_bytes()).hexdigest()
+    payload = json.loads(fixture.read_text(encoding="utf-8"))
+    race = next(row for row in payload["races"] if int(row["race"]) == 4)
+
+    tide = connector.tide_context(payload, race)
+    assert race["deadline"] == "12:23"
+    assert tide["minutes_to_low_tide"] == 37
+    assert tide["minutes_from_previous_tide"] == 293
+    assert tide["previous_tide_type"] == "満潮"
+    assert tide["next_tide_type"] == "干潮"
+    assert tide["previous_tide_level"] == 201
+    assert tide["next_tide_level"] == 93
+    assert tide["low_water_band"] is True
+
+    engine_input, _ = connector.engine_input_for(
+        payload, race, connector.build_player_index(), stage="pre", live_context={}
+    )
+    assert engine_input["tide"]["minutes_to_low_tide"] == 37
+    assert "result" not in engine_input
+    result = calculate(engine_input)
+    assert result["s16"]["signals"]["lowTideFit"] is True
+    assert result["s16"]["signalCount"] == 5
+    assert result["s16"]["level"] == "strong"
+    assert result["s16DedicatedTicket"]["combination"] == "6-1-2"
+
+    replay = deepcopy(payload)
+    replay["preds"] = {}
+    for replay_race in replay["races"]:
+        replay_race.pop("result", None)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        published = connector.apply_heiwajima_v1(replay, "2026-09-30", Path(temp_dir))
+    public_race4 = published["preds"]["4"]
+    assert public_race4["engine"] == "heiwajima_complete_v2_7_20260930"
+    assert public_race4["tideContext"]["minutes_to_low_tide"] == 37
+    assert public_race4["s16"]["signals"]["lowTideFit"] is True
+    assert hashlib.sha256(fixture.read_bytes()).hexdigest() == before
 
 
 def test_result_updates_hit_log_without_rewriting_prediction() -> None:
