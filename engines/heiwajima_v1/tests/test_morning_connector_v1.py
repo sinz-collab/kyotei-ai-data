@@ -36,7 +36,7 @@ def payload() -> dict:
     return {
         "venueId": "heiwajima",
         "venue": "平和島",
-        "date": "2026-07-28",
+        "date": "2026-09-30",
         "seriesDay": "4日目",
         "tide": {"tideType": "中潮相当", "phase": "falling", "band": "低潮位"},
         "races": [
@@ -52,7 +52,7 @@ def payload() -> dict:
 
 class MorningConnectorTest(unittest.TestCase):
     def test_generates_twelve_site_compatible_predictions(self) -> None:
-        result = module.apply_heiwajima_v1(payload(), "2026-07-28", ROOT / "data")
+        result = module.apply_heiwajima_v1(payload(), "2026-09-30", ROOT / "data")
         self.assertEqual(result["engine"], module.ENGINE_ID)
         self.assertEqual(sorted(map(int, result["preds"].keys())), list(range(1, 13)))
         for prediction in result["preds"].values():
@@ -60,13 +60,16 @@ class MorningConnectorTest(unittest.TestCase):
                 self.assertAlmostEqual(sum(prediction[key].values()), 100.0, places=1)
             self.assertFalse(prediction["sourceSummary"]["oddsUsedForProbability"])
             self.assertFalse(prediction["sourceSummary"]["exhibitionStartUsedAlone"])
-            self.assertEqual(len(prediction["ai"]) + len(prediction["aiUpset"]), 10)
+            self.assertIn(len(prediction["ai"]) + len(prediction["aiUpset"]), (10, 12, 15, 18, 19))
+            self.assertEqual(prediction["ticketCount"], len(prediction["tickets"]))
+            self.assertEqual(prediction["coverageNeed"]["ruleVersion"], "heiwajima_coverage_v1")
+            self.assertFalse(prediction["readability"]["ticketCountUsed"])
             self.assertIn("player_id_unresolved", prediction["missingCodes"])
 
     def test_non_open_venue_can_skip_without_failure(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             data_root = Path(directory)
-            dated = data_root / "venues" / "heiwajima" / "20260728.json"
+            dated = data_root / "venues" / "heiwajima" / "20260930.json"
             self.assertFalse(dated.exists())
 
 

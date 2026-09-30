@@ -22,6 +22,11 @@ from heiwajima_v2_5_adjustments import (
     outer_break_adjustment,
 )
 from heiwajima_v2_6_section import section_progression_adjustment
+from heiwajima_v2_7_adjustments import (
+    apply_conditional_placement,
+    apply_p1_adjustments,
+    evaluate_s16,
+)
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
@@ -490,7 +495,8 @@ def calculate(input_data, loader=None):
         for r, p in zip(records, probs):
             r[f"{key}_prob"] = p
 
-    scenarios = evaluate_scenarios(records, water)
+    s16 = evaluate_s16(boats, input_data.get("tide") or {})
+    scenarios = evaluate_scenarios(records, water, s16=s16)
     pos = scenario_position_adjustments(scenarios)
 
     for r in records:
@@ -504,6 +510,13 @@ def calculate(input_data, loader=None):
         for r, p in zip(records, probs):
             r[f"{key}_prob"] = round(p, 6)
 
+    p1_adjustment = apply_p1_adjustments(records, boats, scenarios, s16)
+    conditional = apply_conditional_placement(
+        records,
+        scenarios,
+        loader.table("historical_tide_races"),
+    )
+
     for r in records:
         r["top3_prob"] = round(min(1.0, r["win_prob"] + r["second_prob"] + r["third_prob"]), 6)
 
@@ -514,7 +527,13 @@ def calculate(input_data, loader=None):
     if any(not (b.get("motor") or {}).get("power_score") for b in boats):
         missing.append("motor_data_missing")
 
-    tickets = generate_tickets(records, scenarios, max_tickets=int(input_data.get("max_tickets", 10)))
+    tickets, coverage_need, s16_ticket = generate_tickets(
+        records,
+        scenarios,
+        conditional_pairs=conditional["pairs"],
+        s16=s16,
+        s16_pairs=conditional["s16Pairs"],
+    )
 
     completeness = {
         "master_db_loaded": True,
@@ -542,7 +561,7 @@ def calculate(input_data, loader=None):
     ]
 
     return {
-        "schema_version": "1.7.0",
+        "schema_version": "1.8.0",
         "engine_version": CONFIG["engine_version"],
         "venue": "heiwajima",
         "race_date": input_data["race_date"],
@@ -554,6 +573,16 @@ def calculate(input_data, loader=None):
         "scenarios": scenarios,
         "sab": sab,
         "tickets": tickets,
+        "ticket_count": len(tickets),
+        "coverageNeed": coverage_need,
+        "s16": s16,
+        "s16DedicatedTicket": s16_ticket,
+        "conditionalPlacement": {
+            "historyRaceCount": conditional["historyRaceCount"],
+            "weights": conditional["weights"],
+            "shrinkSample": conditional["shrinkSample"],
+        },
+        "p1Adjustment": p1_adjustment,
         "head_exclusion_log": exclusions,
         "data_completeness": completeness,
         "odds_used_for_prediction": False,

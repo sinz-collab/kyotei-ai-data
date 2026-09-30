@@ -13,8 +13,9 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "heiwajima_v1"
 MASTER_DB = ENGINE_DIR / "master_db" / "heiwajima_runtime_master.sqlite"
-ENGINE_ID = "heiwajima_complete_v2_6_20260829"
+ENGINE_ID = "heiwajima_complete_v2_7_20260930"
 MASTER_ID = "heiwajima_runtime_master_v1_20260728"
+V2_7_START_DATE = "2026-09-30"
 LANES = (1, 2, 3, 4, 5, 6)
 
 
@@ -133,7 +134,7 @@ def motor_power_score(racer: dict) -> float:
 
 def tide_context(payload: dict, race: dict) -> dict:
     tide = race.get("tide") or payload.get("tide") or {}
-    return {
+    context = {
         "tide_type_est": tide.get("tide_type_est") or tide.get("tideType") or tide.get("tide_type"),
         "tide_direction": tide.get("tide_direction") or tide.get("direction") or tide.get("phase"),
         "tide_phase": race.get("tide_phase") or tide.get("tide_phase") or tide.get("phase"),
@@ -141,6 +142,40 @@ def tide_context(payload: dict, race: dict) -> dict:
         "tide_level_band": race.get("tide_level_band") or tide.get("tide_level_band") or tide.get("band"),
         "tide_cm_est": race.get("tide_cm_est") or tide.get("tide_cm_est") or tide.get("level"),
     }
+    events = []
+    for event in tide.get("events") or []:
+        match = re.fullmatch(r"(\d{1,2}):(\d{2})", str(event.get("time") or ""))
+        if not match:
+            continue
+        events.append({
+            "minute": int(match.group(1)) * 60 + int(match.group(2)),
+            "level": number(event.get("level"), float("nan")),
+        })
+    deadline = re.fullmatch(r"(\d{1,2}):(\d{2})", str(race.get("deadline") or ""))
+    if deadline and len(events) >= 2:
+        race_minute = int(deadline.group(1)) * 60 + int(deadline.group(2))
+        events.sort(key=lambda item: item["minute"])
+        low_events = []
+        for index, event in enumerate(events):
+            previous = events[index - 1]["level"] if index > 0 else float("inf")
+            following = events[index + 1]["level"] if index + 1 < len(events) else float("inf")
+            if event["level"] <= previous and event["level"] <= following:
+                low_events.append(event)
+        upcoming = [event for event in low_events if event["minute"] >= race_minute]
+        if upcoming:
+            context["minutes_to_low_tide"] = upcoming[0]["minute"] - race_minute
+        before = [event for event in events if event["minute"] <= race_minute]
+        after = [event for event in events if event["minute"] >= race_minute]
+        if before and after:
+            left, right = before[-1], after[0]
+            span = max(1, right["minute"] - left["minute"])
+            ratio = (race_minute - left["minute"]) / span
+            estimated_level = left["level"] + (right["level"] - left["level"]) * ratio
+            context["tide_cm_est"] = round(estimated_level, 1)
+            context["low_water_band"] = estimated_level < 100.0
+            if not context.get("tide_level_band"):
+                context["tide_level_band"] = "low" if estimated_level < 100.0 else "normal"
+    return context
 
 
 def weather_context(payload: dict, race: dict) -> dict:
@@ -262,6 +297,17 @@ def engine_input_for(
                 "local_3_rate": racer.get("local_3"),
                 "motor_recent": racer.get("motor_recent") or {},
                 "season_runs": racer.get("season_runs") or [],
+                "kimarite": {
+                    "starts": racer.get("boaters_kimarite_starts"),
+                    "escape_rate": racer.get("boaters_escape_rate"),
+                    "sashare_rate": racer.get("boaters_sashare_rate"),
+                    "makurare_rate": racer.get("boaters_makurare_rate"),
+                    "makurare_zashi_rate": racer.get("boaters_makurare_zashi_rate"),
+                    "nigashi_rate": racer.get("boaters_nigashi_rate"),
+                    "sashi_rate": racer.get("boaters_sashi_rate"),
+                    "makuri_rate": racer.get("boaters_makuri_rate"),
+                    "makuri_sashi_rate": racer.get("boaters_makuri_sashi_rate"),
+                },
                 "motor": {
                     "power_score": motor_power_score(racer),
                     "motor_2": racer.get("motor_2"),
@@ -277,7 +323,6 @@ def engine_input_for(
             "race_date": payload["date"],
             "race_no": int(race["race"]),
             "stage": stage,
-            "max_tickets": 10,
             "boats": boats,
             "tide": tide_context(payload, race),
             "weather": weather_context(payload, race),
@@ -310,7 +355,7 @@ def percent_map(result: dict, key: str) -> dict[str, float]:
 
 
 def site_ticket(ticket: dict) -> dict:
-    return {
+    output = {
         "combo": ticket["combination"],
         "role": {
             "main": "本線",
@@ -321,6 +366,11 @@ def site_ticket(ticket: dict) -> dict:
         "odds": "-",
         "score": round(float(ticket.get("score") or 0.0), 8),
     }
+    if ticket.get("s16_dedicated"):
+        output["s16Dedicated"] = True
+    if "predicted_probability" in ticket:
+        output["predictedProbability"] = round(float(ticket["predicted_probability"]) * 100.0, 3)
+    return output
 
 
 def site_prediction(result: dict, connector_missing: list[str]) -> dict:
@@ -392,9 +442,16 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
             ),
             "comment": f"主シナリオ: {primary_scenario.get('name') or '未確定'} / 軸差 {axis_gap:.1f}pt",
         },
-        # 荒れ対応が2点未満でも、残枠を本線・ズレ対応で埋めて計10点を保持する。
-        "ai": ai[: max(0, 10 - min(2, len(ai_upset)))],
-        "aiUpset": ai_upset[:2],
+        "ai": ai,
+        "aiUpset": ai_upset,
+        "tickets": all_tickets,
+        "ticketCount": len(all_tickets),
+        "coverageNeed": result.get("coverageNeed") or {},
+        "s16": result.get("s16") or {
+            "activated": False, "level": "off", "signalCount": 0, "signals": {}
+        },
+        "s16DedicatedTicket": result.get("s16DedicatedTicket"),
+        "conditionalPlacement": result.get("conditionalPlacement") or {},
         "scenarios": scenarios,
         "headExclusionLog": result.get("head_exclusion_log") or [],
         "sourceSummary": {
@@ -443,6 +500,18 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
         },
         "oddsUsedForProbability": False,
         "exhibitionStartUsedAlone": False,
+        "accuracyLog": {
+            "engine": ENGINE_ID,
+            "sab": sab,
+            "coverageNeed": result.get("coverageNeed") or {},
+            "ticketCount": len(all_tickets),
+            "s16": result.get("s16") or {},
+            "s16DedicatedTicket": result.get("s16DedicatedTicket"),
+            "probabilities": {"p1": win, "p2": second, "p3": third},
+            "tickets": [ticket["combo"] for ticket in all_tickets],
+            "resultAvailable": False,
+            "hit": None,
+        },
     }
 
 
@@ -459,7 +528,43 @@ def prediction_complete(prediction: dict) -> bool:
     return True
 
 
+def result_combination(race: dict) -> str | None:
+    result = race.get("result") or {}
+    direct = result.get("trifecta") or result.get("combination")
+    if re.fullmatch(r"[1-6]-[1-6]-[1-6]", str(direct or "")):
+        return str(direct)
+    order = result.get("order") or result.get("finish_order") or []
+    if isinstance(order, list) and len(order) >= 3:
+        combo = "-".join(str(value) for value in order[:3])
+        if re.fullmatch(r"[1-6]-[1-6]-[1-6]", combo):
+            return combo
+    return None
+
+
+def update_accuracy_only(prediction: dict, race: dict) -> dict:
+    frozen = deepcopy(prediction)
+    combo = result_combination(race)
+    accuracy = deepcopy(frozen.get("accuracyLog") or {})
+    tickets = accuracy.get("tickets") or [
+        ticket.get("combo")
+        for ticket in (frozen.get("tickets") or frozen.get("ai") or []) + (frozen.get("aiUpset") or [])
+        if ticket.get("combo")
+    ]
+    accuracy.update({
+        "engine": frozen.get("engine") or ENGINE_ID,
+        "ticketCount": len(set(tickets)),
+        "tickets": list(dict.fromkeys(tickets)),
+        "resultAvailable": combo is not None,
+        "result": combo,
+        "hit": combo in tickets if combo else None,
+    })
+    frozen["accuracyLog"] = accuracy
+    return frozen
+
+
 def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict:
+    if target_date < V2_7_START_DATE:
+        raise RuntimeError(f"v2_7_historical_date_protected: {target_date}")
     validate_payload(payload, target_date)
     if str(ENGINE_DIR) not in sys.path:
         sys.path.insert(0, str(ENGINE_DIR))
@@ -472,6 +577,15 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
     for race in payload["races"]:
         race_no = int(race["race"])
         try:
+            existing_prediction = existing_predictions.get(str(race_no)) or {}
+            prediction_locked = bool(existing_prediction.get("liveApplied")) or result_combination(race) is not None
+            if (
+                existing_prediction.get("engine") == ENGINE_ID
+                and prediction_complete(existing_prediction)
+                and prediction_locked
+            ):
+                predictions[str(race_no)] = update_accuracy_only(existing_prediction, race)
+                continue
             live_context = exhibition_live_context(data_root, target_date, race_no)
             stage = "final" if live_context else "pre"
             engine_input, connector_missing = engine_input_for(
@@ -499,7 +613,6 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
                 prediction["liveApplied"] = False
             if not prediction_complete(prediction):
                 raise RuntimeError("prediction_output_incomplete")
-            existing_prediction = existing_predictions.get(str(race_no)) or {}
             for preserved_key in ("odds", "result", "realtime", "prediction_history", "active_prediction_stage"):
                 if preserved_key in existing_prediction:
                     prediction[preserved_key] = deepcopy(existing_prediction[preserved_key])
@@ -522,6 +635,10 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
         "oddsUsedForProbability": False,
         "exhibitionStartUsedAlone": False,
         "actualEntryReanalysis": True,
+        "conditionalPlacement": True,
+        "coverageRuleVersion": "heiwajima_coverage_v1",
+        "s16OuterHead": True,
+        "sabTicketCountUsed": False,
         "raceCount": 12,
     }
     return payload
@@ -556,6 +673,9 @@ def main() -> int:
 
     date_dir = args.date.replace("-", "")
     data_root = Path(args.data_root)
+    if args.date < V2_7_START_DATE:
+        print(f"Heiwajima v2.7 historical date is protected: {args.date}")
+        return 0
     dated_path = data_root / "venues" / "heiwajima" / f"{date_dir}.json"
     latest_path = data_root / "venues" / "heiwajima" / "latest.json"
     if not dated_path.exists():

@@ -12,6 +12,7 @@ SCENARIOS = {
     "S13_OUTER_THIRD": {"name": "外枠3着連動", "head": [1, 2, 3, 4], "second": [1, 2, 3, 4, 5], "third": [5, 6]},
     "S14_ENTRY_CHANGE": {"name": "進入変更による展開変化", "head": [1, 2, 3, 4, 5, 6], "second": [1, 2, 3, 4, 5, 6], "third": [1, 2, 3, 4, 5, 6]},
     "S15_4_ATTACK_5_HEAD": {"name": "4攻めから5まくり差し頭", "head": [5], "second": [4, 3, 1, 6], "third": [3, 4, 1, 6, 2]},
+    "S16_6_OUTER_HEAD": {"name": "6外攻め頭", "head": [6], "second": [1, 2, 3, 4, 5], "third": [2, 1, 3, 4, 5]},
 }
 
 
@@ -19,7 +20,7 @@ def _clip(value, low=0.0, high=1.0):
     return max(low, min(high, float(value)))
 
 
-def evaluate_scenarios(boats, water):
+def evaluate_scenarios(boats, water, s16=None):
     by_course = {int(boat["actual_course"]): boat for boat in boats}
 
     def probability(course, key="win_prob"):
@@ -59,6 +60,12 @@ def evaluate_scenarios(boats, water):
 
     five_head_bonus = float(water.get("five_head_scenario_bonus", 0.0) or 0.0)
     scores["S15_4_ATTACK_5_HEAD"] += min(0.18, max(0.0, five_head_bonus))
+
+    s16_level = str((s16 or {}).get("level") or "off")
+    if s16_level == "strong":
+        scores["S16_6_OUTER_HEAD"] += 0.16
+    elif s16_level == "medium":
+        scores["S16_6_OUTER_HEAD"] += 0.08
 
     total = sum(scores.values()) or 1.0
     output = []

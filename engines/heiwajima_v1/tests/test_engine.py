@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]; sys.path.insert(0,str(ROOT))
 from heiwajima_prediction_engine import calculate
 from heiwajima_live_review import apply_live_update
-from heiwajima_ticket_engine import generate_tickets
+from heiwajima_ticket_engine import generate_tickets, ticket_count_for_coverage
 
 def sample(): return json.loads((ROOT/"examples"/"sample_input_pre.json").read_text(encoding="utf-8"))
 def test_probabilities_normalize():
@@ -11,13 +11,14 @@ def test_probabilities_normalize():
     o=calculate(data)
     for k in ("win_prob","second_prob","third_prob"): assert abs(sum(x[k] for x in o["probabilities"])-1)<1e-4
     assert o["odds_used_for_prediction"] is False
-    assert len(o["tickets"]) == 10
+    assert len(o["tickets"]) in (10, 12, 15, 18, 19)
+    assert o["coverageNeed"]["ruleVersion"] == "heiwajima_coverage_v1"
 def test_entry_change_reanalysis():
     f=apply_live_update(sample(),{"entries":[{"boat_no":3,"actual_course":4},{"boat_no":4,"actual_course":3}]})
     o=calculate(f); assert o["data_completeness"]["entry_changed"] is True
     assert next(x for x in o["probabilities"] if x["boat_no"]==3)["actual_course"]==4
 def test_engine_version_and_scenario_link():
-    o=calculate(sample()); assert o["engine_version"] == "heiwajima_complete_v2_6_20260829"
+    o=calculate(sample()); assert o["engine_version"] == "heiwajima_complete_v2_7_20260930"
     assert all("head" in s and "second" in s and "third" in s for s in o["scenarios"])
 def test_no_extreme_default_inside_bias():
     o=calculate(sample()); p=next(x["win_prob"] for x in o["probabilities"] if x["boat_no"]==1)
@@ -38,25 +39,43 @@ def test_live_composite_context_reaches_engine_without_odds():
     assert final["live"]["straight_rank"]["4"] == 1
     assert "odds" not in final["live"]
 
-def test_ticket_reserves_all_comparable_heads_and_conditional_outer():
+def test_odds_and_result_never_change_prediction():
+    clean=sample()
+    contaminated=sample()
+    contaminated["odds"]={"6-1-2":1.1}
+    contaminated["result"]={"trifecta":"6-1-2"}
+    baseline=calculate(clean)
+    compared=calculate(contaminated)
+    assert baseline["probabilities"] == compared["probabilities"]
+    assert baseline["tickets"] == compared["tickets"]
+
+def test_coverage_ticket_count_thresholds():
+    assert ticket_count_for_coverage(.40) == 10
+    assert ticket_count_for_coverage(.399999) == 12
+    assert ticket_count_for_coverage(.35) == 12
+    assert ticket_count_for_coverage(.349999) == 15
+    assert ticket_count_for_coverage(.30) == 15
+    assert ticket_count_for_coverage(.299999) == 18
+
+def test_ticket_count_is_not_controlled_by_legacy_max_tickets():
     win={1:.438,2:.157,3:.179,4:.081,5:.090,6:.055}
     boats=[
         {"boat_no":lane,"win_prob":win[lane],"second_prob":1/6,"third_prob":1/6}
         for lane in range(1,7)
     ]
-    tickets=generate_tickets(boats,[],max_tickets=10)
-    heads={ticket["first"] for ticket in tickets}
-    assert len(tickets) == 10
-    assert {2,3,5}.issubset(heads)
+    tickets_a, coverage_a, _=generate_tickets(boats,[],max_tickets=1)
+    tickets_b, coverage_b, _=generate_tickets(boats,[],max_tickets=99)
+    assert [row["combination"] for row in tickets_a] == [row["combination"] for row in tickets_b]
+    assert coverage_a == coverage_b
+    assert len(tickets_a) in (10,12,15,18)
 
-def test_ticket_does_not_split_near_equal_non_axis_heads():
+def test_ticket_output_has_no_duplicates_and_never_exceeds_19():
     win={1:.440,2:.111,3:.170,4:.167,5:.085,6:.027}
     boats=[
         {"boat_no":lane,"win_prob":win[lane],"second_prob":1/6,"third_prob":1/6}
         for lane in range(1,7)
     ]
-    tickets=generate_tickets(boats,[],max_tickets=10)
-    heads={ticket["first"] for ticket in tickets}
-    assert len(tickets) == 10
-    assert {3,4}.issubset(heads)
-    assert 5 not in heads and 6 not in heads
+    tickets,_,_=generate_tickets(boats,[],max_tickets=10)
+    combos=[ticket["combination"] for ticket in tickets]
+    assert len(combos) == len(set(combos))
+    assert len(combos) <= 19
