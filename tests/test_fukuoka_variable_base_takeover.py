@@ -20,6 +20,7 @@ from replay_fukuoka_variable_base_takeover import replay  # noqa: E402
 
 def feature(lane: int) -> dict:
     return {
+        "actual_course": lane,
         "p1": restore.BASE_WIN_PERCENT[lane],
         "p2": 20.0,
         "p3": 20.0,
@@ -153,6 +154,97 @@ class TestFukuokaVariableBaseTakeover(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "fukuoka_payload_identity_invalid"):
             runner.apply_predictions(payload, "2026-09-27", "final", Path("unused"))
         self.assertEqual(payload, original)
+
+    def test_october_2_entry_changes_use_actual_course_in_restore(self) -> None:
+        fixtures = {
+            5: ([1, 5, 2, 3, 4, 6], 5),
+            6: ([1, 6, 2, 3, 4, 5], 6),
+        }
+        for race_no, (actual_entry, course2_lane) in fixtures.items():
+            with self.subTest(race=race_no):
+                features = self.features()
+                for course, lane in enumerate(actual_entry, 1):
+                    features[lane]["actual_course"] = course
+                features[course2_lane]["sashi"] = 25.0
+                scores = restore.calculate_head_scores(
+                    features, dict(restore.BASE_WIN_PERCENT),
+                )
+                self.assertEqual(
+                    set(scores), set(actual_entry[1:4]),
+                )
+                self.assertIn(course2_lane, scores)
+                self.assertEqual(
+                    restore.course_attack_score(
+                        features[course2_lane]["actual_course"], 25.0, 0.0, 0.0,
+                    ),
+                    4.0,
+                )
+                _, audit = restore.build_variable_p1(
+                    features,
+                    dict(restore.BASE_WIN_PERCENT),
+                    current_win=dict(restore.BASE_WIN_PERCENT),
+                )
+                self.assertTrue(audit["entry_changed"])
+                self.assertEqual(audit["actual_course_by_lane"][course2_lane], 2)
+
+    def test_october_2_entry_change_flag_preserves_actual_entry(self) -> None:
+        fixtures = {
+            5: [1, 5, 2, 3, 4, 6],
+            6: [1, 6, 2, 3, 4, 5],
+        }
+        for race_no, actual_entry in fixtures.items():
+            with self.subTest(race=race_no):
+                documents = {
+                    "direct": {"data": {"actual_entry": list(actual_entry), "racers": []}},
+                    "exhibition": {"data": {"entries": [], "slit_source": []}},
+                    "original_exhibition": {"data": {"entries": []}},
+                }
+                race_input = {
+                    "boats": [
+                        {"lane": lane, "entry_course": lane}
+                        for lane in range(1, 7)
+                    ]
+                }
+                runner.apply_live_input(race_input, documents)
+                self.assertEqual(documents["direct"]["data"]["actual_entry"], actual_entry)
+                self.assertTrue(documents["direct"]["data"]["entry_changed"])
+                self.assertEqual(
+                    next(
+                        boat["actual_course"]
+                        for boat in race_input["boats"]
+                        if boat["lane"] == actual_entry[1]
+                    ),
+                    2,
+                )
+                current = runner.FukuokaPredictionEngineV10().predict(race_input)
+                self.assertTrue(current["diagnostics"]["entry_changed"])
+
+    def test_identity_entry_keeps_existing_course_evaluation(self) -> None:
+        documents = {
+            "direct": {
+                "data": {
+                    "actual_entry": list(range(1, 7)),
+                    "entry_changed": False,
+                    "racers": [],
+                }
+            },
+            "exhibition": {"data": {"entries": [], "slit_source": []}},
+            "original_exhibition": {"data": {"entries": []}},
+        }
+        race_input = {
+            "boats": [
+                {"lane": lane, "entry_course": lane}
+                for lane in range(1, 7)
+            ]
+        }
+        runner.apply_live_input(race_input, documents)
+        self.assertFalse(documents["direct"]["data"]["entry_changed"])
+        self.assertEqual(
+            [boat["actual_course"] for boat in race_input["boats"]],
+            list(range(1, 7)),
+        )
+        current = runner.FukuokaPredictionEngineV10().predict(race_input)
+        self.assertFalse(current["diagnostics"]["entry_changed"])
 
     def test_36_race_regression_and_required_boundaries(self) -> None:
         reports = {day: replay(day) for day in ("2026-09-25", "2026-09-26", "2026-09-27")}

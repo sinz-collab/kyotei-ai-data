@@ -270,6 +270,8 @@ def apply_live_input(race_input: dict, documents: dict[str, dict]) -> None:
         if isinstance(row, dict)
     }
     actual_entry = [integer(lane) for lane in direct.get("actual_entry") or []]
+    if sorted(actual_entry) == list(range(1, 7)):
+        direct["entry_changed"] = actual_entry != list(range(1, 7))
     course_by_lane = {
         lane: course
         for course, lane in enumerate(actual_entry, 1)
@@ -483,6 +485,11 @@ def format_restored_prediction(
             "headDominance": p1_audit.get("head_dominance"),
             "takeoverActivated": bool(p1_audit.get("takeover")),
             "takeoverLane": p1_audit.get("takeover_lane"),
+            "entryChanged": bool(p1_audit.get("entry_changed")),
+            "actualCourseByLane": {
+                str(lane): course
+                for lane, course in (p1_audit.get("actual_course_by_lane") or {}).items()
+            },
             "oddsUsedForPrediction": False,
             "resultUsedForPrediction": False,
             "odds_used": False,

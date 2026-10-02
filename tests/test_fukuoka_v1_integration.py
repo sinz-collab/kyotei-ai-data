@@ -89,7 +89,7 @@ class TestFukuokaV1Integration(unittest.TestCase):
         canonical_source = source.read_text(encoding="utf-8").replace("\r\n", "\n").encode()
         self.assertEqual(
             hashlib.sha256(canonical_source).hexdigest(),
-            "0d43860015cb0c23b427557f293215811d39ef1051b10bc87e0b1110590cd1dc",
+            "e46c5751ea71ec5281f4dde5fe7b0d566acf39ca190ce1e6d5c9d817a8186415",
         )
 
     def test_morning_and_live_connection_for_saved_days(self) -> None:

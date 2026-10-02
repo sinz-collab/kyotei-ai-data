@@ -524,6 +524,9 @@ class FukuokaPredictionEngineV10:
         diagnostics = {
             "odds_used": False,
             "result_used": False,
+            "entry_changed": any(
+                by_lane[lane]["actual_course"] != lane for lane in range(1, 7)
+            ),
             "conditional_ticket_model": True,
             "win_normalization": "linear_percent_points",
             "second_normalization": "linear_percent_points_remaining_five",
