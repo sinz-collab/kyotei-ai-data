@@ -23,8 +23,19 @@ if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
 
 from biwako_prediction_engine_v1_2_refined import (  # noqa: E402
-    BiwakoPredictionEngineV12Refined as BiwakoPredictionEngineV12,
+    BiwakoPredictionEngineV12Refined as BiwakoPredictionEngineV12Base,
 )
+
+
+class BiwakoPredictionEngineV12(BiwakoPredictionEngineV12Base):
+    def _generate_tickets(self, joint: list[dict], probs: dict) -> dict:
+        tickets = super()._generate_tickets(joint, probs)
+        tickets["lane1_fly_top10"] = [
+            {"ticket": row["ticket"], "score": row["score"]}
+            for row in joint
+            if row["score"] > self.PROB_FLOOR and row["lanes"][0] != 1
+        ][:10]
+        return tickets
 
 
 def number(value: Any, default: float | None = None) -> float | None:
@@ -352,41 +363,25 @@ def lane1_fly_judgement(result: dict, race_input: dict) -> dict:
     }
 
 
-def non_lane1_upset_rows(
-    result: dict,
-    ai: list[dict],
-    balance: list[dict],
-    upset: list[dict],
-) -> list[dict]:
-    protected = {row["combo"] for row in ai + balance}
-    selected = []
-    seen = set(protected)
-    candidates = list(upset)
-    score_rows = result.get("tickets", {}).get("ranked_top20") or []
-    candidates.extend(
+def lane1_fly_ticket_rows(result: dict) -> list[dict]:
+    rows = [
         {
-            "combo": row.get("ticket", ""),
-            "role": "荒れ",
+            "combo": str(row.get("ticket") or ""),
+            "role": "1号艇飛び",
             "prob": round(float(row.get("score") or 0.0) * 100.0, 2),
         }
-        for row in score_rows
-    )
-    for row in candidates:
-        combo = str(row.get("combo") or "")
-        if not combo or combo.startswith("1-") or combo in seen:
-            continue
-        selected.append(row)
-        seen.add(combo)
-        if len(selected) == 2:
-            break
-    return selected if len(selected) == 2 else upset
+        for row in result.get("tickets", {}).get("lane1_fly_top10") or []
+    ][:10]
+    if len(rows) != 10:
+        raise RuntimeError("biwako_lane1_fly_tickets_must_be_10")
+    return rows
 
 
 def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
-    ai, balance, upset = ticket_rows(result)
+    main, balance, upset = ticket_rows(result)
+    ai = main + balance + upset
+    lane1_fly_tickets = lane1_fly_ticket_rows(result)
     lane1_fly = lane1_fly_judgement(result, race_input)
-    if lane1_fly["probability"] >= 40.0:
-        upset = non_lane1_upset_rows(result, ai, balance, upset)
     is_final = phase == "final"
     stage = {
         "label": "本予想" if is_final else "仮予想",
@@ -417,9 +412,9 @@ def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
         "lane1FlyLevel": lane1_fly["level"],
         "lane1FlyDetail": lane1_fly,
         "ai": ai,
-        "balance": balance,
-        "aiUpset": upset,
-        "tickets": ai + balance + upset,
+        "balance": [],
+        "aiUpset": lane1_fly_tickets,
+        "tickets": ai,
         "scenario": deepcopy(result.get("scenario") or {}),
         "attackDefense": deepcopy(result.get("attack_defense") or {}),
         "liveAdjustment": deepcopy(result.get("live_adjustment")),

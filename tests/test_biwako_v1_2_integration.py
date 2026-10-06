@@ -159,6 +159,7 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
         self.assertTrue(result["predictionAvailable"])
         self.assertEqual(result["engine_version"], "biwako_engine_v1.2_refined")
         self.assertEqual(len(result["preds"]), 12)
+        tail_lane1_used = False
         for prediction in result["preds"].values():
             self.assertEqual(prediction["phase"], "preliminary")
             self.assertEqual(prediction["engine_version"], "biwako_engine_v1.2_refined")
@@ -168,12 +169,23 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
             )
             self.assertEqual(len(prediction["tickets"]), 10)
             self.assertEqual(len({row["combo"] for row in prediction["tickets"]}), 10)
+            self.assertEqual(len(prediction["ai"]), 10)
+            self.assertEqual(prediction["balance"], [])
+            self.assertEqual(len(prediction["aiUpset"]), 10)
+            self.assertTrue(
+                all(not row["combo"].startswith("1-") for row in prediction["aiUpset"])
+            )
+            tail_lane1_used = tail_lane1_used or any(
+                "1" in row["combo"].split("-")[1:]
+                for row in prediction["aiUpset"]
+            )
             for key in ("win", "second", "third"):
                 self.assertAlmostEqual(sum(prediction[key].values()), 100.0, delta=0.05)
             self.assertEqual(
                 prediction["diagnostics"]["oddsUsedForPrediction"],
                 False,
             )
+        self.assertTrue(tail_lane1_used)
 
     def test_final_updates_only_complete_live_race(self) -> None:
         preliminary = self.apply(payload(), "preliminary")
@@ -206,6 +218,11 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
             self.assertEqual(race["predictionFinal"], final)
             self.assertEqual(len(final["tickets"]), 10)
             self.assertEqual(len({row["combo"] for row in final["tickets"]}), 10)
+            self.assertEqual(len(final["ai"]), 10)
+            self.assertEqual(len(final["aiUpset"]), 10)
+            self.assertTrue(
+                all(not row["combo"].startswith("1-") for row in final["aiUpset"])
+            )
 
     def test_odds_and_result_do_not_change_preliminary_or_final(self) -> None:
         baseline_input = payload()
@@ -218,7 +235,7 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
 
         baseline_pre = self.apply(baseline_input, "preliminary")
         mutated_pre = self.apply(mutated_input, "preliminary")
-        keys = ("win", "second", "third", "sab", "tickets")
+        keys = ("win", "second", "third", "sab", "tickets", "ai", "aiUpset")
         for race_no in map(str, range(1, 13)):
             self.assertEqual(
                 {key: baseline_pre["preds"][race_no][key] for key in keys},
