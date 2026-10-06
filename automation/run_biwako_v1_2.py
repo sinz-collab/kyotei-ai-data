@@ -202,6 +202,10 @@ def build_engine_input(
                 "motor_no": integer(racer.get("motor_no")),
                 "motor_top2_rate": number(racer.get("motor_2"), 0.0),
                 "motor_top3_rate": number(racer.get("motor_3"), 0.0),
+                # Display/linkage diagnostics only. The prediction engine does not
+                # consume these fields.
+                "local_avg_st": racer.get("boaters_local_avg_st") or racer.get("local_st"),
+                "motor_recent_top3_rate": (racer.get("motor_recent") or {}).get("top3_rate"),
                 "setsukan_runs": deepcopy(racer.get("season_runs") or []),
                 "boaters_escape_rate": racer.get("boaters_escape_rate"),
                 "boaters_sashare_rate": racer.get("boaters_sashare_rate"),
@@ -250,8 +254,139 @@ def ticket_rows(result: dict) -> tuple[list[dict], list[dict], list[dict]]:
     return rows("main", "本線"), rows("deviation", "ずらし"), rows("upset", "荒れ")
 
 
-def format_prediction(result: dict, phase: str) -> dict:
+def optional_number(value: Any) -> float | None:
+    try:
+        if value in (None, "", "-"):
+            return None
+        return float(str(value).replace("%", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def lane1_fly_judgement(result: dict, race_input: dict) -> dict:
+    boats = race_input.get("boats") or []
+    by_lane = {integer(boat.get("lane")): boat for boat in boats}
+    by_course = {integer(boat.get("actual_course")): boat for boat in boats}
+    lane1 = by_lane.get(1) or {}
+    rivals = [by_course[course] for course in (2, 3, 4) if course in by_course]
+
+    escape_rate = optional_number(lane1.get("boaters_escape_rate"))
+    if escape_rate is not None and escape_rate > 1:
+        escape_rate /= 100.0
+    condition_a = escape_rate is not None and escape_rate < 0.40
+
+    lane1_local_st = optional_number(lane1.get("local_avg_st"))
+    rival_st = [
+        value
+        for value in (optional_number(boat.get("local_avg_st")) for boat in rivals)
+        if value is not None
+    ]
+    condition_b = (
+        lane1_local_st is not None
+        and bool(rival_st)
+        and lane1_local_st - min(rival_st) >= 0.03 - 1e-9
+    )
+
+    lane1_motor_top3 = optional_number(lane1.get("motor_recent_top3_rate"))
+    rival_motor_top3 = [
+        value
+        for value in (
+            optional_number(boat.get("motor_recent_top3_rate")) for boat in rivals
+        )
+        if value is not None
+    ]
+    condition_c = (
+        lane1_motor_top3 is not None
+        and bool(rival_motor_top3)
+        and max(rival_motor_top3) - lane1_motor_top3 >= 20.0 - 1e-9
+    )
+
+    # The engine's existing exhibition signal is rank-based in 0.4 steps.
+    # A signal gap of 0.8 therefore means two or more rank positions.
+    exhibition = (
+        (result.get("live_adjustment") or {}).get("exhibition_signal_by_lane") or {}
+    )
+    lane1_exhibition = optional_number(exhibition.get(1, exhibition.get("1")))
+    rival_exhibition = [
+        value
+        for course in (2, 3, 4)
+        for lane in [integer((by_course.get(course) or {}).get("lane"))]
+        for value in [optional_number(exhibition.get(lane, exhibition.get(str(lane))))]
+        if value is not None
+    ]
+    condition_d = (
+        lane1_exhibition is not None
+        and bool(rival_exhibition)
+        and max(rival_exhibition) - lane1_exhibition >= 0.8 - 1e-9
+    )
+
+    matches = (result.get("attack_defense") or {}).get("matches") or []
+    condition_e = any(
+        integer(match.get("course")) in (2, 3, 4)
+        and (optional_number(match.get("score")) or 0.0) > 0
+        for match in matches
+        if isinstance(match, dict)
+    )
+
+    conditions = {
+        "A": condition_a,
+        "B": condition_b,
+        "C": condition_c,
+        "D": condition_d,
+        "E": condition_e,
+    }
+    count = sum(conditions.values())
+    if count <= 1:
+        probability, level = 38.5, "通常"
+    elif count == 2:
+        probability, level = 47.1, "注意"
+    elif count == 3:
+        probability, level = 58.5, "警戒"
+    else:
+        probability, level = 63.2, "危険"
+    return {
+        "probability": probability,
+        "level": level,
+        "conditionCount": count,
+        "conditions": conditions,
+    }
+
+
+def non_lane1_upset_rows(
+    result: dict,
+    ai: list[dict],
+    balance: list[dict],
+    upset: list[dict],
+) -> list[dict]:
+    protected = {row["combo"] for row in ai + balance}
+    selected = []
+    seen = set(protected)
+    candidates = list(upset)
+    score_rows = result.get("tickets", {}).get("ranked_top20") or []
+    candidates.extend(
+        {
+            "combo": row.get("ticket", ""),
+            "role": "荒れ",
+            "prob": round(float(row.get("score") or 0.0) * 100.0, 2),
+        }
+        for row in score_rows
+    )
+    for row in candidates:
+        combo = str(row.get("combo") or "")
+        if not combo or combo.startswith("1-") or combo in seen:
+            continue
+        selected.append(row)
+        seen.add(combo)
+        if len(selected) == 2:
+            break
+    return selected if len(selected) == 2 else upset
+
+
+def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
     ai, balance, upset = ticket_rows(result)
+    lane1_fly = lane1_fly_judgement(result, race_input)
+    if lane1_fly["probability"] >= 40.0:
+        upset = non_lane1_upset_rows(result, ai, balance, upset)
     is_final = phase == "final"
     stage = {
         "label": "本予想" if is_final else "仮予想",
@@ -278,6 +413,9 @@ def format_prediction(result: dict, phase: str) -> dict:
         "top3": pct_map(result, "top3_prob"),
         "sab": result["sab"]["grade"],
         "sabDetail": deepcopy(result["sab"]),
+        "lane1FlyProbability": lane1_fly["probability"],
+        "lane1FlyLevel": lane1_fly["level"],
+        "lane1FlyDetail": lane1_fly,
         "ai": ai,
         "balance": balance,
         "aiUpset": upset,
@@ -385,13 +523,14 @@ def apply_predictions(
         race_input, unresolved = build_engine_input(payload, race, resolver, documents)
         unresolved_all.extend(unresolved)
         result = engine.predict(race_input, stage)
-        prediction = format_prediction(result, stage)
+        prediction = format_prediction(result, stage, race_input)
         if stage == "final" and not prediction_complete(race.get("predictionPre"), "preliminary"):
             pre_input, pre_unresolved = build_engine_input(payload, race, resolver)
             unresolved_all.extend(pre_unresolved)
             race["predictionPre"] = format_prediction(
                 engine.predict(pre_input, "preliminary"),
                 "preliminary",
+                pre_input,
             )
         if stage == "final":
             add_probability_review(prediction, race["predictionPre"])
