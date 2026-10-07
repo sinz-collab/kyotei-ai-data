@@ -53,6 +53,7 @@ def sync_race_prediction(payload: dict, race_no: int, prediction: dict, engine_i
         "probabilityReviewStatus": prediction.get("probabilityReviewStatus"),
         "probabilityFlow": deepcopy(prediction.get("probabilityFlow") or {}),
         "predictionStage": deepcopy(prediction.get("predictionStage") or {}),
+        "flyPrediction": deepcopy(prediction.get("flyPrediction") or {}),
     })
 
 
@@ -73,9 +74,12 @@ def apply_toda_live_review(payload: dict, target_date: str, race_no: int, live_r
     if str(ENGINE_DIR) not in sys.path:
         sys.path.insert(0, str(ENGINE_DIR))
     from toda_live_review_v5 import apply_live_review
+    from toda_fly_prediction_v5 import build_fly_prediction
     from toda_prediction_engine_v5 import ENGINE_ID
     if not apply_live_review(prediction, documents):
         raise RuntimeError("toda_live_review_not_applied")
+    racers = (prediction.get("modelInputs") or {}).get("racers") or []
+    prediction["flyPrediction"] = build_fly_prediction(prediction, racers)
     prediction["engine"] = ENGINE_ID
     payload["engine"] = ENGINE_ID
     pe = payload.setdefault("predictionEngine", {})
