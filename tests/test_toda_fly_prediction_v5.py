@@ -84,12 +84,24 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         self.assertTrue(fallback["personalEscapeFallback"])
         self.assertAlmostEqual(fallback["baseFly"], 100.0 - TODA_LANE1_ESCAPE_BASELINE, places=6)
 
-    def test_missing_attack_rate_is_not_guessed(self):
+    def test_missing_attack_rate_zeros_only_its_matchup_component(self):
         prediction, racers = self._reviewed(1)
+        expected = build_fly_prediction(prediction, racers)
         missing = copy.deepcopy(racers)
         next(row for row in missing if int(row["lane"]) == 2).pop("boaters_sashi_rate", None)
-        with self.assertRaisesRegex(RuntimeError, "toda_fly_attack_rate_missing"):
-            build_fly_prediction(prediction, missing)
+        actual = build_fly_prediction(prediction, missing)
+
+        expected_components = {
+            row["id"]: row for row in expected["attackMatchupComponents"]
+        }
+        actual_components = {
+            row["id"]: row for row in actual["attackMatchupComponents"]
+        }
+        missing_component = actual_components["1_sashare_x_2_sashi"]
+        self.assertEqual(missing_component["attackRate"], 0.0)
+        self.assertEqual(missing_component["matchup"], 0.0)
+        for component_id in actual_components.keys() - {"1_sashare_x_2_sashi"}:
+            self.assertEqual(actual_components[component_id], expected_components[component_id])
 
     def test_fly_tickets_are_ten_unique_conditional_tickets(self):
         prediction, racers = self._reviewed(1)

@@ -50,7 +50,10 @@ def _base_fly(racers):
 
 
 def _percentage(racer, key):
-    value = _optional_number((racer or {}).get(key))
+    raw_value = (racer or {}).get(key)
+    if raw_value is None or raw_value == "":
+        return 0.0
+    value = _optional_number(raw_value)
     if value is None:
         raise RuntimeError(f"toda_fly_attack_rate_missing: {key}")
     return clamp(value, 0.0, 100.0)
