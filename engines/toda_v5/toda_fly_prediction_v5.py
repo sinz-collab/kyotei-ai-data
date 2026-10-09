@@ -212,7 +212,7 @@ def build_fly_tickets(prediction, exclude_combos=None):
                 "role": role,
                 "head": head,
                 "pattern": "conditional",
-                "conditionalProbability": round(probability, 8),
+                "prob": round(probability, 4),
                 "scenarioIds": _scenario_ids(scenarios, head),
             })
             if len(selected) >= 10:
