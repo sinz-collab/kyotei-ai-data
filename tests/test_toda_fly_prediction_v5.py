@@ -26,6 +26,7 @@ from toda_fly_prediction_v5 import (
     build_fly_prediction,
 )
 from toda_live_review_v5 import apply_live_review
+from toda_ticket_engine_v5 import build_tickets
 
 
 class TodaFlyPredictionV5Tests(unittest.TestCase):
@@ -116,13 +117,35 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         self.assertEqual(sum(row["role"] == "展開連動" for row in tickets), 2)
         main = [row for row in tickets if row["role"] == "Main HEAD"]
         second = [row for row in tickets if row["role"] == "Second HEAD"]
-        self.assertEqual(sum(row["pattern"] == "lane1Second" for row in main), 2)
-        self.assertEqual(sum(row["pattern"] == "lane1Third" for row in main), 1)
-        self.assertEqual(sum(row["pattern"] == "lane1Out" for row in main), 2)
-        self.assertEqual(sum(row["pattern"] == "lane1Second" for row in second), 2)
-        self.assertEqual(sum(row["pattern"] == "lane1Third" for row in second), 1)
+        self.assertTrue(all(row["head"] == fly["mainHead"] for row in main))
+        self.assertTrue(all(row["head"] == fly["secondHead"] for row in second))
 
-    def test_non_fly_has_no_recommended_tickets(self):
+    def test_normal_tickets_keep_fixed_ten_role_contract(self):
+        prediction, _ = self._reviewed(1)
+        tickets = build_tickets(
+            prediction["win"],
+            prediction["secondByHead"],
+            prediction["thirdByHead"],
+            prediction["scenarios"],
+            prediction["sab"],
+        )
+        roles = [row["role"] for row in tickets]
+        self.assertEqual(len(tickets), 10)
+        self.assertEqual(len({row["combo"] for row in tickets}), 10)
+        self.assertEqual(roles.count("本線"), 6)
+        self.assertEqual(roles.count("2着ズレ"), 1)
+        self.assertEqual(roles.count("3着ズレ"), 1)
+        self.assertEqual(roles.count("シナリオ穴"), 2)
+
+    def test_fly_tickets_exclude_all_normal_tickets(self):
+        prediction, racers = self._reviewed(1)
+        normal = {row["combo"] for row in prediction["ai"]}
+        fly = build_fly_prediction(prediction, racers)
+        fly_combos = {row["combo"] for row in fly["tickets"]}
+        self.assertEqual(len(fly_combos), 10)
+        self.assertFalse(normal & fly_combos)
+
+    def test_non_fly_still_has_ten_recommended_tickets(self):
         prediction, racers = self._reviewed(1)
         prediction["win"]["1"] = 100.0
         for row in racers:
@@ -138,7 +161,39 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         ]
         fly = build_fly_prediction(prediction, racers)
         self.assertFalse(fly["isFly"])
-        self.assertEqual(fly["tickets"], [])
+        self.assertEqual(fly["judgement"], "逃げ優勢")
+        self.assertEqual(len(fly["tickets"]), 10)
+
+    def test_probability_boundary_never_suppresses_fly_tickets(self):
+        prediction, racers = self._reviewed(1)
+        prediction["scenarios"] = []
+        lane1 = next(row for row in racers if int(row["lane"]) == 1)
+        lane1["boaters_escape_rate"] = 30.0
+        lane1["boaters_kimarite_starts"] = 1_000_000_000.0
+        for key in ("boaters_sashare_rate", "boaters_makurare_rate", "boaters_makurare_zashi_rate"):
+            lane1[key] = 0.0
+        for row in racers:
+            if int(row["lane"]) in (2, 3, 4):
+                for key in ("boaters_sashi_rate", "boaters_makuri_rate", "boaters_makuri_sashi_rate"):
+                    row[key] = 0.0
+
+        base_fly = build_fly_prediction(prediction, racers)["baseFly"]
+        for expected in (25.0, 49.0, 50.0, 65.0):
+            formula_probability = expected + (0.01 if expected == FLY_THRESHOLD else 0.0)
+            target_raw = (
+                math.log((formula_probability / 100.0) / (1.0 - formula_probability / 100.0))
+                - SIGMOID_INTERCEPT
+            ) / SIGMOID_SLOPE
+            prediction["win"]["1"] = 100.0 - (
+                target_raw - BASE_FLY_WEIGHT * base_fly
+            ) / CURRENT_P1_WEIGHT
+            fly = build_fly_prediction(prediction, racers)
+            self.assertEqual(fly["probability"], expected)
+            self.assertEqual(len(fly["tickets"]), 10)
+            self.assertEqual(
+                fly["judgement"],
+                "飛び優勢" if expected >= FLY_THRESHOLD else "逃げ優勢",
+            )
 
     def test_live_connector_adds_fly_after_review_without_changing_normal_output(self):
         race_no = 1
@@ -159,6 +214,11 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         for key in ("win", "second", "third", "sab", "ai", "aiUpset", "tickets", "scenarios"):
             self.assertEqual(actual[key], expected[key], key)
         self.assertEqual(actual["flyPrediction"]["status"], "final")
+        self.assertEqual(len(actual["flyPrediction"]["tickets"]), 10)
+        self.assertFalse(
+            {row["combo"] for row in actual["ai"]}
+            & {row["combo"] for row in actual["flyPrediction"]["tickets"]}
+        )
         self.assertEqual(
             next(row for row in actual_payload["races"] if row["race"] == race_no)["prediction"]["flyPrediction"],
             actual["flyPrediction"],

@@ -25,4 +25,10 @@ assert result["engine"] == module.ENGINE_ID
 assert sorted(map(int, result["preds"])) == list(range(1, 13))
 assert all(module.prediction_complete(p) for p in result["preds"].values())
 assert all(p["sourceSummary"]["odds_used_for_probability"] is False for p in result["preds"].values())
+assert all(p["flyPrediction"]["status"] == "pre" for p in result["preds"].values())
+assert all(len(p["flyPrediction"]["tickets"]) == 10 for p in result["preds"].values())
+assert all(
+    not ({row["combo"] for row in p["ai"]} & {row["combo"] for row in p["flyPrediction"]["tickets"]})
+    for p in result["preds"].values()
+)
 print("Toda v5 morning connector test passed")

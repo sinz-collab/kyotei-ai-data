@@ -199,6 +199,7 @@ def build_upset_tickets(
     limit=2,
     role="シナリオ穴",
     scenario_only=False,
+    include_main_head=False,
 ):
     excluded_combos = set(exclude_combos or [])
     excluded_heads = {int(head) for head in (exclude_heads or [])}
@@ -206,7 +207,7 @@ def build_upset_tickets(
     scenario_heads = {int(row["head"]) for row in scenarios or []}
     heads = [
         lane for lane in LANES
-        if lane != main_head
+        if (include_main_head or lane != main_head)
         and lane not in excluded_heads
         and (not scenario_only or lane in scenario_heads)
     ]
@@ -305,6 +306,24 @@ def build_tickets(win, second_by_head, third_by_head, scenarios, sab):
             continue
         seen.add(ticket["combo"])
         selected.append(ticket)
+
+    if len(selected) < 10 and scenarios:
+        grounded_fill = build_upset_tickets(
+            win,
+            second_by_head,
+            third_by_head,
+            scenarios,
+            exclude_combos=seen,
+            limit=10 - len(selected),
+            role="シナリオ穴",
+            scenario_only=True,
+            include_main_head=True,
+        )
+        for ticket in grounded_fill:
+            if ticket["combo"] in seen or len(selected) >= 10:
+                continue
+            seen.add(ticket["combo"])
+            selected.append(ticket)
 
     # A scenario label is never attached to an unsupported alternate head.
     # If fewer than two scenario tickets exist, retain the fixed ten-ticket

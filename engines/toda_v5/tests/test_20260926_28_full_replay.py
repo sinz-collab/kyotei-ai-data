@@ -10,6 +10,7 @@ if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
 
 from toda_live_review_v5 import apply_live_review
+from toda_fly_prediction_v5 import build_fly_prediction
 from toda_prediction_engine_v5 import TodaPredictionEngineV5
 
 
@@ -48,6 +49,10 @@ def _replay():
             }
             if not apply_live_review(prediction, documents):
                 raise AssertionError(f"live review failed for {date} {race_no}R")
+            prediction["flyPrediction"] = build_fly_prediction(
+                prediction,
+                (prediction.get("modelInputs") or {}).get("racers") or [],
+            )
             predictions[(date, race_no)] = prediction
 
     # Results are deliberately loaded only after every prediction is complete.
@@ -78,7 +83,7 @@ class TodaFull31RaceReplayTests(unittest.TestCase):
             self.assertEqual(roles.count("本線"), 6)
             self.assertEqual(roles.count("2着ズレ"), 1)
             self.assertEqual(roles.count("3着ズレ"), 1)
-            self.assertEqual(roles.count("シナリオ穴") + roles.count("展開保険"), 2)
+            self.assertEqual(roles.count("シナリオ穴"), 2)
             scenario_ids_by_head = {}
             for scenario in prediction["scenarios"]:
                 scenario_ids_by_head.setdefault(int(scenario["head"]), set()).add(scenario["id"])
@@ -94,6 +99,13 @@ class TodaFull31RaceReplayTests(unittest.TestCase):
             self.assertFalse(prediction["sourceSummary"]["odds_used_for_tickets"])
             self.assertFalse(prediction["liveReviewMeta"]["oddsUsedForProbability"])
             self.assertFalse(prediction["liveReviewMeta"]["oddsUsedForTickets"])
+            normal_combos = {ticket["combo"] for ticket in tickets}
+            fly_tickets = prediction["flyPrediction"]["tickets"]
+            fly_combos = {ticket["combo"] for ticket in fly_tickets}
+            self.assertEqual(len(fly_tickets), 10)
+            self.assertEqual(len(fly_combos), 10)
+            self.assertFalse(normal_combos & fly_combos)
+            self.assertTrue(all(not combo.startswith("1-") for combo in fly_combos))
 
     def test_required_regression_races(self):
         race6 = self.rows[("2026-09-28", 6)]["prediction"]

@@ -11,6 +11,7 @@ if str(ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR))
 
 from toda_prediction_engine_v5 import ENGINE_ID, TodaPredictionEngineV5
+from toda_fly_prediction_v5 import build_fly_prediction
 
 
 def atomic_write_json(path: Path, payload: dict) -> None:
@@ -72,6 +73,8 @@ def apply_toda_v5(payload: dict, target_date: str) -> dict:
             prediction = engine.predict(race, context_for(payload, race))
             if not prediction_complete(prediction):
                 raise RuntimeError("prediction_output_incomplete")
+            racers = (prediction.get("modelInputs") or {}).get("racers") or []
+            prediction["flyPrediction"] = build_fly_prediction(prediction, racers, status="pre")
             predictions[str(race_no)] = prediction
         except Exception as exc:
             failures.append({"race": race_no, "error": f"{type(exc).__name__}: {exc}"})

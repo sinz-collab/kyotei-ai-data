@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 
 from toda_ticket_engine_v5 import combo_prob
 from toda_utils_v5 import LANES, clamp, num
@@ -139,17 +140,31 @@ def _fly_heads(prediction):
     return ranked
 
 
-def build_fly_tickets(prediction):
+def _normalize_combo(value):
+    if isinstance(value, dict):
+        value = value.get("combo") or value.get("combination") or value.get("ticket")
+    boats = re.findall(r"[1-6]", str(value or ""))
+    if len(boats) != 3 or len(set(boats)) != 3:
+        return ""
+    return "-".join(boats)
+
+
+def build_fly_tickets(prediction, exclude_combos=None):
     heads = _fly_heads(prediction)
     main_head, second_head, development_head = heads[:3]
     scenarios = prediction.get("scenarios") or []
     selected = []
     seen = set()
+    excluded = {
+        combo
+        for combo in (_normalize_combo(value) for value in (exclude_combos or []))
+        if combo
+    }
 
     def add(head, category, role, limit):
         added = 0
         for probability, combo in _ranked_combos(prediction, head, category):
-            if combo in seen:
+            if combo in excluded or combo in seen:
                 continue
             seen.add(combo)
             selected.append({
@@ -163,6 +178,7 @@ def build_fly_tickets(prediction):
             added += 1
             if added >= limit:
                 break
+        return added
 
     add(main_head, "lane1Second", "Main HEAD", 2)
     add(main_head, "lane1Third", "Main HEAD", 1)
@@ -171,19 +187,52 @@ def build_fly_tickets(prediction):
     add(second_head, "lane1Third", "Second HEAD", 1)
     add(development_head, None, "展開連動", 2)
 
-    if len(selected) != 10 or len(seen) != 10:
-        raise RuntimeError(f"toda_fly_tickets_must_be_10_unique: {len(selected)}")
+    for head, role, limit in (
+        (main_head, "Main HEAD", 5),
+        (second_head, "Second HEAD", 3),
+        (development_head, "展開連動", 2),
+    ):
+        missing = limit - sum(row["role"] == role for row in selected)
+        if missing > 0:
+            add(head, None, role, missing)
+
+    if len(selected) < 10:
+        remaining = []
+        for head_rank, head in enumerate(heads):
+            role = "Main HEAD" if head == main_head else "Second HEAD" if head == second_head else "展開連動"
+            for probability, combo in _ranked_combos(prediction, head):
+                if combo not in excluded and combo not in seen:
+                    remaining.append((-probability, head_rank, combo, head, role, probability))
+        for _, _, combo, head, role, probability in sorted(remaining):
+            if combo in seen:
+                continue
+            seen.add(combo)
+            selected.append({
+                "combo": combo,
+                "role": role,
+                "head": head,
+                "pattern": "conditional",
+                "conditionalProbability": round(probability, 8),
+                "scenarioIds": _scenario_ids(scenarios, head),
+            })
+            if len(selected) >= 10:
+                break
+
     if any(int(row["combo"].split("-")[0]) == 1 for row in selected):
         raise RuntimeError("toda_fly_ticket_lane1_head_forbidden")
+    shortage = max(0, 10 - len(selected))
     return {
         "mainHead": main_head,
         "secondHead": second_head,
         "developmentHead": development_head,
         "tickets": selected,
+        "ticketStatus": "complete" if shortage == 0 else "insufficient",
+        "ticketShortage": shortage,
+        "ticketShortageReason": None if shortage == 0 else "valid_unique_candidates_below_10",
     }
 
 
-def build_fly_prediction(prediction, racers):
+def build_fly_prediction(prediction, racers, status="final"):
     base = _base_fly(racers)
     current_p1 = num((prediction.get("win") or {}).get("1"), -1.0)
     if not 0.0 <= current_p1 <= 100.0:
@@ -205,17 +254,13 @@ def build_fly_prediction(prediction, racers):
         1.0 + math.exp(-(SIGMOID_INTERCEPT + SIGMOID_SLOPE * raw_fly_score))
     )
     is_fly = probability >= FLY_THRESHOLD
-    ticket_result = build_fly_tickets(prediction) if is_fly else {
-        "mainHead": None,
-        "secondHead": None,
-        "developmentHead": None,
-        "tickets": [],
-    }
+    ticket_result = build_fly_tickets(prediction, prediction.get("ai") or [])
     return {
         "probability": round(probability, 1),
         "threshold": FLY_THRESHOLD,
         "isFly": is_fly,
-        "status": "final",
+        "judgement": "飛び優勢" if is_fly else "逃げ優勢",
+        "status": status,
         "rawFlyScore": round(raw_fly_score, 6),
         "baseFly": round(base["baseFly"], 6),
         "currentP1": round(current_p1, 6),
