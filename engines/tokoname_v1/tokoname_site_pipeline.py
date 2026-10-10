@@ -30,6 +30,42 @@ def default_predictor(payload: dict, model_dir: Path) -> dict:
     return predict(payload, model_dir)
 
 
+def attach_morning_lane1_fly(
+    prediction: dict,
+    document: dict,
+    race: dict,
+    model_dir: Path,
+) -> None:
+    if __package__:
+        from .lane1_fly import attach, predict_morning
+    else:
+        from lane1_fly import attach, predict_morning
+    attach(prediction, predict_morning(document, race, model_dir))
+
+
+def attach_final_lane1_fly(
+    prediction: dict,
+    document: dict,
+    race: dict,
+    live_documents: dict,
+    model_dir: Path,
+) -> None:
+    if __package__:
+        from .lane1_fly import attach, predict_post_exhibition
+    else:
+        from lane1_fly import attach, predict_post_exhibition
+    attach(
+        prediction,
+        predict_post_exhibition(
+            document,
+            race,
+            live_documents["direct"],
+            live_documents["exhibition"],
+            model_dir,
+        ),
+    )
+
+
 def load_json(path: Path) -> dict:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -260,6 +296,7 @@ def apply_tokoname_preliminary_predictions(
             model_dir,
         )
         prediction = site_prediction(output, phase="preliminary")
+        attach_morning_lane1_fly(prediction, updated, race, model_dir)
         race["prediction"] = prediction
         reports.append(
             {
@@ -532,6 +569,29 @@ def apply_tokoname_predictions(
                 phase="final",
                 original_exhibition_available=original_available,
             )
+            fly_error = None
+            try:
+                attach_final_lane1_fly(
+                    prediction,
+                    updated,
+                    race,
+                    live_documents,
+                    model_dir,
+                )
+            except Exception as exc:
+                fly_error = f"{type(exc).__name__}: {exc}"
+                for key in (
+                    "lane1FlyProbability",
+                    "lane1FlyLevel",
+                    "lane1FlyStage",
+                    "lane1FlyDetail",
+                ):
+                    if isinstance(existing_prediction, dict) and key in existing_prediction:
+                        prediction[key] = deepcopy(existing_prediction[key])
+                prediction["lane1FlyFallback"] = {
+                    "status": "morning_preserved",
+                    "reason": fly_error,
+                }
             race["prediction"] = prediction
             reports.append(
                 {
@@ -566,6 +626,9 @@ def apply_tokoname_predictions(
                         prediction["probabilities"]["win"],
                         key=prediction["probabilities"]["win"].get,
                     ),
+                    "lane1_fly_probability": prediction.get("lane1FlyProbability"),
+                    "lane1_fly_stage": prediction.get("lane1FlyStage"),
+                    "lane1_fly_error": fly_error,
                 }
             )
         except Exception as exc:
