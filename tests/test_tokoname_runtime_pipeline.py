@@ -472,6 +472,55 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertEqual(calls, [])
         self.assertEqual(dated.read_bytes(), before)
 
+    def test_result_complete_backfills_missing_lane1_fly_without_main_engine(self) -> None:
+        write_live(self.live_root, 1)
+        self.stage(race_numbers=[1])
+        dated = self.output_root / "venues" / "tokoname" / "20260730.json"
+        latest = self.output_root / "venues" / "tokoname" / "latest.json"
+        staged = json.loads(dated.read_text(encoding="utf-8"))
+        prediction = staged["races"][0]["prediction"]
+        input_hash = prediction["input_hash"]
+        for key in (
+            "lane1FlyProbability",
+            "lane1FlyLevel",
+            "lane1FlyStage",
+            "lane1FlyDetail",
+        ):
+            prediction.pop(key, None)
+        dated.write_text(json.dumps(staged, ensure_ascii=False), encoding="utf-8")
+        latest.write_text(json.dumps(staged, ensure_ascii=False), encoding="utf-8")
+        result_path = self.live_root / DATE / "tokoname" / "01" / "result.json"
+        result_path.write_text(
+            json.dumps(
+                {
+                    "date": DATE,
+                    "venue": "tokoname",
+                    "race_no": 1,
+                    "status": "complete",
+                    "complete": True,
+                    "data": {"order": [1, 2, 3]},
+                }
+            ),
+            encoding="utf-8",
+        )
+        calls = []
+
+        def predictor(payload: dict, model_dir: Path) -> dict:
+            calls.append(payload)
+            return fake_predict(payload, model_dir)
+
+        result = self.stage(race_numbers=[1], predictor=predictor)
+        published = json.loads(dated.read_text(encoding="utf-8"))["races"][0][
+            "prediction"
+        ]
+
+        self.assertEqual(result["status"], "updated")
+        self.assertEqual(result["lane1_fly_backfilled_races"], [1])
+        self.assertEqual(calls, [])
+        self.assertEqual(published["input_hash"], input_hash)
+        self.assertIn("lane1FlyProbability", published)
+        self.assertEqual(dated.read_bytes(), latest.read_bytes())
+
     def test_non_tokoname_live_result_does_not_start_staging(self) -> None:
         class Logger:
             def error(self, *args, **kwargs) -> None:

@@ -15,6 +15,8 @@ if str(ROOT) not in sys.path:
 from engines.tokoname_v1.tokoname_site_pipeline import (
     DEFAULT_MODEL_DIR,
     REQUIRED_LIVE_FILENAMES,
+    attach_final_lane1_fly,
+    attach_morning_lane1_fly,
     apply_tokoname_predictions,
     apply_tokoname_preliminary_predictions,
     atomic_write_json,
@@ -120,6 +122,49 @@ def _load_existing(path: Path) -> dict | None:
     return payload
 
 
+def backfill_missing_lane1_fly(
+    document: dict,
+    *,
+    venue_live_root: Path,
+    race_numbers: Iterable[int],
+    model_dir: Path,
+) -> list[int]:
+    """Add fly v1 to preserved predictions without rerunning the main engine."""
+    updated = []
+    for race_no in race_numbers:
+        race = _race_index(document).get(int(race_no))
+        prediction = race.get("prediction") if race else None
+        if not isinstance(prediction, dict) or "lane1FlyProbability" in prediction:
+            continue
+        live_race_dir = venue_live_root / f"{int(race_no):02d}"
+        try:
+            attach_final_lane1_fly(
+                prediction,
+                document,
+                race,
+                {
+                    "direct": load_json(live_race_dir / "direct.json"),
+                    "exhibition": load_json(live_race_dir / "exhibition.json"),
+                },
+                model_dir,
+            )
+        except Exception as final_error:
+            try:
+                attach_morning_lane1_fly(prediction, document, race, model_dir)
+                prediction["lane1FlyFallback"] = {
+                    "keptStage": "morning",
+                    "reason": f"post_exhibition_unavailable: {final_error}",
+                }
+            except Exception as morning_error:
+                prediction["lane1FlyError"] = (
+                    f"morning_unavailable: {morning_error}; "
+                    f"post_exhibition_unavailable: {final_error}"
+                )
+                continue
+        updated.append(int(race_no))
+    return updated
+
+
 def stage_tokoname_predictions(
     target_date: str,
     *,
@@ -187,6 +232,12 @@ def stage_tokoname_predictions(
 
     existing = _load_existing(dated_path) or _load_existing(latest_path)
     base = overlay_existing_predictions(morning, existing)
+    fly_backfilled_races = backfill_missing_lane1_fly(
+        base,
+        venue_live_root=venue_live_root,
+        race_numbers=requested,
+        model_dir=model_dir,
+    )
     base_races = _race_index(base)
     input_hashes = {}
     unchanged_races = []
@@ -212,6 +263,25 @@ def stage_tokoname_predictions(
         to_update.append(race_no)
 
     if not to_update:
+        if fly_backfilled_races:
+            dated_path.parent.mkdir(parents=True, exist_ok=True)
+            atomic_write_json(dated_path, base)
+            atomic_write_json(latest_path, base)
+            return {
+                "status": "updated",
+                "date": target_date,
+                "requested_races": requested,
+                "ready_races": ready,
+                "updated_races": fly_backfilled_races,
+                "preserved_races": [],
+                "unchanged_races": unchanged_races,
+                "result_complete_races": result_complete_races,
+                "engine_invoked_races": [],
+                "lane1_fly_backfilled_races": fly_backfilled_races,
+                "dated_path": str(dated_path),
+                "latest_path": str(latest_path),
+                "written": True,
+            }
         return {
             "status": "unchanged",
             "date": target_date,
