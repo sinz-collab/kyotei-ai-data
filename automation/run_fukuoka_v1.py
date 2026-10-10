@@ -560,6 +560,31 @@ def add_probability_review(final: dict, preliminary: dict) -> None:
     final["probabilityReview"] = review
 
 
+def add_lane1_fly_probability(prediction: dict) -> None:
+    lane1_win = number((prediction.get("win") or {}).get("1"))
+    if lane1_win is None:
+        return
+    probability = round(max(0.0, min(100.0, 100.0 - lane1_win)), 2)
+    if probability >= 60.0:
+        level = "危険"
+    elif probability >= 50.0:
+        level = "警戒"
+    elif probability >= 40.0:
+        level = "注意"
+    else:
+        level = "通常"
+    prediction["lane1FlyProbability"] = probability
+    prediction["lane1FlyLevel"] = level
+    prediction["lane1FlyDetail"] = {
+        "probability": probability,
+        "level": level,
+        "model": "complement_of_fukuoka_restore_p1_v1",
+        "source": "win.1",
+        "oddsUsedForPrediction": False,
+        "resultUsedForPrediction": False,
+    }
+
+
 def attach_live_domain(race: dict, documents: dict[str, dict]) -> None:
     direct = deepcopy(documents["direct"]["data"])
     exhibition = deepcopy(documents["exhibition"]["data"])
@@ -633,7 +658,9 @@ def apply_predictions(
             documents,
             morning_prediction=morning_prediction,
         )
+        add_lane1_fly_probability(prediction)
         if phase == "final":
+            add_lane1_fly_probability(race["predictionPre"])
             current_pre = race.get("predictionCurrentV1Pre")
             if current_prediction_complete(current_pre, "preliminary"):
                 add_probability_review(current_prediction, current_pre)

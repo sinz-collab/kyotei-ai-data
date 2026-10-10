@@ -76,6 +76,18 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertFalse(prediction["result_used"])
         self.assertIsInstance(prediction["confidence"], (int, float))
         self.assertEqual(prediction["scenario"]["model"], "restored_conditional_trifecta")
+        self.assertAlmostEqual(
+            prediction["lane1FlyProbability"],
+            100.0 - prediction["win"]["1"],
+            places=2,
+        )
+        self.assertIn(prediction["lane1FlyLevel"], {"通常", "注意", "警戒", "危険"})
+        self.assertEqual(
+            prediction["lane1FlyDetail"]["model"],
+            "complement_of_fukuoka_restore_p1_v1",
+        )
+        self.assertFalse(prediction["lane1FlyDetail"]["oddsUsedForPrediction"])
+        self.assertFalse(prediction["lane1FlyDetail"]["resultUsedForPrediction"])
         self.assertTrue(build_site_data.fukuoka_race_prediction_is_complete(prediction))
 
     def assert_current_v1_contract(self, prediction: dict, phase: str) -> None:
