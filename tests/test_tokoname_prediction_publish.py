@@ -64,6 +64,22 @@ def prediction() -> dict:
             "odds_used_for_probability": False,
             "result_used_for_probability": False,
         },
+        "lane1FlyProbability": 41.62,
+        "lane1FlyLevel": "注意",
+        "lane1FlyStage": "post_exhibition",
+        "lane1FlyDetail": {
+            "probability": 41.62,
+            "level": "注意",
+            "stage": "post_exhibition",
+            "model": "tokoname_lane1_fly_v1",
+            "trainedThrough": "2026-09-22",
+            "featureCount": 70,
+            "missingFeatures": [],
+            "oddsUsedForPrediction": False,
+            "raceActualStartUsedForPrediction": False,
+            "resultUsedForPrediction": False,
+            "originalExhibitionUsedForPrediction": False,
+        },
     }
 
 
@@ -250,6 +266,43 @@ class TokonamePredictionPublishTests(unittest.TestCase):
         self.assertEqual(first["status"], "published")
         self.assertEqual(second["status"], "unchanged")
         self.assertEqual(snapshot(self.repo_root), before)
+
+    def test_stale_staging_without_lane1_fly_is_rejected_twice(self) -> None:
+        published = deepcopy(self.original)
+        published["races"][0]["prediction"] = {
+            **prediction(),
+            "input_hash": "generated-with-fly",
+        }
+        write_json(self.dated, published)
+        write_json(self.latest, published)
+
+        staged = deepcopy(published)
+        stale = {
+            **prediction(),
+            "input_hash": "stale-without-fly",
+        }
+        for key in (
+            "lane1FlyProbability",
+            "lane1FlyLevel",
+            "lane1FlyStage",
+            "lane1FlyDetail",
+        ):
+            stale.pop(key)
+        staged["races"][0]["prediction"] = stale
+        self.stage(staged)
+        before = snapshot(self.repo_root)
+
+        first = publish_tokoname_predictions(self.staging_root, self.repo_root)
+        second = publish_tokoname_predictions(self.staging_root, self.repo_root)
+
+        self.assertEqual(first["status"], "not_ready")
+        self.assertEqual(second["status"], "not_ready")
+        self.assertEqual(snapshot(self.repo_root), before)
+        retained = json.loads(self.dated.read_text(encoding="utf-8"))["races"][0][
+            "prediction"
+        ]
+        self.assertEqual(retained["input_hash"], "generated-with-fly")
+        self.assertEqual(retained["lane1FlyProbability"], 41.62)
 
     def test_only_changed_ready_race_is_republished(self) -> None:
         staged = deepcopy(self.original)

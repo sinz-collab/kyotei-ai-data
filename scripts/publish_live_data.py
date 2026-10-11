@@ -19,6 +19,12 @@ from engines.tokoname_v1.tokoname_site_pipeline import validate_site_prediction
 
 TOKONAME = "tokoname"
 GIT_CONFLICT_MARKERS = ("<<<<<<<", "=======", ">>>>>>>")
+TOKONAME_LANE1_FLY_KEYS = (
+    "lane1FlyProbability",
+    "lane1FlyLevel",
+    "lane1FlyStage",
+    "lane1FlyDetail",
+)
 
 
 def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -161,6 +167,22 @@ def without_prediction_fields(document: dict) -> dict:
     return comparable
 
 
+def tokoname_lane1_fly_is_complete(prediction: dict) -> bool:
+    if any(key not in prediction for key in TOKONAME_LANE1_FLY_KEYS):
+        return False
+    probability = prediction["lane1FlyProbability"]
+    detail = prediction["lane1FlyDetail"]
+    return (
+        isinstance(probability, (int, float))
+        and 0.0 <= probability <= 100.0
+        and isinstance(prediction["lane1FlyLevel"], str)
+        and prediction["lane1FlyStage"] in {"morning", "post_exhibition"}
+        and isinstance(detail, dict)
+        and detail.get("probability") == probability
+        and detail.get("stage") == prediction["lane1FlyStage"]
+    )
+
+
 def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
     manifest_path = repo_root / "data" / "manifest.json"
     if not manifest_path.is_file():
@@ -215,6 +237,8 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
         try:
             validate_site_prediction(prediction)
         except (KeyError, TypeError, ValueError):
+            continue
+        if not tokoname_lane1_fly_is_complete(prediction):
             continue
         publishable[race_no] = prediction
     if not publishable:
