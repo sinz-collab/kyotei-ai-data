@@ -1,0 +1,47 @@
+{
+  "status": "new_reproducible_candidate_not_previous_coefficients",
+  "name": "fukuoka_fly_f1_tide60_candidate_20261011",
+  "data_period": {
+    "train": "2026-09-04..2026-09-18",
+    "train_races": 120,
+    "evaluation": "2026-09-22..2026-09-27",
+    "evaluation_races": 72,
+    "evaluation_is_final_holdout": false
+  },
+  "f1": {
+    "prior_escape_probability": 0.5335,
+    "pseudo_starts": 20,
+    "escape_rate_unit": "percent",
+    "formula": "baseFly = 1 - (attack_starts * escape_rate / 100 + 20 * 0.5335) / (attack_starts + 20)"
+  },
+  "tide60": {
+    "formula": "indicator = 1 if at least one recorded high/low tide event falls within 60 minutes of scheduled race deadline (local same day); else 0",
+    "high_and_low_tide": true
+  },
+  "calibration": {
+    "formula": "flyProb = 1/(1+exp(-(intercept + f1_logit_coef*log(baseFly/(1-baseFly)) + tide60_coef*tide60)))",
+    "intercept": -0.18942602852611862,
+    "f1_logit_coef": 1.6178979044475232,
+    "tide60_coef": 0.2798457516873573,
+    "estimator": "sklearn.linear_model.LogisticRegression(C=1.0,solver='lbfgs',max_iter=1000), default intercept fitting, L2",
+    "training_features": [
+      "logit(baseFly)",
+      "tide60"
+    ]
+  },
+  "baseline_calibrated": {
+    "intercept": -0.09898089186735345,
+    "f1_logit_coef": 1.5941825497090243
+  },
+  "evaluation": {
+    "f1_brier": 0.2244214345250911,
+    "calibrated_f1_brier": 0.2141192740554944,
+    "f1_tide60_brier": 0.21072747479415962,
+    "f1_tide60_accuracy_50": 0.6944444444444444
+  },
+  "constraints": [
+    "No odds/result used as predictors",
+    "Historical evaluation period was previously inspected in model selection, so it is not an untouched prospective test",
+    "Missing escape_rate, attack_starts, or tide events means no probability should be emitted until safe fallback is specified"
+  ]
+}

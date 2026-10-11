@@ -26,6 +26,7 @@ if str(RESTORE_ENGINE_DIR) not in sys.path:
 
 from fukuoka_prediction_engine_v1_0 import FukuokaPredictionEngineV10  # noqa: E402
 from fukuoka_restore_candidate_v1 import predict_restored  # noqa: E402
+from lane1_fly_v1 import predict_lane1_fly  # noqa: E402
 
 
 WIND_16_TO_8 = {
@@ -560,29 +561,24 @@ def add_probability_review(final: dict, preliminary: dict) -> None:
     final["probabilityReview"] = review
 
 
-def add_lane1_fly_probability(prediction: dict) -> None:
-    lane1_win = number((prediction.get("win") or {}).get("1"))
-    if lane1_win is None:
-        return
-    probability = round(max(0.0, min(100.0, 100.0 - lane1_win)), 2)
-    if probability >= 60.0:
-        level = "危険"
-    elif probability >= 50.0:
-        level = "警戒"
-    elif probability >= 40.0:
-        level = "注意"
-    else:
-        level = "通常"
-    prediction["lane1FlyProbability"] = probability
-    prediction["lane1FlyLevel"] = level
-    prediction["lane1FlyDetail"] = {
-        "probability": probability,
-        "level": level,
-        "model": "complement_of_fukuoka_restore_p1_v1",
-        "source": "win.1",
-        "oddsUsedForPrediction": False,
-        "resultUsedForPrediction": False,
-    }
+def add_lane1_fly_probability(
+    prediction: dict,
+    payload: dict,
+    race: dict,
+    stage: str,
+    race_input: dict | None = None,
+) -> None:
+    prediction.update(predict_lane1_fly(payload, race, stage, race_input))
+
+
+def refresh_lane1_fly_probabilities(payload: dict, race: dict) -> None:
+    morning_input = build_engine_input(payload, race)
+    for key in ("predictionPre", "predictionFinal", "prediction"):
+        prediction = race.get(key)
+        if not isinstance(prediction, dict):
+            continue
+        stage = "live" if prediction.get("phase") == "final" else "morning"
+        add_lane1_fly_probability(prediction, payload, race, stage, morning_input)
 
 
 def attach_live_domain(race: dict, documents: dict[str, dict]) -> None:
@@ -658,9 +654,21 @@ def apply_predictions(
             documents,
             morning_prediction=morning_prediction,
         )
-        add_lane1_fly_probability(prediction)
+        add_lane1_fly_probability(
+            prediction,
+            payload,
+            race,
+            "live" if phase == "final" else "morning",
+            race_input,
+        )
         if phase == "final":
-            add_lane1_fly_probability(race["predictionPre"])
+            add_lane1_fly_probability(
+                race["predictionPre"],
+                payload,
+                race,
+                "morning",
+                build_engine_input(payload, race),
+            )
             current_pre = race.get("predictionCurrentV1Pre")
             if current_prediction_complete(current_pre, "preliminary"):
                 add_probability_review(current_prediction, current_pre)
@@ -672,8 +680,9 @@ def apply_predictions(
         updated.append(race_no)
 
     for race in races:
+        refresh_lane1_fly_probabilities(payload, race)
         race_no = integer(race.get("race"))
-        if str(race_no) not in predictions and prediction_complete(race.get("prediction")):
+        if prediction_complete(race.get("prediction")):
             predictions[str(race_no)] = deepcopy(race["prediction"])
     if phase == "preliminary" and sorted(map(int, predictions)) != list(range(1, 13)):
         raise RuntimeError("fukuoka_preliminary_predictions_must_be_12")
