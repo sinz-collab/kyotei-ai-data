@@ -167,6 +167,9 @@ jobs:
       - name: Build and validate public data
         shell: bash
         run: |
+          python engines/tokoname_v1/backfill_lane1_fly_v1.py \
+            2026-10-06 2026-10-07 2026-10-08 2026-10-09 2026-10-10 \
+            --missing-only --write
           cp -a data "$RUNNER_TEMP/morning-data-before"
           python -m unittest discover -s tests
           python automation/build_site_data.py --date "$TARGET_DATE" | tee build.log
@@ -209,6 +212,10 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
             git clean -fd data
+
+            python engines/tokoname_v1/backfill_lane1_fly_v1.py \
+              2026-10-06 2026-10-07 2026-10-08 2026-10-09 2026-10-10 \
+              --missing-only --write
 
             rm -rf "$RUNNER_TEMP/morning-data-before-publish"
             cp -a data "$RUNNER_TEMP/morning-data-before-publish"

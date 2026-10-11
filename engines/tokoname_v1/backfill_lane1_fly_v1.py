@@ -15,12 +15,20 @@ except ImportError:
 
 ENGINE_DIR = Path(__file__).resolve().parent
 DEFAULT_MODEL_DIR = ENGINE_DIR / "models"
+LANE1_FLY_KEYS = (
+    "lane1FlyProbability",
+    "lane1FlyLevel",
+    "lane1FlyStage",
+    "lane1FlyDetail",
+)
 
 
 def backfill_document(
     document: dict,
     live_root: Path,
     model_dir: Path = DEFAULT_MODEL_DIR,
+    *,
+    missing_only: bool = False,
 ) -> tuple[dict, list[dict]]:
     updated = deepcopy(document)
     reports = []
@@ -29,6 +37,9 @@ def backfill_document(
         prediction = race.get("prediction")
         if not isinstance(prediction, dict):
             reports.append({"race": race_no, "status": "skipped", "reason": "prediction_missing"})
+            continue
+        if missing_only and all(key in prediction for key in LANE1_FLY_KEYS):
+            reports.append({"race": race_no, "status": "skipped", "reason": "fly_present"})
             continue
         morning = predict_morning(updated, race, model_dir)
         attach(prediction, morning)
@@ -71,6 +82,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("dates", nargs="+")
     parser.add_argument("--repo-root", type=Path, default=ENGINE_DIR.parents[1])
+    parser.add_argument("--missing-only", action="store_true")
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
     all_reports = {}
@@ -81,6 +93,7 @@ def main() -> int:
         updated, reports = backfill_document(
             document,
             args.repo_root / "data" / "live" / target_date / "tokoname",
+            missing_only=args.missing_only,
         )
         if args.write:
             atomic_write_json(venue_path, updated)
