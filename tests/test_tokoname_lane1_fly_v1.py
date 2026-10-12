@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import unittest
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 
 from engines.tokoname_v1.backfill_lane1_fly_v1 import backfill_document
@@ -38,17 +39,23 @@ class TokonameLane1FlyPublishedDataTests(unittest.TestCase):
                 self.assertFalse(detail["originalExhibitionUsedForPrediction"])
         self.assertEqual(stages, {"morning", "post_exhibition"})
 
-    def test_latest_matches_october_10(self) -> None:
+    def test_latest_matches_latest_valid_dated_json(self) -> None:
+        venue_dir = ROOT / "data" / "venues" / "tokoname"
         latest = json.loads(
-            (ROOT / "data" / "venues" / "tokoname" / "latest.json").read_text(
-                encoding="utf-8"
-            )
+            (venue_dir / "latest.json").read_text(encoding="utf-8")
         )
-        dated = json.loads(
-            (ROOT / "data" / "venues" / "tokoname" / "20261010.json").read_text(
-                encoding="utf-8"
-            )
-        )
+
+        dated_payloads = []
+        for path in venue_dir.glob("*.json"):
+            try:
+                dated = datetime.strptime(path.stem, "%Y%m%d").date()
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (ValueError, json.JSONDecodeError):
+                continue
+            dated_payloads.append((dated, payload))
+
+        self.assertTrue(dated_payloads)
+        _, dated = max(dated_payloads, key=lambda item: item[0])
         self.assertEqual(latest, dated)
 
     def test_backfill_is_idempotent_after_all_fly_fields_are_lost(self) -> None:
