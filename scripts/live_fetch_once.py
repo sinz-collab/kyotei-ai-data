@@ -722,6 +722,16 @@ def fukuoka_display_data_changed(results: list[dict[str, Any]]) -> bool:
     )
 
 
+def venue_batches_by_priority(
+    by_venue: dict[str, list[dict[str, Any]]],
+    priority_venue: str,
+) -> list[list[dict[str, Any]]]:
+    return sorted(
+        by_venue.values(),
+        key=lambda items: items[0].get("venue") != priority_venue,
+    )
+
+
 async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
     process = await asyncio.create_subprocess_exec(
         sys.executable,
@@ -889,8 +899,12 @@ async def run_once(
                         finally:
                             await context.close()
 
+            venue_batches = venue_batches_by_priority(
+                by_venue,
+                str(config.get("priority_venue") or ""),
+            )
             await asyncio.wait_for(
-                asyncio.gather(*(run_venue(items) for items in by_venue.values())),
+                asyncio.gather(*(run_venue(items) for items in venue_batches)),
                 timeout=config["process_timeout_seconds"],
             )
         finally:

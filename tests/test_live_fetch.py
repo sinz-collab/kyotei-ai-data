@@ -27,7 +27,11 @@ from publish_live_data import copy_changed_live_files
 from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
-from live_fetch_once import fukuoka_display_data_changed, shimonoseki_final_inputs_complete
+from live_fetch_once import (
+    fukuoka_display_data_changed,
+    shimonoseki_final_inputs_complete,
+    venue_batches_by_priority,
+)
 
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
@@ -94,6 +98,17 @@ class ShimonosekiFinalTriggerTests(unittest.TestCase):
 
 
 class FukuokaImmediatePublishTests(unittest.TestCase):
+    def test_fukuoka_batch_is_started_before_other_venues(self) -> None:
+        batches = venue_batches_by_priority(
+            {
+                "toda": [{"venue": "toda"}],
+                "fukuoka": [{"venue": "fukuoka"}],
+                "biwako": [{"venue": "biwako"}],
+            },
+            "fukuoka",
+        )
+        self.assertEqual([items[0]["venue"] for items in batches], ["fukuoka", "toda", "biwako"])
+
     def test_display_change_triggers_only_for_fukuoka_display_domains(self) -> None:
         self.assertTrue(
             fukuoka_display_data_changed(
