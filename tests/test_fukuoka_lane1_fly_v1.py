@@ -174,9 +174,9 @@ class TestFukuokaLane1FlyV1(unittest.TestCase):
             runner.apply_predictions(payload, "2026-09-03", "preliminary", ROOT)
         self.assertEqual(payload, before)
 
-    def test_public_json_exposes_computed_morning_and_live_probabilities(self) -> None:
+    def test_20261012_public_json_exposes_all_morning_and_live_probabilities(self) -> None:
         dated = json.loads(
-            (ROOT / "data" / "venues" / "fukuoka" / "20261011.json").read_text(
+            (ROOT / "data" / "venues" / "fukuoka" / "20261012.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -201,6 +201,25 @@ class TestFukuokaLane1FlyV1(unittest.TestCase):
             self.assertFalse(prediction["lane1FlyDetail"]["oddsUsedForPrediction"])
             self.assertFalse(prediction["lane1FlyDetail"]["resultUsedForPrediction"])
             stages.add(prediction["lane1FlyStage"])
+            self.assertEqual(len(prediction["win"]), 6)
+            self.assertEqual(len(prediction["second"]), 6)
+            self.assertEqual(len(prediction["third"]), 6)
+            self.assertEqual(len(prediction["ai"]), 6)
+            self.assertEqual(len(prediction["balance"]), 2)
+            self.assertEqual(len(prediction["aiUpset"]), 2)
+            self.assertIn("grade", prediction["SAB"])
+            expected_fly_count = 0 if race["race"] == 3 else 10
+            self.assertEqual(
+                len((prediction.get("flyPrediction") or {}).get("tickets") or []),
+                expected_fly_count,
+            )
+            preliminary = race["predictionPre"]
+            self.assertIsInstance(preliminary["lane1FlyProbability"], (int, float))
+            self.assertEqual(preliminary["lane1FlyStage"], "morning")
+            final = race.get("predictionFinal")
+            if isinstance(final, dict):
+                self.assertIsInstance(final["lane1FlyProbability"], (int, float))
+                self.assertEqual(final["lane1FlyStage"], "live")
         self.assertEqual(stages, {"morning", "live"})
 
 
