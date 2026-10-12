@@ -72,6 +72,14 @@ def load_config(path: Path = CONFIG_PATH) -> dict[str, Any]:
     ):
         if not isinstance(config[key], int) or config[key] <= 0:
             raise ValueError(f"{key} must be a positive integer")
+    priority_venue = config.get("priority_venue")
+    priority_interval = config.get("priority_interval_minutes")
+    if priority_venue is not None and not isinstance(priority_venue, str):
+        raise ValueError("priority_venue must be a string")
+    if priority_interval is not None and (
+        not isinstance(priority_interval, int) or priority_interval <= 0
+    ):
+        raise ValueError("priority_interval_minutes must be a positive integer")
     if config["open" + "ai_enabled"] is not False or config["ll" + "m_enabled"] is not False:
         raise ValueError("AI features must remain disabled")
     ZoneInfo(config["timezone"])

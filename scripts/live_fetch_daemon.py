@@ -36,7 +36,12 @@ async def daemon() -> int:
         logger.info("live monitor started", extra={"event": "daemon_started"})
         previous_state = ""
         interval = timedelta(minutes=config["interval_minutes"])
+        priority_venue = str(config.get("priority_venue") or "").strip()
+        priority_interval = timedelta(
+            minutes=int(config.get("priority_interval_minutes") or config["interval_minutes"])
+        )
         last_started = None
+        last_priority_started = None
         while not stop.is_set():
             now = now_local(config)
             if not is_fetch_window(now, config):
@@ -53,16 +58,32 @@ async def daemon() -> int:
                 except asyncio.TimeoutError:
                     pass
                 continue
-            if last_started is not None and now - last_started < interval:
-                wait_seconds = max(1.0, (interval - (now - last_started)).total_seconds())
+            full_due = last_started is None or now - last_started >= interval
+            priority_due = bool(priority_venue) and (
+                last_priority_started is None
+                or now - last_priority_started >= priority_interval
+            )
+            if not full_due and not priority_due:
+                waits = [(interval - (now - last_started)).total_seconds()]
+                if priority_venue and last_priority_started is not None:
+                    waits.append(
+                        (priority_interval - (now - last_priority_started)).total_seconds()
+                    )
+                wait_seconds = max(1.0, min(waits))
                 try:
                     await asyncio.wait_for(stop.wait(), timeout=wait_seconds)
                 except asyncio.TimeoutError:
                     pass
                 continue
-            last_started = now
+            venue_filter = None
+            if full_due:
+                last_started = now
+                last_priority_started = now
+            else:
+                venue_filter = {priority_venue}
+                last_priority_started = now
             try:
-                result = await run_once(config, now=now)
+                result = await run_once(config, now=now, venue_filter=venue_filter)
                 state = result["status"]
                 if state != previous_state or state == "completed":
                     logger.info(

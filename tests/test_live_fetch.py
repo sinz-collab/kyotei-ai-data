@@ -27,7 +27,7 @@ from publish_live_data import copy_changed_live_files
 from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
-from live_fetch_once import shimonoseki_final_inputs_complete
+from live_fetch_once import fukuoka_display_data_changed, shimonoseki_final_inputs_complete
 
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
@@ -91,6 +91,34 @@ class ShimonosekiFinalTriggerTests(unittest.TestCase):
             self.assertTrue(
                 shimonoseki_final_inputs_complete(race_dir, result_only)
             )
+
+
+class FukuokaImmediatePublishTests(unittest.TestCase):
+    def test_display_change_triggers_only_for_fukuoka_display_domains(self) -> None:
+        self.assertTrue(
+            fukuoka_display_data_changed(
+                [
+                    {
+                        "target": {"venue": "fukuoka"},
+                        "items": {"exhibition": {"changed": True}},
+                    }
+                ]
+            )
+        )
+        self.assertFalse(
+            fukuoka_display_data_changed(
+                [
+                    {
+                        "target": {"venue": "fukuoka"},
+                        "items": {"odds": {"changed": True}},
+                    },
+                    {
+                        "target": {"venue": "biwako"},
+                        "items": {"exhibition": {"changed": True}},
+                    },
+                ]
+            )
+        )
 
     def test_incomplete_saved_input_does_not_trigger_final(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

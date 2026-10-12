@@ -708,12 +708,60 @@ async def _launch_browser(playwright: Any, config: dict[str, Any], logger: Any) 
     raise RuntimeError(f"browser launch failed: {last_error}")
 
 
+FUKUOKA_DISPLAY_ITEMS = ("direct", "exhibition", "original_exhibition")
+
+
+def fukuoka_display_data_changed(results: list[dict[str, Any]]) -> bool:
+    return any(
+        result.get("target", {}).get("venue") == "fukuoka"
+        and any(
+            (result.get("items", {}).get(item) or {}).get("changed") is True
+            for item in FUKUOKA_DISPLAY_ITEMS
+        )
+        for result in results
+    )
+
+
+async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(ROOT / "scripts" / "publish_live_data.py"),
+        "--push",
+        "--venue",
+        "fukuoka",
+        cwd=str(ROOT),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    message = (stdout if process.returncode == 0 else stderr).decode(
+        "utf-8", errors="replace"
+    ).strip()
+    log = logger.info if process.returncode == 0 else logger.error
+    log(
+        message,
+        extra={
+            "event": (
+                "fukuoka_immediate_publish_complete"
+                if process.returncode == 0
+                else "fukuoka_immediate_publish_failed"
+            ),
+            "venue": "fukuoka",
+        },
+    )
+    return {
+        "status": "published" if process.returncode == 0 else "failed",
+        "returncode": process.returncode,
+    }
+
+
 async def run_once(
     config: dict[str, Any],
     now: datetime | None = None,
     manifest_path: Path | None = None,
     output_root: Path | None = None,
     dry_run: bool = False,
+    venue_filter: set[str] | None = None,
 ) -> dict[str, Any]:
     current = normalize_now(now, config)
     logger = configure_logging(config)
@@ -731,6 +779,8 @@ async def run_once(
             logger,
         )
     active = detect_active_venues(manifest, today)
+    if venue_filter is not None:
+        active = [venue for venue in active if venue.get("slug") in venue_filter]
     targets = []
     for venue in active:
         targets.extend(select_target_races(venue, current, config, target_root))
@@ -860,6 +910,14 @@ async def run_once(
     )
     if tokoname_staging is not None:
         response["tokoname_prediction_staging"] = tokoname_staging
+    if (
+        config.get("priority_immediate_publish") is True
+        and target_root == resolve_root(config, "live_output_root")
+        and fukuoka_display_data_changed(results)
+    ):
+        response["fukuoka_immediate_publish"] = await publish_fukuoka_display_data(
+            logger
+        )
     return response
 
 

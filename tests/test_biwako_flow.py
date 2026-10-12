@@ -291,6 +291,27 @@ class BiwakoFlowTests(unittest.TestCase):
             self.assertEqual(copy_changed_live_files(source, repository), 1)
             self.assertTrue((repository / "data" / "live" / DATE / "biwako" / "01" / "direct.json").is_file())
 
+    def test_venue_scoped_publisher_copies_only_requested_venue(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "live"
+            for venue in ("fukuoka", "biwako"):
+                document = source / DATE / venue / "01" / "direct.json"
+                document.parent.mkdir(parents=True)
+                document.write_text("{}\n", encoding="utf-8")
+            repository = root / "publisher"
+
+            self.assertEqual(
+                copy_changed_live_files(source, repository, venue="fukuoka"),
+                1,
+            )
+            self.assertTrue(
+                (repository / "data" / "live" / DATE / "fukuoka" / "01" / "direct.json").is_file()
+            )
+            self.assertFalse(
+                (repository / "data" / "live" / DATE / "biwako" / "01" / "direct.json").exists()
+            )
+
     def test_live_monitor_selects_biwako_before_deadline(self) -> None:
         venue = {
             "slug": "biwako",

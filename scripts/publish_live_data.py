@@ -31,13 +31,20 @@ def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=cwd, text=True, capture_output=True, check=False)
 
 
-def copy_changed_live_files(source_root: Path, repo_root: Path) -> int:
+def copy_changed_live_files(
+    source_root: Path,
+    repo_root: Path,
+    venue: str | None = None,
+) -> int:
     destination_root = repo_root / "data" / "live"
     copied = 0
     for source in source_root.rglob("*"):
         if not source.is_file() or source.is_symlink():
             continue
-        destination = destination_root / source.relative_to(source_root)
+        relative = source.relative_to(source_root)
+        if venue is not None and (len(relative.parts) < 2 or relative.parts[1] != venue):
+            continue
+        destination = destination_root / relative
         if destination.exists() and source.read_bytes() == destination.read_bytes():
             continue
         destination.parent.mkdir(parents=True, exist_ok=True)
@@ -348,6 +355,7 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Optional batched Git backup for live JSON")
     parser.add_argument("--push", action="store_true")
+    parser.add_argument("--venue", choices=("fukuoka",))
     args = parser.parse_args()
     config = load_config()
     live_root = resolve_root(config, "live_output_root")
@@ -365,19 +373,27 @@ def main() -> int:
             if pulled.returncode:
                 print(pulled.stderr)
                 return pulled.returncode
-        copied = copy_changed_live_files(live_root, publish_repo)
-        tokoname = publish_tokoname_predictions(
-            ROOT / "runtime" / "predictions",
-            publish_repo,
-        )
-        print(f"Tokoname prediction publish: {tokoname['status']} ({tokoname['reason']})")
+        copied = copy_changed_live_files(live_root, publish_repo, args.venue)
+        if args.venue is None:
+            tokoname = publish_tokoname_predictions(
+                ROOT / "runtime" / "predictions",
+                publish_repo,
+            )
+            print(f"Tokoname prediction publish: {tokoname['status']} ({tokoname['reason']})")
+        else:
+            tokoname = {"status": "not_ready", "reason": "venue_scoped_publish", "paths": []}
         # Stage raw live JSON and generated public venue JSON.
         # Venue apply scripts modify data/venues before this publisher runs.
-        for generated_path in (
-            "data/live",
-            "data/venues",
-            "data/manifest.json",
-        ):
+        if args.venue is None:
+            generated_paths = ("data/live", "data/venues", "data/manifest.json")
+        else:
+            generated_paths = [f"data/venues/{args.venue}"]
+            generated_paths.extend(
+                f"data/live/{date_dir.name}/{args.venue}"
+                for date_dir in live_root.iterdir()
+                if date_dir.is_dir() and (date_dir / args.venue).is_dir()
+            )
+        for generated_path in generated_paths:
             candidate = publish_repo / generated_path
             if candidate.exists():
                 staged = run(
@@ -402,7 +418,9 @@ def main() -> int:
             print("No publishable data changes.")
             return 0
         stamp = time.strftime("%Y-%m-%d %H:%M")
-        if tokoname["status"] == "published" and copied:
+        if args.venue is not None:
+            message = f"Update {args.venue.title()} live data {stamp} ({copied} files)"
+        elif tokoname["status"] == "published" and copied:
             message = f"Update live data and Tokoname predictions {stamp}"
         elif tokoname["status"] == "published":
             message = f"Publish Tokoname predictions {tokoname['date']}"
