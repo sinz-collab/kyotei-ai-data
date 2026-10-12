@@ -92,6 +92,33 @@ class TestFukuokaV1Integration(unittest.TestCase):
         self.assertFalse(prediction["lane1FlyDetail"]["liveP1DeltaApplied"])
         self.assertFalse(prediction["lane1FlyDetail"]["oddsUsedForPrediction"])
         self.assertFalse(prediction["lane1FlyDetail"]["resultUsedForPrediction"])
+        fly = prediction["flyPrediction"]
+        self.assertEqual(fly["version"], "fukuoka_fly_tickets_v1.4_reference")
+        self.assertEqual(fly["stage"], "live" if phase == "final" else "morning")
+        self.assertFalse(fly["oddsUsed"])
+        self.assertFalse(fly["resultsUsed"])
+        if fly["status"] == "unavailable":
+            self.assertEqual(fly["tickets"], [])
+            self.assertIn(
+                fly["reason"],
+                {
+                    "variable_entry_not_supported_by_original_v14",
+                    "live_inputs_incomplete",
+                },
+            )
+        else:
+            self.assertEqual(fly["status"], fly["stage"])
+            self.assertEqual(len(fly["Main6"]), 6)
+            self.assertEqual(len(fly["Zure2"]), 2)
+            self.assertEqual(len(fly["Ana2"]), 2)
+            self.assertEqual(len(fly["tickets"]), 10)
+            combos = [row["combo"] for row in fly["tickets"]]
+            self.assertEqual(len(set(combos)), 10)
+            self.assertTrue(all(not combo.startswith("1-") for combo in combos))
+            self.assertEqual(
+                [row["role"] for row in fly["tickets"]],
+                ["本線"] * 6 + ["ズレ"] * 2 + ["シナリオ穴"] * 2,
+            )
         self.assertTrue(build_site_data.fukuoka_race_prediction_is_complete(prediction))
 
     def assert_current_v1_contract(self, prediction: dict, phase: str) -> None:

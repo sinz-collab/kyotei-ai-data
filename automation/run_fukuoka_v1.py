@@ -25,6 +25,7 @@ if str(RESTORE_ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(RESTORE_ENGINE_DIR))
 
 from fukuoka_prediction_engine_v1_0 import FukuokaPredictionEngineV10  # noqa: E402
+from fukuoka_fly_tickets_v14 import tickets_v14  # noqa: E402
 from fukuoka_restore_candidate_v1 import predict_restored  # noqa: E402
 from lane1_fly_v1 import predict_lane1_fly  # noqa: E402
 
@@ -571,7 +572,68 @@ def add_lane1_fly_probability(
     prediction.update(predict_lane1_fly(payload, race, stage, race_input))
 
 
-def refresh_lane1_fly_probabilities(payload: dict, race: dict) -> None:
+def build_fly_prediction(
+    race: dict,
+    prediction: dict,
+    stage: str,
+    documents: dict[str, dict] | None = None,
+) -> dict[str, Any]:
+    race_input = deepcopy(race)
+    race_input["prediction"] = deepcopy(prediction)
+    if stage == "morning":
+        race_input["live"] = {}
+    elif documents is not None:
+        attach_live_domain(race_input, documents)
+
+    try:
+        reference = tickets_v14(race_input)
+        if reference["stage"] != stage:
+            raise ValueError(f"{stage}_inputs_incomplete")
+    except (ValueError, RuntimeError) as exc:
+        return {
+            "version": "fukuoka_fly_tickets_v1.4_reference",
+            "status": "unavailable",
+            "stage": stage,
+            "reason": str(exc),
+            "Main6": [],
+            "Zure2": [],
+            "Ana2": [],
+            "tickets": [],
+            "ticketStatus": "unavailable",
+            "ticketShortage": 10,
+            "oddsUsed": False,
+            "resultsUsed": False,
+        }
+
+    roles = ["本線"] * 6 + ["ズレ"] * 2 + ["シナリオ穴"] * 2
+    rows = [
+        {"combo": combo, "role": role}
+        for combo, role in zip(reference["tickets"], roles)
+    ]
+    return {
+        **reference,
+        "status": stage,
+        "tickets": rows,
+        "ticketStatus": "complete",
+        "ticketShortage": 0,
+    }
+
+
+def add_fly_prediction(
+    prediction: dict,
+    race: dict,
+    stage: str,
+    documents: dict[str, dict] | None = None,
+) -> None:
+    prediction["flyPrediction"] = build_fly_prediction(
+        race,
+        prediction,
+        stage,
+        documents,
+    )
+
+
+def refresh_special_predictions(payload: dict, race: dict) -> None:
     morning_input = build_engine_input(payload, race)
     for key in ("predictionPre", "predictionFinal", "prediction"):
         prediction = race.get(key)
@@ -579,6 +641,7 @@ def refresh_lane1_fly_probabilities(payload: dict, race: dict) -> None:
             continue
         stage = "live" if prediction.get("phase") == "final" else "morning"
         add_lane1_fly_probability(prediction, payload, race, stage, morning_input)
+        add_fly_prediction(prediction, race, stage)
 
 
 def attach_live_domain(race: dict, documents: dict[str, dict]) -> None:
@@ -644,6 +707,7 @@ def apply_predictions(
                 "preliminary",
                 None,
             )
+            add_fly_prediction(race["predictionPre"], race, "morning")
         morning_prediction = (
             race.get("predictionCurrentV1Pre") if phase == "final" else current_prediction
         )
@@ -661,6 +725,12 @@ def apply_predictions(
             "live" if phase == "final" else "morning",
             race_input,
         )
+        add_fly_prediction(
+            prediction,
+            race,
+            "live" if phase == "final" else "morning",
+            documents,
+        )
         if phase == "final":
             add_lane1_fly_probability(
                 race["predictionPre"],
@@ -669,6 +739,7 @@ def apply_predictions(
                 "morning",
                 build_engine_input(payload, race),
             )
+            add_fly_prediction(race["predictionPre"], race, "morning")
             current_pre = race.get("predictionCurrentV1Pre")
             if current_prediction_complete(current_pre, "preliminary"):
                 add_probability_review(current_prediction, current_pre)
@@ -680,7 +751,7 @@ def apply_predictions(
         updated.append(race_no)
 
     for race in races:
-        refresh_lane1_fly_probabilities(payload, race)
+        refresh_special_predictions(payload, race)
         race_no = integer(race.get("race"))
         if prediction_complete(race.get("prediction")):
             predictions[str(race_no)] = deepcopy(race["prediction"])
