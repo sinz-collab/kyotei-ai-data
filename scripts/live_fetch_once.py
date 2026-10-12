@@ -733,35 +733,45 @@ def venue_batches_by_priority(
 
 
 async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
-    process = await asyncio.create_subprocess_exec(
-        sys.executable,
-        str(ROOT / "scripts" / "publish_live_data.py"),
-        "--push",
-        "--venue",
-        "fukuoka",
-        cwd=str(ROOT),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-    stdout, stderr = await process.communicate()
-    message = (stdout if process.returncode == 0 else stderr).decode(
-        "utf-8", errors="replace"
-    ).strip()
-    log = logger.info if process.returncode == 0 else logger.error
+    process = None
+    message = ""
+    for attempt in range(1, 7):
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(ROOT / "scripts" / "publish_live_data.py"),
+            "--push",
+            "--venue",
+            "fukuoka",
+            cwd=str(ROOT),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await process.communicate()
+        message = (stdout + stderr).decode("utf-8", errors="replace").strip()
+        if "Another live publisher is running." not in message:
+            break
+        if attempt < 6:
+            await asyncio.sleep(5)
+    assert process is not None
+    locked = "Another live publisher is running." in message
+    succeeded = process.returncode == 0 and not locked
+    log = logger.info if succeeded else logger.error
     log(
         message,
         extra={
             "event": (
                 "fukuoka_immediate_publish_complete"
-                if process.returncode == 0
+                if succeeded
                 else "fukuoka_immediate_publish_failed"
             ),
             "venue": "fukuoka",
+            "attempt": attempt,
         },
     )
     return {
-        "status": "published" if process.returncode == 0 else "failed",
+        "status": "completed" if succeeded else "failed",
         "returncode": process.returncode,
+        "attempts": attempt,
     }
 
 
