@@ -6,6 +6,7 @@ import math
 import sys
 import unittest
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
 from unittest import mock
 
@@ -174,18 +175,29 @@ class TestFukuokaLane1FlyV1(unittest.TestCase):
             runner.apply_predictions(payload, "2026-09-03", "preliminary", ROOT)
         self.assertEqual(payload, before)
 
+    def test_latest_matches_latest_valid_dated_json(self) -> None:
+        venue_dir = ROOT / "data" / "venues" / "fukuoka"
+        latest = json.loads((venue_dir / "latest.json").read_text(encoding="utf-8"))
+
+        dated_payloads = []
+        for path in venue_dir.glob("*.json"):
+            try:
+                dated = datetime.strptime(path.stem, "%Y%m%d").date()
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (ValueError, json.JSONDecodeError):
+                continue
+            dated_payloads.append((dated, payload))
+
+        self.assertTrue(dated_payloads)
+        _, dated = max(dated_payloads, key=lambda item: item[0])
+        self.assertEqual(latest, dated)
+
     def test_20261012_public_json_exposes_all_morning_and_live_probabilities(self) -> None:
         dated = json.loads(
             (ROOT / "data" / "venues" / "fukuoka" / "20261012.json").read_text(
                 encoding="utf-8"
             )
         )
-        latest = json.loads(
-            (ROOT / "data" / "venues" / "fukuoka" / "latest.json").read_text(
-                encoding="utf-8"
-            )
-        )
-        self.assertEqual(latest, dated)
         stages = set()
         for race in dated["races"]:
             prediction = race["prediction"]
