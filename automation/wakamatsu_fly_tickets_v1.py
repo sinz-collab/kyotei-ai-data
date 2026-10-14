@@ -7,6 +7,8 @@ from typing import Any
 
 MODEL_VERSION = "wakamatsu_fly_tickets_v1"
 METHOD = "live_place_product_top10"
+PROBABILITY_METHOD = "normalized_place_product_all_120"
+PROBABILITY_CALIBRATION = "not_empirically_calibrated"
 LANES = (1, 2, 3, 4, 5, 6)
 EVENT_TYPES = {"general", "rookie", "women", "unknown"}
 
@@ -90,6 +92,8 @@ def build_fly_prediction(prediction: dict, source: str, event_type: str) -> dict
         "modelVersion": MODEL_VERSION,
         "source": source,
         "method": METHOD,
+        "probabilityMethod": PROBABILITY_METHOD,
+        "probabilityCalibration": PROBABILITY_CALIBRATION,
         "status": "unavailable" if missing else "complete",
         "tickets": [],
     }
@@ -98,19 +102,33 @@ def build_fly_prediction(prediction: dict, source: str, event_type: str) -> dict
         prediction["flyPrediction"] = fly
         return fly
 
-    candidates = []
-    for head in range(2, 7):
+    all_candidates = []
+    for head in LANES:
         for second_lane, third_lane in permutations((lane for lane in LANES if lane != head), 2):
             score = win[head] * second[second_lane] * third[third_lane]
-            candidates.append(((head, second_lane, third_lane), score))
+            all_candidates.append(((head, second_lane, third_lane), score))
+
+    normalization_total = sum((score for _, score in all_candidates), Decimal("0"))
+    probabilities = (
+        {combo: score / normalization_total * Decimal("100") for combo, score in all_candidates}
+        if normalization_total > 0
+        else {}
+    )
+    candidates = [item for item in all_candidates if item[0][0] != 1]
 
     # Decimal scores preserve exact ties; the lane tuple is the deterministic tiebreaker.
     candidates.sort(key=lambda item: (-item[1], item[0]))
     fly["candidateCount"] = len(candidates)
+    fly["normalizationCandidateCount"] = len(all_candidates)
+    fly["normalizationScoreTotal"] = (
+        float(normalization_total) if normalization_total > 0 else None
+    )
+    fly["probabilityStatus"] = "complete" if normalization_total > 0 else "unavailable"
     fly["tickets"] = [
         {
             "combo": "-".join(map(str, combo)),
             "score": float(score),
+            "probability": float(probabilities[combo]) if combo in probabilities else None,
             "role": "main",
         }
         for combo, score in candidates[:10]

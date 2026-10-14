@@ -14,6 +14,8 @@ sys.path.insert(0, str(ROOT / "automation"))
 from wakamatsu_fly_tickets_v1 import (  # noqa: E402
     METHOD,
     MODEL_VERSION,
+    PROBABILITY_CALIBRATION,
+    PROBABILITY_METHOD,
     apply_wakamatsu_fly_v1,
     build_fly_prediction,
     fly_level,
@@ -49,12 +51,58 @@ class WakamatsuFlyTicketsV1Tests(unittest.TestCase):
         self.assertEqual(fly["modelVersion"], MODEL_VERSION)
         self.assertEqual(fly["method"], METHOD)
         self.assertEqual(fly["candidateCount"], 100)
+        self.assertEqual(fly["normalizationCandidateCount"], 120)
+        self.assertEqual(fly["probabilityMethod"], PROBABILITY_METHOD)
+        self.assertEqual(fly["probabilityCalibration"], PROBABILITY_CALIBRATION)
         self.assertEqual(len(fly["tickets"]), 10)
         self.assertEqual(fly["tickets"][0]["combo"], "2-1-3")
         self.assertEqual(fly["tickets"][1]["combo"], "2-1-4")
         self.assertTrue(all(ticket["role"] == "main" for ticket in fly["tickets"]))
         self.assertTrue(all(not ticket["combo"].startswith("1-") for ticket in fly["tickets"]))
         self.assertEqual(len({ticket["combo"] for ticket in fly["tickets"]}), 10)
+        self.assertTrue(all(ticket["probability"] is not None for ticket in fly["tickets"]))
+
+    def test_probability_uses_all_120_combinations_and_sums_to_100(self) -> None:
+        prediction = {
+            "win": {str(lane): float(7 + lane) for lane in range(1, 7)},
+            "second": {str(lane): float(13 - lane) for lane in range(1, 7)},
+            "third": {str(lane): float(4 + lane * 2) for lane in range(1, 7)},
+        }
+        fly = build_fly_prediction(prediction, "live", "general")
+        all_candidates = []
+        for head in range(1, 7):
+            remaining = (lane for lane in range(1, 7) if lane != head)
+            for second_lane, third_lane in permutations(remaining, 2):
+                score = (
+                    prediction["win"][str(head)]
+                    * prediction["second"][str(second_lane)]
+                    * prediction["third"][str(third_lane)]
+                )
+                all_candidates.append(((head, second_lane, third_lane), score))
+        denominator = sum(score for _, score in all_candidates)
+        normalized = [score / denominator * 100 for _, score in all_candidates]
+        self.assertEqual(len(all_candidates), 120)
+        self.assertAlmostEqual(sum(normalized), 100.0, places=10)
+        expected_selection = sorted(
+            (item for item in all_candidates if item[0][0] != 1),
+            key=lambda item: (-item[1], item[0]),
+        )[:10]
+        self.assertEqual(
+            [ticket["combo"] for ticket in fly["tickets"]],
+            ["-".join(map(str, combo)) for combo, _ in expected_selection],
+        )
+        for ticket, (combo, score) in zip(fly["tickets"], expected_selection):
+            self.assertAlmostEqual(ticket["score"], score, places=10)
+            self.assertAlmostEqual(ticket["probability"], score / denominator * 100, places=10)
+
+    def test_zero_normalization_total_does_not_invent_probability(self) -> None:
+        prediction = {"win": rates(0.0), "second": rates(0.0), "third": rates(0.0)}
+        fly = build_fly_prediction(prediction, "morning", "unknown")
+        self.assertEqual(fly["candidateCount"], 100)
+        self.assertEqual(fly["normalizationCandidateCount"], 120)
+        self.assertIsNone(fly["normalizationScoreTotal"])
+        self.assertEqual(fly["probabilityStatus"], "unavailable")
+        self.assertTrue(all(ticket["probability"] is None for ticket in fly["tickets"]))
 
     def test_missing_is_not_replaced_with_zero(self) -> None:
         prediction = {"win": rates(), "second": rates(), "third": rates()}
@@ -130,6 +178,7 @@ class WakamatsuFlyTicketsV1Tests(unittest.TestCase):
                         self.assertEqual(fly["tickets"], [])
                         continue
                     self.assertEqual(fly["candidateCount"], 100)
+                    self.assertEqual(fly["normalizationCandidateCount"], 120)
                     self.assertEqual(len(fly["tickets"]), 10)
                     self.assertEqual(len({row["combo"] for row in fly["tickets"]}), 10)
                     self.assertTrue(all(not row["combo"].startswith("1-") for row in fly["tickets"]))
@@ -150,6 +199,28 @@ class WakamatsuFlyTicketsV1Tests(unittest.TestCase):
                     )
                     for ticket, (_, expected_score) in zip(fly["tickets"], expected[:10]):
                         self.assertAlmostEqual(ticket["score"], expected_score, places=8)
+                    all_scores = []
+                    for head in range(1, 7):
+                        remaining = (lane for lane in range(1, 7) if lane != head)
+                        for second_lane, third_lane in permutations(remaining, 2):
+                            all_scores.append(
+                                float(prediction["win"][str(head)])
+                                * float(prediction["second"][str(second_lane)])
+                                * float(prediction["third"][str(third_lane)])
+                            )
+                    denominator = sum(all_scores)
+                    self.assertGreater(denominator, 0)
+                    self.assertAlmostEqual(
+                        sum(score / denominator * 100 for score in all_scores),
+                        100.0,
+                        places=10,
+                    )
+                    for ticket in fly["tickets"]:
+                        self.assertAlmostEqual(
+                            ticket["probability"],
+                            ticket["score"] / denominator * 100,
+                            places=8,
+                        )
                     self.assertEqual(
                         prediction["tickets"], normal_before[(int(race["race"]), key)]
                     )
