@@ -54,6 +54,20 @@ class RaceTypeParserTests(unittest.TestCase):
                     expected,
                 )
 
+    def test_event_type_uses_explicit_header_mapping(self):
+        cases = (
+            (["若松", "一般", "通常開催", "1R"], "general"),
+            (["若松", "一般", "ルーキーシリーズ", "1R"], "rookie"),
+            (["若松", "G1", "ヤングダービー", "1R"], "rookie"),
+            (["若松", "一般", "オールレディース", "1R"], "women"),
+            (["若松", "一般", "ヴィーナスシリーズ", "1R"], "women"),
+            (["若松", "企業杯", "1R"], "unknown"),
+            (["若松", "ルーキーシリーズ 女子戦", "1R"], "unknown"),
+        )
+        for lines, expected in cases:
+            with self.subTest(lines=lines):
+                self.assertEqual(MODULE.parse_event_type(lines), expected)
+
     def test_shimonoseki_examples(self):
         self.assertEqual(MODULE.parse_race_type(entry_lines("一般")), "一般")
         self.assertEqual(MODULE.parse_race_type(entry_lines("一般", entry_fixed=True)), "一般")

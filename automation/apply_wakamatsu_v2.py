@@ -29,6 +29,7 @@ from wakamatsu_v2_1_adjustments import (
     ENGINE_VERSION,
     apply_v21_adjustments,
 )
+from wakamatsu_fly_tickets_v1 import apply_wakamatsu_fly_v1
 
 
 def number(value: Any, default: float | None = 0.0) -> float | None:
@@ -843,7 +844,7 @@ def apply_wakamatsu_v2(payload: dict, target_date: str) -> dict:
         "raceCount": 12,
         "playerIdUnresolved": unresolved_all,
     }
-    return payload
+    return apply_wakamatsu_fly_v1(payload)
 
 
 def main() -> int:

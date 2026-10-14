@@ -7,6 +7,8 @@ import math
 import re
 from typing import Any
 
+from wakamatsu_fly_tickets_v1 import apply_wakamatsu_fly_v1
+
 
 ENGINE_ID = "wakamatsu_engine_v2.3"
 ENGINE_VERSION = "2.3"
@@ -1079,4 +1081,4 @@ def apply_v23_to_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "generatedBy": "automation/apply_wakamatsu_v2_3.py",
         "oddsUsedForProbability": False,
     }
-    return adjusted
+    return apply_wakamatsu_fly_v1(adjusted)

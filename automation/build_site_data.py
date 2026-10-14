@@ -113,6 +113,27 @@ def parse_event_label(lines: list[str]) -> str:
     return "｜".join(part for part in (grade, *categories) if part)
 
 
+def parse_event_type(lines: list[str]) -> str:
+    """Classify only explicit tournament metadata found before the first race header."""
+    normalized = [unicodedata.normalize("NFKC", line).strip() for line in lines]
+    first_race = next(
+        (index for index, line in enumerate(normalized) if re.fullmatch(r"1\s*R", line)),
+        len(normalized),
+    )
+    header_text = "\n".join(line for line in normalized[:first_race] if line)
+    rookie = bool(re.search(r"ルーキーシリーズ|ヤングダービー|若手限定戦|新人戦", header_text))
+    women = bool(re.search(r"女子戦|ヴィーナスシリーズ|オールレディース", header_text))
+    if rookie and women:
+        return "unknown"
+    if rookie:
+        return "rookie"
+    if women:
+        return "women"
+    if re.search(r"(?:^|\n)一般(?:戦)?(?:\n|$)|一般競走", header_text):
+        return "general"
+    return "unknown"
+
+
 def write_text_atomic(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_suffix(path.suffix + ".tmp")
@@ -1006,6 +1027,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
         if race_no == 1:
             event_day, event_label = event_day_info(lines, date)
             special_event_label = parse_event_label(lines)
+            event_type = parse_event_type(lines)
         races.append(
             {
                 "race": race_no,
@@ -1017,6 +1039,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                 "entry_changes": [],
                 "eventDayLabel": event_label,
                 "eventDay": event_day,
+                "eventType": event_type,
             }
         )
     tide_path = source_dir / "tide_today.json"
@@ -1038,6 +1061,7 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             "eventDayLabel": event_label,
             "eventDay": event_day,
             "eventLabel": special_event_label,
+            "eventType": event_type,
             "eventScheduleLabels": {},
         },
         {"reason": "ok"},
