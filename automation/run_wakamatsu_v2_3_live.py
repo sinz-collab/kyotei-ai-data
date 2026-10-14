@@ -2,12 +2,20 @@ from __future__ import annotations
 
 import argparse
 import json
+from itertools import permutations
+import math
 import subprocess
 import sys
 from datetime import date
 from pathlib import Path
 
 from wakamatsu_v2_3_adjustments import ENGINE_ID, ENGINE_VERSION
+from wakamatsu_fly_tickets_v1 import (
+    METHOD as FLY_METHOD,
+    MODEL_VERSION as FLY_MODEL_VERSION,
+    PROBABILITY_CALIBRATION,
+    PROBABILITY_METHOD,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -67,9 +75,99 @@ def probability_changes(pre: dict, final: dict) -> dict:
     }
 
 
+def validate_fly_prediction(prediction: dict, source: str, race_no: int) -> dict:
+    fly = prediction.get("flyPrediction")
+    if not isinstance(fly, dict):
+        raise RuntimeError(f"wakamatsu_fly_prediction_missing: race={race_no} source={source}")
+    required = {
+        "modelVersion": FLY_MODEL_VERSION,
+        "source": source,
+        "method": FLY_METHOD,
+        "probabilityMethod": PROBABILITY_METHOD,
+        "probabilityCalibration": PROBABILITY_CALIBRATION,
+        "status": "complete",
+        "probabilityStatus": "complete",
+        "candidateCount": 100,
+        "normalizationCandidateCount": 120,
+    }
+    for key, expected in required.items():
+        if fly.get(key) != expected:
+            raise RuntimeError(
+                f"wakamatsu_fly_schema_invalid: race={race_no} source={source} "
+                f"field={key} actual={fly.get(key)!r} expected={expected!r}"
+            )
+
+    candidates = []
+    for head in range(1, 7):
+        for second_lane, third_lane in permutations(
+            (lane for lane in range(1, 7) if lane != head), 2
+        ):
+            try:
+                score = (
+                    float(prediction["win"][str(head)])
+                    * float(prediction["second"][str(second_lane)])
+                    * float(prediction["third"][str(third_lane)])
+                )
+            except (KeyError, TypeError, ValueError) as exc:
+                raise RuntimeError(
+                    f"wakamatsu_fly_rates_invalid: race={race_no} source={source}"
+                ) from exc
+            candidates.append(((head, second_lane, third_lane), score))
+    denominator = sum(score for _, score in candidates)
+    if not math.isfinite(denominator) or denominator <= 0:
+        raise RuntimeError(
+            f"wakamatsu_fly_denominator_invalid: race={race_no} source={source}"
+        )
+    if not math.isclose(
+        float(fly.get("normalizationScoreTotal") or 0), denominator, rel_tol=1e-12
+    ):
+        raise RuntimeError(
+            f"wakamatsu_fly_denominator_mismatch: race={race_no} source={source}"
+        )
+
+    expected = sorted(
+        (item for item in candidates if item[0][0] != 1),
+        key=lambda item: (-item[1], item[0]),
+    )[:10]
+    tickets = fly.get("tickets") or []
+    if len(tickets) != 10:
+        raise RuntimeError(
+            f"wakamatsu_fly_ticket_count_invalid: race={race_no} source={source}"
+        )
+    for ticket, (combo, score) in zip(tickets, expected):
+        combo_text = "-".join(map(str, combo))
+        probability = ticket.get("probability")
+        if ticket.get("combo") != combo_text or not math.isclose(
+            float(ticket.get("score")), score, rel_tol=1e-12
+        ):
+            raise RuntimeError(
+                f"wakamatsu_fly_ranking_changed: race={race_no} source={source}"
+            )
+        if probability is None or not math.isclose(
+            float(probability), score / denominator * 100, rel_tol=1e-12
+        ):
+            raise RuntimeError(
+                f"wakamatsu_fly_probability_invalid: race={race_no} "
+                f"source={source} combo={combo_text}"
+            )
+    return {
+        "source": source,
+        "normalizationCandidateCount": len(candidates),
+        "normalizationProbabilityTotal": sum(
+            score / denominator * 100 for _, score in candidates
+        ),
+        "tickets": [ticket["combo"] for ticket in tickets],
+        "probabilities": [ticket["probability"] for ticket in tickets],
+    }
+
+
 def validate_published_data(data_root: Path, target_date: str, expected_races: list[int]) -> dict:
     dated_path = data_root / "venues" / "wakamatsu" / f"{target_date.replace('-', '')}.json"
     payload = load_json(dated_path)
+    latest_path = data_root / "venues" / "wakamatsu" / "latest.json"
+    latest = load_json(latest_path)
+    if latest != payload:
+        raise RuntimeError("wakamatsu_dated_latest_mismatch")
     if payload.get("engine") != ENGINE_ID or payload.get("engineVersion") != ENGINE_VERSION:
         raise RuntimeError("unexpected_wakamatsu_v23_engine")
     races_by_number = {int(race.get("race") or 0): race for race in payload.get("races") or []}
@@ -95,6 +193,8 @@ def validate_published_data(data_root: Path, target_date: str, expected_races: l
             raise RuntimeError(f"wakamatsu_ticket_count_invalid: {race_no}")
         if (final.get("diagnostics") or {}).get("oddsUsedForPrediction") is not False:
             raise RuntimeError(f"odds_prediction_guard_failed: {race_no}")
+        morning_fly = validate_fly_prediction(pre, "morning", race_no)
+        live_fly = validate_fly_prediction(final, "live", race_no)
         reports.append({
             "race": race_no,
             "engine": final.get("engine"),
@@ -103,6 +203,8 @@ def validate_published_data(data_root: Path, target_date: str, expected_races: l
             "third": final.get("third"),
             "sab": final.get("sab"),
             "tickets": combos,
+            "morningFlyPrediction": morning_fly,
+            "liveFlyPrediction": live_fly,
             "probabilityChanges": probability_changes(pre, final),
         })
     return {
