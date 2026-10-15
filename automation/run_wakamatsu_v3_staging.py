@@ -201,6 +201,12 @@ def build_staging_payload(
 
         if isinstance(final, dict):
             probability = result.get("lane1FlyProbability")
+            fly_prediction = final.get("flyPrediction")
+            if (
+                isinstance(fly_prediction, dict)
+                and fly_prediction.get("source") == "live_pending_v3"
+            ):
+                fly_prediction["source"] = "live"
             _set_probability(
                 final,
                 probability,

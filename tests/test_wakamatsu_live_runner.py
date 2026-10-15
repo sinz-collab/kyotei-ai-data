@@ -245,6 +245,38 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "wakamatsu_fly_schema_invalid"):
             runner23.validate_fly_prediction(invalid, "morning", 1)
 
+    def test_v23_accepts_valid_live_pending_only_at_migration_boundary(self):
+        rates_by_finish = {
+            "win": [35.0, 22.0, 16.0, 11.0, 9.0, 7.0],
+            "second": [24.0, 23.0, 19.0, 14.0, 11.0, 9.0],
+            "third": [16.0, 18.0, 20.0, 19.0, 15.0, 12.0],
+        }
+        value = prediction("final")
+        value.update({
+            finish: {str(lane): rate for lane, rate in enumerate(rates, 1)}
+            for finish, rates in rates_by_finish.items()
+        })
+        build_fly_prediction(value, "live_pending_v3", "general")
+
+        with self.assertRaisesRegex(RuntimeError, "wakamatsu_fly_schema_invalid"):
+            runner23.validate_fly_prediction(value, "live", 1)
+        report = runner23.validate_fly_prediction(
+            value,
+            "live",
+            1,
+            allow_live_pending_v3=True,
+        )
+        self.assertEqual(report["source"], "live_pending_v3")
+
+        value["flyPrediction"]["candidateCount"] = 99
+        with self.assertRaisesRegex(RuntimeError, "wakamatsu_fly_schema_invalid"):
+            runner23.validate_fly_prediction(
+                value,
+                "live",
+                1,
+                allow_live_pending_v3=True,
+            )
+
     def test_pipeline_runs_apply_before_build(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

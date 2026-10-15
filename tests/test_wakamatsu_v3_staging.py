@@ -124,6 +124,7 @@ class WakamatsuV3StagingTest(unittest.TestCase):
 
     def test_morning_complement_switches_to_available_live_v3_without_ticket_changes(self):
         source = self.payload()
+        source["races"][0]["predictionFinal"]["flyPrediction"]["source"] = "live_pending_v3"
         tickets_before = deepcopy(source["races"][0]["predictionFinal"]["tickets"])
         fly_before = deepcopy(source["races"][0]["predictionFinal"]["flyPrediction"])
         staged, report = build_staging_payload(source, "2026-10-14", tide())
@@ -143,19 +144,24 @@ class WakamatsuV3StagingTest(unittest.TestCase):
         self.assertEqual(staged_race["prediction"]["lane1FlyProbabilitySource"], "live")
         self.assertFalse(staged_race["predictionFinal"]["lane1FlyProbabilityIsProvisional"])
         self.assertEqual(staged_race["predictionFinal"]["tickets"], tickets_before)
-        self.assertEqual(staged_race["predictionFinal"]["flyPrediction"], fly_before)
+        self.assertEqual(
+            staged_race["predictionFinal"]["flyPrediction"],
+            {**fly_before, "source": "live"},
+        )
         self.assertEqual(report["available"], 1)
         self.assertEqual(report["unavailable"], 0)
         self.assertEqual(report["morningAvailable"], 1)
 
     def test_tide_failure_only_nulls_v3(self):
         source = self.payload()
+        source["races"][0]["predictionFinal"]["flyPrediction"]["source"] = "live_pending_v3"
         final_before = deepcopy(source["races"][0]["predictionFinal"])
         staged, report = build_staging_payload(source, "2026-10-14", tide("failed"))
         final = staged["races"][0]["predictionFinal"]
         self.assertIsNone(final["lane1FlyProbability"])
         self.assertEqual(final["lane1FlyProbabilitySource"], "live")
         self.assertEqual(final["lane1FlyProbabilityReason"], "fetch_failed:TimeoutError")
+        self.assertEqual(final["flyPrediction"]["source"], "live")
         self.assertEqual(final["win"], final_before["win"])
         self.assertEqual(final["tickets"], final_before["tickets"])
         self.assertEqual(report["unavailable"], 1)
@@ -229,6 +235,7 @@ class WakamatsuV3StagingTest(unittest.TestCase):
             path = root / "venues" / "wakamatsu" / "20261014.json"
             latest = path.with_name("latest.json")
             original = self.payload()
+            original["races"][0]["predictionFinal"]["flyPrediction"]["source"] = "live_pending_v3"
             write_json(path, original)
             write_json(latest, original)
             tickets_before = deepcopy(original["races"][0]["predictionFinal"]["tickets"])
@@ -241,8 +248,37 @@ class WakamatsuV3StagingTest(unittest.TestCase):
             self.assertTrue(report["latestUpdated"])
             self.assertEqual(published, json.loads(latest.read_text(encoding="utf-8")))
             self.assertEqual(published["races"][0]["predictionFinal"]["tickets"], tickets_before)
-            self.assertEqual(published["races"][0]["predictionFinal"]["flyPrediction"], fly_before)
+            self.assertEqual(
+                published["races"][0]["predictionFinal"]["flyPrediction"],
+                {**fly_before, "source": "live"},
+            )
             self.assertEqual(published["races"][0]["prediction"]["lane1FlyProbabilitySource"], "live")
+            self.assertNotIn("live_pending_v3", path.read_text(encoding="utf-8"))
+
+            with patch.dict("os.environ", {"WAKAMATSU_V3_ENABLED": "true"}):
+                publish_v3("2026-10-14", root, tide_provider=lambda _: tide())
+            republished = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                republished["races"][0]["predictionFinal"]["flyPrediction"]["source"],
+                "live",
+            )
+            self.assertEqual(republished["races"][0]["predictionFinal"]["tickets"], tickets_before)
+
+    def test_production_publish_does_not_touch_other_venues(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            wakamatsu = root / "venues" / "wakamatsu" / "20261014.json"
+            write_json(wakamatsu, self.payload())
+            write_json(wakamatsu.with_name("latest.json"), self.payload())
+            other = root / "venues" / "omura" / "20261014.json"
+            other_payload = {"venueId": "omura", "date": "2026-10-14", "races": [{"race": 1}]}
+            write_json(other, other_payload)
+            before = other.read_bytes()
+
+            with patch.dict("os.environ", {"WAKAMATSU_V3_ENABLED": "true"}):
+                publish_v3("2026-10-14", root, tide_provider=lambda _: tide())
+
+            self.assertEqual(other.read_bytes(), before)
 
     def test_feature_flag_disables_only_live_v3_probability(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -277,6 +313,7 @@ class WakamatsuV3StagingTest(unittest.TestCase):
             path = root / "venues" / "wakamatsu" / "20261014.json"
             latest = path.with_name("latest.json")
             original = self.payload()
+            original["races"][0]["predictionFinal"]["flyPrediction"]["source"] = "live_pending_v3"
             normal = deepcopy(original["races"][0]["predictionFinal"]["tickets"])
             fly = deepcopy(original["races"][0]["predictionFinal"]["flyPrediction"])
             write_json(path, original)
@@ -287,7 +324,8 @@ class WakamatsuV3StagingTest(unittest.TestCase):
             self.assertIsNone(final["lane1FlyProbability"])
             self.assertEqual(final["lane1FlyProbabilitySource"], "live")
             self.assertEqual(final["tickets"], normal)
-            self.assertEqual(final["flyPrediction"], fly)
+            self.assertEqual(final["flyPrediction"], {**fly, "source": "live"})
+            self.assertNotIn("live_pending_v3", path.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

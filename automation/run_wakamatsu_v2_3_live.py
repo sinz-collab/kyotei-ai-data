@@ -28,6 +28,7 @@ FINAL_PREDICTION_STAGE = {
     "color": "green",
 }
 MORNING_FLY_SOURCES = frozenset({"morning", "morning_provisional"})
+LIVE_PENDING_V3_SOURCE = "live_pending_v3"
 
 
 def load_json(path: Path) -> dict:
@@ -78,7 +79,13 @@ def probability_changes(pre: dict, final: dict) -> dict:
     }
 
 
-def validate_fly_prediction(prediction: dict, source: str, race_no: int) -> dict:
+def validate_fly_prediction(
+    prediction: dict,
+    source: str,
+    race_no: int,
+    *,
+    allow_live_pending_v3: bool = False,
+) -> dict:
     fly = prediction.get("flyPrediction")
     if not isinstance(fly, dict):
         raise RuntimeError(f"wakamatsu_fly_prediction_missing: race={race_no} source={source}")
@@ -93,7 +100,12 @@ def validate_fly_prediction(prediction: dict, source: str, race_no: int) -> dict
         "normalizationCandidateCount": 120,
     }
     actual_source = fly.get("source")
-    allowed_sources = MORNING_FLY_SOURCES if source == "morning" else frozenset({source})
+    if source == "morning":
+        allowed_sources = MORNING_FLY_SOURCES
+    elif source == "live" and allow_live_pending_v3:
+        allowed_sources = frozenset({"live", LIVE_PENDING_V3_SOURCE})
+    else:
+        allowed_sources = frozenset({source})
     if actual_source not in allowed_sources:
         raise RuntimeError(
             f"wakamatsu_fly_schema_invalid: race={race_no} source={source} "
@@ -203,7 +215,15 @@ def validate_published_data(data_root: Path, target_date: str, expected_races: l
         if (final.get("diagnostics") or {}).get("oddsUsedForPrediction") is not False:
             raise RuntimeError(f"odds_prediction_guard_failed: {race_no}")
         morning_fly = validate_fly_prediction(pre, "morning", race_no)
-        live_fly = validate_fly_prediction(final, "live", race_no)
+        # apply_wakamatsu_fly_v1 writes this exact marker while the saved LIVE
+        # prediction is waiting for v3.  It is accepted only at this pre-publish
+        # boundary; publish_v3 must replace it with the canonical "live" source.
+        live_fly = validate_fly_prediction(
+            final,
+            "live",
+            race_no,
+            allow_live_pending_v3=True,
+        )
         reports.append({
             "race": race_no,
             "engine": final.get("engine"),

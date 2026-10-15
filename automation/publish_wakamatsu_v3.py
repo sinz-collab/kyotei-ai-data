@@ -68,6 +68,12 @@ def mark_live_v3_unavailable(
         final = race.get("predictionFinal")
         if not isinstance(final, dict):
             continue
+        fly_prediction = final.get("flyPrediction")
+        if (
+            isinstance(fly_prediction, dict)
+            and fly_prediction.get("source") == "live_pending_v3"
+        ):
+            fly_prediction["source"] = "live"
         final["lane1FlyProbability"] = None
         final["lane1FlyProbabilitySource"] = "live"
         final["lane1FlyProbabilityModel"] = "wakamatsu_v3_lane1_tide_frozen"
