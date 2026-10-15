@@ -69,7 +69,7 @@ def mark_live_v3_unavailable(
         if not isinstance(final, dict):
             continue
         final["lane1FlyProbability"] = None
-        final["lane1FlyProbabilitySource"] = None
+        final["lane1FlyProbabilitySource"] = "live"
         final["lane1FlyProbabilityModel"] = "wakamatsu_v3_lane1_tide_frozen"
         final["lane1FlyProbabilityStatus"] = "unavailable"
         final["lane1FlyProbabilityReason"] = reason

@@ -154,6 +154,7 @@ class WakamatsuV3StagingTest(unittest.TestCase):
         staged, report = build_staging_payload(source, "2026-10-14", tide("failed"))
         final = staged["races"][0]["predictionFinal"]
         self.assertIsNone(final["lane1FlyProbability"])
+        self.assertEqual(final["lane1FlyProbabilitySource"], "live")
         self.assertEqual(final["lane1FlyProbabilityReason"], "fetch_failed:TimeoutError")
         self.assertEqual(final["win"], final_before["win"])
         self.assertEqual(final["tickets"], final_before["tickets"])
@@ -166,9 +167,14 @@ class WakamatsuV3StagingTest(unittest.TestCase):
         staged, report = build_staging_payload(self.payload(False), "2026-10-14", tide())
         final = staged["races"][0]["predictionFinal"]
         self.assertIsNone(final["lane1FlyProbability"])
+        self.assertEqual(final["lane1FlyProbabilitySource"], "live")
         self.assertEqual(final["lane1FlyProbabilityReason"], "live_exhibition_inputs_incomplete")
         self.assertEqual(report["available"], 0)
         self.assertAlmostEqual(staged["races"][0]["prediction"]["lane1FlyProbability"], 61.13)
+        self.assertEqual(
+            staged["races"][0]["prediction"]["lane1FlyProbabilitySource"],
+            "morning_provisional",
+        )
         self.assertEqual(staged["races"][0]["prediction"]["lane1FlyProbabilityDisplayStage"], "morning")
 
     def test_live_phase_with_missing_exhibition_is_null_not_morning_fallback(self):
@@ -177,6 +183,7 @@ class WakamatsuV3StagingTest(unittest.TestCase):
         staged, report = build_staging_payload(source, "2026-10-14", tide())
         active = staged["races"][0]["prediction"]
         self.assertIsNone(active["lane1FlyProbability"])
+        self.assertEqual(active["lane1FlyProbabilitySource"], "live")
         self.assertEqual(active["lane1FlyProbabilityReason"], "live_exhibition_inputs_incomplete")
         self.assertAlmostEqual(report["races"][0]["morningProvisionalFlyProbability"], 61.13)
 
@@ -278,6 +285,7 @@ class WakamatsuV3StagingTest(unittest.TestCase):
             published = json.loads(path.read_text(encoding="utf-8"))
             final = published["races"][0]["predictionFinal"]
             self.assertIsNone(final["lane1FlyProbability"])
+            self.assertEqual(final["lane1FlyProbabilitySource"], "live")
             self.assertEqual(final["tickets"], normal)
             self.assertEqual(final["flyPrediction"], fly)
 

@@ -219,6 +219,32 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "wakamatsu_fly_probability_invalid"):
                 runner23.validate_published_data(root, "2026-08-11", [5])
 
+    def test_v23_accepts_provisional_and_legacy_morning_sources_only(self):
+        rates_by_finish = {
+            "win": [35.0, 22.0, 16.0, 11.0, 9.0, 7.0],
+            "second": [24.0, 23.0, 19.0, 14.0, 11.0, 9.0],
+            "third": [16.0, 18.0, 20.0, 19.0, 15.0, 12.0],
+        }
+        for source in ("morning_provisional", "morning"):
+            with self.subTest(source=source):
+                value = prediction("pre")
+                value.update({
+                    finish: {str(lane): rate for lane, rate in enumerate(rates, 1)}
+                    for finish, rates in rates_by_finish.items()
+                })
+                build_fly_prediction(value, source, "general")
+                report = runner23.validate_fly_prediction(value, "morning", 1)
+                self.assertEqual(report["source"], source)
+
+        invalid = prediction("pre")
+        invalid.update({
+            finish: {str(lane): rate for lane, rate in enumerate(rates, 1)}
+            for finish, rates in rates_by_finish.items()
+        })
+        build_fly_prediction(invalid, "unexpected", "general")
+        with self.assertRaisesRegex(RuntimeError, "wakamatsu_fly_schema_invalid"):
+            runner23.validate_fly_prediction(invalid, "morning", 1)
+
     def test_pipeline_runs_apply_before_build(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

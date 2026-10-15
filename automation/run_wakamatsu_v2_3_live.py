@@ -27,6 +27,7 @@ FINAL_PREDICTION_STAGE = {
     "statusText": "直前・展示・オリ展示を反映して若松v2.3で再精査済み",
     "color": "green",
 }
+MORNING_FLY_SOURCES = frozenset({"morning", "morning_provisional"})
 
 
 def load_json(path: Path) -> dict:
@@ -83,7 +84,6 @@ def validate_fly_prediction(prediction: dict, source: str, race_no: int) -> dict
         raise RuntimeError(f"wakamatsu_fly_prediction_missing: race={race_no} source={source}")
     required = {
         "modelVersion": FLY_MODEL_VERSION,
-        "source": source,
         "method": FLY_METHOD,
         "probabilityMethod": PROBABILITY_METHOD,
         "probabilityCalibration": PROBABILITY_CALIBRATION,
@@ -92,6 +92,13 @@ def validate_fly_prediction(prediction: dict, source: str, race_no: int) -> dict
         "candidateCount": 100,
         "normalizationCandidateCount": 120,
     }
+    actual_source = fly.get("source")
+    allowed_sources = MORNING_FLY_SOURCES if source == "morning" else frozenset({source})
+    if actual_source not in allowed_sources:
+        raise RuntimeError(
+            f"wakamatsu_fly_schema_invalid: race={race_no} source={source} "
+            f"field=source actual={actual_source!r} expected_one_of={sorted(allowed_sources)!r}"
+        )
     for key, expected in required.items():
         if fly.get(key) != expected:
             raise RuntimeError(
@@ -153,7 +160,7 @@ def validate_fly_prediction(prediction: dict, source: str, race_no: int) -> dict
                 f"source={source} combo={combo_text}"
             )
     return {
-        "source": source,
+        "source": actual_source,
         "normalizationCandidateCount": len(candidates),
         "normalizationProbabilityTotal": sum(
             score / denominator * 100 for _, score in candidates

@@ -204,7 +204,7 @@ def build_staging_payload(
             _set_probability(
                 final,
                 probability,
-                source="live" if result.get("status") == "ok" else None,
+                source="live",
                 status=str(result.get("status") or "unavailable"),
                 reason=str(result.get("reason") or "unknown"),
                 event_type=event_type,
