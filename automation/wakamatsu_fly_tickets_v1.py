@@ -145,12 +145,23 @@ def apply_wakamatsu_fly_v1(payload: dict) -> dict:
         pre = race.get("predictionPre")
         final = race.get("predictionFinal")
         if isinstance(pre, dict):
-            build_fly_prediction(pre, "morning", event_type)
+            build_fly_prediction(pre, "morning_provisional", event_type)
+            pre["lane1FlyProbabilityModel"] = "morning_lane1_win_complement_provisional"
+            pre["lane1FlyProbabilityStatus"] = (
+                "ok" if pre.get("lane1FlyProbability") is not None else "unavailable"
+            )
+            pre["lane1FlyProbabilityReason"] = (
+                "validated_morning_complement"
+                if pre.get("lane1FlyProbability") is not None
+                else "morning_lane1_win_unavailable"
+            )
+            pre["lane1FlyProbabilityDisplayStage"] = "morning"
+            pre["lane1FlyProbabilityIsProvisional"] = True
         if isinstance(final, dict):
-            build_fly_prediction(final, "live", event_type)
+            build_fly_prediction(final, "live_pending_v3", event_type)
         active = final if isinstance(final, dict) else race.get("prediction")
         if isinstance(active, dict) and active is not pre and active is not final:
-            source = "live" if active.get("phase") == "final" else "morning"
+            source = "live_pending_v3" if active.get("phase") == "final" else "morning_provisional"
             build_fly_prediction(active, source, event_type)
         if isinstance(final, dict):
             race["prediction"] = final

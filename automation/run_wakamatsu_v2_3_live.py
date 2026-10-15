@@ -9,6 +9,8 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from publish_wakamatsu_v3 import mark_live_v3_unavailable, publish_v3
+
 from wakamatsu_v2_3_adjustments import ENGINE_ID, ENGINE_VERSION
 from wakamatsu_fly_tickets_v1 import (
     METHOD as FLY_METHOD,
@@ -234,7 +236,16 @@ def run_pipeline(target_date: str, data_root: Path, python_executable: str = sys
         [python_executable, str(REPO_ROOT / "automation" / "build_site_data.py"), "--date", target_date, "--data-root", str(resolved), "--live-venue", "wakamatsu"],
     ):
         subprocess.run(command, cwd=REPO_ROOT, check=True)
-    return validate_published_data(resolved, target_date, races)
+    existing_report = validate_published_data(resolved, target_date, races)
+    try:
+        v3_report = publish_v3(target_date, resolved)
+    except Exception as exc:
+        v3_report = mark_live_v3_unavailable(
+            target_date,
+            resolved,
+            f"v3_pipeline_error:{type(exc).__name__}",
+        )
+    return {**existing_report, "wakamatsuV3": v3_report}
 
 
 def main() -> int:

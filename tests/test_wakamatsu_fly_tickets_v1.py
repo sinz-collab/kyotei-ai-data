@@ -147,7 +147,7 @@ class WakamatsuFlyTicketsV1Tests(unittest.TestCase):
         )
         phase_count = 0
         unavailable_count = 0
-        source_counts = {"morning": 0, "live": 0}
+        source_counts = {"morning_provisional": 0, "live_pending_v3": 0}
         for compact in dates:
             path = ROOT / "data" / "venues" / "wakamatsu" / f"{compact}.json"
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -159,7 +159,10 @@ class WakamatsuFlyTicketsV1Tests(unittest.TestCase):
             }
             apply_wakamatsu_fly_v1(payload)
             for race in payload["races"]:
-                for key, source in (("predictionPre", "morning"), ("predictionFinal", "live")):
+                for key, source in (
+                    ("predictionPre", "morning_provisional"),
+                    ("predictionFinal", "live_pending_v3"),
+                ):
                     prediction = race.get(key)
                     if not isinstance(prediction, dict):
                         continue
@@ -225,8 +228,8 @@ class WakamatsuFlyTicketsV1Tests(unittest.TestCase):
                         prediction["tickets"], normal_before[(int(race["race"]), key)]
                     )
         self.assertGreaterEqual(phase_count, 200)
-        self.assertGreater(source_counts["morning"], 0)
-        self.assertGreater(source_counts["live"], 0)
+        self.assertGreater(source_counts["morning_provisional"], 0)
+        self.assertGreater(source_counts["live_pending_v3"], 0)
         self.assertGreaterEqual(unavailable_count, 0)
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import random
 import sys
 from collections import defaultdict
@@ -36,6 +37,7 @@ ASHIYA_DATA_ROOT = PUBLISHER_REPO / "data"
 TODA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_toda_live_v5.py"
 TODA_DATA_ROOT = PUBLISHER_REPO / "data"
 WAKAMATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_wakamatsu_v2_3_live.py"
+WAKAMATSU_V3_STAGING_RUNNER = PUBLISHER_REPO / "automation" / "run_wakamatsu_v3_staging.py"
 WAKAMATSU_DATA_ROOT = PUBLISHER_REPO / "data"
 BIWAKO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_biwako_v1_2.py"
 BIWAKO_DATA_ROOT = PUBLISHER_REPO / "data"
@@ -188,7 +190,6 @@ async def apply_heiwajima_live_prediction(
             "race_no": target["race_no"],
         },
     )
-
 
 async def apply_ashiya_live_data(
     target: dict[str, Any],
@@ -597,6 +598,43 @@ async def apply_wakamatsu_live_prediction(
             "venue": target["venue"],
             "race_no": target["race_no"],
             "odds_used_for_probability": False,
+        },
+    )
+
+    staging_output_root = os.environ.get("WAKAMATSU_V3_STAGING_OUTPUT_ROOT", "").strip()
+    if not staging_output_root:
+        return
+    staging_process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(WAKAMATSU_V3_STAGING_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--data-root",
+        str(WAKAMATSU_DATA_ROOT),
+        "--output-root",
+        staging_output_root,
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    staging_stdout, staging_stderr = await staging_process.communicate()
+    if staging_process.returncode != 0:
+        logger.error(
+            staging_stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "wakamatsu_v3_staging_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+    logger.info(
+        staging_stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "wakamatsu_v3_staging_complete",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+            "production_written": False,
         },
     )
 

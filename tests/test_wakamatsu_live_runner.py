@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 import tempfile
 import unittest
@@ -80,6 +81,34 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
         self.assertTrue(command[1].endswith("run_wakamatsu_v2_3_live.py"))
         self.assertEqual(command[2:4], ("--date", "2026-08-25"))
         self.assertNotIn("odds", command)
+
+    def test_v3_staging_hook_runs_after_existing_live_runner_only_when_enabled(self):
+        class FakeProcess:
+            returncode = 0
+
+            async def communicate(self):
+                return b'{"status": "complete"}', b""
+
+        target = {"venue": "wakamatsu", "date": "2026-10-15", "race_no": 1}
+        complete = {
+            "items": {
+                key: {"complete": True, "status": "complete"}
+                for key in ("direct", "exhibition", "original_exhibition")
+            }
+        }
+        logger = unittest.mock.Mock()
+        with patch.dict(os.environ, {"WAKAMATSU_V3_STAGING_OUTPUT_ROOT": "staging/data"}), patch(
+            "asyncio.create_subprocess_exec", side_effect=[FakeProcess(), FakeProcess()]
+        ) as launch:
+            asyncio.run(apply_wakamatsu_live_prediction(target, complete, logger))
+
+        self.assertEqual(launch.call_count, 2)
+        existing_command = launch.call_args_list[0].args
+        staging_command = launch.call_args_list[1].args
+        self.assertTrue(existing_command[1].endswith("run_wakamatsu_v2_3_live.py"))
+        self.assertTrue(staging_command[1].endswith("run_wakamatsu_v3_staging.py"))
+        self.assertEqual(staging_command[-2:], ("--output-root", "staging/data"))
+        self.assertNotIn("odds", staging_command)
 
     def test_complete_live_race_requires_direct_and_exhibition(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -198,6 +227,7 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
             race_root = root / "live" / "2026-08-11" / "wakamatsu" / "05"
             write_json(race_root / "direct.json", complete)
             write_json(race_root / "exhibition.json", complete)
+            write_json(race_root / "original_exhibition.json", complete)
 
             with patch.object(runner.subprocess, "run") as run, patch.object(
                 runner, "validate_published_data", return_value={"ok": True}
@@ -238,6 +268,30 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
                 },
             )
             run.assert_not_called()
+
+    def test_v23_pipeline_v3_failure_fails_closed_without_stopping_existing_report(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            complete = {"complete": True, "status": "complete", "data": {}}
+            race_root = root / "live" / "2026-08-11" / "wakamatsu" / "05"
+            write_json(race_root / "direct.json", complete)
+            write_json(race_root / "exhibition.json", complete)
+            write_json(race_root / "original_exhibition.json", complete)
+            write_json(root / "venues" / "wakamatsu" / "20260811.json", {})
+            fallback = {"status": "unavailable", "reason": "v3_pipeline_error:RuntimeError"}
+            with patch.object(runner23.subprocess, "run"), patch.object(
+                runner23, "validate_published_data", return_value={"ok": True}
+            ), patch.object(
+                runner23, "publish_v3", side_effect=RuntimeError("test")
+            ), patch.object(
+                runner23, "mark_live_v3_unavailable", return_value=fallback
+            ) as fail_closed:
+                report = runner23.run_pipeline("2026-08-11", root, "python")
+            self.assertTrue(report["ok"])
+            self.assertEqual(report["wakamatsuV3"], fallback)
+            fail_closed.assert_called_once_with(
+                "2026-08-11", root.resolve(), "v3_pipeline_error:RuntimeError"
+            )
 
 
 if __name__ == "__main__":

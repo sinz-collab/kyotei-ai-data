@@ -1,0 +1,143 @@
+{
+  "schema_version": "wakamatsu_v3_lane1_tide_candidate_frozen_20261014",
+  "v2": {
+    "training_period": "2026-08-22..2026-08-26",
+    "prior_fly": 0.5,
+    "features": [
+      "lane1_course_strength",
+      "lane1_escape_history",
+      "lane1_local_rating",
+      "lane1_st_advantage",
+      "lane1_lap_rank",
+      "lane1_turn_rank",
+      "lane1_straight_rank",
+      "attacker_live_strength",
+      "best_attack_st",
+      "wall_st_gap"
+    ],
+    "coefs": [
+      -0.13348611733501448,
+      -0.16158899485305925,
+      -0.145958110701125,
+      0.08777974926070703,
+      0.21511675575774183,
+      -0.0074724065169866835,
+      0.05365340385069545,
+      0.04861998380878141,
+      0.11375456095753536,
+      -0.0790122735828172
+    ],
+    "impute_medians": {
+      "lane1_course_strength": 0.12259223176554564,
+      "lane1_escape_history": -0.10333333333333339,
+      "lane1_local_rating": 0.2400000000000002,
+      "lane1_st_advantage": -0.050000000000000044,
+      "lane1_lap_rank": 0.0,
+      "lane1_turn_rank": 0.15000000000000002,
+      "lane1_straight_rank": 0.2,
+      "attacker_live_strength": 0.13266666666666668,
+      "best_attack_st": 0.375,
+      "wall_st_gap": 0.0,
+      "wind_speed": 0.25,
+      "race_no": -0.125,
+      "tide_rising": 1.0,
+      "tide_near_low": 0.0
+    },
+    "center": {
+      "lane1_course_strength": 0.20921276186537333,
+      "lane1_escape_history": -0.04148809523809525,
+      "lane1_local_rating": 0.05955357142857142,
+      "lane1_st_advantage": -0.11785714285714285,
+      "lane1_lap_rank": 0.21428571428571427,
+      "lane1_turn_rank": 0.21428571428571433,
+      "lane1_straight_rank": 0.36607142857142844,
+      "attacker_live_strength": 0.12692857142857145,
+      "best_attack_st": 0.44642857142857145,
+      "wall_st_gap": 0.03571428571428576,
+      "wind_speed": 0.4732142857142857,
+      "race_no": -0.08928571428571429,
+      "tide_rising": 0.9285714285714286,
+      "tide_near_low": 0.10714285714285714
+    },
+    "scale": {
+      "lane1_course_strength": 0.585485403544061,
+      "lane1_escape_history": 0.5091780334024107,
+      "lane1_local_rating": 0.9099814935253757,
+      "lane1_st_advantage": 0.609846919567626,
+      "lane1_lap_rank": 0.31533914363777316,
+      "lane1_turn_rank": 1.0,
+      "lane1_straight_rank": 0.3418838491747315,
+      "attacker_live_strength": 0.33206840179304586,
+      "best_attack_st": 0.7050745365142727,
+      "wall_st_gap": 0.7014471193357985,
+      "wind_speed": 0.7375129711761422,
+      "race_no": 0.8216226478805243,
+      "tide_rising": 1.0,
+      "tide_near_low": 0.309294787065871
+    },
+    "all_feature_names": [
+      "lane1_course_strength",
+      "lane1_escape_history",
+      "lane1_local_rating",
+      "lane1_st_advantage",
+      "lane1_lap_rank",
+      "lane1_turn_rank",
+      "lane1_straight_rank",
+      "attacker_live_strength",
+      "best_attack_st",
+      "wall_st_gap",
+      "wind_speed",
+      "race_no",
+      "tide_rising",
+      "tide_near_low"
+    ],
+    "ridge_alpha": 30
+  },
+  "v3": {
+    "training_period": "2026-08-22..2026-08-26",
+    "base_mix_existing": 0.1,
+    "base_mix_v2": 0.9,
+    "features": [
+      "lap_adv",
+      "turn_adv",
+      "lap_x_tide",
+      "turn_x_tide",
+      "lap_x_rising"
+    ],
+    "coefs": [
+      -0.02418950917546181,
+      -0.016679982996148257,
+      -0.012946373801716007,
+      -0.0198555346581191,
+      -0.015587158455705496
+    ],
+    "median": {
+      "lap_adv": 0.46499999999999986,
+      "turn_adv": 0.1299999999999999,
+      "lap_x_tide": -0.0031033426485413008,
+      "turn_x_tide": 0.0002029727316273405,
+      "lap_x_rising": 0.21500000000000163
+    },
+    "center": {
+      "lap_adv": 0.38732142857142854,
+      "turn_adv": 0.14875000000000002,
+      "lap_x_tide": 0.014886505998948196,
+      "turn_x_tide": 0.00634659928220094,
+      "lap_x_rising": 0.17276785714285708
+    },
+    "scale": {
+      "lap_adv": 0.45796979285628836,
+      "turn_adv": 0.167278347237607,
+      "lap_x_tide": 0.23518201324253188,
+      "turn_x_tide": 0.0691573484360069,
+      "lap_x_rising": 0.24541600978164196
+    },
+    "ridge_penalty": 1.25
+  },
+  "warnings": [
+    "Research candidate; August training is in-sample.",
+    "Tide phase distribution heavily skewed: rising 121 of 138; check source data.",
+    "No morning model; lap/turn times unavailable before exhibition.",
+    "Inputs must represent pre-deadline state; do not recompute historical player records using current values."
+  ]
+}
