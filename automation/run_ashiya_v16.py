@@ -741,6 +741,19 @@ def build_site_prediction(
         ),
     }
 
+    # 芦屋LIVE専用補正は結果に存在する場合だけ公開する。
+    # 朝予想と基礎v1.6.1/v4.2のJSON契約は変更しない。
+    for key in (
+        "flyPrediction",
+        "lane1FlyProbability",
+        "lane1FlyProbabilitySource",
+        "lane1FlyProbabilityModel",
+        "lane1FlyProbabilityStatus",
+    ):
+        if key in result:
+            legacy[key] = deepcopy(result[key])
+            native[key] = deepcopy(result[key])
+
     return legacy, native
 
 

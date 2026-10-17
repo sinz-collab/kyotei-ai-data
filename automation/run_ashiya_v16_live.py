@@ -19,6 +19,7 @@ from run_ashiya_v16 import (
     atomic_write_json,
     as_race_no,
 )
+from ashiya_live_v42 import apply_ashiya_live_v42
 
 
 def lane_value(values, lane):
@@ -259,6 +260,11 @@ def main() -> int:
         raise RuntimeError(
             "ashiya_live_engine_output_invalid"
         )
+
+    result = apply_ashiya_live_v42(
+        result,
+        merged,
+    )
 
     legacy, native = build_site_prediction(
         result,
