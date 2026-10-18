@@ -121,6 +121,56 @@ def build_probability_review(old_prediction, new_prediction):
     return review
 
 
+def morning_lane1_fly_probability(old_prediction):
+    """Return the saved morning baseline, with a legacy JSON fallback."""
+    saved = old_prediction.get("lane1FlyProbabilityMorning")
+    try:
+        value = float(saved)
+        if 0.0 <= value <= 100.0:
+            return round(value, 2)
+    except (TypeError, ValueError):
+        pass
+
+    lane1_win = morning_value(
+        old_prediction,
+        1,
+        "win",
+        "morningWin",
+    )
+    if lane1_win is None or not 0.0 <= lane1_win <= 100.0:
+        return None
+    return round(100.0 - lane1_win, 2)
+
+
+def attach_lane1_fly_comparison(old_prediction, legacy, native):
+    """Keep morning and E-method LIVE probabilities as independent values."""
+    morning = morning_lane1_fly_probability(old_prediction)
+    live = legacy.get("lane1FlyProbabilityLive")
+    if live is None and legacy.get("lane1FlyProbabilitySource") == "live":
+        live = legacy.get("lane1FlyProbability")
+
+    try:
+        live = float(live)
+        if not 0.0 <= live <= 100.0:
+            live = None
+    except (TypeError, ValueError):
+        live = None
+
+    fields = {
+        "lane1FlyProbabilityMorning": morning,
+        "lane1FlyProbabilityLive": round(live, 2) if live is not None else None,
+        "lane1FlyProbabilityDeltaPt": (
+            round(live - morning, 2)
+            if live is not None and morning is not None
+            else None
+        ),
+        "lane1FlyProbabilityDisplayStage": "live",
+        "lane1FlyProbabilityIsProvisional": False,
+    }
+    legacy.update(deepcopy(fields))
+    native.update(deepcopy(fields))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
 
@@ -270,6 +320,12 @@ def main() -> int:
         result,
         args.race,
         "live",
+    )
+
+    attach_lane1_fly_comparison(
+        old_prediction,
+        legacy,
+        native,
     )
 
     review = build_probability_review(

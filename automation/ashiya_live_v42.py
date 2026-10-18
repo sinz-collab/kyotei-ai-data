@@ -377,9 +377,12 @@ def apply_ashiya_live_v42(result, race):
         integration["flyTickets"] = {"model": FLY_TICKET_MODEL, "status": "applied", "tickets": len(fly_tickets)}
     fly_probability, probability_reason, escape_probability = _lane1_fly_probability(prepared, probabilities)
     output["lane1FlyProbability"] = fly_probability
+    output["lane1FlyProbabilityLive"] = fly_probability
     output["lane1FlyProbabilitySource"] = "live"
     output["lane1FlyProbabilityModel"] = FLY_PROBABILITY_MODEL
     output["lane1FlyProbabilityStatus"] = "ok" if probability_reason is None else "unavailable"
+    output["lane1FlyProbabilityDisplayStage"] = "live"
+    output["lane1FlyProbabilityIsProvisional"] = False
     integration["flyProbability"] = (
         {"model": FLY_PROBABILITY_MODEL, "status": "applied", "value": fly_probability, "escapeProbabilityRaw": escape_probability, "flyProbabilityRaw": 1.0 - escape_probability, "complementAppliedOnce": True}
         if probability_reason is None

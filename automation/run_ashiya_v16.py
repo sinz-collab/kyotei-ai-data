@@ -741,14 +741,37 @@ def build_site_prediction(
         ),
     }
 
+    # 朝の飛び確率は、v1.6.1 + v4.2 が出した1号艇1着率の
+    # 単純な補数。LIVE E方式とは別の簡易基準値として保存する。
+    if stage == "pre":
+        morning_fly_probability = round(
+            100.0 - win["1"],
+            2,
+        )
+        morning_fields = {
+            "lane1FlyProbability": morning_fly_probability,
+            "lane1FlyProbabilityMorning": morning_fly_probability,
+            "lane1FlyProbabilitySource": "morning_simple",
+            "lane1FlyProbabilityModel": (
+                "ashiya_v1.6.1_v4.2_lane1_win_complement_simple"
+            ),
+            "lane1FlyProbabilityStatus": "ok",
+            "lane1FlyProbabilityDisplayStage": "morning",
+            "lane1FlyProbabilityIsProvisional": True,
+        }
+        legacy.update(deepcopy(morning_fields))
+        native.update(deepcopy(morning_fields))
+
     # 芦屋LIVE専用補正は結果に存在する場合だけ公開する。
-    # 朝予想と基礎v1.6.1/v4.2のJSON契約は変更しない。
+    # E方式が返した値を再補正・再反転せず、そのまま互換項目へ渡す。
     for key in (
         "flyPrediction",
         "lane1FlyProbability",
         "lane1FlyProbabilitySource",
         "lane1FlyProbabilityModel",
         "lane1FlyProbabilityStatus",
+        "lane1FlyProbabilityDisplayStage",
+        "lane1FlyProbabilityIsProvisional",
     ):
         if key in result:
             legacy[key] = deepcopy(result[key])

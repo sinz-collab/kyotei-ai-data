@@ -127,6 +127,15 @@ class AshiyaLiveV42Test(unittest.TestCase):
         self.assertEqual(actual["flyPrediction"]["tickets"], [])
         self.assertIsNone(actual["lane1FlyProbability"])
 
+    def test_live_probability_is_exposed_without_second_complement(self) -> None:
+        actual = apply_ashiya_live_v42(engine_result(), race_payload())
+        self.assertEqual(
+            actual["lane1FlyProbabilityLive"],
+            actual["lane1FlyProbability"],
+        )
+        self.assertEqual(actual["lane1FlyProbabilityDisplayStage"], "live")
+        self.assertFalse(actual["lane1FlyProbabilityIsProvisional"])
+
 
 if __name__ == "__main__":
     unittest.main()
