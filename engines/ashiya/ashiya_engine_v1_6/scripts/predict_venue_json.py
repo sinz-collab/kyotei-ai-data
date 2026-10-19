@@ -606,7 +606,7 @@ def main():
 
     out = {
         "engine": "ashiya_prediction_engine",
-        "version": "1.6.1",
+        "version": "1.7.0",
         "date": doc.get("date"),
         "venue": "ashiya",
         "predictions": results,

@@ -7,6 +7,7 @@ from .db import PlayerDB
 from .probability import blend,apply_day_adjustment,apply_practical_support
 from .scenario import detect,apply,build_head_conditionals
 from .tickets import generate
+from .exhibition_v51 import apply_to_head_conditionals,enumerate_joint
 from .sab import grade
 from .utils import norm_reg_no,as_int
 
@@ -35,10 +36,15 @@ class AshiyaEngine:
         supported,support_audit=apply_practical_support(day_base,racers,race)
         structure=detect(racers,supported,db_audit.get('player_lookups')); final=apply(supported,structure)
         structure['head_conditionals']=build_head_conditionals(final,structure)
+        exhibition_mode=(self.config.get('exhibition_v51_mode') or 'disabled') if stage=='live' else 'disabled'
+        structure['head_conditionals'],exhibition_audit=apply_to_head_conditionals(
+            structure['head_conditionals'],racers,mode=exhibition_mode,
+        )
+        joint,joint_audit=enumerate_joint(final['win'],structure['head_conditionals'])
         entry_changed=any(as_int(r['actual_course'])!=as_int(r['lane']) for r in racers)
-        audit={'model':model_audit,'database':db_audit,'day_weighting':day_audit,'practical_support':support_audit,'entry_changed':entry_changed,'actual_entry_complete':all(r.get('actual_course') for r in racers),'actual_course_by_lane':{as_int(r['lane']):as_int(r['actual_course']) for r in racers},'tide_present':bool(race.get('tide')),'weather_present':bool(race.get('weather')),'odds_used':False,'full_reflection':True}
+        audit={'model':model_audit,'database':db_audit,'day_weighting':day_audit,'practical_support':support_audit,'exhibition_v51':exhibition_audit,'trifecta_joint':joint_audit,'entry_changed':entry_changed,'actual_entry_complete':all(r.get('actual_course') for r in racers),'actual_course_by_lane':{as_int(r['lane']):as_int(r['actual_course']) for r in racers},'tide_present':bool(race.get('tide')),'weather_present':bool(race.get('weather')),'odds_used':False,'full_reflection':True}
         sab=grade(final,structure,audit); tickets=generate(final,structure)
         audit.update({'ticket_count':len(tickets['all']),'duplicate_count':len(tickets['all'])-len({x['combination'] for x in tickets['all']}),'normalized':all(abs(sum(final[k])-1)<1e-8 for k in final),'probability_sums':{k:round(sum(final[k]),10) for k in final}})
         probs=[]
         for i,r in enumerate(racers): probs.append({'lane':r['lane'],'reg_no':r['reg_no'],'name':r.get('name') or r.get('player_name'),'win':round(final['win'][i],6),'second':round(final['second'][i],6),'third':round(final['third'][i],6),'top3':round(min(1,final['win'][i]+final['second'][i]+final['third'][i]),6)})
-        return {'engine':{'name':'ashiya_prediction_engine','version':'1.6.1','master_version':'v4.2','stage':stage,'generated_at':datetime.now(JST).isoformat()},'race':{'date':race.get('date') or race.get('race_date'),'race_no':race.get('race_no') or race.get('race')},'probabilities':probs,'attack_structure':{k:v for k,v in structure.items() if k!='scenarios'},'scenarios':structure['scenarios'],'sab':sab,'tickets':tickets,'audit':audit}
+        return {'engine':{'name':'ashiya_prediction_engine','version':'1.7.0','master_version':'v5.1','stage':stage,'generated_at':datetime.now(JST).isoformat()},'race':{'date':race.get('date') or race.get('race_date'),'race_no':race.get('race_no') or race.get('race')},'probabilities':probs,'trifecta_probabilities':joint,'attack_structure':{k:v for k,v in structure.items() if k!='scenarios'},'scenarios':structure['scenarios'],'sab':sab,'tickets':tickets,'audit':audit}

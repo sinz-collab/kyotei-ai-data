@@ -96,6 +96,6 @@ def test_ticket_generation_uses_conditionals_and_keeps_bucket_sizes():
     assert audit['conditional_third_probability']==conditional['third'][5]
     assert audit['legacy_link_multiplier']==1.0
     tickets=generate(p,structure)
-    assert [len(tickets[x]) for x in ('main','deviation','upset')]==[6,2,2]
+    assert [len(tickets[x]) for x in ('main','deviation','upset')]==[6,3,1]
     assert len({x['combination'] for x in tickets['all']})==10
     assert all('score_components' in x for x in tickets['all'])

@@ -18,6 +18,7 @@ from run_ashiya_v16 import (
     validate_final_payload,
     atomic_write_json,
     as_race_no,
+    append_prediction_history,
 )
 from ashiya_live_v42 import apply_ashiya_live_v42
 
@@ -322,6 +323,15 @@ def main() -> int:
         "live",
     )
 
+    append_prediction_history(
+        legacy,
+        native,
+        old_prediction,
+        result,
+        merged,
+        "live",
+    )
+
     attach_lane1_fly_comparison(
         old_prediction,
         legacy,
@@ -338,7 +348,7 @@ def main() -> int:
         "badge": "本予想",
         "statusText": (
             "展示・スリット・直前情報を反映して"
-            "芦屋v1.6.1で再精査済み"
+            "芦屋v5.1で再精査済み"
         ),
     }
 

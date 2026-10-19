@@ -155,7 +155,6 @@ jobs:
 
       - name: Install prediction dependencies
         run: |
-          python -m pip install pandas==2.3.1
           python -m pip install lxml==6.0.0
           python -m pip install -r engines/ashiya/ashiya_engine_v1_6/requirements.txt
         
@@ -173,6 +172,14 @@ jobs:
             --missing-only --write
           cp -a data "$RUNNER_TEMP/morning-data-before"
           python -m unittest discover -s tests
+          python -m pytest -q \
+            engines/ashiya/ashiya_engine_v1_6/tests \
+            tests/test_ashiya_live_v42.py \
+            tests/test_ashiya_fly_probability_stages.py \
+            tests/test_ashiya_native_prediction_preservation.py \
+            tests/test_ashiya_non_running.py \
+            tests/test_ashiya_prediction_history.py \
+            tests/test_ashiya_live_source_freshness.py
           python automation/build_site_data.py --date "$TARGET_DATE" | tee build.log
           python automation/enrich_motor_recent.py --date "$TARGET_DATE"
           python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"

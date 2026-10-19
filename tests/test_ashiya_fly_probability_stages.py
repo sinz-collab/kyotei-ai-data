@@ -24,9 +24,9 @@ class AshiyaFlyProbabilityStageTests(unittest.TestCase):
                 {"lane": 6, "win": 0.07, "second": 0.16, "third": 0.17},
             ],
             "tickets": {
-                "main": [f"1-2-{lane}" for lane in range(1, 7)],
-                "deviation": ["2-1-3", "2-1-4"],
-                "upset": ["3-1-2", "4-1-2"],
+                "main": ["1-2-3", "1-2-4", "1-2-5", "1-2-6", "1-3-2", "1-3-4"],
+                "deviation": ["2-1-3", "2-1-4", "2-1-5"],
+                "upset": ["3-1-2"],
             },
             "sab": {"grade": "A"},
         }

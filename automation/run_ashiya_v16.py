@@ -42,7 +42,7 @@ from predict_venue_json import merge_race_payload
 
 
 ENGINE_NAME = "ashiya_prediction_engine"
-ENGINE_VERSION = "1.6.1"
+ENGINE_VERSION = "1.7.0"
 EXPECTED_RACES = set(range(1, 13))
 
 
@@ -177,6 +177,71 @@ def as_race_no(value) -> int:
         return int(value)
     except (TypeError, ValueError):
         return 0
+
+
+def prediction_input_snapshot(input_data: dict) -> dict:
+    """Keep the engine input without copying mutable prediction/result output."""
+    snapshot = deepcopy(input_data)
+    for key in (
+        "prediction",
+        "predictionPre",
+        "predictionFinal",
+        "preds",
+        "result",
+    ):
+        snapshot.pop(key, None)
+    return snapshot
+
+
+def append_prediction_history(
+    legacy: dict,
+    native: dict,
+    previous_prediction: dict,
+    engine_result: dict,
+    input_data: dict,
+    stage: str,
+) -> None:
+    """Append an immutable morning/LIVE audit snapshot for one race."""
+    history = deepcopy(
+        (previous_prediction or {}).get("prediction_history")
+        or {}
+    )
+    bucket = "morning" if stage == "pre" else "live"
+    entries = history.get(bucket)
+    if not isinstance(entries, list):
+        entries = []
+
+    engine = deepcopy(engine_result.get("engine") or {})
+    selection = deepcopy(legacy.get("ticketSelection") or {})
+    normal_tickets = deepcopy(selection.get("ordered") or [])
+    fly_prediction = deepcopy(legacy.get("flyPrediction") or {})
+    fly_tickets = deepcopy(fly_prediction.get("tickets") or [])
+
+    snapshot = {
+        "snapshotVersion": "ashiya_prediction_snapshot_v1",
+        "stage": "morning" if stage == "pre" else "live",
+        "generatedAt": engine.get("generated_at"),
+        "engine": engine.get("name") or ENGINE_NAME,
+        "engineVersion": engine.get("version") or ENGINE_VERSION,
+        "masterVersion": engine.get("master_version") or "v5.1",
+        "ticketModelVersion": selection.get("modelVersion"),
+        "ticketAllocation": deepcopy(selection.get("allocation") or {}),
+        "normalTickets": normal_tickets,
+        "flyModelVersion": fly_prediction.get("modelVersion") or "strength_25_frozen",
+        "flyStatus": fly_prediction.get("status") or "not_generated_morning",
+        "flyTickets": fly_tickets,
+        "probabilities": {
+            "win": deepcopy(legacy.get("win") or {}),
+            "second": deepcopy(legacy.get("second") or {}),
+            "third": deepcopy(legacy.get("third") or {}),
+            "lane1Fly": legacy.get("lane1FlyProbability"),
+        },
+        "inputData": prediction_input_snapshot(input_data),
+    }
+    entries.append(snapshot)
+    history[bucket] = entries
+    legacy["prediction_history"] = deepcopy(history)
+    native["prediction_history"] = deepcopy(history)
 
 
 def validate_source_payload(
@@ -484,7 +549,7 @@ def validate_ticket_structure(
     )
 
     # allがエンジン側に無い場合のみ
-    # 6+2+2から構成。
+    # 6+3+1から構成。
     if not all_tickets:
         all_tickets = (
             main
@@ -498,13 +563,13 @@ def validate_ticket_structure(
             f"{len(main)}"
         )
 
-    if len(deviation) != 2:
+    if len(deviation) != 3:
         raise RuntimeError(
             f"ashiya_{race_no:02d}_deviation_ticket_count:"
             f"{len(deviation)}"
         )
 
-    if len(upset) != 2:
+    if len(upset) != 1:
         raise RuntimeError(
             f"ashiya_{race_no:02d}_upset_ticket_count:"
             f"{len(upset)}"
@@ -608,6 +673,18 @@ def build_site_prediction(
             f"{sab_grade}"
         )
 
+    detailed_tickets = result.get("tickets") or {}
+    ordered_details = deepcopy(detailed_tickets.get("all") or [])
+    ticket_selection = {
+        "modelVersion": detailed_tickets.get("model_version") or "ashiya_v51_631",
+        "allocation": deepcopy(detailed_tickets.get("allocation") or {
+            "main": 6,
+            "deviation": 3,
+            "scenario_hole": 1,
+        }),
+        "ordered": ordered_details,
+    }
+
     # -------------------------
     # legacy / site-compatible
     # top-level preds
@@ -638,6 +715,10 @@ def build_site_prediction(
         "tickets": deepcopy(
             all_tickets
         ),
+
+        # Detailed, auditable v5.1 selection metadata.  Existing string arrays
+        # remain unchanged for consumers that rely on the legacy schema.
+        "ticketSelection": deepcopy(ticket_selection),
 
         "predictionStage": stage,
         "active_prediction_stage": stage,
@@ -716,6 +797,8 @@ def build_site_prediction(
             ),
         },
 
+        "ticket_selection": deepcopy(ticket_selection),
+
         "attack_structure": deepcopy(
             result.get(
                 "attack_structure"
@@ -741,7 +824,7 @@ def build_site_prediction(
         ),
     }
 
-    # 朝の飛び確率は、v1.6.1 + v4.2 が出した1号艇1着率の
+    # 朝の飛び確率は、v5.1本番確率が出した1号艇1着率の
     # 単純な補数。LIVE E方式とは別の簡易基準値として保存する。
     if stage == "pre":
         morning_fly_probability = round(
@@ -753,7 +836,7 @@ def build_site_prediction(
             "lane1FlyProbabilityMorning": morning_fly_probability,
             "lane1FlyProbabilitySource": "morning_simple",
             "lane1FlyProbabilityModel": (
-                "ashiya_v1.6.1_v4.2_lane1_win_complement_simple"
+                "ashiya_v5.1_lane1_win_complement_simple"
             ),
             "lane1FlyProbabilityStatus": "ok",
             "lane1FlyProbabilityDisplayStage": "morning",
@@ -943,6 +1026,14 @@ def merge_predictions(
             }
         )
 
+        preserve_advanced_native = (
+            stage == "pre"
+            and native_stage in {
+                "live",
+                "final",
+            }
+        )
+
         result = engine_results[
             race_no
         ]
@@ -955,12 +1046,28 @@ def merge_predictions(
             )
         )
 
+        archive_new_prediction = not (
+            preserve_advanced_legacy
+            or preserve_advanced_native
+        )
+        if archive_new_prediction:
+            append_prediction_history(
+                legacy,
+                native,
+                existing_legacy,
+                result,
+                merge_race_payload(
+                    source_payload,
+                    source_race,
+                ),
+                stage,
+            )
+
         if not preserve_advanced_legacy:
             for preserved_key in (
                 "realtime",
                 "odds",
                 "result",
-                "prediction_history",
                 "active_prediction_stage",
             ):
                 if preserved_key in existing_legacy:
@@ -971,6 +1078,14 @@ def merge_predictions(
                             preserved_key
                         ]
                     )
+
+            if (
+                not archive_new_prediction
+                and "prediction_history" in existing_legacy
+            ):
+                legacy["prediction_history"] = deepcopy(
+                    existing_legacy["prediction_history"]
+                )
 
         predictions[
             race_key
@@ -991,11 +1106,7 @@ def merge_predictions(
                 existing_native
             )
             if (
-                stage == "pre"
-                and native_stage in {
-                    "live",
-                    "final",
-                }
+                preserve_advanced_native
             )
             else native
         )

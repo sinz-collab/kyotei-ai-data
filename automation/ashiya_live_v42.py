@@ -212,7 +212,7 @@ def _normal_safe2(result, prepared, probabilities):
     if not isinstance(tickets, dict):
         return False, "ticket_groups_missing", 0
     groups = [tickets.get("main"), tickets.get("deviation"), tickets.get("upset")]
-    if any(not isinstance(group, list) for group in groups) or [len(group) for group in groups] != [6, 2, 2]:
+    if any(not isinstance(group, list) for group in groups) or [len(group) for group in groups] != [6, 3, 1]:
         return False, "ticket_groups_unknown", 0
     original_objects = [deepcopy(ticket) for group in groups for ticket in group]
     original = [_combo(ticket) for ticket in original_objects]
@@ -253,19 +253,22 @@ def _normal_safe2(result, prepared, probabilities):
     changes = sum(before != after for before, after in zip(original, chosen))
     if changes:
         updated = []
-        for before, after, old in zip(original, chosen, original_objects):
+        for index,(before, after, old) in enumerate(zip(original, chosen, original_objects),1):
             if before == after:
                 updated.append(old)
             else:
+                category="main" if index<=6 else ("deviation" if index<=9 else "scenario_hole")
                 updated.append({
                     "combination": after,
                     "score": round(score_by_combo[after], 8),
+                    "category": category,
+                    "selection_order": index,
                     "reason": "芦屋LIVE safe2補正（同一区分内置換）",
                     "score_components": {"safe2_adjusted_score": round(score_by_combo[after], 8)},
                 })
         tickets["main"] = updated[:6]
-        tickets["deviation"] = updated[6:8]
-        tickets["upset"] = updated[8:]
+        tickets["deviation"] = updated[6:9]
+        tickets["upset"] = updated[9:]
         tickets["all"] = updated
     return True, None, changes
 

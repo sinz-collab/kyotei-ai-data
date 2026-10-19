@@ -48,8 +48,8 @@ def engine_result() -> dict:
         ],
         "tickets": {
             "main": deepcopy(rows[:6]),
-            "deviation": deepcopy(rows[6:8]),
-            "upset": deepcopy(rows[8:]),
+            "deviation": deepcopy(rows[6:9]),
+            "upset": deepcopy(rows[9:]),
             "all": deepcopy(rows),
         },
         "audit": {},
@@ -62,7 +62,7 @@ class AshiyaLiveV42Test(unittest.TestCase):
         actual = apply_ashiya_live_v42(original, race_payload())
 
         tickets = actual["tickets"]
-        self.assertEqual([len(tickets[key]) for key in ("main", "deviation", "upset")], [6, 2, 2])
+        self.assertEqual([len(tickets[key]) for key in ("main", "deviation", "upset")], [6, 3, 1])
         all_combos = [row["combination"] for row in tickets["all"]]
         self.assertEqual(len(all_combos), 10)
         self.assertEqual(len(set(all_combos)), 10)
@@ -135,6 +135,21 @@ class AshiyaLiveV42Test(unittest.TestCase):
         )
         self.assertEqual(actual["lane1FlyProbabilityDisplayStage"], "live")
         self.assertFalse(actual["lane1FlyProbabilityIsProvisional"])
+
+    def test_strength_25_frozen_reference_vector_is_unchanged(self) -> None:
+        actual = apply_ashiya_live_v42(engine_result(), race_payload())
+        self.assertEqual(
+            [row["combo"] for row in actual["flyPrediction"]["tickets"]],
+            [
+                "2-1-3", "2-1-4", "3-1-2", "2-3-1", "2-1-5",
+                "3-2-1", "4-1-2", "2-1-6", "2-4-1", "3-1-4",
+            ],
+        )
+        self.assertEqual(
+            [row["probability"] for row in actual["flyPrediction"]["tickets"]],
+            [4.4549, 3.3082, 3.0976, 2.8334, 2.618, 2.4323, 2.2029, 2.1433, 2.1216, 2.1057],
+        )
+        self.assertEqual(actual["lane1FlyProbability"], 40.63)
 
 
 if __name__ == "__main__":

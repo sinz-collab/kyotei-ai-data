@@ -702,14 +702,14 @@ def prediction_envelope(
 
 
 def ashiya_race_prediction_is_complete(prediction: object) -> bool:
-    """Validate and preserve the race-native Ashiya v1.6.1 prediction."""
+    """Validate and preserve the race-native Ashiya production prediction."""
     if not isinstance(prediction, dict):
         return False
     if prediction.get("status") != "ready":
         return False
     if prediction.get("engine") != "ashiya_prediction_engine":
         return False
-    if str(prediction.get("engine_version") or "") != "1.6.1":
+    if str(prediction.get("engine_version") or "") not in {"1.6.1", "1.7.0"}:
         return False
     if prediction.get("stage") not in {"pre", "live", "final"}:
         return False

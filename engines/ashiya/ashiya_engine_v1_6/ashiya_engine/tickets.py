@@ -84,58 +84,99 @@ def generate(p, structure):
     scored.sort(key=lambda x:(-x[0],x[1]))
     used = set(); main = []; deviation = []; upset = []
 
-    def add(bucket, o, score, reason, audit):
+    def add(bucket, o, score, reason, audit, category):
         if o in used:
             return False
         used.add(o)
         components={k:round(v,8) if isinstance(v,float) else v for k,v in audit.items()}
-        bucket.append({'combination': '-'.join(map(str, o)), 'score': round(score, 8), 'reason': reason,'score_components':components})
+        bucket.append({
+            'combination': '-'.join(map(str, o)),
+            'score': round(score, 8),
+            'category': category,
+            'reason': reason,
+            'score_components':components,
+        })
         return True
 
     for score, o, audit in scored:
         if len(main) >= 6:
             break
-        add(main,o,score,'確率上位・頭別条件付き連動',audit)
+        add(main,o,score,'確率上位・頭別条件付き連動',audit,'main')
 
-    candidates=structure.get('head_candidates') or []
-    if candidates:
-        head_priority={
-            int(x['lane']):p['win'][int(x['lane'])-1]*float(x.get('scenario_score') or x.get('win') or 0)
-            for x in candidates
-        }
-    else:
-        fallback={int(x['attacker']) for x in structure.get('scenarios',[])} | {max(range(1,7),key=lambda h:p['win'][h-1])}
-        head_priority={head:p['win'][head-1] for head in fallback}
-    ordered_heads=sorted(head_priority,key=lambda h:(-head_priority[h],h))
-    split=max(2,(len(ordered_heads)+1)//2)
-    middle_heads=ordered_heads[1:split] or ordered_heads[:1]
-    lower_heads=ordered_heads[split:] or ordered_heads[1:] or ordered_heads[:1]
+    # 6-3-1: deviation tickets first cover a same-head second/third swap when
+    # it remains competitive, then follow the conditional probability order.
+    score_lookup={o:(score,audit) for score,o,audit in scored}
+    for _,o,_ in list(scored):
+        if len(deviation)>=3:
+            break
+        if o not in used:
+            continue
+        swapped=(o[0],o[2],o[1])
+        if swapped in used or swapped not in score_lookup:
+            continue
+        score,audit=score_lookup[swapped]
+        add(
+            deviation,swapped,score,
+            f'{o[0]}頭の2着・3着入れ替わり（条件付き確率評価）',
+            audit,'deviation',
+        )
 
-    def add_by_head(bucket,heads,limit,reason):
-        # First pass gives distinct supported heads one opportunity. The fill
-        # pass then follows score order without equalising every candidate.
-        for head in heads:
-            choice=next((x for x in scored if x[1] not in used and x[1][0]==head),None)
-            if choice:
-                add(bucket,choice[1],choice[0],reason,choice[2])
-            if len(bucket)>=limit:
-                return
-        for score,o,audit in scored:
-            if len(bucket)>=limit:
-                return
-            if o not in used and o[0] in heads:
-                add(bucket,o,score,reason,audit)
+    main_heads={o[0] for _,o,_ in scored if o in used}
+    for score,o,audit in scored:
+        if len(deviation)>=3:
+            break
+        if o not in used and o[0] in main_heads:
+            add(
+                deviation,o,score,
+                '本線同一頭の競り合い・追走・差し残りを条件付き確率で補完',
+                audit,'deviation',
+            )
 
-    add_by_head(deviation,middle_heads,2,'中位head candidateの条件付き展開')
-    add_by_head(upset,lower_heads,2,'低位だが支持のあるhead scenario')
+    # One scenario hole is selected only when a supported head scenario has a
+    # concrete linked boat in second or third.  Otherwise the highest remaining
+    # probability is used and the fallback is explicitly auditable.
+    scenario_by_head={int(x.get('head',0)):x for x in structure.get('head_scenarios',[]) if x.get('head')}
+    scenario_choices=[]
+    for score,o,audit in scored:
+        if o in used:
+            continue
+        scenario=scenario_by_head.get(o[0])
+        if not scenario:
+            continue
+        linked=set(int(x) for x in scenario.get('linked_boats',[]) if x)
+        linked_count=int(o[1] in linked)+int(o[2] in linked)
+        if not linked_count:
+            continue
+        scenario_score=float(scenario.get('score') or 0)
+        grounded_score=score*(1.0+0.18*linked_count+0.12*scenario_score)
+        scenario_choices.append((grounded_score,score,o,audit,scenario,linked_count))
+    scenario_choices.sort(key=lambda x:(-x[0],x[2]))
+    if scenario_choices:
+        _,score,o,audit,scenario,linked_count=scenario_choices[0]
+        roles=', '.join(str(x.get('role')) for x in scenario.get('relations',[]) if int(x.get('boat') or 0) in o[1:])
+        add(
+            upset,o,score,
+            f"シナリオ穴: {scenario.get('scenario_id')}・連動{linked_count}艇"+(f'（{roles}）' if roles else ''),
+            audit,'scenario_hole',
+        )
 
     for score, o, audit in scored:
         if o in used:
             continue
-        if len(deviation) < 2:
-            add(deviation,o,score,'次点補充',audit)
-        elif len(upset) < 2:
-            add(upset,o,score,'次点補充',audit)
+        if len(deviation) < 3:
+            add(deviation,o,score,'有効なズレ候補不足のため条件付き確率順位で補完',audit,'deviation')
+        elif len(upset) < 1:
+            add(upset,o,score,'有効なシナリオ穴候補不足のため条件付き確率順位で補完',audit,'scenario_hole')
         if len(main) + len(deviation) + len(upset) == 10:
             break
-    return {'main': main, 'deviation': deviation, 'upset': upset, 'all': main + deviation + upset}
+    ordered=main+deviation+upset
+    for index,ticket in enumerate(ordered,1):
+        ticket['selection_order']=index
+    return {
+        'model_version':'ashiya_v51_631',
+        'allocation':{'main':6,'deviation':3,'scenario_hole':1},
+        'main': main,
+        'deviation': deviation,
+        'upset': upset,
+        'all': ordered,
+    }

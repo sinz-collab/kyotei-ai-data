@@ -29,6 +29,18 @@ def complete_data(path: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def complete_snapshot(path: Path) -> tuple[dict | None, str | None]:
+    """Return complete data with its acquisition timestamp."""
+    document = load_json(path)
+    if not document or document.get("complete") is not True or document.get("status") != "complete":
+        return None, None
+    data = document.get("data")
+    if not isinstance(data, dict):
+        return None, None
+    fetched_at = document.get("fetched_at")
+    return data, str(fetched_at) if fetched_at else None
+
+
 def atomic_write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -86,17 +98,40 @@ def apply_live_fields(
     ):
         race.pop(legacy_key, None)
 
-    direct = complete_data(live_root / "direct.json")
-    exhibition = complete_data(live_root / "exhibition.json")
-    original = complete_data(
+    direct, direct_at = complete_snapshot(live_root / "direct.json")
+    exhibition, exhibition_at = complete_snapshot(live_root / "exhibition.json")
+    original, original_at = complete_snapshot(
         live_root / "original_exhibition.json"
     )
-    odds = complete_data(live_root / "odds.json")
-    result = complete_data(live_root / "result.json")
+    odds, odds_at = complete_snapshot(live_root / "odds.json")
+    result, result_at = complete_snapshot(live_root / "result.json")
 
     live = race.get("live")
     if not isinstance(live, dict):
         live = {}
+
+    source_times = live.get("sourceFetchedAt")
+    if not isinstance(source_times, dict):
+        source_times = {}
+
+    def accept(key: str, value: dict | None, fetched_at: str | None) -> dict | None:
+        previous = source_times.get(key)
+        if value is None:
+            return None
+        # ISO-8601 values emitted by the fetcher have a fixed timezone and are
+        # lexicographically ordered.  Equal/older snapshots cannot overwrite a
+        # newer prediction input.
+        if previous and fetched_at and fetched_at <= str(previous):
+            return None
+        if fetched_at:
+            source_times[key] = fetched_at
+        return value
+
+    direct = accept("direct", direct, direct_at)
+    exhibition = accept("exhibition", exhibition, exhibition_at)
+    original = accept("original", original, original_at)
+    odds = accept("odds", odds, odds_at)
+    result = accept("result", result, result_at)
 
     if direct is not None:
         live["direct"] = direct
@@ -171,6 +206,7 @@ def apply_live_fields(
         race["result"] = result
         live["result"] = result
 
+    live["sourceFetchedAt"] = source_times
     race["live"] = live
     return payload
 
