@@ -704,6 +704,11 @@ def main() -> int:
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument("--data-root", type=Path, default=Path("data"))
     parser.add_argument("--races", type=parse_races, default=list(range(1, 13)))
+    parser.add_argument(
+        "--stage",
+        choices=("preliminary", "final"),
+        default="final",
+    )
     parser.add_argument("--write", action="store_true")
     parser.add_argument("--compare-results", action="store_true")
     args = parser.parse_args()
@@ -717,11 +722,17 @@ def main() -> int:
         raise ValueError(
             f"date_mismatch: expected={args.date} actual={document.get('date')}"
         )
-    updated, reports = apply_tokoname_predictions(
-        document,
-        live_root=live_root,
-        race_numbers=args.races,
-    )
+    if args.stage == "preliminary":
+        updated, reports = apply_tokoname_preliminary_predictions(
+            document,
+            race_numbers=args.races,
+        )
+    else:
+        updated, reports = apply_tokoname_predictions(
+            document,
+            live_root=live_root,
+            race_numbers=args.races,
+        )
     comparisons = (
         compare_results(reports, updated, live_root)
         if args.compare_results
@@ -742,6 +753,7 @@ def main() -> int:
                 "date": args.date,
                 "engine": ENGINE_NAME,
                 "engine_version": ENGINE_VERSION,
+                "stage": args.stage,
                 "morning_path": str(morning_path),
                 "model_dir": str(DEFAULT_MODEL_DIR),
                 "reports": reports,

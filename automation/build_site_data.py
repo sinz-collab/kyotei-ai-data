@@ -761,6 +761,38 @@ def tokoname_race_prediction_is_complete(prediction: object) -> bool:
     )
 
 
+def tokoname_native_predictions_are_complete(payload: dict) -> bool:
+    """Keep a complete Tokoname native day publishable across morning rebuilds."""
+    races = payload.get("races")
+    if not isinstance(races, list) or len(races) != 12:
+        return False
+    indexed = {
+        int(race.get("race") or 0): race
+        for race in races
+        if isinstance(race, dict)
+        and int(race.get("race") or 0) in range(1, 13)
+    }
+    if set(indexed) != set(range(1, 13)):
+        return False
+    for race_no in range(1, 13):
+        prediction = indexed[race_no].get("prediction")
+        if not tokoname_race_prediction_is_complete(prediction):
+            return False
+        probability = prediction.get("lane1FlyProbability")
+        detail = prediction.get("lane1FlyDetail")
+        if not (
+            isinstance(probability, (int, float))
+            and 0.0 <= probability <= 100.0
+            and isinstance(prediction.get("lane1FlyLevel"), str)
+            and prediction.get("lane1FlyStage") in {"morning", "post_exhibition"}
+            and isinstance(detail, dict)
+            and detail.get("probability") == probability
+            and detail.get("stage") == prediction.get("lane1FlyStage")
+        ):
+            return False
+    return True
+
+
 
 def wakamatsu_race_prediction_is_complete(prediction: object) -> bool:
     """Validate and preserve supported race-native Wakamatsu predictions."""
@@ -1225,6 +1257,12 @@ def main() -> int:
                     payload,
                     args.date,
                 )
+                if (
+                    slug == "tokoname"
+                    and tokoname_native_predictions_are_complete(payload)
+                ):
+                    prediction_available = True
+                    prediction_gate_reason = "ok"
                 prediction_reason = "" if prediction_available else "prediction_payload_unavailable"
                 if not prediction_available:
                     detail = {

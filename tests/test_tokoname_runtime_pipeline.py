@@ -233,6 +233,38 @@ class TokonameBuildPreservationTests(unittest.TestCase):
         )
         self.assertEqual(rebuilt["races"][0]["prediction"]["status"], "unavailable")
 
+    def test_complete_native_day_remains_ready_after_morning_rebuild(self) -> None:
+        payload = morning()
+        ready_prediction = self._prediction()
+        for race in payload["races"]:
+            race["prediction"] = deepcopy(ready_prediction)
+
+        self.assertTrue(
+            build_site_data.tokoname_native_predictions_are_complete(payload)
+        )
+        rebuilt = build_site_data.attach_independent_race_domains(
+            payload,
+            "tokoname",
+            True,
+            "",
+        )
+
+        self.assertEqual(rebuilt["predictionStatus"], "ready")
+        self.assertIsNone(rebuilt["predictionReason"])
+        self.assertTrue(
+            all(
+                race["prediction"] == ready_prediction
+                for race in rebuilt["races"]
+            )
+        )
+
+    def test_morning_workflow_generates_tokoname_preliminary_twice(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(
+            encoding="utf-8"
+        )
+        command = "--date \"$TARGET_DATE\" --stage preliminary --write"
+        self.assertEqual(workflow.count(command), 2)
+
     @staticmethod
     def _prediction() -> dict:
         document = morning()
