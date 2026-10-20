@@ -130,6 +130,78 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.write_tree(after, payload())
             self.assertEqual(validate(before, after), [])
 
+    def test_complete_tokoname_native_predictions_are_not_treated_as_empty(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            before, after = root / "before", root / "after"
+            value = payload(date="2026-07-30", event_day=1)
+            value["venueId"] = "tokoname"
+            ready_prediction = {
+                "engine": "tokoname_engine",
+                "engine_version": "1.6",
+                "prediction_phase": "preliminary",
+                "probabilities": {
+                    key: {str(lane): 100 / 6 for lane in range(1, 7)}
+                    for key in ("win", "second", "third")
+                },
+                "sab": "A",
+                "tickets": {
+                    "main": [{}] * 6,
+                    "deviation": [{}] * 2,
+                    "upset": [{}] * 2,
+                },
+                "lane1FlyProbability": 20.0,
+                "lane1FlyLevel": "low",
+                "lane1FlyStage": "morning",
+                "lane1FlyDetail": {"probability": 20.0, "stage": "morning"},
+                "flyPrediction": {
+                    "modelVersion": "tokoname_fly_tickets_v4",
+                    "status": "waiting",
+                    "tickets": [],
+                },
+            }
+            for race in value["races"]:
+                race["prediction"] = deepcopy(ready_prediction)
+                race["setsukan"] = [
+                    {
+                        "lane": racer["lane"],
+                        "season_runs": deepcopy(racer.get("season_runs") or []),
+                        "season_groups": deepcopy(racer.get("season_groups") or []),
+                    }
+                    for racer in race["racers"]
+                ]
+            value["preds"] = {}
+
+            for tree in (before, after):
+                venue = tree / "venues" / "tokoname"
+                venue.mkdir(parents=True)
+                (venue / "20260730.json").write_text(
+                    json.dumps(value), encoding="utf-8"
+                )
+                (tree / "manifest.json").write_text(
+                    json.dumps(
+                        {
+                            "venues": [
+                                {
+                                    "slug": "tokoname",
+                                    "open": True,
+                                    "predictionStatus": "ready",
+                                    "dataPath": "venues/tokoname/20260730.json",
+                                }
+                            ]
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            self.assertEqual(validate(before, after), [])
+
+            value["races"][0]["prediction"].pop("flyPrediction")
+            (after / "venues" / "tokoname" / "20260730.json").write_text(
+                json.dumps(value), encoding="utf-8"
+            )
+            self.assertIn("tokoname: prediction is empty", validate(before, after))
+
     def test_baseline_empty_tickets_and_domain_loss_fail(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)

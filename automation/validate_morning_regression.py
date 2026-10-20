@@ -7,6 +7,8 @@ import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
 
+from build_site_data import tokoname_native_predictions_are_complete
+
 
 PREDICTION_VENUES = {
     "toda",
@@ -61,6 +63,12 @@ def meaningful_live(prediction: dict) -> bool:
 def meaningful_odds(prediction: dict) -> bool:
     odds = prediction.get("odds")
     return isinstance(odds, dict) and bool(odds)
+
+
+def published_predictions_are_present(slug: str, payload: dict) -> bool:
+    if payload.get("preds"):
+        return True
+    return slug == "tokoname" and tokoname_native_predictions_are_complete(payload)
 
 
 def normalize_racer_name(value: object) -> str:
@@ -251,7 +259,7 @@ def validate(before_root: Path, after_root: Path) -> list[str]:
         day = after.get("eventDay")
         if isinstance(day, int) and day > 0:
             prediction_days.append(day)
-        if not after.get("preds"):
+        if not published_predictions_are_present(slug, after):
             errors.append(f"{slug}: prediction is empty")
         for race in after.get("races") or []:
             race_no = race.get("race")
