@@ -755,9 +755,22 @@ def tokoname_race_prediction_is_complete(prediction: object) -> bool:
     tickets = prediction.get("tickets")
     if not isinstance(tickets, dict):
         return False
-    return all(
+    if not all(
         isinstance(tickets.get(key), list) and len(tickets[key]) == count
         for key, count in (("main", 6), ("deviation", 2), ("upset", 2))
+    ):
+        return False
+    fly = prediction.get("flyPrediction")
+    if not isinstance(fly, dict) or fly.get("modelVersion") != "tokoname_fly_tickets_v4":
+        return False
+    if prediction.get("prediction_phase") == "preliminary":
+        return fly.get("status") == "waiting" and fly.get("tickets") == []
+    fly_tickets = fly.get("tickets")
+    if fly.get("status") != "complete" or not isinstance(fly_tickets, list) or len(fly_tickets) != 10:
+        return False
+    combos = [str(row.get("combo") or "") for row in fly_tickets if isinstance(row, dict)]
+    return len(combos) == 10 and len(set(combos)) == 10 and all(
+        combo and not combo.startswith("1-") for combo in combos
     )
 
 

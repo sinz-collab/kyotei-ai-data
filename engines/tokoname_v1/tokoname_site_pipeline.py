@@ -66,6 +66,28 @@ def attach_final_lane1_fly(
     )
 
 
+def attach_final_fly_tickets_v4(
+    prediction: dict,
+    document: dict,
+    race: dict,
+    live_documents: dict,
+    model_dir: Path,
+) -> None:
+    if __package__:
+        from .fly_tickets_v4 import predict, validate_prediction
+    else:
+        from fly_tickets_v4 import predict, validate_prediction
+    fly_prediction = predict(
+        document,
+        race,
+        live_documents["direct"],
+        live_documents["exhibition"],
+        model_dir,
+    )
+    validate_prediction(fly_prediction, allow_waiting=False)
+    prediction["flyPrediction"] = fly_prediction
+
+
 def load_json(path: Path) -> dict:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -464,6 +486,11 @@ def site_prediction(
             "result_used_for_probability": False,
         },
     }
+    if __package__:
+        from .fly_tickets_v4 import waiting_prediction
+    else:
+        from fly_tickets_v4 import waiting_prediction
+    prediction["flyPrediction"] = waiting_prediction()
     validate_site_prediction(prediction)
     return prediction
 
@@ -521,6 +548,13 @@ def validate_site_prediction(prediction: dict) -> None:
         raise ValueError("site_tickets_must_be_10_unique")
     if prediction["data_flags"].get("odds_used_for_probability") is not False:
         raise ValueError("odds_must_not_be_used")
+    fly_prediction = prediction.get("flyPrediction")
+    if fly_prediction is not None:
+        if __package__:
+            from .fly_tickets_v4 import validate_prediction
+        else:
+            from fly_tickets_v4 import validate_prediction
+        validate_prediction(fly_prediction)
 
 
 def without_predictions(document: dict) -> dict:
@@ -592,6 +626,32 @@ def apply_tokoname_predictions(
                     "status": "morning_preserved",
                     "reason": fly_error,
                 }
+            fly_tickets_error = None
+            try:
+                attach_final_fly_tickets_v4(
+                    prediction,
+                    updated,
+                    race,
+                    live_documents,
+                    model_dir,
+                )
+            except Exception as exc:
+                fly_tickets_error = f"{type(exc).__name__}: {exc}"
+                existing_fly = (
+                    existing_prediction.get("flyPrediction")
+                    if isinstance(existing_prediction, dict)
+                    else None
+                )
+                if isinstance(existing_fly, dict) and existing_fly.get("status") == "complete":
+                    prediction["flyPrediction"] = deepcopy(existing_fly)
+                else:
+                    if __package__:
+                        from .fly_tickets_v4 import waiting_prediction
+                    else:
+                        from fly_tickets_v4 import waiting_prediction
+                    prediction["flyPrediction"] = waiting_prediction(
+                        f"live_features_unavailable: {fly_tickets_error}"
+                    )
             race["prediction"] = prediction
             reports.append(
                 {
@@ -629,6 +689,8 @@ def apply_tokoname_predictions(
                     "lane1_fly_probability": prediction.get("lane1FlyProbability"),
                     "lane1_fly_stage": prediction.get("lane1FlyStage"),
                     "lane1_fly_error": fly_error,
+                    "fly_tickets_status": prediction["flyPrediction"]["status"],
+                    "fly_tickets_error": fly_tickets_error,
                 }
             )
         except Exception as exc:

@@ -15,6 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from engines.tokoname_v1.tokoname_site_pipeline import validate_site_prediction
+from engines.tokoname_v1.fly_tickets_v4 import validate_prediction as validate_fly_tickets_v4
 
 
 TOKONAME = "tokoname"
@@ -190,6 +191,17 @@ def tokoname_lane1_fly_is_complete(prediction: dict) -> bool:
     )
 
 
+def tokoname_fly_tickets_v4_is_complete(prediction: dict) -> bool:
+    try:
+        validate_fly_tickets_v4(
+            prediction.get("flyPrediction") or {},
+            allow_waiting=False,
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+    return True
+
+
 def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
     manifest_path = repo_root / "data" / "manifest.json"
     if not manifest_path.is_file():
@@ -246,6 +258,8 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
         except (KeyError, TypeError, ValueError):
             continue
         if not tokoname_lane1_fly_is_complete(prediction):
+            continue
+        if not tokoname_fly_tickets_v4_is_complete(prediction):
             continue
         publishable[race_no] = prediction
     if not publishable:

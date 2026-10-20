@@ -33,6 +33,20 @@ def prediction() -> dict:
         "deviation": [{"combination": value} for value in ("3-1-2", "3-1-4")],
         "upset": [{"combination": value} for value in ("4-1-2", "5-1-2")],
     }
+    fly_tickets = [
+        {
+            "combo": combo,
+            "role": "飛び",
+            "probability": 10.0 - index / 2,
+            "rank": index + 1,
+        }
+        for index, combo in enumerate(
+            (
+                "2-1-3", "2-1-4", "2-1-5", "2-1-6", "3-1-2",
+                "3-1-4", "3-1-5", "3-1-6", "4-1-2", "5-1-2",
+            )
+        )
+    ]
     return {
         "status": "ready",
         "reason": None,
@@ -79,6 +93,21 @@ def prediction() -> dict:
             "raceActualStartUsedForPrediction": False,
             "resultUsedForPrediction": False,
             "originalExhibitionUsedForPrediction": False,
+        },
+        "flyPrediction": {
+            "status": "complete",
+            "reason": None,
+            "modelVersion": "tokoname_fly_tickets_v4",
+            "stage": "post_exhibition",
+            "condition": "lane1_not_first",
+            "tickets": fly_tickets,
+            "inputAudit": {
+                "oddsUsed": False,
+                "resultUsed": False,
+                "raceActualStartUsed": False,
+                "originalExhibitionUsed": False,
+                "normalExhibitionUsed": True,
+            },
         },
     }
 
