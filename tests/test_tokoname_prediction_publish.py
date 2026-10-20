@@ -259,6 +259,28 @@ class TokonamePredictionPublishTests(unittest.TestCase):
         result = publish_tokoname_predictions(self.staging_root, self.repo_root)
 
         self.assertEqual(result["status"], "not_ready")
+        self.assertEqual(result["rejected_races"][5], "prediction_not_ready")
+        self.assertEqual(snapshot(self.repo_root), before)
+
+    def test_missing_live_additions_are_reported_without_publishing(self) -> None:
+        staged = deepcopy(self.original)
+        incomplete = prediction()
+        for key in (
+            "lane1FlyProbability",
+            "lane1FlyLevel",
+            "lane1FlyStage",
+            "lane1FlyDetail",
+        ):
+            incomplete.pop(key)
+        staged["races"][10]["prediction"] = incomplete
+        self.stage(staged)
+        before = snapshot(self.repo_root)
+
+        result = publish_tokoname_predictions(self.staging_root, self.repo_root)
+
+        self.assertEqual(result["status"], "not_ready")
+        self.assertEqual(result["reason"], "no_publishable_predictions")
+        self.assertEqual(result["rejected_races"][11], "lane1_fly_incomplete")
         self.assertEqual(snapshot(self.repo_root), before)
 
     def test_ready_status_without_final_engine_proof_is_not_published(self) -> None:

@@ -249,23 +249,29 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
             "paths": [],
         }
     publishable = {}
+    rejected_races: dict[int, str] = {}
     for race_no in range(1, 13):
         prediction = staged_races[race_no].get("prediction")
         if not isinstance(prediction, dict) or prediction.get("status") != "ready":
+            rejected_races[race_no] = "prediction_not_ready"
             continue
         try:
             validate_site_prediction(prediction)
-        except (KeyError, TypeError, ValueError):
+        except (KeyError, TypeError, ValueError) as exc:
+            rejected_races[race_no] = f"site_prediction_invalid:{type(exc).__name__}"
             continue
         if not tokoname_lane1_fly_is_complete(prediction):
+            rejected_races[race_no] = "lane1_fly_incomplete"
             continue
         if not tokoname_fly_tickets_v4_is_complete(prediction):
+            rejected_races[race_no] = "fly_tickets_v4_incomplete"
             continue
         publishable[race_no] = prediction
     if not publishable:
         return {
             "status": "not_ready",
             "reason": "no_publishable_predictions",
+            "rejected_races": rejected_races,
             "paths": [],
         }
 
