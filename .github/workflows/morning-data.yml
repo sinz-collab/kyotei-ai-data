@@ -192,7 +192,7 @@ jobs:
           python automation/run_biwako_v1_2.py --date "$TARGET_DATE" --stage preliminary
           python automation/run_shimonoseki_v6_1.py --date "$TARGET_DATE" --stage preliminary
           python automation/run_fukuoka_v1.py --date "$TARGET_DATE" --stage preliminary
-          python engines/tokoname_v1/tokoname_site_pipeline.py \
+          python automation/run_tokoname_v1.py \
             --date "$TARGET_DATE" --stage preliminary --write
 
           python automation/build_site_data.py --date "$TARGET_DATE" \
@@ -241,9 +241,9 @@ jobs:
             python automation/apply_omura_v1.py --date "$TARGET_DATE"
             python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre
             python automation/run_biwako_v1_2.py --date "$TARGET_DATE" --stage preliminary
-          python automation/run_shimonoseki_v6_1.py --date "$TARGET_DATE" --stage preliminary
+            python automation/run_shimonoseki_v6_1.py --date "$TARGET_DATE" --stage preliminary
             python automation/run_fukuoka_v1.py --date "$TARGET_DATE" --stage preliminary
-            python engines/tokoname_v1/tokoname_site_pipeline.py \
+            python automation/run_tokoname_v1.py \
               --date "$TARGET_DATE" --stage preliminary --write
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
