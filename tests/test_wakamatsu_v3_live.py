@@ -147,35 +147,67 @@ class WakamatsuV3LiveTests(unittest.TestCase):
         )
         self.assertEqual(result["reason"], "required_tide_extrema_missing")
 
-    def test_five_minute_boundary_requires_independent_phase(self):
+    def test_boundary_phase_is_derived_from_verified_extrema(self):
         value = payload(
             "2026-10-14",
             [("low", "05:39"), ("high", "11:59"), ("low", "17:19"), ("high", "23:19")],
         )
-        for deadline in ("17:14", "17:15", "17:18", "17:19", "17:20", "17:24"):
-            with self.subTest(deadline=deadline):
+        cases = (
+            ("23:14", "rising"),
+            ("23:19", "falling"),
+            ("23:24", "falling"),
+            ("17:14", "falling"),
+            ("17:19", "rising"),
+            ("17:24", "rising"),
+        )
+        for deadline, expected in cases:
+            with self.subTest(deadline=deadline, expected=expected):
                 result = tide_input_for_race(
-                    value, "2026-10-14", deadline, tide_phase="falling"
+                    value, "2026-10-14", deadline
                 )
-                self.assertEqual(result["reason"], "tide_boundary_phase_unverified")
+                self.assertEqual(result["status"], "ok")
+                self.assertTrue(result["boundary"])
+                self.assertEqual(result["tide_phase"], expected)
 
-    def test_wakamatsu_20261014_r5_is_unavailable(self):
+    def test_historical_exact_extrema_follow_outgoing_phase(self):
+        cases = (
+            ("2026-08-08", "19:10", "high", "falling"),
+            ("2026-08-31", "17:39", "low", "rising"),
+            ("2026-10-14", "17:19", "low", "rising"),
+        )
+        for target_date, deadline, kind, expected in cases:
+            events = (
+                [
+                    ("low", "05:30"),
+                    ("high", "12:00"),
+                    ("low", deadline),
+                    ("high", "23:30"),
+                ]
+                if kind == "low"
+                else [("low", "06:00"), ("high", deadline), ("low", "23:00")]
+            )
+            with self.subTest(target_date=target_date, deadline=deadline):
+                result = tide_input_for_race(
+                    payload(target_date, events), target_date, deadline
+                )
+                self.assertEqual(result["status"], "ok")
+                self.assertEqual(result["tide_phase"], expected)
+
+    def test_wakamatsu_20261021_r4_exact_high_is_falling(self):
         value = payload(
-            "2026-10-14",
-            [
-                ("low", "05:39"),
-                ("high", "11:59"),
-                ("low", "17:19"),
-                ("high", "23:19"),
-            ],
+            "2026-10-21",
+            [("high", "05:40"), ("low", "13:00"), ("high", "19:30")],
         )
         result = tide_input_for_race(
-            value, "2026-10-14", "17:19", tide_phase="rising"
+            value,
+            "2026-10-21",
+            "19:30",
         )
-        self.assertEqual(result["status"], "unavailable")
-        self.assertEqual(result["nearestExtremumMinutes"], 0)
+        self.assertEqual(result["status"], "ok")
+        self.assertTrue(result["boundary"])
+        self.assertEqual(result["tide_phase"], "falling")
 
-    def test_boundary_requires_explicit_independent_phase(self):
+    def test_boundary_phase_conflict_is_rejected(self):
         value = payload(
             "2026-10-14",
             [("low", "05:39"), ("high", "11:59"), ("low", "17:19"), ("high", "23:19")],
@@ -185,11 +217,8 @@ class WakamatsuV3LiveTests(unittest.TestCase):
             "2026-10-14",
             "17:19",
             tide_phase="falling",
-            independently_validated_phase="falling",
         )
-        self.assertEqual(result["status"], "ok")
-        self.assertTrue(result["boundary"])
-        self.assertEqual(result["tide_phase"], "falling")
+        self.assertEqual(result["reason"], "tide_phase_mismatch")
 
     def test_missing_upstream_phase_is_recovered_from_validated_extrema(self):
         value = payload(
@@ -210,15 +239,14 @@ class WakamatsuV3LiveTests(unittest.TestCase):
                 strict=True,
             )
 
-    def test_missing_upstream_phase_at_boundary_remains_unavailable(self):
+    def test_missing_upstream_phase_at_boundary_is_recovered(self):
         value = payload(
             "2026-10-14",
             [("low", "05:39"), ("high", "11:59"), ("low", "17:19"), ("high", "23:19")],
         )
         result = tide_input_for_race(value, "2026-10-14", "17:19")
-        self.assertEqual(result["status"], "unavailable")
-        self.assertEqual(result["reason"], "tide_boundary_phase_unverified")
-        self.assertEqual(result["nearestExtremumMinutes"], 0)
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["tide_phase"], "rising")
 
     def test_zero_local_win_regressions_and_input_immutability(self):
         for case in regression_cases():
