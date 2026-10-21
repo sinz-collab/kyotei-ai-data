@@ -191,15 +191,14 @@ class WakamatsuV3LiveTests(unittest.TestCase):
         self.assertTrue(result["boundary"])
         self.assertEqual(result["tide_phase"], "falling")
 
-    def test_tide_phase_missing_is_rejected(self):
+    def test_missing_upstream_phase_is_recovered_from_validated_extrema(self):
         value = payload(
             "2026-10-14",
             [("low", "05:39"), ("high", "11:59"), ("low", "17:19"), ("high", "23:19")],
         )
-        self.assertEqual(
-            tide_input_for_race(value, "2026-10-14", "16:00")["reason"],
-            "tide_phase_missing",
-        )
+        result = tide_input_for_race(value, "2026-10-14", "16:00")
+        self.assertEqual(result["status"], "ok")
+        self.assertEqual(result["tide_phase"], "falling")
         with self.assertRaisesRegex(ValueError, "missing validated tide tide_phase"):
             frozen_predict_live(
                 {
@@ -210,6 +209,16 @@ class WakamatsuV3LiveTests(unittest.TestCase):
                 {"minutes_from_high_tide": 10, "minutes_from_low_tide": 10},
                 strict=True,
             )
+
+    def test_missing_upstream_phase_at_boundary_remains_unavailable(self):
+        value = payload(
+            "2026-10-14",
+            [("low", "05:39"), ("high", "11:59"), ("low", "17:19"), ("high", "23:19")],
+        )
+        result = tide_input_for_race(value, "2026-10-14", "17:19")
+        self.assertEqual(result["status"], "unavailable")
+        self.assertEqual(result["reason"], "tide_boundary_phase_unverified")
+        self.assertEqual(result["nearestExtremumMinutes"], 0)
 
     def test_zero_local_win_regressions_and_input_immutability(self):
         for case in regression_cases():

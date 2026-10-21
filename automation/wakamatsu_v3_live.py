@@ -271,9 +271,6 @@ def tide_input_for_race(
     race_minute = _minute(deadline)
     if race_minute is None:
         return {"status": "unavailable", "reason": "deadline_invalid"}
-    if tide_phase not in VALID_PHASES:
-        return {"status": "unavailable", "reason": "tide_phase_missing"}
-
     events = []
     target_day = date.fromisoformat(target_date)
     for event in payload.get("events") or []:
@@ -314,20 +311,23 @@ def tide_input_for_race(
             }
         if tide_phase != independently_validated_phase:
             return {"status": "unavailable", "reason": "tide_phase_mismatch"}
+        resolved_phase = tide_phase
     elif previous["type"] == "low" and following["type"] == "high":
         expected_phase = "rising"
+        resolved_phase = expected_phase if tide_phase not in VALID_PHASES else tide_phase
     elif previous["type"] == "high" and following["type"] == "low":
         expected_phase = "falling"
+        resolved_phase = expected_phase if tide_phase not in VALID_PHASES else tide_phase
     else:
         return {"status": "unavailable", "reason": "tide_phase_unresolved"}
-    if nearest > BOUNDARY_MINUTES and tide_phase != expected_phase:
+    if nearest > BOUNDARY_MINUTES and resolved_phase != expected_phase:
         return {"status": "unavailable", "reason": "tide_phase_mismatch"}
 
     return {
         "status": "ok",
         "reason": "validated",
         "boundary": nearest <= BOUNDARY_MINUTES,
-        "tide_phase": tide_phase,
+        "tide_phase": resolved_phase,
         "minutes_from_high_tide": min(abs(race_minute - event["minute"]) for event in highs),
         "minutes_from_low_tide": min(abs(race_minute - event["minute"]) for event in lows),
     }
