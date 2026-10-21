@@ -30,11 +30,15 @@ from biwako_prediction_engine_v1_2_refined import (  # noqa: E402
 class BiwakoPredictionEngineV12(BiwakoPredictionEngineV12Base):
     def _generate_tickets(self, joint: list[dict], probs: dict) -> dict:
         tickets = super()._generate_tickets(joint, probs)
+        # Keep the established fly ranking independent from the normal ten.
+        # In particular, a combination selected by both lists is retained in
+        # both lists; no overlap replacement is performed.
         tickets["lane1_fly_top10"] = [
             {"ticket": row["ticket"], "score": row["score"]}
             for row in joint
             if row["score"] > self.PROB_FLOOR and row["lanes"][0] != 1
         ][:10]
+        tickets["lane1_fly_overlap_policy"] = "allowed"
         return tickets
 
 
@@ -262,7 +266,7 @@ def ticket_rows(result: dict) -> tuple[list[dict], list[dict], list[dict]]:
             for combo in result["tickets"][key]
         ]
 
-    return rows("main", "本線"), rows("deviation", "ずらし"), rows("upset", "荒れ")
+    return rows("main", "本線"), rows("deviation", "ズレ"), rows("upset", "シナリオ穴")
 
 
 def optional_number(value: Any) -> float | None:
@@ -382,6 +386,17 @@ def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
     ai = main + balance + upset
     lane1_fly_tickets = lane1_fly_ticket_rows(result)
     lane1_fly = lane1_fly_judgement(result, race_input)
+    ticket_selection = {
+        "modelVersion": result["tickets"].get("model_version") or "biwako_ticket_631_v1",
+        "allocation": deepcopy(
+            result["tickets"].get("allocation")
+            or {"main": 6, "deviation": 3, "scenario_hole": 1}
+        ),
+        "main": deepcopy(main),
+        "deviation": deepcopy(balance),
+        "scenarioHole": deepcopy(upset),
+        "ordered": deepcopy(ai),
+    }
     is_final = phase == "final"
     stage = {
         "label": "本予想" if is_final else "仮予想",
@@ -415,6 +430,14 @@ def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
         "balance": [],
         "aiUpset": lane1_fly_tickets,
         "tickets": ai,
+        "ticketSelection": ticket_selection,
+        "flyPrediction": {
+            "status": "live" if is_final else "morning",
+            "modelVersion": "biwako_lane1_fly_current",
+            "overlapPolicy": result["tickets"].get("lane1_fly_overlap_policy") or "allowed",
+            "probability": lane1_fly["probability"],
+            "tickets": deepcopy(lane1_fly_tickets),
+        },
         "scenario": deepcopy(result.get("scenario") or {}),
         "attackDefense": deepcopy(result.get("attack_defense") or {}),
         "liveAdjustment": deepcopy(result.get("live_adjustment")),
@@ -434,6 +457,48 @@ def format_prediction(result: dict, phase: str, race_input: dict) -> dict:
             "engineStage": result.get("stage"),
         },
     }
+
+
+def append_prediction_history(
+    prediction: dict,
+    previous_prediction: Any,
+    phase: str,
+) -> None:
+    """Keep normal/fly tickets separate for forward morning/LIVE comparison."""
+    history = deepcopy(
+        previous_prediction.get("prediction_history")
+        if isinstance(previous_prediction, dict)
+        else {}
+    )
+    if not isinstance(history, dict):
+        history = {}
+    bucket = "morning" if phase == "preliminary" else "live"
+    snapshots = history.get(bucket)
+    if not isinstance(snapshots, list):
+        snapshots = []
+    selection = prediction.get("ticketSelection") or {}
+    fly = prediction.get("flyPrediction") or {}
+    snapshots.append({
+        "snapshotVersion": "biwako_prediction_snapshot_v1",
+        "stage": bucket,
+        "engine": prediction.get("engine"),
+        "engineVersion": prediction.get("engineVersion"),
+        "parameterVersion": prediction.get("parameter_version"),
+        "ticketModelVersion": selection.get("modelVersion"),
+        "ticketAllocation": deepcopy(selection.get("allocation") or {}),
+        "normalTickets": deepcopy(selection.get("ordered") or []),
+        "flyModelVersion": fly.get("modelVersion"),
+        "flyOverlapPolicy": fly.get("overlapPolicy"),
+        "flyTickets": deepcopy(fly.get("tickets") or []),
+        "probabilities": {
+            "win": deepcopy(prediction.get("win") or {}),
+            "second": deepcopy(prediction.get("second") or {}),
+            "third": deepcopy(prediction.get("third") or {}),
+            "lane1Fly": prediction.get("lane1FlyProbability"),
+        },
+    })
+    history[bucket] = snapshots
+    prediction["prediction_history"] = history
 
 
 def prediction_complete(prediction: Any, phase: str | None = None) -> bool:
@@ -522,11 +587,20 @@ def apply_predictions(
         if stage == "final" and not prediction_complete(race.get("predictionPre"), "preliminary"):
             pre_input, pre_unresolved = build_engine_input(payload, race, resolver)
             unresolved_all.extend(pre_unresolved)
-            race["predictionPre"] = format_prediction(
+            generated_pre = format_prediction(
                 engine.predict(pre_input, "preliminary"),
                 "preliminary",
                 pre_input,
             )
+            append_prediction_history(generated_pre, existing_active, "preliminary")
+            race["predictionPre"] = generated_pre
+        history_source = existing_active
+        if stage == "final" and not (
+            isinstance(history_source, dict)
+            and isinstance(history_source.get("prediction_history"), dict)
+        ):
+            history_source = race.get("predictionPre")
+        append_prediction_history(prediction, history_source, stage)
         if stage == "final":
             add_probability_review(prediction, race["predictionPre"])
         sync_race_prediction(race, prediction, stage)

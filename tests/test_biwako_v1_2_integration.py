@@ -153,6 +153,37 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
             race,
         )
 
+    def assert_ticket_contract(self, prediction: dict) -> None:
+        selection = prediction["ticketSelection"]
+        self.assertEqual(
+            selection["allocation"],
+            {"main": 6, "deviation": 3, "scenario_hole": 1},
+        )
+        self.assertEqual(
+            [
+                len(selection["main"]),
+                len(selection["deviation"]),
+                len(selection["scenarioHole"]),
+            ],
+            [6, 3, 1],
+        )
+        self.assertEqual(
+            [row["role"] for row in selection["ordered"]],
+            ["本線"] * 6 + ["ズレ"] * 3 + ["シナリオ穴"],
+        )
+        self.assertEqual(prediction["tickets"], selection["ordered"])
+        normal_combos = {row["combo"] for row in prediction["tickets"]}
+        self.assertTrue(any(not combo.startswith("1-") for combo in normal_combos))
+        fly = prediction["flyPrediction"]
+        self.assertEqual(fly["overlapPolicy"], "allowed")
+        self.assertEqual(len(fly["tickets"]), 10)
+        self.assertEqual(fly["tickets"], prediction["aiUpset"])
+        self.assertTrue(
+            all(not row["combo"].startswith("1-") for row in fly["tickets"])
+        )
+        fly_combos = {row["combo"] for row in fly["tickets"]}
+        self.assertTrue(normal_combos & fly_combos)
+
     def test_preliminary_generates_twelve_complete_predictions(self) -> None:
         result = self.apply(payload(), "preliminary")
         self.assertEqual(result["predictionStatus"], "ready")
@@ -172,6 +203,7 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
             self.assertEqual(len(prediction["ai"]), 10)
             self.assertEqual(prediction["balance"], [])
             self.assertEqual(len(prediction["aiUpset"]), 10)
+            self.assert_ticket_contract(prediction)
             self.assertTrue(
                 all(not row["combo"].startswith("1-") for row in prediction["aiUpset"])
             )
@@ -220,9 +252,18 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
             self.assertEqual(len({row["combo"] for row in final["tickets"]}), 10)
             self.assertEqual(len(final["ai"]), 10)
             self.assertEqual(len(final["aiUpset"]), 10)
+            self.assert_ticket_contract(final)
             self.assertTrue(
                 all(not row["combo"].startswith("1-") for row in final["aiUpset"])
             )
+            history = final["prediction_history"]
+            self.assertEqual(len(history["morning"]), 1)
+            self.assertEqual(len(history["live"]), 1)
+            for bucket in ("morning", "live"):
+                snapshot = history[bucket][0]
+                self.assertEqual(len(snapshot["normalTickets"]), 10)
+                self.assertEqual(len(snapshot["flyTickets"]), 10)
+                self.assertEqual(snapshot["flyOverlapPolicy"], "allowed")
 
     def test_odds_and_result_do_not_change_preliminary_or_final(self) -> None:
         baseline_input = payload()
@@ -273,6 +314,7 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
         result = self.apply(value, "preliminary")
         prediction = result["preds"]["1"]
 
+        self.assert_ticket_contract(prediction)
         self.assertEqual(len(prediction["tickets"]), 10)
         self.assertEqual(len({row["combo"] for row in prediction["tickets"]}), 10)
         for key in ("win", "second", "third"):

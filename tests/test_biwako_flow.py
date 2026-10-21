@@ -69,6 +69,63 @@ def race_payload() -> dict:
 
 
 class BiwakoFlowTests(unittest.TestCase):
+    def test_biwako_v12_native_prediction_is_preserved_for_site_output(self) -> None:
+        normal_combos = [
+            "1-2-3", "1-2-4", "1-3-2", "1-3-4", "2-1-3",
+            "2-1-4", "2-3-1", "3-1-2", "3-2-1", "4-1-2",
+        ]
+        normal = [
+            {
+                "combo": combo,
+                "role": "本線" if index < 6 else "ズレ" if index < 9 else "シナリオ穴",
+            }
+            for index, combo in enumerate(normal_combos)
+        ]
+        fly = [
+            {"combo": combo}
+            for combo in (
+                "2-1-3", "2-1-4", "2-3-1", "2-3-4", "3-1-2",
+                "3-1-4", "3-2-1", "3-2-4", "4-1-2", "4-1-3",
+            )
+        ]
+        prediction = {
+            "engine": "biwako_engine_v1.2_refined",
+            "engineVersion": "1.2_refined",
+            "phase": "preliminary",
+            "status": "complete",
+            "win": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "second": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "third": {str(lane): 100 / 6 for lane in range(1, 7)},
+            "sab": "B",
+            "tickets": normal,
+            "ticketSelection": {
+                "allocation": {"main": 6, "deviation": 3, "scenario_hole": 1},
+                "main": normal[:6],
+                "deviation": normal[6:9],
+                "scenarioHole": normal[9:],
+            },
+            "flyPrediction": {
+                "overlapPolicy": "allowed",
+                "tickets": fly,
+            },
+            "diagnostics": {
+                "oddsUsedForPrediction": False,
+                "resultUsedForPrediction": False,
+            },
+        }
+        self.assertTrue(build_site_data.biwako_race_prediction_is_complete(prediction))
+        output = build_site_data.attach_independent_race_domains(
+            {
+                "date": DATE,
+                "preds": {"1": prediction},
+                "races": [{"race": 1, "racers": [], "prediction": prediction}],
+            },
+            "biwako",
+            True,
+            "",
+        )
+        self.assertEqual(output["races"][0]["prediction"], prediction)
+
     def setUp(self) -> None:
         config = json.loads((ROOT / "automation" / "venues.json").read_text(encoding="utf-8"))
         self.venue = next(item for item in config["venues"] if item["slug"] == "biwako")

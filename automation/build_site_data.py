@@ -846,12 +846,17 @@ def wakamatsu_race_prediction_is_complete(prediction: object) -> bool:
 
 
 def biwako_race_prediction_is_complete(prediction: object) -> bool:
-    """Validate and preserve the race-native Biwako v1.1 prediction."""
+    """Validate and preserve the race-native Biwako production prediction."""
     if not isinstance(prediction, dict):
         return False
-    if prediction.get("engine") != "biwako_engine_v1.1":
-        return False
-    if str(prediction.get("engineVersion") or "") != "1.1":
+    identity = (
+        prediction.get("engine"),
+        str(prediction.get("engineVersion") or ""),
+    )
+    if identity not in {
+        ("biwako_engine_v1.1", "1.1"),
+        ("biwako_engine_v1.2_refined", "1.2_refined"),
+    }:
         return False
     if prediction.get("phase") not in {"preliminary", "final"}:
         return False
@@ -872,7 +877,33 @@ def biwako_race_prediction_is_complete(prediction: object) -> bool:
         for ticket in tickets
         if isinstance(ticket, dict) and ticket.get("combo")
     ]
-    return len(combos) == 10 and len(set(combos)) == 10
+    if len(combos) != 10 or len(set(combos)) != 10:
+        return False
+    if identity[0] == "biwako_engine_v1.1":
+        return True
+
+    selection = prediction.get("ticketSelection") or {}
+    allocation = selection.get("allocation") or {}
+    fly = prediction.get("flyPrediction") or {}
+    fly_tickets = fly.get("tickets") or []
+    fly_combos = [
+        ticket.get("combo")
+        for ticket in fly_tickets
+        if isinstance(ticket, dict) and ticket.get("combo")
+    ]
+    diagnostics = prediction.get("diagnostics") or {}
+    return (
+        allocation == {"main": 6, "deviation": 3, "scenario_hole": 1}
+        and len(selection.get("main") or []) == 6
+        and len(selection.get("deviation") or []) == 3
+        and len(selection.get("scenarioHole") or []) == 1
+        and fly.get("overlapPolicy") == "allowed"
+        and len(fly_combos) == 10
+        and len(set(fly_combos)) == 10
+        and all(not combo.startswith("1-") for combo in fly_combos)
+        and diagnostics.get("oddsUsedForPrediction") is False
+        and diagnostics.get("resultUsedForPrediction") is False
+    )
 
 
 def fukuoka_race_prediction_is_complete(prediction: object) -> bool:

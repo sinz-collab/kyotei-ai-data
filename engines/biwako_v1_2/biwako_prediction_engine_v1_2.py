@@ -565,16 +565,21 @@ class BiwakoPredictionEngineV12(base.BiwakoPredictionEngineV11):
                 }
 
         # Display roles only; selection is not quota-based by these labels.
+        # The ten candidates above continue to be selected with the existing
+        # head-probability and scenario/joint evaluation.  Production exposes
+        # them as 6 main, 3 deviation and 1 scenario-hole ticket.
         chosen.sort(key=lambda r: (-probs[r["lanes"][0]]["win"], -r["score"]))
         main = chosen[:6]
-        deviation = chosen[6:8]
-        upset = chosen[8:10]
+        deviation = chosen[6:9]
+        upset = chosen[9:10]
 
         fmt = lambda xs: [r["ticket"] for r in xs]
         return {
             "main": fmt(main),
             "deviation": fmt(deviation),
             "upset": fmt(upset),
+            "allocation": {"main": 6, "deviation": 3, "scenario_hole": 1},
+            "model_version": "biwako_ticket_631_v1",
             "head_slots": {str(k): v for k, v in sorted(slots.items()) if v > 0},
             "scenario_hedge": hedge_meta or {"enabled": False},
             "ranked_top20": [
@@ -606,6 +611,7 @@ class BiwakoPredictionEngineV12(base.BiwakoPredictionEngineV11):
         out["rules"]["ticket_structure"] = {
             "selection": "head_probability_slots_then_scenario_joint",
             "count": 10,
+            "allocation": {"main": 6, "deviation": 3, "scenario_hole": 1},
             "strong_axis_outer_attack_hedge_max": 1,
         }
         return out
