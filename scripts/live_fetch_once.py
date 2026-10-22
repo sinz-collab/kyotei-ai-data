@@ -363,7 +363,10 @@ async def apply_biwako_live_prediction(
         return
 
     items = fetch_result.get("items") or {}
-    required = ("direct", "exhibition", "original_exhibition")
+    # Biwako sometimes publishes all six original-exhibition rows without
+    # lap_time.  The runner validates whether those partial rows are usable;
+    # do not block the final review before it gets that chance.
+    required = ("direct", "exhibition")
     if not all(
         (items.get(name) or {}).get("complete") is True
         and (items.get(name) or {}).get("status") == "complete"

@@ -80,7 +80,12 @@ def wrapper(data: dict) -> dict:
     return {"complete": True, "status": "complete", "data": data}
 
 
-def write_live_files(root: Path, race_no: int = 1) -> None:
+def write_live_files(
+    root: Path,
+    race_no: int = 1,
+    *,
+    partial_original_without_lap: bool = False,
+) -> None:
     race_dir = root / f"{race_no:02d}"
     race_dir.mkdir(parents=True)
     direct_racers = [
@@ -118,6 +123,11 @@ def write_live_files(root: Path, race_no: int = 1) -> None:
         "exhibition": wrapper({"entries": exhibition}),
         "original_exhibition": wrapper({"entries": original}),
     }
+    if partial_original_without_lap:
+        for row in original:
+            row["lap_time"] = None
+        documents["original_exhibition"]["complete"] = False
+        documents["original_exhibition"]["status"] = "partial"
     for name, document in documents.items():
         (race_dir / f"{name}.json").write_text(
             json.dumps(document, ensure_ascii=False),
@@ -229,6 +239,21 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
         self.assertEqual(result["preds"]["1"]["probabilityReviewStatus"], "reviewed")
         self.assertIn("deltaWin", result["preds"]["1"]["probabilityReview"]["1"])
         self.assertEqual(result["preds"]["2"]["phase"], "preliminary")
+
+    def test_final_accepts_six_partial_original_rows_without_lap_time(self) -> None:
+        preliminary = self.apply(payload(), "preliminary")
+        write_live_files(
+            self.root / "live",
+            1,
+            partial_original_without_lap=True,
+        )
+
+        result = self.apply(preliminary, "final", 1)
+
+        final = result["preds"]["1"]
+        self.assertEqual(final["phase"], "final")
+        self.assertEqual(final["probabilityReviewStatus"], "reviewed")
+        self.assertTrue(final["rules"]["original_exhibition_used_in_final"])
 
     def test_final_generates_all_twelve_and_preserves_preliminary(self) -> None:
         preliminary = self.apply(payload(), "preliminary")

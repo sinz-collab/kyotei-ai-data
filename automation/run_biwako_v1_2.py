@@ -91,6 +91,31 @@ def complete_document(path: Path) -> dict | None:
     return document if isinstance(document.get("data"), dict) else None
 
 
+def usable_original_exhibition_document(path: Path) -> dict | None:
+    document = complete_document(path)
+    if document is not None:
+        return document
+    if not path.is_file():
+        return None
+    try:
+        document = load_json(path)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return None
+    if document.get("status") != "partial" or not isinstance(document.get("data"), dict):
+        return None
+    entries = document["data"].get("entries") or []
+    lanes = {integer(entry.get("lane")) for entry in entries if isinstance(entry, dict)}
+    if lanes != set(range(1, 7)):
+        return None
+    if not all(
+        number(entry.get("turn_time")) is not None
+        and number(entry.get("straight_time")) is not None
+        for entry in entries
+    ):
+        return None
+    return document
+
+
 class PlayerIdResolver:
     def __init__(self, db_path: Path):
         self.connection = sqlite3.connect(str(db_path))
@@ -126,8 +151,11 @@ class PlayerIdResolver:
 
 def live_documents(race_dir: Path) -> dict[str, dict] | None:
     documents = {
-        name: complete_document(race_dir / f"{name}.json")
-        for name in ("direct", "exhibition", "original_exhibition")
+        "direct": complete_document(race_dir / "direct.json"),
+        "exhibition": complete_document(race_dir / "exhibition.json"),
+        "original_exhibition": usable_original_exhibition_document(
+            race_dir / "original_exhibition.json"
+        ),
     }
     if any(document is None for document in documents.values()):
         return None
