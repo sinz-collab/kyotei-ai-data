@@ -255,6 +255,33 @@ class BiwakoV12IntegrationTests(unittest.TestCase):
         self.assertEqual(final["probabilityReviewStatus"], "reviewed")
         self.assertTrue(final["rules"]["original_exhibition_used_in_final"])
 
+    def test_final_rejects_partial_original_when_a_lane_is_missing(self) -> None:
+        preliminary = self.apply(payload(), "preliminary")
+        write_live_files(self.root / "live", 1, partial_original_without_lap=True)
+        path = self.root / "live" / "01" / "original_exhibition.json"
+        document = json.loads(path.read_text(encoding="utf-8"))
+        document["data"]["entries"].pop()
+        path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+
+        result = self.apply(preliminary, "final", 1)
+
+        self.assertEqual(result["preds"]["1"]["phase"], "preliminary")
+
+    def test_final_rejects_partial_original_when_turn_or_straight_is_missing(self) -> None:
+        write_live_files(self.root / "live", 1, partial_original_without_lap=True)
+        path = self.root / "live" / "01" / "original_exhibition.json"
+        complete_partial = json.loads(path.read_text(encoding="utf-8"))
+        for missing_key in ("turn_time", "straight_time"):
+            with self.subTest(missing_key=missing_key):
+                preliminary = self.apply(payload(), "preliminary")
+                document = copy.deepcopy(complete_partial)
+                document["data"]["entries"][0][missing_key] = None
+                path.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")
+
+                result = self.apply(preliminary, "final", 1)
+
+                self.assertEqual(result["preds"]["1"]["phase"], "preliminary")
+
     def test_final_generates_all_twelve_and_preserves_preliminary(self) -> None:
         preliminary = self.apply(payload(), "preliminary")
         for race_no in range(1, 13):
