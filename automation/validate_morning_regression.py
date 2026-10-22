@@ -65,6 +65,24 @@ def meaningful_odds(prediction: dict) -> bool:
     return isinstance(odds, dict) and bool(odds)
 
 
+def prediction_history_preserves_previous(previous: object, current: object) -> bool:
+    """Allow initialization/appends while keeping every saved entry immutable."""
+    if previous is None:
+        return True
+    if previous == current:
+        return True
+    if not isinstance(previous, dict) or not isinstance(current, dict):
+        return False
+    for bucket, saved in previous.items():
+        candidate = current.get(bucket)
+        if isinstance(saved, list):
+            if not isinstance(candidate, list) or candidate[: len(saved)] != saved:
+                return False
+        elif candidate != saved:
+            return False
+    return True
+
+
 def published_predictions_are_present(slug: str, payload: dict) -> bool:
     if payload.get("preds"):
         return True
@@ -175,7 +193,10 @@ def compare_prediction_domains(slug: str, before: dict, after: dict, errors: lis
             errors.append(f"{slug} {race_no}R: live data disappeared")
         if meaningful_odds(previous) and not meaningful_odds(current):
             errors.append(f"{slug} {race_no}R: odds disappeared")
-        if previous.get("prediction_history") != current.get("prediction_history"):
+        if not prediction_history_preserves_previous(
+            previous.get("prediction_history"),
+            current.get("prediction_history"),
+        ):
             errors.append(f"{slug} {race_no}R: prediction history changed")
         if previous.get("active_prediction_stage") != current.get("active_prediction_stage"):
             errors.append(f"{slug} {race_no}R: active prediction stage changed")

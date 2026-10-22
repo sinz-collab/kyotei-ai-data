@@ -241,6 +241,30 @@ class MorningRegressionGuardTests(unittest.TestCase):
             self.assertTrue(any("prediction history changed" in error for error in errors))
             self.assertTrue(any("active prediction stage changed" in error for error in errors))
 
+    def test_prediction_history_initialization_and_append_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            before_root = root / "before"
+            initialized_root = root / "initialized"
+            appended_root = root / "appended"
+            before = payload()
+            initialized = deepcopy(before)
+            initialized["preds"]["1"]["prediction_history"] = {
+                "morning": [{"revision": 1, "content_sha256": "keep"}]
+            }
+            appended = deepcopy(initialized)
+            appended["preds"]["1"]["prediction_history"]["morning"].append(
+                {"revision": 2, "content_sha256": "append"}
+            )
+            appended["preds"]["1"]["prediction_history"]["live"] = [
+                {"revision": 1, "content_sha256": "live"}
+            ]
+            self.write_tree(before_root, before)
+            self.write_tree(initialized_root, initialized)
+            self.write_tree(appended_root, appended)
+            self.assertEqual(validate(before_root, initialized_root), [])
+            self.assertEqual(validate(initialized_root, appended_root), [])
+
     def test_second_day_empty_setsukan_warns(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
