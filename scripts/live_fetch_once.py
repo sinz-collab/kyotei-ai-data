@@ -749,40 +749,61 @@ async def _launch_browser(playwright: Any, config: dict[str, Any], logger: Any) 
     raise RuntimeError(f"browser launch failed: {last_error}")
 
 
-FUKUOKA_DISPLAY_ITEMS = ("direct", "exhibition", "original_exhibition")
+PRIORITY_DISPLAY_ITEMS = ("direct", "exhibition", "original_exhibition")
 
 
 def fukuoka_display_data_changed(results: list[dict[str, Any]]) -> bool:
+    return display_data_changed(results, "fukuoka")
+
+
+def display_data_changed(
+    results: list[dict[str, Any]],
+    venue: str,
+) -> bool:
     return any(
-        result.get("target", {}).get("venue") == "fukuoka"
+        result.get("target", {}).get("venue") == venue
         and any(
             (result.get("items", {}).get(item) or {}).get("changed") is True
-            for item in FUKUOKA_DISPLAY_ITEMS
+            for item in PRIORITY_DISPLAY_ITEMS
         )
         for result in results
     )
 
 
-def venue_batches_by_priority(
-    by_venue: dict[str, list[dict[str, Any]]],
-    priority_venue: str,
-) -> list[list[dict[str, Any]]]:
+def changed_priority_display_venues(
+    results: list[dict[str, Any]],
+    priority_venues: set[str],
+) -> list[str]:
     return sorted(
-        by_venue.values(),
-        key=lambda items: items[0].get("venue") != priority_venue,
+        venue for venue in priority_venues if display_data_changed(results, venue)
     )
 
 
-async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
+def venue_batches_by_priority(
+    by_venue: dict[str, list[dict[str, Any]]],
+    priority_venues: str | set[str],
+) -> list[list[dict[str, Any]]]:
+    if isinstance(priority_venues, str):
+        priority_venues = {priority_venues}
+    return sorted(
+        by_venue.values(),
+        key=lambda items: items[0].get("venue") not in priority_venues,
+    )
+
+
+async def publish_priority_display_data(
+    logger: Any,
+    venues: list[str],
+) -> dict[str, Any]:
     process = None
     message = ""
     for attempt in range(1, 7):
+        venue_args = [arg for venue in venues for arg in ("--venue", venue)]
         process = await asyncio.create_subprocess_exec(
             sys.executable,
             str(ROOT / "scripts" / "publish_live_data.py"),
             "--push",
-            "--venue",
-            "fukuoka",
+            *venue_args,
             cwd=str(ROOT),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
@@ -801,11 +822,11 @@ async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
         message,
         extra={
             "event": (
-                "fukuoka_immediate_publish_complete"
+                "priority_immediate_publish_complete"
                 if succeeded
-                else "fukuoka_immediate_publish_failed"
+                else "priority_immediate_publish_failed"
             ),
-            "venue": "fukuoka",
+            "venue": ",".join(venues),
             "attempt": attempt,
         },
     )
@@ -813,7 +834,12 @@ async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
         "status": "completed" if succeeded else "failed",
         "returncode": process.returncode,
         "attempts": attempt,
+        "venues": venues,
     }
+
+
+async def publish_fukuoka_display_data(logger: Any) -> dict[str, Any]:
+    return await publish_priority_display_data(logger, ["fukuoka"])
 
 
 async def run_once(
@@ -950,10 +976,15 @@ async def run_once(
                         finally:
                             await context.close()
 
-            venue_batches = venue_batches_by_priority(
-                by_venue,
-                str(config.get("priority_venue") or ""),
-            )
+            configured_priority_venues = config.get("priority_venues")
+            if configured_priority_venues is None:
+                configured_priority_venues = [config.get("priority_venue")]
+            priority_venues = {
+                str(venue).strip()
+                for venue in configured_priority_venues
+                if str(venue or "").strip()
+            }
+            venue_batches = venue_batches_by_priority(by_venue, priority_venues)
             await asyncio.wait_for(
                 asyncio.gather(*(run_venue(items) for items in venue_batches)),
                 timeout=config["process_timeout_seconds"],
@@ -975,13 +1006,26 @@ async def run_once(
     )
     if tokoname_staging is not None:
         response["tokoname_prediction_staging"] = tokoname_staging
+    configured_priority_venues = config.get("priority_venues")
+    if configured_priority_venues is None:
+        configured_priority_venues = [config.get("priority_venue")]
+    priority_venues = {
+        str(venue).strip()
+        for venue in configured_priority_venues
+        if str(venue or "").strip()
+    }
+    changed_priority_venues = changed_priority_display_venues(
+        results,
+        priority_venues,
+    )
     if (
         config.get("priority_immediate_publish") is True
         and target_root == resolve_root(config, "live_output_root")
-        and fukuoka_display_data_changed(results)
+        and changed_priority_venues
     ):
-        response["fukuoka_immediate_publish"] = await publish_fukuoka_display_data(
-            logger
+        response["priority_immediate_publish"] = await publish_priority_display_data(
+            logger,
+            changed_priority_venues,
         )
     return response
 

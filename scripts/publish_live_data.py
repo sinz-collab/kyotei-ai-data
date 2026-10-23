@@ -375,7 +375,12 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Optional batched Git backup for live JSON")
     parser.add_argument("--push", action="store_true")
-    parser.add_argument("--venue", choices=("fukuoka",))
+    parser.add_argument(
+        "--venue",
+        action="append",
+        choices=("fukuoka", "wakamatsu"),
+        help="Publish only the selected venue; repeat for an atomic multi-venue run.",
+    )
     args = parser.parse_args()
     config = load_config()
     live_root = resolve_root(config, "live_output_root")
@@ -393,8 +398,12 @@ def main() -> int:
             if pulled.returncode:
                 print(pulled.stderr)
                 return pulled.returncode
-        copied = copy_changed_live_files(live_root, publish_repo, args.venue)
-        if args.venue is None:
+        selected_venues = list(dict.fromkeys(args.venue or []))
+        copied = sum(
+            copy_changed_live_files(live_root, publish_repo, venue)
+            for venue in selected_venues
+        ) if selected_venues else copy_changed_live_files(live_root, publish_repo)
+        if not selected_venues:
             tokoname = publish_tokoname_predictions(
                 ROOT / "runtime" / "predictions",
                 publish_repo,
@@ -404,15 +413,17 @@ def main() -> int:
             tokoname = {"status": "not_ready", "reason": "venue_scoped_publish", "paths": []}
         # Stage raw live JSON and generated public venue JSON.
         # Venue apply scripts modify data/venues before this publisher runs.
-        if args.venue is None:
+        if not selected_venues:
             generated_paths = ("data/live", "data/venues", "data/manifest.json")
         else:
-            generated_paths = [f"data/venues/{args.venue}"]
-            generated_paths.extend(
-                f"data/live/{date_dir.name}/{args.venue}"
-                for date_dir in live_root.iterdir()
-                if date_dir.is_dir() and (date_dir / args.venue).is_dir()
-            )
+            generated_paths = []
+            for venue in selected_venues:
+                generated_paths.append(f"data/venues/{venue}")
+                generated_paths.extend(
+                    f"data/live/{date_dir.name}/{venue}"
+                    for date_dir in live_root.iterdir()
+                    if date_dir.is_dir() and (date_dir / venue).is_dir()
+                )
         for generated_path in generated_paths:
             candidate = publish_repo / generated_path
             if candidate.exists():
@@ -438,8 +449,9 @@ def main() -> int:
             print("No publishable data changes.")
             return 0
         stamp = time.strftime("%Y-%m-%d %H:%M")
-        if args.venue is not None:
-            message = f"Update {args.venue.title()} live data {stamp} ({copied} files)"
+        if selected_venues:
+            labels = ", ".join(venue.title() for venue in selected_venues)
+            message = f"Update {labels} live data {stamp} ({copied} files)"
         elif tokoname["status"] == "published" and copied:
             message = f"Update live data and Tokoname predictions {stamp}"
         elif tokoname["status"] == "published":

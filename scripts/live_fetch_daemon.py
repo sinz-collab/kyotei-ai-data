@@ -36,7 +36,14 @@ async def daemon() -> int:
         logger.info("live monitor started", extra={"event": "daemon_started"})
         previous_state = ""
         interval = timedelta(minutes=config["interval_minutes"])
-        priority_venue = str(config.get("priority_venue") or "").strip()
+        configured_priority_venues = config.get("priority_venues")
+        if configured_priority_venues is None:
+            configured_priority_venues = [config.get("priority_venue")]
+        priority_venues = {
+            str(venue).strip()
+            for venue in configured_priority_venues
+            if str(venue or "").strip()
+        }
         priority_interval = timedelta(
             minutes=int(config.get("priority_interval_minutes") or config["interval_minutes"])
         )
@@ -59,13 +66,13 @@ async def daemon() -> int:
                     pass
                 continue
             full_due = last_started is None or now - last_started >= interval
-            priority_due = bool(priority_venue) and (
+            priority_due = bool(priority_venues) and (
                 last_priority_started is None
                 or now - last_priority_started >= priority_interval
             )
             if not full_due and not priority_due:
                 waits = [(interval - (now - last_started)).total_seconds()]
-                if priority_venue and last_priority_started is not None:
+                if priority_venues and last_priority_started is not None:
                     waits.append(
                         (priority_interval - (now - last_priority_started)).total_seconds()
                     )
@@ -80,7 +87,7 @@ async def daemon() -> int:
                 last_started = now
                 last_priority_started = now
             else:
-                venue_filter = {priority_venue}
+                venue_filter = priority_venues
                 last_priority_started = now
             try:
                 result = await run_once(config, now=now, venue_filter=venue_filter)

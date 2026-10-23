@@ -188,8 +188,8 @@ window.KYOTEI_LIVE_DATA_BASES = ["https://live.example.com/live"];
 ```
 
 Commit only the public URL. Do not place server credentials in `config.js`.
-The browser refreshes the selected race JSON every four minutes without
-triggering a site build.
+The browser refreshes Fukuoka and Wakamatsu venue JSON every minute and other
+selected race JSON every four minutes without triggering a site build.
 
 ## Verification
 

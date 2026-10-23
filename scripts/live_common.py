@@ -73,9 +73,17 @@ def load_config(path: Path = CONFIG_PATH) -> dict[str, Any]:
         if not isinstance(config[key], int) or config[key] <= 0:
             raise ValueError(f"{key} must be a positive integer")
     priority_venue = config.get("priority_venue")
+    priority_venues = config.get("priority_venues")
     priority_interval = config.get("priority_interval_minutes")
     if priority_venue is not None and not isinstance(priority_venue, str):
         raise ValueError("priority_venue must be a string")
+    if priority_venues is not None and (
+        not isinstance(priority_venues, list)
+        or not priority_venues
+        or any(not isinstance(venue, str) or not venue.strip() for venue in priority_venues)
+        or len(set(priority_venues)) != len(priority_venues)
+    ):
+        raise ValueError("priority_venues must be a non-empty list of unique strings")
     if priority_interval is not None and (
         not isinstance(priority_interval, int) or priority_interval <= 0
     ):

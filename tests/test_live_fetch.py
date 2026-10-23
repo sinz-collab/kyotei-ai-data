@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import itertools
 import json
 import os
@@ -10,7 +11,7 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 
 SCRIPTS = Path(__file__).resolve().parents[1] / "scripts"
@@ -28,7 +29,9 @@ from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
 from live_fetch_once import (
+    changed_priority_display_venues,
     fukuoka_display_data_changed,
+    publish_priority_display_data,
     shimonoseki_final_inputs_complete,
     venue_batches_by_priority,
 )
@@ -98,16 +101,47 @@ class ShimonosekiFinalTriggerTests(unittest.TestCase):
 
 
 class FukuokaImmediatePublishTests(unittest.TestCase):
-    def test_fukuoka_batch_is_started_before_other_venues(self) -> None:
+    def test_changed_priority_venues_use_one_publisher_process(self) -> None:
+        process = Mock(returncode=0)
+        process.communicate = AsyncMock(return_value=(b"published", b""))
+        logger = Mock()
+        with patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(return_value=process),
+        ) as create_process:
+            result = asyncio.run(
+                publish_priority_display_data(
+                    logger,
+                    ["fukuoka", "wakamatsu"],
+                )
+            )
+
+        self.assertEqual(create_process.await_count, 1)
+        command = create_process.await_args.args
+        self.assertEqual(
+            command[command.index("--venue") : command.index("--venue") + 4],
+            ("--venue", "fukuoka", "--venue", "wakamatsu"),
+        )
+        self.assertEqual(result["venues"], ["fukuoka", "wakamatsu"])
+
+    def test_priority_batches_are_started_before_other_venues(self) -> None:
         batches = venue_batches_by_priority(
             {
                 "toda": [{"venue": "toda"}],
                 "fukuoka": [{"venue": "fukuoka"}],
+                "wakamatsu": [{"venue": "wakamatsu"}],
                 "biwako": [{"venue": "biwako"}],
             },
-            "fukuoka",
+            {"fukuoka", "wakamatsu"},
         )
-        self.assertEqual([items[0]["venue"] for items in batches], ["fukuoka", "toda", "biwako"])
+        self.assertEqual(
+            {items[0]["venue"] for items in batches[:2]},
+            {"fukuoka", "wakamatsu"},
+        )
+        self.assertEqual(
+            {items[0]["venue"] for items in batches[2:]},
+            {"toda", "biwako"},
+        )
 
     def test_display_change_triggers_only_for_fukuoka_display_domains(self) -> None:
         self.assertTrue(
@@ -134,6 +168,31 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
                 ]
             )
         )
+
+    def test_priority_publish_batches_changed_wakamatsu_and_fukuoka(self) -> None:
+        changed = changed_priority_display_venues(
+            [
+                {
+                    "target": {"venue": "wakamatsu"},
+                    "items": {"original_exhibition": {"changed": True}},
+                },
+                {
+                    "target": {"venue": "fukuoka"},
+                    "items": {"direct": {"changed": True}},
+                },
+                {
+                    "target": {"venue": "toda"},
+                    "items": {"exhibition": {"changed": True}},
+                },
+            ],
+            {"fukuoka", "wakamatsu"},
+        )
+        self.assertEqual(changed, ["fukuoka", "wakamatsu"])
+
+    def test_priority_config_keeps_other_venues_on_normal_cadence(self) -> None:
+        self.assertEqual(CONFIG["interval_minutes"], 3)
+        self.assertEqual(CONFIG["priority_interval_minutes"], 1)
+        self.assertEqual(CONFIG["priority_venues"], ["fukuoka", "wakamatsu"])
 
     def test_incomplete_saved_input_does_not_trigger_final(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
