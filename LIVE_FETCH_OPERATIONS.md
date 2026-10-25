@@ -188,7 +188,7 @@ window.KYOTEI_LIVE_DATA_BASES = ["https://live.example.com/live"];
 ```
 
 Commit only the public URL. Do not place server credentials in `config.js`.
-The browser refreshes Fukuoka and Wakamatsu venue JSON every minute and other
+The browser refreshes Ashiya, Fukuoka, and Wakamatsu venue JSON every minute and other
 selected race JSON every four minutes without triggering a site build.
 
 ## Verification
@@ -290,5 +290,8 @@ local changes or force-reset the repository.
 5. Restart the service after correcting the cause.
 6. Existing complete JSON remains when a new fetch is incomplete or fails.
 
-Live updates do not run the optional Git publisher. Normal live operation
-therefore creates zero Git pushes and zero Netlify builds.
+Ashiya, Fukuoka, and Wakamatsu are checked every minute. When their direct,
+exhibition, or original-exhibition inputs change, one venue-scoped publisher
+operation serializes the affected venues and pushes only their live and venue
+JSON. Other venues keep the normal three-minute fetch and batched publication
+cadence.
