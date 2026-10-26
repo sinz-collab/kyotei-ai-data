@@ -378,7 +378,7 @@ def main() -> int:
     parser.add_argument(
         "--venue",
         action="append",
-        choices=("ashiya", "fukuoka", "wakamatsu"),
+        choices=("ashiya", "fukuoka", "tokoname", "wakamatsu"),
         help="Publish only the selected venue; repeat for an atomic multi-venue run.",
     )
     args = parser.parse_args()
@@ -403,7 +403,7 @@ def main() -> int:
             copy_changed_live_files(live_root, publish_repo, venue)
             for venue in selected_venues
         ) if selected_venues else copy_changed_live_files(live_root, publish_repo)
-        if not selected_venues:
+        if not selected_venues or TOKONAME in selected_venues:
             tokoname = publish_tokoname_predictions(
                 ROOT / "runtime" / "predictions",
                 publish_repo,

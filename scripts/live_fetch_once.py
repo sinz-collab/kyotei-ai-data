@@ -683,17 +683,11 @@ def stage_tokoname_results(
     results: list[dict[str, Any]],
     logger: Any,
 ) -> dict[str, Any] | None:
-    live_items = {"direct", "exhibition", "odds"}
     race_numbers = sorted(
         {
             int(result["target"]["race_no"])
             for result in results
             if result.get("target", {}).get("venue") == "tokoname"
-            and all(
-                (result.get("items", {}).get(item) or {}).get("complete") is True
-                and (result.get("items", {}).get(item) or {}).get("status") == "complete"
-                for item in live_items
-            )
         }
     )
     if not race_numbers:
@@ -925,6 +919,26 @@ async def run_once(
                                     / target["venue"]
                                     / f"{target['race_no']:02d}"
                                 )
+                                tokoname_staging = stage_tokoname_results(
+                                    config,
+                                    today,
+                                    target_root,
+                                    [result],
+                                    logger,
+                                )
+                                if tokoname_staging is not None:
+                                    result["tokoname_prediction_staging"] = tokoname_staging
+                                    if (
+                                        tokoname_staging.get("written") is True
+                                        and tokoname_staging.get("engine_invoked_races")
+                                        and target_root == resolve_root(config, "live_output_root")
+                                    ):
+                                        result["tokoname_immediate_publish"] = (
+                                            await publish_priority_display_data(
+                                                logger,
+                                                ["tokoname"],
+                                            )
+                                        )
                                 await apply_heiwajima_live_prediction(
                                     target,
                                     race_dir,
@@ -997,14 +1011,12 @@ async def run_once(
         "targets": [{"venue": item["venue"], "race_no": item["race_no"]} for item in targets],
         "results": results,
     }
-    tokoname_staging = stage_tokoname_results(
-        config,
-        today,
-        target_root,
-        results,
-        logger,
-    )
-    if tokoname_staging is not None:
+    tokoname_staging = [
+        result["tokoname_prediction_staging"]
+        for result in results
+        if "tokoname_prediction_staging" in result
+    ]
+    if tokoname_staging:
         response["tokoname_prediction_staging"] = tokoname_staging
     configured_priority_venues = config.get("priority_venues")
     if configured_priority_venues is None:

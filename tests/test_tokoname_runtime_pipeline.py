@@ -580,7 +580,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         self.assertIsNone(result)
         self.assertFalse(self.output_root.exists())
 
-    def test_live_hook_requires_direct_exhibition_and_odds_only(self) -> None:
+    def test_live_hook_rechecks_persisted_inputs_for_every_tokoname_result(self) -> None:
         class Logger:
             def error(self, *args, **kwargs) -> None:
                 raise AssertionError("unexpected staging error")
@@ -600,23 +600,9 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         optional_original_pending = deepcopy(base)
         optional_original_pending["items"]["original_exhibition"]["complete"] = False
         optional_original_pending["items"]["original_exhibition"]["status"] = "pending"
-        missing_odds = deepcopy(base)
-        missing_odds["items"]["odds"]["complete"] = False
-        missing_odds["items"]["odds"]["status"] = "pending"
         with patch(
             "stage_tokoname_predictions.stage_tokoname_predictions"
         ) as staging:
-            self.assertIsNone(
-                stage_tokoname_results(
-                    {"morning_data_root": str(self.morning_root)},
-                    DATE,
-                    self.live_root,
-                    [missing_odds],
-                    Logger(),
-                )
-            )
-            staging.assert_not_called()
-
             staging.return_value = {"status": "updated", "written": True}
             result = stage_tokoname_results(
                 {"morning_data_root": str(self.morning_root)},
@@ -627,6 +613,23 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
             )
             self.assertEqual(result, staging.return_value)
             staging.assert_called_once()
+
+            staging.reset_mock()
+            result_only = {
+                "target": {"venue": "tokoname", "race_no": 2},
+                "items": {
+                    "result": {"complete": False, "status": "pending"},
+                },
+            }
+            result = stage_tokoname_results(
+                {"morning_data_root": str(self.morning_root)},
+                DATE,
+                self.live_root,
+                [result_only],
+                Logger(),
+            )
+            self.assertEqual(result, staging.return_value)
+            self.assertEqual(staging.call_args.kwargs["race_numbers"], [2])
 
     def test_race_10_pending_original_still_generates_final(self) -> None:
         write_live(self.live_root, 10)
