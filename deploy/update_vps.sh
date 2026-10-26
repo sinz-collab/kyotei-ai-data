@@ -23,6 +23,9 @@ fi
 
 systemctl stop "${SERVICE_NAME}"
 git -C "${INSTALL_DIR}" pull --ff-only origin main
+# Root-run updates can leave a restrictive umask on nested engine modules.
+# The service account must be able to traverse and read the frozen Tokoname engine.
+chmod -R a+rX "${INSTALL_DIR}/engines/tokoname_v1"
 "${PYTHON}" -m pip install -r "${INSTALL_DIR}/automation/requirements.txt"
 PLAYWRIGHT_BROWSERS_PATH="${INSTALL_DIR}/.playwright" \
   "${PYTHON}" -m playwright install chromium
