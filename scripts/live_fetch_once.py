@@ -45,6 +45,8 @@ FUKUOKA_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_fukuoka_v1.py"
 FUKUOKA_DATA_ROOT = PUBLISHER_REPO / "data"
 OMURA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_omura_v1.py"
 OMURA_DATA_ROOT = PUBLISHER_REPO / "data"
+KARATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_karatsu_v1_live.py"
+KARATSU_DATA_ROOT = PUBLISHER_REPO / "data"
 
 SHIMONOSEKI_LIVE_APPLIER = ROOT / "automation" / "apply_shimonoseki_live_v6_1.py"
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
@@ -169,6 +171,7 @@ async def apply_heiwajima_live_prediction(
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
+
     stdout, stderr = await process.communicate()
 
     if process.returncode != 0:
@@ -186,6 +189,58 @@ async def apply_heiwajima_live_prediction(
         stdout.decode("utf-8", errors="replace").strip(),
         extra={
             "event": "heiwajima_live_prediction_complete",
+            "venue": target["venue"],
+            "race_no": target["race_no"],
+        },
+    )
+
+
+async def apply_karatsu_live_prediction(
+    target: dict[str, Any],
+    race_dir: Path,
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "karatsu" or fetch_result.get("error"):
+        return
+    items = fetch_result.get("items") or {}
+    if not all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in ("direct", "exhibition", "original_exhibition")
+    ):
+        return
+
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(KARATSU_LIVE_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--race",
+        str(target["race_no"]),
+        "--data-root",
+        str(KARATSU_DATA_ROOT),
+        "--live-root",
+        str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "karatsu_live_prediction_failed",
+                "venue": target["venue"],
+                "race_no": target["race_no"],
+            },
+        )
+        return
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "karatsu_live_prediction_complete",
             "venue": target["venue"],
             "race_no": target["race_no"],
         },
@@ -940,6 +995,12 @@ async def run_once(
                                             )
                                         )
                                 await apply_heiwajima_live_prediction(
+                                    target,
+                                    race_dir,
+                                    result,
+                                    logger,
+                                )
+                                await apply_karatsu_live_prediction(
                                     target,
                                     race_dir,
                                     result,
