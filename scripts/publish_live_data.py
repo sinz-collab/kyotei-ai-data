@@ -378,7 +378,7 @@ def main() -> int:
     parser.add_argument(
         "--venue",
         action="append",
-        choices=("ashiya", "fukuoka", "naruto", "tokoname", "wakamatsu"),
+        choices=("ashiya", "fukuoka", "karatsu", "naruto", "tokoname", "wakamatsu"),
         help="Publish only the selected venue; repeat for an atomic multi-venue run.",
     )
     args = parser.parse_args()

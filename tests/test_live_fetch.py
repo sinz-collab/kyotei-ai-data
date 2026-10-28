@@ -112,21 +112,26 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
             result = asyncio.run(
                 publish_priority_display_data(
                     logger,
-                    ["ashiya", "fukuoka", "wakamatsu"],
+                    ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"],
                 )
             )
 
         self.assertEqual(create_process.await_count, 1)
         command = create_process.await_args.args
         self.assertEqual(
-            command[command.index("--venue") : command.index("--venue") + 6],
+            command[command.index("--venue") : command.index("--venue") + 10],
             (
                 "--venue", "ashiya",
                 "--venue", "fukuoka",
                 "--venue", "wakamatsu",
+                "--venue", "tokoname",
+                "--venue", "karatsu",
             ),
         )
-        self.assertEqual(result["venues"], ["ashiya", "fukuoka", "wakamatsu"])
+        self.assertEqual(
+            result["venues"],
+            ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"],
+        )
 
     def test_priority_batches_are_started_before_other_venues(self) -> None:
         batches = venue_batches_by_priority(
@@ -135,16 +140,18 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
                 "ashiya": [{"venue": "ashiya"}],
                 "fukuoka": [{"venue": "fukuoka"}],
                 "wakamatsu": [{"venue": "wakamatsu"}],
+                "tokoname": [{"venue": "tokoname"}],
+                "karatsu": [{"venue": "karatsu"}],
                 "biwako": [{"venue": "biwako"}],
             },
-            {"ashiya", "fukuoka", "wakamatsu"},
+            {"ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"},
         )
         self.assertEqual(
-            {items[0]["venue"] for items in batches[:3]},
-            {"ashiya", "fukuoka", "wakamatsu"},
+            {items[0]["venue"] for items in batches[:5]},
+            {"ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"},
         )
         self.assertEqual(
-            {items[0]["venue"] for items in batches[3:]},
+            {items[0]["venue"] for items in batches[5:]},
             {"toda", "biwako"},
         )
 
@@ -190,20 +197,31 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
                     "items": {"exhibition": {"changed": True}},
                 },
                 {
+                    "target": {"venue": "tokoname"},
+                    "items": {"exhibition": {"changed": True}},
+                },
+                {
+                    "target": {"venue": "karatsu"},
+                    "items": {"original_exhibition": {"changed": True}},
+                },
+                {
                     "target": {"venue": "toda"},
                     "items": {"exhibition": {"changed": True}},
                 },
             ],
-            {"ashiya", "fukuoka", "wakamatsu"},
+            {"ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"},
         )
-        self.assertEqual(changed, ["ashiya", "fukuoka", "wakamatsu"])
+        self.assertEqual(
+            changed,
+            ["ashiya", "fukuoka", "karatsu", "tokoname", "wakamatsu"],
+        )
 
     def test_priority_config_keeps_other_venues_on_normal_cadence(self) -> None:
         self.assertEqual(CONFIG["interval_minutes"], 3)
         self.assertEqual(CONFIG["priority_interval_minutes"], 1)
         self.assertEqual(
             CONFIG["priority_venues"],
-            ["ashiya", "fukuoka", "wakamatsu"],
+            ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"],
         )
 
     def test_incomplete_saved_input_does_not_trigger_final(self) -> None:

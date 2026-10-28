@@ -32,7 +32,10 @@ class NarutoIntegrationTests(unittest.TestCase):
         publisher = (SCRIPTS / "publish_live_data.py").read_text(encoding="utf-8")
 
         self.assertIn('venues: "tokoname omura karatsu fukuoka heiwajima biwako naruto"', workflow)
-        self.assertIn('choices=("ashiya", "fukuoka", "naruto", "tokoname", "wakamatsu")', publisher)
+        self.assertIn(
+            'choices=("ashiya", "fukuoka", "karatsu", "naruto", "tokoname", "wakamatsu")',
+            publisher,
+        )
 
     def test_generic_live_detector_accepts_complete_naruto_12_race_payload(self) -> None:
         target_date = "2026-10-28"
