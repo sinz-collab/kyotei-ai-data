@@ -344,7 +344,64 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         prediction = staged["races"][0]["prediction"]
         self.assertEqual(prediction["prediction_phase"], "preliminary")
         self.assertFalse(prediction["engine_recalculated_after_exhibition"])
+        self.assertEqual(staged["races"][0]["predictionPre"], prediction)
+        for position in ("win", "second", "third"):
+            self.assertEqual(
+                set(prediction["probabilities"][position]),
+                {str(lane) for lane in range(1, 7)},
+            )
         self.assertEqual(file_snapshot(self.root / "data"), before_data)
+
+    def test_morning_probabilities_are_preserved_for_live_review(self) -> None:
+        def changed_live_predictor(payload: dict, model_dir: Path) -> dict:
+            output = fake_predict(payload, model_dir)
+            if not payload.get("preliminary"):
+                output["probabilities"][0]["win"] = 35
+                output["probabilities"][1]["win"] = 25
+            return output
+
+        with (
+            patch(
+                "engines.tokoname_v1.tokoname_site_pipeline.attach_morning_lane1_fly"
+            ),
+            patch(
+                "engines.tokoname_v1.tokoname_site_pipeline.attach_final_lane1_fly"
+            ),
+            patch(
+                "engines.tokoname_v1.tokoname_site_pipeline.attach_final_fly_tickets_v4"
+            ),
+        ):
+            preliminary = self.stage(race_numbers=[1])
+            self.assertEqual(preliminary["status"], "preliminary")
+            dated = self.output_root / "venues" / "tokoname" / "20260730.json"
+            before_live = json.loads(dated.read_text(encoding="utf-8"))
+            morning_prediction = deepcopy(before_live["races"][0]["predictionPre"])
+
+            write_live(self.live_root, 1)
+            final = self.stage(race_numbers=[1], predictor=changed_live_predictor)
+        self.assertEqual(final["status"], "updated")
+        published = json.loads(dated.read_text(encoding="utf-8"))
+        race = published["races"][0]
+        prediction = race["prediction"]
+
+        self.assertEqual(race["predictionPre"], morning_prediction)
+        self.assertEqual(prediction["prediction_phase"], "final")
+        self.assertEqual(prediction["probabilityReviewStatus"], "reviewed")
+        self.assertEqual(
+            prediction["probabilityReview"]["1"],
+            {
+                "morningWin": 40.0,
+                "morningSecond": 10.0,
+                "morningThird": 10.0,
+                "win": 35.0,
+                "second": 10.0,
+                "third": 10.0,
+                "deltaWin": -5.0,
+                "deltaSecond": 0.0,
+                "deltaThird": 0.0,
+            },
+        )
+        self.assertTrue(prediction["probabilityFlow"]["reviewed"])
 
     def test_only_complete_race_is_generated_and_dated_matches_latest(self) -> None:
         write_live(self.live_root, 1)

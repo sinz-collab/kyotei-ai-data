@@ -57,6 +57,8 @@ def overlay_existing_predictions(morning: dict, staged: dict | None) -> dict:
         previous = staged_races.get(race_no) or {}
         if "prediction" in previous:
             race["prediction"] = deepcopy(previous["prediction"])
+        if "predictionPre" in previous:
+            race["predictionPre"] = deepcopy(previous["predictionPre"])
     return candidate
 
 

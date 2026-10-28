@@ -320,6 +320,7 @@ def apply_tokoname_preliminary_predictions(
         prediction = site_prediction(output, phase="preliminary")
         attach_morning_lane1_fly(prediction, updated, race, model_dir)
         race["prediction"] = prediction
+        race["predictionPre"] = deepcopy(prediction)
         reports.append(
             {
                 "race": race_no,
@@ -557,10 +558,55 @@ def validate_site_prediction(prediction: dict) -> None:
         validate_prediction(fly_prediction)
 
 
+def is_valid_preliminary_prediction(prediction: object) -> bool:
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("prediction_phase") != "preliminary":
+        return False
+    try:
+        validate_site_prediction(prediction)
+    except (KeyError, TypeError, ValueError):
+        return False
+    return True
+
+
+def attach_probability_review(prediction: dict, preliminary: dict) -> None:
+    before = preliminary["probabilities"]
+    after = prediction["probabilities"]
+    review = {}
+    for lane in LANES:
+        key = str(lane)
+        row = {
+            "morningWin": before["win"][key],
+            "morningSecond": before["second"][key],
+            "morningThird": before["third"][key],
+            "win": after["win"][key],
+            "second": after["second"][key],
+            "third": after["third"][key],
+        }
+        row["deltaWin"] = round(row["win"] - row["morningWin"], 1)
+        row["deltaSecond"] = round(row["second"] - row["morningSecond"], 1)
+        row["deltaThird"] = round(row["third"] - row["morningThird"], 1)
+        review[key] = row
+    prediction["probabilityReview"] = review
+    prediction["probabilityReviewStatus"] = "reviewed"
+    prediction["probabilityFlow"] = {
+        "required": True,
+        "baseApplied": True,
+        "baseLabel": "直前前エンジン予想",
+        "realtimeApplied": True,
+        "realtimeLabel": "展示・スリット・直前情報反映",
+        "reviewed": True,
+        "reviewLabel": "再精査後の調整数字",
+        "adjustedRequired": True,
+    }
+
+
 def without_predictions(document: dict) -> dict:
     comparable = deepcopy(document)
     for race in comparable.get("races") or []:
         race.pop("prediction", None)
+        race.pop("predictionPre", None)
     return comparable
 
 
@@ -589,6 +635,13 @@ def apply_tokoname_predictions(
             continue
         had_prediction = "prediction" in race
         existing_prediction = deepcopy(race.get("prediction"))
+        existing_preliminary = deepcopy(race.get("predictionPre"))
+        if not is_valid_preliminary_prediction(existing_preliminary):
+            existing_preliminary = (
+                deepcopy(existing_prediction)
+                if is_valid_preliminary_prediction(existing_prediction)
+                else None
+            )
         try:
             live_documents = load_live_documents(
                 live_root / f"{race_no:02d}",
@@ -652,6 +705,9 @@ def apply_tokoname_predictions(
                     prediction["flyPrediction"] = waiting_prediction(
                         f"live_features_unavailable: {fly_tickets_error}"
                     )
+            if existing_preliminary is not None:
+                race["predictionPre"] = existing_preliminary
+                attach_probability_review(prediction, existing_preliminary)
             race["prediction"] = prediction
             reports.append(
                 {

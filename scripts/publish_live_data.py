@@ -14,7 +14,10 @@ from live_common import ROOT, load_config, process_lock, resolve_root
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engines.tokoname_v1.tokoname_site_pipeline import validate_site_prediction
+from engines.tokoname_v1.tokoname_site_pipeline import (
+    is_valid_preliminary_prediction,
+    validate_site_prediction,
+)
 from engines.tokoname_v1.fly_tickets_v4 import validate_prediction as validate_fly_tickets_v4
 
 
@@ -172,6 +175,7 @@ def without_prediction_fields(document: dict) -> dict:
         comparable.pop(key, None)
     for race in comparable.get("races") or []:
         race.pop("prediction", None)
+        race.pop("predictionPre", None)
     return comparable
 
 
@@ -266,7 +270,10 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
         if not tokoname_fly_tickets_v4_is_complete(prediction):
             rejected_races[race_no] = "fly_tickets_v4_incomplete"
             continue
-        publishable[race_no] = prediction
+        publishable[race_no] = {
+            "prediction": prediction,
+            "predictionPre": staged_races[race_no].get("predictionPre"),
+        }
     if not publishable:
         return {
             "status": "not_ready",
@@ -312,11 +319,18 @@ def publish_tokoname_predictions(staging_root: Path, repo_root: Path) -> dict:
     for original in (destination, latest):
         merged = deepcopy(original)
         merged_races = race_index(merged)
-        for race_no, prediction in publishable.items():
+        for race_no, staged_predictions in publishable.items():
+            prediction = staged_predictions["prediction"]
             if merged_races[race_no].get("prediction") != prediction:
                 merged_races[race_no]["prediction"] = deepcopy(prediction)
                 if race_no not in changed_races:
                     changed_races.append(race_no)
+            preliminary = staged_predictions.get("predictionPre")
+            if is_valid_preliminary_prediction(preliminary):
+                if merged_races[race_no].get("predictionPre") != preliminary:
+                    merged_races[race_no]["predictionPre"] = deepcopy(preliminary)
+                    if race_no not in changed_races:
+                        changed_races.append(race_no)
         merged["engine"] = "tokoname_engine"
         merged["engineVersion"] = "1.6"
         merged["predictionStatus"] = "ready"

@@ -112,6 +112,33 @@ def prediction() -> dict:
     }
 
 
+def preliminary_prediction() -> dict:
+    value = prediction()
+    value["prediction_phase"] = "preliminary"
+    value["stage"] = "preliminary"
+    value["engine_recalculated_after_exhibition"] = False
+    value["original_exhibition_available"] = False
+    value["engine_run"] = {
+        "completed": True,
+        "source_engine": "tokoname_engine_v1.6",
+        "mode": "morning_preliminary",
+        "inputs": ["morning"],
+    }
+    value["predictionStage"] = {"code": "pre", "label": "仮予想"}
+    value["data_flags"]["original_exhibition_available"] = False
+    value["lane1FlyStage"] = "morning"
+    value["lane1FlyDetail"]["stage"] = "morning"
+    value["flyPrediction"] = {
+        "status": "waiting",
+        "reason": "exhibition_required",
+        "modelVersion": "tokoname_fly_tickets_v4",
+        "stage": "waiting_for_exhibition",
+        "condition": "lane1_not_first",
+        "tickets": [],
+    }
+    return value
+
+
 def venue_document() -> dict:
     races = []
     for race_no in range(1, 13):
@@ -212,10 +239,12 @@ class TokonamePredictionPublishTests(unittest.TestCase):
 
     def test_ready_race_publishes_incrementally_without_other_domain_changes(self) -> None:
         staged = deepcopy(self.original)
+        preliminary = preliminary_prediction()
         staged["races"][0]["prediction"] = {
             **prediction(),
             "input_hash": "race-1",
         }
+        staged["races"][0]["predictionPre"] = preliminary
         self.stage(staged)
         manifest_before = json.loads(self.manifest_path.read_text(encoding="utf-8"))
 
@@ -232,6 +261,7 @@ class TokonamePredictionPublishTests(unittest.TestCase):
         )
         self.assertEqual(published["races"][0]["prediction"]["engine_version"], "1.6")
         self.assertEqual(published["races"][0]["prediction"]["input_hash"], "race-1")
+        self.assertEqual(published["races"][0]["predictionPre"], preliminary)
         self.assertEqual(
             published["races"][1]["prediction"]["status"],
             "unavailable",
