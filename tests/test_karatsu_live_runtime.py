@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "automation"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from run_karatsu_v1_live import run
+from run_karatsu_v1_live import ENGINE_ID, run
 from live_fetch_once import apply_karatsu_live_prediction
 
 
@@ -62,11 +62,40 @@ class KaratsuLiveRuntimeTests(unittest.TestCase):
         self.assertEqual(len(final["prediction_history"]["live"]), 1)
         self.assertEqual(len(race["live"]["exhibition"]["entries"]), 6)
         self.assertEqual(len(race["live"]["original"]["entries"]), 6)
+        self.assertGreater(final["probabilityReview"]["1"]["morningWin"], 0)
 
         run("2026-10-27", 7, self.data_root, LIVE_SOURCE)
         repeated = json.loads(dated.read_text(encoding="utf-8"))["races"][6]["predictionFinal"]
         self.assertEqual(len(repeated["prediction_history"]["morning"]), 1)
         self.assertEqual(len(repeated["prediction_history"]["live"]), 1)
+
+    def test_nested_morning_probabilities_are_used_as_review_baseline(self) -> None:
+        dated = self.data_root / "venues" / "karatsu" / "20261027.json"
+        latest = dated.with_name("latest.json")
+        payload = json.loads(dated.read_text(encoding="utf-8"))
+        race = payload["races"][6]
+        original = deepcopy(race.get("predictionPre") or race["prediction"])
+        original_probabilities = original.get("probabilities") or original
+        nested = {
+            "engine": ENGINE_ID,
+            "probabilities": {
+                position: deepcopy(original_probabilities[position])
+                for position in ("win", "second", "third")
+            },
+        }
+        race["predictionPre"] = nested
+        text = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+        dated.write_text(text, encoding="utf-8")
+        latest.write_text(text, encoding="utf-8")
+
+        report = run("2026-10-27", 7, self.data_root, LIVE_SOURCE)
+
+        self.assertEqual(report["status"], "complete")
+        final = json.loads(dated.read_text(encoding="utf-8"))["races"][6]["predictionFinal"]
+        self.assertEqual(
+            final["probabilityReview"]["1"]["morningWin"],
+            nested["probabilities"]["win"]["1"],
+        )
 
     def test_incomplete_inputs_do_not_change_public_json(self) -> None:
         dated = self.data_root / "venues" / "karatsu" / "20261027.json"

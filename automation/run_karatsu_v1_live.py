@@ -39,6 +39,23 @@ def complete_live_documents(race_dir: Path) -> dict[str, dict] | None:
     return documents
 
 
+def probability_map(prediction: dict, position: str) -> dict[str, float]:
+    source = prediction.get(position)
+    if not isinstance(source, dict):
+        source = (prediction.get("probabilities") or {}).get(position)
+    if not isinstance(source, dict):
+        raise RuntimeError(f"karatsu_probability_missing:{position}")
+    values = {}
+    for lane in range(1, 7):
+        value = source.get(str(lane), source.get(lane))
+        if not isinstance(value, (int, float)):
+            raise RuntimeError(f"karatsu_probability_invalid:{position}:{lane}")
+        values[str(lane)] = float(value)
+    if not 99.0 <= sum(values.values()) <= 101.0:
+        raise RuntimeError(f"karatsu_probability_sum_invalid:{position}")
+    return values
+
+
 def prediction_snapshot(prediction: dict, stage: str, generated_at: str | None) -> dict:
     return {
         "snapshotVersion": "karatsu_prediction_snapshot_v1",
@@ -48,7 +65,7 @@ def prediction_snapshot(prediction: dict, stage: str, generated_at: str | None) 
         "engineVersion": prediction.get("engineVersion"),
         "sab": prediction.get("sab"),
         "probabilities": {
-            key: deepcopy(prediction.get(key) or {})
+            key: probability_map(prediction, key)
             for key in ("win", "second", "third")
         },
         "ai": deepcopy(prediction.get("ai") or []),
@@ -77,13 +94,21 @@ def append_history(final: dict, morning: dict, previous: Any, generated_at: str)
 
 
 def probability_review(morning: dict, final: dict) -> dict:
+    morning_maps = {
+        position: probability_map(morning, position)
+        for position in ("win", "second", "third")
+    }
+    final_maps = {
+        position: probability_map(final, position)
+        for position in ("win", "second", "third")
+    }
     review = {}
     for lane in range(1, 7):
         key = str(lane)
         review[key] = {}
         for position, label in (("win", "Win"), ("second", "Second"), ("third", "Third")):
-            before = float((morning.get(position) or {}).get(key, 0))
-            after = float((final.get(position) or {}).get(key, 0))
+            before = morning_maps[position][key]
+            after = final_maps[position][key]
             review[key][f"morning{label}"] = before
             review[key][position] = after
             review[key][f"delta{label}"] = round(after - before, 1)
