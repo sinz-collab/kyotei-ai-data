@@ -31,7 +31,7 @@ class NarutoIntegrationTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(encoding="utf-8")
         publisher = (SCRIPTS / "publish_live_data.py").read_text(encoding="utf-8")
 
-        self.assertIn('venues: "tokoname omura karatsu fukuoka heiwajima naruto biwako"', workflow)
+        self.assertIn('venues: "tokoname omura karatsu fukuoka heiwajima biwako naruto"', workflow)
         self.assertIn('choices=("ashiya", "fukuoka", "naruto", "tokoname", "wakamatsu")', publisher)
 
     def test_generic_live_detector_accepts_complete_naruto_12_race_payload(self) -> None:
