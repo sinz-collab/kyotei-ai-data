@@ -8,6 +8,16 @@ from live_common import deadline_datetime, normalize_now
 
 
 STOP_STATUSES = {"finished", "cancelled", "canceled", "aborted"}
+NARUTO_BACKFILL_BATCH_SIZE = 4
+
+
+def _naruto_final_missing(payload: dict[str, Any], race: dict[str, Any], race_no: int) -> bool:
+    prediction = (payload.get("preds") or {}).get(str(race_no)) or race.get("prediction") or {}
+    return not (
+        prediction.get("phase") == "final"
+        and prediction.get("predictionStage") == "live"
+        and prediction.get("active_prediction_stage") == "live"
+    )
 
 
 def select_target_races(
@@ -31,6 +41,17 @@ def select_target_races(
             continue
         close_at = deadline_datetime(payload["date"], deadline, config)
         fetch_live = close_at - monitor <= current < close_at
+        post_deadline_window = close_at <= current < close_at + result_monitor
+        naruto_live_backfill = (
+            venue["slug"] == "naruto"
+            and output_root is not None
+            and post_deadline_window
+            and _naruto_final_missing(payload, race, race_no)
+        )
+        # Naruto morning data can arrive after an early race has closed. Keep
+        # polling its LIVE inputs in the existing result window until a
+        # verified final prediction has actually been written.
+        fetch_live = fetch_live or naruto_live_backfill
         result_path = (
             output_root / payload["date"] / venue["slug"] / f"{race_no:02d}" / "result.json"
             if output_root else None
@@ -44,7 +65,7 @@ def select_target_races(
                 result_complete = False
         fetch_result = (
             output_root is not None
-            and close_at <= current < close_at + result_monitor
+            and post_deadline_window
             and not result_complete
         )
         if fetch_live or fetch_result:
@@ -59,6 +80,11 @@ def select_target_races(
                     "racers": race.get("racers") or [],
                     "fetch_live": fetch_live,
                     "fetch_result": fetch_result,
+                    "naruto_live_backfill": naruto_live_backfill,
                 }
             )
+    if venue["slug"] == "naruto":
+        regular = [target for target in targets if not target["naruto_live_backfill"]]
+        backfill = [target for target in targets if target["naruto_live_backfill"]]
+        return regular + backfill[:NARUTO_BACKFILL_BATCH_SIZE]
     return targets

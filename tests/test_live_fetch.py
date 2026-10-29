@@ -29,6 +29,7 @@ from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
 from live_fetch_once import (
+    apply_naruto_live_prediction,
     changed_priority_display_venues,
     fukuoka_display_data_changed,
     publish_priority_display_data,
@@ -221,8 +222,15 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
         self.assertEqual(CONFIG["priority_interval_minutes"], 1)
         self.assertEqual(
             CONFIG["priority_venues"],
-            ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu"],
+            ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu", "naruto"],
         )
+
+    def test_naruto_prediction_change_triggers_immediate_publish(self) -> None:
+        changed = changed_priority_display_venues(
+            [{"target": {"venue": "naruto"}, "items": {}, "prediction_changed": True}],
+            {"naruto"},
+        )
+        self.assertEqual(changed, ["naruto"])
 
     def test_incomplete_saved_input_does_not_trigger_final(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -234,6 +242,42 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
                     encoding="utf-8",
                 )
             self.assertFalse(shimonoseki_final_inputs_complete(race_dir, {}))
+
+
+class NarutoLiveTriggerTests(unittest.TestCase):
+    def test_verified_live_update_runs_live_before_result_evaluation(self) -> None:
+        processes = []
+        for output in (b"live", b"result"):
+            process = Mock(returncode=0)
+            process.communicate = AsyncMock(return_value=(output, b""))
+            processes.append(process)
+        fetch_result = {
+            "items": {
+                name: {"status": "complete", "complete": True, "changed": True}
+                for name in ("direct", "exhibition", "original_exhibition", "result")
+            }
+        }
+        target = {
+            "venue": "naruto",
+            "date": "2026-10-29",
+            "race_no": 1,
+            "naruto_live_backfill": True,
+        }
+        with patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(side_effect=processes),
+        ) as create_process:
+            changed = asyncio.run(
+                apply_naruto_live_prediction(target, Path("race"), fetch_result, Mock())
+            )
+
+        self.assertTrue(changed)
+        self.assertEqual(create_process.await_count, 2)
+        stages = []
+        for call in create_process.await_args_list:
+            command = call.args
+            stages.append(command[command.index("--stage") + 1])
+        self.assertEqual(stages, ["live", "result"])
 
 
 class VenueAndRaceTests(unittest.TestCase):
@@ -446,6 +490,74 @@ class VenueAndRaceTests(unittest.TestCase):
         self.assertEqual(len(targets), 1)
         self.assertFalse(targets[0]["fetch_live"])
         self.assertTrue(targets[0]["fetch_result"])
+
+    def test_naruto_missing_final_backfills_live_after_deadline(self) -> None:
+        venue = {
+            "slug": "naruto",
+            "name": "鳴門",
+            "payload": {
+                "date": "2026-07-24",
+                "preds": {
+                    "1": {
+                        "phase": "preliminary",
+                        "predictionStage": "morning",
+                        "active_prediction_stage": "morning",
+                    }
+                },
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            result_path = root / "2026-07-24" / "naruto" / "01" / "result.json"
+            result_path.parent.mkdir(parents=True)
+            result_path.write_text('{"complete":true}', encoding="utf-8")
+            targets = select_target_races(venue, at("09:09"), CONFIG, root)
+
+        self.assertEqual(len(targets), 1)
+        self.assertTrue(targets[0]["fetch_live"])
+        self.assertFalse(targets[0]["fetch_result"])
+        self.assertTrue(targets[0]["naruto_live_backfill"])
+
+    def test_naruto_verified_final_stops_live_backfill(self) -> None:
+        final = {
+            "phase": "final",
+            "predictionStage": "live",
+            "active_prediction_stage": "live",
+        }
+        venue = {
+            "slug": "naruto",
+            "name": "鳴門",
+            "payload": {
+                "date": "2026-07-24",
+                "preds": {"1": final},
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            result_path = root / "2026-07-24" / "naruto" / "01" / "result.json"
+            result_path.parent.mkdir(parents=True)
+            result_path.write_text('{"complete":true}', encoding="utf-8")
+            targets = select_target_races(venue, at("09:09"), CONFIG, root)
+
+        self.assertEqual(targets, [])
+
+    def test_naruto_backfill_is_bounded_to_fit_one_fetch_cycle(self) -> None:
+        races = [
+            {"race": race_no, "deadline": "09:00", "racers": racers()}
+            for race_no in range(1, 7)
+        ]
+        venue = {
+            "slug": "naruto",
+            "name": "鳴門",
+            "payload": {"date": "2026-07-24", "preds": {}, "races": races},
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            targets = select_target_races(venue, at("09:09"), CONFIG, Path(temp))
+
+        self.assertEqual([target["race_no"] for target in targets], [1, 2, 3, 4])
+        self.assertTrue(all(target["naruto_live_backfill"] for target in targets))
 
     def test_current_morning_data_checks_manifest_without_rewriting(self) -> None:
         with tempfile.TemporaryDirectory() as temp:

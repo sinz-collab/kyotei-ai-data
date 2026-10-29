@@ -254,17 +254,25 @@ async def apply_naruto_live_prediction(
     race_dir: Path,
     fetch_result: dict[str, Any],
     logger: Any,
-) -> None:
+) -> bool:
     if target.get("venue") != "naruto" or fetch_result.get("error"):
-        return
+        return False
+    prediction_changed = False
     items = fetch_result.get("items") or {}
-    if (items.get("result") or {}).get("complete") is True:
+    required = ("direct", "exhibition", "original_exhibition")
+    live_complete = all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    )
+    live_updated = any((items.get(name) or {}).get("changed") is True for name in required)
+    if live_complete and (live_updated or target.get("naruto_live_backfill") is True):
         process = await asyncio.create_subprocess_exec(
             sys.executable,
             str(NARUTO_LIVE_RUNNER),
             "--date", str(target["date"]),
             "--race", str(target["race_no"]),
-            "--stage", "result",
+            "--stage", "live",
             "--data-root", str(NARUTO_DATA_ROOT),
             "--live-root", str(race_dir),
             cwd=str(PUBLISHER_REPO),
@@ -272,23 +280,28 @@ async def apply_naruto_live_prediction(
             stderr=asyncio.subprocess.PIPE,
         )
         stdout, stderr = await process.communicate()
-        log = logger.error if process.returncode else logger.info
-        log(
-            (stderr if process.returncode else stdout).decode("utf-8", errors="replace").strip(),
+        if process.returncode != 0:
+            logger.error(
+                stderr.decode("utf-8", errors="replace").strip(),
+                extra={
+                    "event": "naruto_live_prediction_failed",
+                    "venue": "naruto",
+                    "race_no": target["race_no"],
+                },
+            )
+            return False
+        logger.info(
+            stdout.decode("utf-8", errors="replace").strip(),
             extra={
-                "event": "naruto_result_evaluation_failed" if process.returncode else "naruto_result_evaluation_complete",
+                "event": "naruto_live_prediction_complete",
                 "venue": "naruto",
                 "race_no": target["race_no"],
             },
         )
-        return
-    required = ("direct", "exhibition", "original_exhibition")
-    if not all(
-        (items.get(name) or {}).get("complete") is True
-        and (items.get(name) or {}).get("status") == "complete"
-        for name in required
-    ):
-        return
+        prediction_changed = True
+
+    if (items.get("result") or {}).get("complete") is not True:
+        return prediction_changed
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         str(NARUTO_LIVE_RUNNER),
@@ -297,7 +310,7 @@ async def apply_naruto_live_prediction(
         "--race",
         str(target["race_no"]),
         "--stage",
-        "live",
+        "result",
         "--data-root",
         str(NARUTO_DATA_ROOT),
         "--live-root",
@@ -311,20 +324,21 @@ async def apply_naruto_live_prediction(
         logger.error(
             stderr.decode("utf-8", errors="replace").strip(),
             extra={
-                "event": "naruto_live_prediction_failed",
+                "event": "naruto_result_evaluation_failed",
                 "venue": "naruto",
                 "race_no": target["race_no"],
             },
         )
-        return
+        return prediction_changed
     logger.info(
         stdout.decode("utf-8", errors="replace").strip(),
         extra={
-            "event": "naruto_live_prediction_complete",
+            "event": "naruto_result_evaluation_complete",
             "venue": "naruto",
             "race_no": target["race_no"],
         },
     )
+    return prediction_changed
 
 async def apply_ashiya_live_data(
     target: dict[str, Any],
@@ -891,9 +905,12 @@ def display_data_changed(
 ) -> bool:
     return any(
         result.get("target", {}).get("venue") == venue
-        and any(
-            (result.get("items", {}).get(item) or {}).get("changed") is True
-            for item in PRIORITY_DISPLAY_ITEMS
+        and (
+            result.get("prediction_changed") is True
+            or any(
+                (result.get("items", {}).get(item) or {}).get("changed") is True
+                for item in PRIORITY_DISPLAY_ITEMS
+            )
         )
         for result in results
     )
@@ -1086,12 +1103,14 @@ async def run_once(
                                     result,
                                     logger,
                                 )
-                                await apply_naruto_live_prediction(
+                                naruto_prediction_changed = await apply_naruto_live_prediction(
                                     target,
                                     race_dir,
                                     result,
                                     logger,
                                 )
+                                if naruto_prediction_changed:
+                                    result["prediction_changed"] = True
                                 await apply_ashiya_live_data(
                                     target,
                                     race_dir,
