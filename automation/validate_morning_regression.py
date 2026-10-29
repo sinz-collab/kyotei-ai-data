@@ -21,6 +21,7 @@ PREDICTION_VENUES = {
     "biwako",
     "shimonoseki",
     "fukuoka",
+    "naruto",
 }
 EMPTY = (None, "", [], {})
 
