@@ -97,7 +97,11 @@ class MorningPublishWorkflowTest(unittest.TestCase):
         normal = (WORKFLOWS / "morning-data.yml").read_text(encoding="utf-8")
 
         self.assertIn("name: 朝データ公開のみ再開", resume)
-        self.assertEqual(resume.count("run-id: ${{ inputs.source_run_id }}"), 2)
+        self.assertNotIn("source_run_id:", resume)
+        self.assertIn("github.rest.actions.listWorkflowRuns", resume)
+        self.assertIn("run.status !== 'completed'", resume)
+        self.assertIn("!matches[0].expired", resume)
+        self.assertEqual(resume.count("run-id: ${{ steps.source.outputs.run_id }}"), 2)
         self.assertIn("ref: main", resume)
         self.assertNotIn("automation/fetch_one.py", resume)
         common_call = 'bash automation/publish_morning_data.sh "$TARGET_DATE"'

@@ -7,10 +7,6 @@ on:
         description: "対象日 (YYYY-MM-DD)"
         required: true
         type: string
-      source_run_id:
-        description: "取得済みartifactを保存した Morning race data の Run ID"
-        required: true
-        type: string
 
 permissions:
   actions: read
@@ -26,14 +22,13 @@ jobs:
     timeout-minutes: 20
     env:
       TARGET_DATE: ${{ inputs.target_date }}
-      SOURCE_RUN_ID: ${{ inputs.source_run_id }}
     steps:
-      - name: Validate inputs and source run artifacts
+      - id: source
+        name: Find latest complete source artifacts
         uses: actions/github-script@v7
         with:
           script: |
             const targetDate = process.env.TARGET_DATE;
-            const sourceRunId = process.env.SOURCE_RUN_ID;
             const parsedDate = new Date(`${targetDate}T00:00:00Z`);
             if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate) ||
                 Number.isNaN(parsedDate.getTime()) ||
@@ -41,41 +36,52 @@ jobs:
               core.setFailed(`Invalid target date: ${targetDate}`);
               return;
             }
-            if (!/^\d+$/.test(sourceRunId) || sourceRunId === context.runId.toString()) {
-              core.setFailed(`Invalid source Run ID: ${sourceRunId}`);
-              return;
-            }
 
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const run_id = Number(sourceRunId);
-            const {data: run} = await github.rest.actions.getWorkflowRun({owner, repo, run_id});
-            const workflowPath = String(run.path || '').split('@')[0];
-            if (run.name !== 'Morning race data' || workflowPath !== '.github/workflows/morning-data.yml') {
-              core.setFailed(
-                `Run ${sourceRunId} is not a Morning race data run ` +
-                `(name=${run.name}, path=${run.path}).`
-              );
-              return;
-            }
-
-            const artifacts = await github.paginate(
-              github.rest.actions.listWorkflowRunArtifacts,
-              {owner, repo, run_id, per_page: 100}
-            );
             const required = [
               `morning-east-${targetDate}`,
               `morning-west-${targetDate}`,
             ];
-            for (const name of required) {
-              const matches = artifacts.filter(artifact => artifact.name === name);
-              if (matches.length !== 1 || matches[0].expired || matches[0].size_in_bytes <= 0) {
-                core.setFailed(
-                  `Run ${sourceRunId} must contain one non-expired, non-empty artifact named ${name}.`
-                );
-                return;
+
+            let sourceRunId = null;
+            for await (const response of github.paginate.iterator(
+              github.rest.actions.listWorkflowRuns,
+              {
+                owner,
+                repo,
+                workflow_id: 'morning-data.yml',
+                branch: 'main',
+                per_page: 100,
               }
+            )) {
+              for (const run of response.data) {
+                if (run.status !== 'completed') continue;
+                const artifacts = await github.paginate(
+                  github.rest.actions.listWorkflowRunArtifacts,
+                  {owner, repo, run_id: run.id, per_page: 100}
+                );
+                const valid = required.every(name => {
+                  const matches = artifacts.filter(artifact => artifact.name === name);
+                  return matches.length === 1 &&
+                    !matches[0].expired &&
+                    matches[0].size_in_bytes > 0;
+                });
+                if (valid) {
+                  sourceRunId = run.id;
+                  break;
+                }
+              }
+              if (sourceRunId !== null) break;
             }
+
+            if (sourceRunId === null) {
+              core.setFailed(
+                `No completed Morning race data run has both valid artifacts for ${targetDate}.`
+              );
+              return;
+            }
+            core.setOutput('run_id', sourceRunId.toString());
             core.summary
               .addHeading('朝データ公開のみ再開')
               .addRaw(`Target date: ${targetDate}\n`)
@@ -101,14 +107,14 @@ jobs:
           name: morning-east-${{ inputs.target_date }}
           path: work/artifacts/east
           github-token: ${{ github.token }}
-          run-id: ${{ inputs.source_run_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
       - name: Download west shard artifact from source run
         uses: actions/download-artifact@v4
         with:
           name: morning-west-${{ inputs.target_date }}
           path: work/artifacts/west
           github-token: ${{ github.token }}
-          run-id: ${{ inputs.source_run_id }}
+          run-id: ${{ steps.source.outputs.run_id }}
 
       - name: Validate and merge source artifacts
         shell: bash
