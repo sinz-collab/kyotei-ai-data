@@ -15,6 +15,7 @@ for path in (AUTOMATION, SCRIPTS):
         sys.path.insert(0, str(path))
 
 import build_site_data
+from boaters_fetch import normalize_stadium, stadium_to_slug
 from detect_active_venues import detect_active_venues
 
 
@@ -26,6 +27,12 @@ class NarutoIntegrationTests(unittest.TestCase):
         self.assertEqual(naruto, [{"slug": "naruto", "name": "鳴門"}])
         self.assertIn(("naruto", "鳴門"), build_site_data.ALL_VENUES)
         self.assertIn("naruto", build_site_data.PREDICTION_VENUES)
+
+    def test_morning_fetcher_accepts_naruto_slug_and_name(self) -> None:
+        self.assertEqual(normalize_stadium("naruto"), "鳴門")
+        self.assertEqual(normalize_stadium("鳴門"), "鳴門")
+        self.assertEqual(stadium_to_slug("naruto"), "naruto")
+        self.assertEqual(stadium_to_slug("鳴門"), "naruto")
 
     def test_naruto_is_fetched_by_morning_workflow_and_supported_by_scoped_live_publish(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(encoding="utf-8")

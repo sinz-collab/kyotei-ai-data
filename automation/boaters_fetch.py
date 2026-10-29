@@ -52,6 +52,7 @@ STADIUM_MAP = {
     "edogawa": "江戸川",
     "fukuoka": "福岡",
     "biwako": "びわこ",
+    "naruto": "鳴門",
     "芦屋": "芦屋",
     "下関": "下関",
     "若松": "若松",
@@ -63,6 +64,7 @@ STADIUM_MAP = {
     "江戸川": "江戸川",
     "福岡": "福岡",
     "びわこ": "びわこ",
+    "鳴門": "鳴門",
 }
 
 STADIUM_SLUG_MAP = {
@@ -77,6 +79,7 @@ STADIUM_SLUG_MAP = {
     "江戸川": "edogawa",
     "福岡": "fukuoka",
     "びわこ": "biwako",
+    "鳴門": "naruto",
 }
 
 DATA_CLICK_STEPS = [
