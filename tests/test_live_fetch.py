@@ -263,13 +263,15 @@ class NarutoLiveTriggerTests(unittest.TestCase):
             "race_no": 1,
             "naruto_live_backfill": True,
         }
-        with patch(
+        with tempfile.TemporaryDirectory() as temp, patch(
             "live_fetch_once.asyncio.create_subprocess_exec",
             AsyncMock(side_effect=processes),
         ) as create_process:
+            race_dir = Path(temp)
             changed = asyncio.run(
-                apply_naruto_live_prediction(target, Path("race"), fetch_result, Mock())
+                apply_naruto_live_prediction(target, race_dir, fetch_result, Mock())
             )
+            marker = json.loads((race_dir / "prediction_status.json").read_text(encoding="utf-8"))
 
         self.assertTrue(changed)
         self.assertEqual(create_process.await_count, 2)
@@ -278,6 +280,8 @@ class NarutoLiveTriggerTests(unittest.TestCase):
             command = call.args
             stages.append(command[command.index("--stage") + 1])
         self.assertEqual(stages, ["live", "result"])
+        self.assertEqual(marker["status"], "complete")
+        self.assertEqual(marker["stage"], "live")
 
 
 class VenueAndRaceTests(unittest.TestCase):
@@ -539,6 +543,32 @@ class VenueAndRaceTests(unittest.TestCase):
             result_path = root / "2026-07-24" / "naruto" / "01" / "result.json"
             result_path.parent.mkdir(parents=True)
             result_path.write_text('{"complete":true}', encoding="utf-8")
+            targets = select_target_races(venue, at("09:09"), CONFIG, root)
+
+        self.assertEqual(targets, [])
+
+    def test_naruto_local_success_marker_stops_redundant_backfill(self) -> None:
+        venue = {
+            "slug": "naruto",
+            "name": "鳴門",
+            "payload": {
+                "date": "2026-07-24",
+                "preds": {"1": {"phase": "preliminary", "predictionStage": "morning"}},
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            race_dir = root / "2026-07-24" / "naruto" / "01"
+            race_dir.mkdir(parents=True)
+            (race_dir / "prediction_status.json").write_text(
+                json.dumps({"status": "complete", "stage": "live"}),
+                encoding="utf-8",
+            )
+            (race_dir / "result.json").write_text(
+                json.dumps({"complete": True}),
+                encoding="utf-8",
+            )
             targets = select_target_races(venue, at("09:09"), CONFIG, root)
 
         self.assertEqual(targets, [])

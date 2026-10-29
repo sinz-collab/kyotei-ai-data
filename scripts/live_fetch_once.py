@@ -298,6 +298,20 @@ async def apply_naruto_live_prediction(
                 "race_no": target["race_no"],
             },
         )
+        marker = {
+            "date": str(target["date"]),
+            "venue": "naruto",
+            "race_no": int(target["race_no"]),
+            "stage": "live",
+            "status": "complete",
+        }
+        marker_path = race_dir / "prediction_status.json"
+        temporary_marker = marker_path.with_suffix(".json.tmp")
+        temporary_marker.write_text(
+            json.dumps(marker, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        temporary_marker.replace(marker_path)
         prediction_changed = True
 
     if (items.get("result") or {}).get("complete") is not True:

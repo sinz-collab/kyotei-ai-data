@@ -11,7 +11,21 @@ STOP_STATUSES = {"finished", "cancelled", "canceled", "aborted"}
 NARUTO_BACKFILL_BATCH_SIZE = 4
 
 
-def _naruto_final_missing(payload: dict[str, Any], race: dict[str, Any], race_no: int) -> bool:
+def _naruto_final_missing(
+    payload: dict[str, Any],
+    race: dict[str, Any],
+    race_no: int,
+    output_root: Path,
+) -> bool:
+    marker = output_root / payload["date"] / "naruto" / f"{race_no:02d}" / "prediction_status.json"
+    if marker.is_file():
+        try:
+            import json
+            status = json.loads(marker.read_text(encoding="utf-8"))
+            if status.get("status") == "complete" and status.get("stage") == "live":
+                return False
+        except (OSError, ValueError):
+            pass
     prediction = (payload.get("preds") or {}).get(str(race_no)) or race.get("prediction") or {}
     return not (
         prediction.get("phase") == "final"
@@ -46,7 +60,7 @@ def select_target_races(
             venue["slug"] == "naruto"
             and output_root is not None
             and post_deadline_window
-            and _naruto_final_missing(payload, race, race_no)
+            and _naruto_final_missing(payload, race, race_no, output_root)
         )
         # Naruto morning data can arrive after an early race has closed. Keep
         # polling its LIVE inputs in the existing result window until a

@@ -13,7 +13,13 @@ if str(AUTOMATION) not in sys.path:
     sys.path.insert(0, str(AUTOMATION))
 
 from naruto_v5_engine import NarutoV5Engine  # noqa: E402
-from run_naruto_v5 import result_evaluation, run_morning, run_result, update_first60_metrics  # noqa: E402
+from run_naruto_v5 import (  # noqa: E402
+    result_evaluation,
+    run_live,
+    run_morning,
+    run_result,
+    update_first60_metrics,
+)
 from build_site_data import prediction_payload_gate  # noqa: E402
 
 
@@ -107,6 +113,87 @@ class NarutoV5EngineTests(unittest.TestCase):
             prediction = generated["preds"][str(race_no)]
             self.assertEqual(len(prediction["prediction_history"]["morning"]), 1)
             self.assertEqual(prediction["prediction_history"]["live"], [])
+
+    def test_morning_retry_does_not_demote_completed_live_prediction(self) -> None:
+        row = self.rows[-1]
+        payload = run_morning(
+            self.engines["late"],
+            {
+                "venueId": "naruto",
+                "date": row["date"],
+                "races": [{"race": row["race"], "racers": row["racers"]}],
+                "preds": {},
+            },
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            live_root = Path(directory)
+            entries = row["live_entries"]
+            documents = {
+                "direct": {
+                    "complete": True,
+                    "data": {
+                        "actual_entry": [1, 2, 3, 4, 5, 6],
+                        "entry_changed": False,
+                        "wind_speed": row["wind_speed_mps"],
+                        "wave_height": row["wave_height_cm"],
+                        "racers": row["racers"],
+                    },
+                },
+                "exhibition": {
+                    "complete": True,
+                    "data": {"entries": [
+                        {
+                            "lane": item["lane"],
+                            "start_time": item["exhibition_st"],
+                            "exhibition_course": item["exhibition_course"],
+                            "exhibition_time": item["exhibition_time"],
+                        }
+                        for item in entries
+                    ]},
+                },
+                "original_exhibition": {
+                    "complete": True,
+                    "data": {"entries": [
+                        {
+                            "lane": item["lane"],
+                            "lap_time": item["lap_time"],
+                            "turn_time": item["turn_time"],
+                            "straight_time": item["straight_time"],
+                        }
+                        for item in entries
+                    ]},
+                },
+            }
+            for name, document in documents.items():
+                (live_root / f"{name}.json").write_text(json.dumps(document), encoding="utf-8")
+            payload = run_live(self.engines["late"], payload, row["race"], live_root)
+        frozen = json.dumps(payload["preds"][str(row["race"])], sort_keys=True)
+        retried = run_morning(self.engines["late"], payload)
+        self.assertEqual(json.dumps(retried["preds"][str(row["race"])], sort_keys=True), frozen)
+        self.assertEqual(retried["preds"][str(row["race"])]["active_prediction_stage"], "live")
+
+    def test_failed_live_review_keeps_morning_prediction_unchanged(self) -> None:
+        row = self.rows[-1]
+        payload = run_morning(
+            self.engines["late"],
+            {
+                "venueId": "naruto",
+                "date": row["date"],
+                "races": [{"race": row["race"], "racers": row["racers"]}],
+                "preds": {},
+            },
+        )
+        frozen = json.dumps(payload, sort_keys=True)
+        with tempfile.TemporaryDirectory() as directory:
+            live_root = Path(directory)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                (live_root / f"{name}.json").write_text(
+                    json.dumps({"complete": name != "original_exhibition", "data": {}}),
+                    encoding="utf-8",
+                )
+            with self.assertRaisesRegex(ValueError, "naruto_live_inputs_incomplete:original_exhibition"):
+                run_live(self.engines["late"], payload, row["race"], live_root)
+        self.assertEqual(json.dumps(payload, sort_keys=True), frozen)
 
     def test_result_evaluation_does_not_rewrite_prediction_snapshot(self) -> None:
         racers = self.rows[-1]["racers"]

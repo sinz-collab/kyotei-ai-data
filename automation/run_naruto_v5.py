@@ -135,18 +135,14 @@ def append_history(previous: dict | None, current: dict, stage: str) -> dict:
     return current
 
 
-def unavailable_live(previous: dict, reason: str) -> dict:
-    current = deepcopy(previous)
-    current["liveStatus"] = "unavailable"
-    current["liveReason"] = reason
-    current["flyPrediction"] = {
-        "status": "unavailable",
-        "stage": "live",
-        "modelVersion": "naruto_v5_live_alpha050_6211_fixed_20261020",
-        "tickets": [],
-        "reason": reason,
-    }
-    return current
+def live_prediction_complete(prediction: dict | None) -> bool:
+    prediction = prediction or {}
+    return (
+        prediction.get("phase") == "final"
+        and prediction.get("predictionStage") == "live"
+        and prediction.get("active_prediction_stage") == "live"
+        and len((prediction.get("prediction_history") or {}).get("live") or []) > 0
+    )
 
 
 def result_evaluation(prediction: dict, result_document: dict) -> dict:
@@ -271,6 +267,11 @@ def run_morning(engine: NarutoV5Engine, payload: dict) -> dict:
     for race in payload.get("races") or []:
         race_no = int(race["race"])
         previous = previous_preds.get(str(race_no))
+        # A delayed/retried morning publication must never demote a verified
+        # LIVE prediction or rewrite a race after its result was evaluated.
+        if live_prediction_complete(previous) or (previous or {}).get("resultEvaluation", {}).get("status") == "complete":
+            payload["preds"][str(race_no)] = previous
+            continue
         predicted = engine.predict_morning(
             date=payload["date"], race_no=race_no, racers=normalize_racers(race.get("racers") or [])
         )
@@ -293,24 +294,26 @@ def run_live(engine: NarutoV5Engine, payload: dict, race_no: int, live_root: Pat
     incomplete = [name for name, document in required.items() if document.get("complete") is not True]
     actual_entry = direct.get("data", {}).get("actual_entry") or []
     if incomplete:
-        current = unavailable_live(previous, "missing:" + ",".join(incomplete))
-    elif direct.get("data", {}).get("entry_changed") is True or actual_entry != [1, 2, 3, 4, 5, 6]:
-        current = unavailable_live(previous, "entry_change_unverified")
-    else:
-        predicted = engine.predict_live(
-            date=payload["date"],
-            race_no=race_no,
-            racers=normalize_racers(race.get("racers") or [], direct),
-            live_entries=live_entries(exhibition, original),
-            wind_speed_mps=direct.get("data", {}).get("wind_speed"),
-            wave_height_cm=direct.get("data", {}).get("wave_height"),
-        )
-        current = append_history(previous, prediction_payload(predicted), "live")
-        current["realtime"] = {
-            "direct": direct.get("data"),
-            "exhibition": exhibition.get("data"),
-            "original_exhibition": original.get("data"),
-        }
+        raise ValueError("naruto_live_inputs_incomplete:" + ",".join(incomplete))
+    if direct.get("data", {}).get("entry_changed") is True or actual_entry != [1, 2, 3, 4, 5, 6]:
+        raise ValueError("naruto_live_entry_change_unverified")
+    if (previous or {}).get("resultEvaluation", {}).get("status") == "complete":
+        raise ValueError("naruto_result_already_complete")
+
+    predicted = engine.predict_live(
+        date=payload["date"],
+        race_no=race_no,
+        racers=normalize_racers(race.get("racers") or [], direct),
+        live_entries=live_entries(exhibition, original),
+        wind_speed_mps=direct.get("data", {}).get("wind_speed"),
+        wave_height_cm=direct.get("data", {}).get("wave_height"),
+    )
+    current = append_history(previous, prediction_payload(predicted), "live")
+    current["realtime"] = {
+        "direct": direct.get("data"),
+        "exhibition": exhibition.get("data"),
+        "original_exhibition": original.get("data"),
+    }
     payload.setdefault("preds", {})[str(race_no)] = current
     race["prediction"] = current
     race["predictionFinal"] = current
