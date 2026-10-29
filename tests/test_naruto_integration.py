@@ -19,13 +19,13 @@ from detect_active_venues import detect_active_venues
 
 
 class NarutoIntegrationTests(unittest.TestCase):
-    def test_morning_config_and_manifest_register_naruto_without_prediction_engine(self) -> None:
+    def test_morning_config_and_manifest_register_naruto_prediction_engine(self) -> None:
         venues = json.loads((AUTOMATION / "venues.json").read_text(encoding="utf-8"))["venues"]
         naruto = [venue for venue in venues if venue["slug"] == "naruto"]
 
         self.assertEqual(naruto, [{"slug": "naruto", "name": "鳴門"}])
         self.assertIn(("naruto", "鳴門"), build_site_data.ALL_VENUES)
-        self.assertNotIn("naruto", build_site_data.PREDICTION_VENUES)
+        self.assertIn("naruto", build_site_data.PREDICTION_VENUES)
 
     def test_naruto_is_fetched_by_morning_workflow_and_supported_by_scoped_live_publish(self) -> None:
         workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(encoding="utf-8")

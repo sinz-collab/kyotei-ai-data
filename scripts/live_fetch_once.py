@@ -47,6 +47,8 @@ OMURA_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_omura_v1.py"
 OMURA_DATA_ROOT = PUBLISHER_REPO / "data"
 KARATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_karatsu_v1_live.py"
 KARATSU_DATA_ROOT = PUBLISHER_REPO / "data"
+NARUTO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_naruto_v5.py"
+NARUTO_DATA_ROOT = PUBLISHER_REPO / "data"
 
 SHIMONOSEKI_LIVE_APPLIER = ROOT / "automation" / "apply_shimonoseki_live_v6_1.py"
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
@@ -242,6 +244,84 @@ async def apply_karatsu_live_prediction(
         extra={
             "event": "karatsu_live_prediction_complete",
             "venue": target["venue"],
+            "race_no": target["race_no"],
+        },
+    )
+
+
+async def apply_naruto_live_prediction(
+    target: dict[str, Any],
+    race_dir: Path,
+    fetch_result: dict[str, Any],
+    logger: Any,
+) -> None:
+    if target.get("venue") != "naruto" or fetch_result.get("error"):
+        return
+    items = fetch_result.get("items") or {}
+    if (items.get("result") or {}).get("complete") is True:
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            str(NARUTO_LIVE_RUNNER),
+            "--date", str(target["date"]),
+            "--race", str(target["race_no"]),
+            "--stage", "result",
+            "--data-root", str(NARUTO_DATA_ROOT),
+            "--live-root", str(race_dir),
+            cwd=str(PUBLISHER_REPO),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await process.communicate()
+        log = logger.error if process.returncode else logger.info
+        log(
+            (stderr if process.returncode else stdout).decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "naruto_result_evaluation_failed" if process.returncode else "naruto_result_evaluation_complete",
+                "venue": "naruto",
+                "race_no": target["race_no"],
+            },
+        )
+        return
+    required = ("direct", "exhibition", "original_exhibition")
+    if not all(
+        (items.get(name) or {}).get("complete") is True
+        and (items.get(name) or {}).get("status") == "complete"
+        for name in required
+    ):
+        return
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(NARUTO_LIVE_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--race",
+        str(target["race_no"]),
+        "--stage",
+        "live",
+        "--data-root",
+        str(NARUTO_DATA_ROOT),
+        "--live-root",
+        str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
+    if process.returncode != 0:
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={
+                "event": "naruto_live_prediction_failed",
+                "venue": "naruto",
+                "race_no": target["race_no"],
+            },
+        )
+        return
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={
+            "event": "naruto_live_prediction_complete",
+            "venue": "naruto",
             "race_no": target["race_no"],
         },
     )
@@ -1001,6 +1081,12 @@ async def run_once(
                                     logger,
                                 )
                                 await apply_karatsu_live_prediction(
+                                    target,
+                                    race_dir,
+                                    result,
+                                    logger,
+                                )
+                                await apply_naruto_live_prediction(
                                     target,
                                     race_dir,
                                     result,

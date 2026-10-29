@@ -24,6 +24,7 @@ PREDICTION_VENUES = {
     "biwako",
     "shimonoseki",
     "fukuoka",
+    "naruto",
 }
 
 ALL_VENUES = [
@@ -611,6 +612,38 @@ def _prediction_is_complete(prediction: object) -> bool:
     return True
 
 
+def naruto_v5_prediction_is_complete(prediction: object) -> bool:
+    if not isinstance(prediction, dict):
+        return False
+    if str(prediction.get("modelVersion") or "").startswith("naruto_") is False:
+        return False
+    if prediction.get("predictionStage") not in {"morning", "live"}:
+        return False
+    if any(not _probabilities_are_valid(prediction.get(key)) for key in ("win", "second", "third")):
+        return False
+    normal = prediction.get("tickets")
+    fly = (prediction.get("flyPrediction") or {}).get("tickets")
+    trifecta = prediction.get("trifectaProbabilities")
+    if not all(isinstance(rows, list) for rows in (normal, fly, trifecta)):
+        return False
+    normal_combos = [str(row.get("combo") or "") for row in normal if isinstance(row, dict)]
+    fly_combos = [str(row.get("combo") or "") for row in fly if isinstance(row, dict)]
+    all_combos = [str(row.get("combo") or "") for row in trifecta if isinstance(row, dict)]
+    try:
+        probability_sum = sum(float(row.get("probability")) for row in trifecta)
+    except (TypeError, ValueError):
+        return False
+    return (
+        len(normal_combos) == len(set(normal_combos)) == 10
+        and len(fly_combos) == len(set(fly_combos)) == 10
+        and all(not combo.startswith("1-") for combo in fly_combos)
+        and len(all_combos) == len(set(all_combos)) == 120
+        and abs(probability_sum - 100.0) <= 0.001
+        and prediction.get("oddsUsedForProbability") is False
+        and isinstance(prediction.get("prediction_history"), dict)
+    )
+
+
 def prediction_payload_gate(payload: dict, expected_date: str) -> tuple[bool, str]:
     """Validate only the venue-engine prediction domain."""
     if payload.get("date") != expected_date:
@@ -626,7 +659,13 @@ def prediction_payload_gate(payload: dict, expected_date: str) -> tuple[bool, st
     if not isinstance(predictions, dict) or set(predictions) != {str(race) for race in range(1, 13)}:
         return False, "prediction_race_count_invalid"
     for race_no in range(1, 13):
-        if not _prediction_is_complete(predictions.get(str(race_no))):
+        prediction = predictions.get(str(race_no))
+        complete = (
+            naruto_v5_prediction_is_complete(prediction)
+            if engine == "naruto_v5"
+            else _prediction_is_complete(prediction)
+        )
+        if not complete:
             return False, f"prediction_{race_no:02d}_invalid"
     return True, "ok"
 

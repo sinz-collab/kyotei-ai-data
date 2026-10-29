@@ -194,6 +194,9 @@ jobs:
           python automation/run_fukuoka_v1.py --date "$TARGET_DATE" --stage preliminary
           python automation/run_tokoname_v1.py \
             --date "$TARGET_DATE" --stage preliminary --write
+          if [ -f "data/venues/naruto/${TARGET_DATE//-/}.json" ]; then
+            python automation/run_naruto_v5.py --date "$TARGET_DATE" --stage morning
+          fi
 
           python automation/build_site_data.py --date "$TARGET_DATE" \
             | tee build-after-engine.log
@@ -245,6 +248,9 @@ jobs:
             python automation/run_fukuoka_v1.py --date "$TARGET_DATE" --stage preliminary
             python automation/run_tokoname_v1.py \
               --date "$TARGET_DATE" --stage preliminary --write
+            if [ -f "data/venues/naruto/${TARGET_DATE//-/}.json" ]; then
+              python automation/run_naruto_v5.py --date "$TARGET_DATE" --stage morning
+            fi
 
             python automation/build_site_data.py --date "$TARGET_DATE" \
               | tee "build-after-engine-${attempt}.log"
