@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 SHARDS = {
-    "east": ("ashiya", "shimonoseki", "toda", "edogawa", "wakamatsu"),
+    "east": ("ashiya", "shimonoseki", "toda", "wakamatsu"),
     "west": ("tokoname", "omura", "karatsu", "fukuoka", "heiwajima", "biwako", "naruto"),
 }
 
@@ -149,9 +149,9 @@ def main() -> int:
     config = json.loads(args.config.read_text(encoding="utf-8"))
     venues = {item["slug"]: item["name"] for item in config.get("venues", [])}
     expected = set(SHARDS["east"]) | set(SHARDS["west"])
-    if set(venues) != expected or len(expected) != 12:
+    if set(venues) != expected or len(expected) != 11:
         raise RuntimeError(
-            "venue configuration must contain exactly the 12 morning venues: "
+            "venue configuration must contain exactly the 11 morning venues: "
             f"configured={sorted(venues)}"
         )
     if args.output.exists() and any(args.output.iterdir()):

@@ -23,7 +23,7 @@ class MorningPublishArtifactTest(unittest.TestCase):
         self.east = self.root / "east"
         self.west = self.root / "west"
         self.output = self.root / "output"
-        east_slugs = {"ashiya", "shimonoseki", "toda", "edogawa", "wakamatsu"}
+        east_slugs = {"ashiya", "shimonoseki", "toda", "wakamatsu"}
         for slug, name in self.venues.items():
             artifact = self.east if slug in east_slugs else self.west
             venue_dir = artifact / name / "20261029"
@@ -59,12 +59,17 @@ class MorningPublishArtifactTest(unittest.TestCase):
             errors="replace",
         )
 
-    def test_validates_and_merges_all_twelve_statuses(self):
+    def test_validates_and_merges_all_eleven_statuses(self):
         result = self.run_validator()
         self.assertEqual(result.returncode, 0, result.stderr)
         statuses = list(self.output.glob("*/20261029/fetch_status.json"))
-        self.assertEqual(len(statuses), 12)
-        self.assertIn("12 venues", result.stdout)
+        self.assertEqual(len(statuses), 11)
+        self.assertIn("11 venues", result.stdout)
+
+    def test_edogawa_is_not_a_morning_fetch_target(self):
+        self.assertNotIn("edogawa", self.venues)
+        workflow = (WORKFLOWS / "morning-data.yml").read_text(encoding="utf-8")
+        self.assertNotIn(" edogawa", workflow)
 
     def test_stops_when_a_venue_status_is_missing(self):
         (self.west / self.venues["naruto"] / "20261029" / "fetch_status.json").unlink()
