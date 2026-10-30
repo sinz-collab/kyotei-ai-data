@@ -55554,110 +55554,113 @@
         "reason": null,
         "engine": "tokoname_engine",
         "engine_version": "1.6",
-        "prediction_phase": "preliminary",
-        "stage": "preliminary",
-        "engine_recalculated_after_exhibition": false,
+        "prediction_phase": "final",
+        "stage": "final",
+        "engine_recalculated_after_exhibition": true,
         "original_exhibition_available": false,
         "engine_run": {
           "completed": true,
           "source_engine": "tokoname_engine_v1.6",
-          "mode": "morning_preliminary",
+          "mode": "exhibition_recalculation",
           "inputs": [
-            "morning"
+            "morning",
+            "direct",
+            "exhibition",
+            "odds"
           ]
         },
         "predictionStage": {
-          "code": "pre",
-          "label": "仮予想",
-          "statusText": "朝データによる既存常滑エンジンの事前予想",
-          "badge": "仮予想",
-          "color": "yellow"
+          "code": "final",
+          "label": "本予想",
+          "statusText": "既存常滑エンジンで展示・直前情報を再計算済み",
+          "badge": "本予想",
+          "color": "green"
         },
         "probabilities": {
           "win": {
-            "1": 39.2,
-            "2": 19.0,
-            "3": 15.1,
-            "4": 12.9,
-            "5": 8.3,
-            "6": 5.5
+            "1": 32.9,
+            "2": 17.2,
+            "3": 9.9,
+            "4": 6.0,
+            "5": 20.0,
+            "6": 14.0
           },
           "second": {
-            "1": 6.3,
-            "2": 25.3,
-            "3": 25.7,
-            "4": 21.9,
-            "5": 10.6,
-            "6": 10.2
+            "1": 1.7,
+            "2": 34.6,
+            "3": 29.4,
+            "4": 13.3,
+            "5": 2.9,
+            "6": 18.1
           },
           "third": {
-            "1": 2.8,
-            "2": 17.0,
-            "3": 17.0,
-            "4": 22.1,
-            "5": 22.2,
-            "6": 18.9
+            "1": 20.5,
+            "2": 7.0,
+            "3": 3.9,
+            "4": 51.5,
+            "5": 0.3,
+            "6": 16.8
           }
         },
         "sab": {
-          "grade": "A",
-          "score": 73,
+          "grade": "S",
+          "score": 91,
           "independent_of_ticket_count": true
         },
         "tickets": {
           "main": [
             {
-              "combination": "1-3-5",
-              "score_pct": 3.791,
+              "combination": "1-2-4",
+              "score_pct": 9.49,
               "category": "main"
             },
             {
-              "combination": "1-3-4",
-              "score_pct": 3.788,
+              "combination": "1-2-6",
+              "score_pct": 3.093,
               "category": "main"
             },
             {
-              "combination": "1-3-6",
-              "score_pct": 3.225,
-              "category": "main"
-            },
-            {
-              "combination": "1-3-2",
-              "score_pct": 2.896,
+              "combination": "1-2-3",
+              "score_pct": 0.714,
               "category": "main"
             },
             {
               "combination": "1-2-5",
-              "score_pct": 3.736,
+              "score_pct": 0.062,
               "category": "main"
             },
             {
-              "combination": "1-2-4",
-              "score_pct": 3.733,
+              "combination": "1-3-4",
+              "score_pct": 8.056,
+              "category": "main"
+            },
+            {
+              "combination": "1-3-6",
+              "score_pct": 2.625,
               "category": "main"
             }
           ],
           "deviation": [
             {
-              "combination": "2-1-5",
-              "score_pct": 0.45,
+              "combination": "5-1-4",
+              "score_pct": 0.283,
               "category": "deviation"
             },
             {
               "combination": "2-1-4",
-              "score_pct": 0.449,
+              "score_pct": 0.244,
               "category": "deviation"
             }
           ],
           "upset": [
             {
-              "combination": "2-3-5",
-              "score_pct": 1.841,
+              "combination": "5-2-4",
+              "score_pct": 5.752,
               "category": "upset"
             },
             {
-              "combination": "2-3-4",
-              "score_pct": 1.839,
+              "combination": "5-3-4",
+              "score_pct": 4.883,
               "category": "upset"
             }
           ]
@@ -55665,44 +55668,221 @@
         "scenario": {
           "primary": "1逃げ中心",
           "head": 1,
-          "head_gap": 20.2
+          "head_gap": 13.0
         },
         "data_flags": {
           "entry_change": false,
-          "direct": false,
-          "exhibition": false,
+          "direct": true,
+          "exhibition": true,
           "original_exhibition": false,
           "setsukan": true,
           "tide": true,
           "original_exhibition_available": false,
-          "odds_available_for_display": false,
+          "odds_available_for_display": true,
           "odds_used_for_probability": false,
           "result_used_for_probability": false
         },
         "flyPrediction": {
-          "status": "waiting",
-          "reason": "exhibition_required",
+          "status": "complete",
+          "reason": null,
           "modelVersion": "tokoname_fly_tickets_v4",
-          "stage": "waiting_for_exhibition",
+          "stage": "post_exhibition",
           "condition": "lane1_not_first",
-          "tickets": []
+          "tickets": [
+            {
+              "combo": "2-1-4",
+              "role": "飛び",
+              "probability": 4.54,
+              "rank": 1
+            },
+            {
+              "combo": "2-1-5",
+              "role": "飛び",
+              "probability": 4.15,
+              "rank": 2
+            },
+            {
+              "combo": "2-1-3",
+              "role": "飛び",
+              "probability": 3.92,
+              "rank": 3
+            },
+            {
+              "combo": "3-1-4",
+              "role": "飛び",
+              "probability": 3.83,
+              "rank": 4
+            },
+            {
+              "combo": "5-1-4",
+              "role": "飛び",
+              "probability": 3.72,
+              "rank": 5
+            },
+            {
+              "combo": "5-1-3",
+              "role": "飛び",
+              "probability": 3.49,
+              "rank": 6
+            },
+            {
+              "combo": "3-1-5",
+              "role": "飛び",
+              "probability": 3.47,
+              "rank": 7
+            },
+            {
+              "combo": "3-1-2",
+              "role": "飛び",
+              "probability": 3.06,
+              "rank": 8
+            },
+            {
+              "combo": "5-1-2",
+              "role": "飛び",
+              "probability": 2.95,
+              "rank": 9
+            },
+            {
+              "combo": "4-1-3",
+              "role": "飛び",
+              "probability": 2.85,
+              "rank": 10
+            }
+          ],
+          "candidateCount": 100,
+          "normalizationProbabilityTotal": 100.0,
+          "trainedThrough": "2024-12-31",
+          "historyThrough": "2026-03-13",
+          "historyFallbackLanes": [
+            6
+          ],
+          "validationReference": {
+            "validation2024": {
+              "n": 937,
+              "hit": 330,
+              "rate": 35.22,
+              "head": 411,
+              "head_rate": 43.86,
+              "inside_pos": 395,
+              "inside_pos_rate": 42.16
+            },
+            "test2025Plus": {
+              "n": 1153,
+              "hit": 450,
+              "rate": 39.03,
+              "head": 496,
+              "head_rate": 43.02,
+              "inside_pos": 495,
+              "inside_pos_rate": 42.93
+            },
+            "exploratory": true,
+            "futureAccuracyGuaranteed": false
+          },
+          "inputAudit": {
+            "oddsUsed": false,
+            "resultUsed": false,
+            "raceActualStartUsed": false,
+            "originalExhibitionUsed": false,
+            "normalExhibitionUsed": true
+          }
         },
-        "lane1FlyProbability": 22.51,
+        "lane1FlyProbability": 23.02,
         "lane1FlyLevel": "通常",
-        "lane1FlyStage": "morning",
+        "lane1FlyStage": "post_exhibition",
         "lane1FlyDetail": {
-          "probability": 22.51,
+          "probability": 23.02,
           "level": "通常",
-          "stage": "morning",
+          "stage": "post_exhibition",
           "model": "tokoname_lane1_fly_v1",
           "trainedThrough": "2026-09-22",
-          "featureCount": 45,
+          "featureCount": 70,
           "missingFeatures": [],
           "oddsUsedForPrediction": false,
           "raceActualStartUsedForPrediction": false,
           "resultUsedForPrediction": false,
           "originalExhibitionUsedForPrediction": false
-        }
+        },
+        "probabilityReview": {
+          "1": {
+            "morningWin": 39.2,
+            "morningSecond": 6.3,
+            "morningThird": 2.8,
+            "win": 32.9,
+            "second": 1.7,
+            "third": 20.5,
+            "deltaWin": -6.3,
+            "deltaSecond": -4.6,
+            "deltaThird": 17.7
+          },
+          "2": {
+            "morningWin": 19.0,
+            "morningSecond": 25.3,
+            "morningThird": 17.0,
+            "win": 17.2,
+            "second": 34.6,
+            "third": 7.0,
+            "deltaWin": -1.8,
+            "deltaSecond": 9.3,
+            "deltaThird": -10.0
+          },
+          "3": {
+            "morningWin": 15.1,
+            "morningSecond": 25.7,
+            "morningThird": 17.0,
+            "win": 9.9,
+            "second": 29.4,
+            "third": 3.9,
+            "deltaWin": -5.2,
+            "deltaSecond": 3.7,
+            "deltaThird": -13.1
+          },
+          "4": {
+            "morningWin": 12.9,
+            "morningSecond": 21.9,
+            "morningThird": 22.1,
+            "win": 6.0,
+            "second": 13.3,
+            "third": 51.5,
+            "deltaWin": -6.9,
+            "deltaSecond": -8.6,
+            "deltaThird": 29.4
+          },
+          "5": {
+            "morningWin": 8.3,
+            "morningSecond": 10.6,
+            "morningThird": 22.2,
+            "win": 20.0,
+            "second": 2.9,
+            "third": 0.3,
+            "deltaWin": 11.7,
+            "deltaSecond": -7.7,
+            "deltaThird": -21.9
+          },
+          "6": {
+            "morningWin": 5.5,
+            "morningSecond": 10.2,
+            "morningThird": 18.9,
+            "win": 14.0,
+            "second": 18.1,
+            "third": 16.8,
+            "deltaWin": 8.5,
+            "deltaSecond": 7.9,
+            "deltaThird": -2.1
+          }
+        },
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "baseLabel": "直前前エンジン予想",
+          "realtimeApplied": true,
+          "realtimeLabel": "展示・スリット・直前情報反映",
+          "reviewed": true,
+          "reviewLabel": "再精査後の調整数字",
+          "adjustedRequired": true
+        },
+        "input_hash": "e6e4dc49a0d256da3e89a717121697778b41d3e0f6a35d8409ff1067615a9e50"
       },
       "live": {},
       "odds": {},
