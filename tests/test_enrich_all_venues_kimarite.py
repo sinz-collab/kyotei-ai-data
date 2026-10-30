@@ -2,10 +2,79 @@ from __future__ import annotations
 
 import unittest
 
-from automation.enrich_all_venues_kimarite import parse_race_kimarite
+from automation.enrich_all_venues_kimarite import (
+    parse_race_kimarite,
+    parse_recent_course_performance,
+    parse_recent_course_st,
+    recent_course_record,
+)
 
 
 class AllVenueKimariteTest(unittest.TestCase):
+    def test_parse_six_month_course_performance_and_st(self) -> None:
+        racers = [
+            {"lane": 1, "name": "選手 一郎", "player_id": 4321, "actual_course": 1},
+            {"lane": 2, "name": "選手 二郎", "player_id": 5432, "actual_course": 2},
+        ]
+        text = """
+AI3連対率・枠別勝率
+進入変更
+直近10走
+直近6ヶ月
+枠 レーサー AI3連対率 3連対率 1着率 2着率 3着率
+1
+選手 一郎
+A1
+84.0%
+70.0%
+(21 / 30回)
+30.0%
+(9回)
+33.3%
+(10回)
+6.7%
+(2回)
+2
+選手 二郎
+B1
+20.0%
+0.0%
+(0 / 0回)
+0.0%
+(0回)
+0.0%
+(0回)
+0.0%
+(0回)
+AI3連対率の着順別表示
+枠別スタート順位
+進入変更
+直近6ヶ月
+1
+選手 一郎
+A1
+0.12
+2.8位
+2
+選手 二郎
+B1
+-
+-
+枠別スタート順位について
+"""
+        performance = parse_recent_course_performance(text, racers)
+        starts = parse_recent_course_st(text, racers)
+        self.assertEqual(performance[1]["starts"], 30)
+        self.assertEqual(performance[1]["win_rate"], 30.0)
+        self.assertEqual(performance[1]["top2_rate"], 63.3)
+        self.assertEqual(performance[1]["top3_rate"], 70.0)
+        self.assertEqual(starts[1], 0.12)
+        available = recent_course_record(racers[0], performance[1], starts[1], None)
+        self.assertEqual(available["status"], "available")
+        self.assertEqual(available["registration_no"], "4321")
+        self.assertEqual(available["course"], 1)
+        insufficient = recent_course_record(racers[1], performance[2], None, None)
+        self.assertEqual(insufficient["status"], "insufficient")
     def test_parse_inner_and_outer_course_rates(self) -> None:
         racers = [
             {"lane": 1, "name": "選手 一郎"},

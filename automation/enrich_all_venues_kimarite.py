@@ -113,6 +113,117 @@ def kimarite_section(text: str) -> str:
     return text[start:end]
 
 
+def bounded_section(text: str, start_marker: str, end_markers: tuple[str, ...]) -> str:
+    start = text.find(start_marker)
+    if start < 0:
+        return ""
+    end = len(text)
+    for marker in end_markers:
+        position = text.find(marker, start + len(start_marker))
+        if position >= 0:
+            end = min(end, position)
+    return text[start:end]
+
+
+def parse_recent_course_performance(
+    text: str,
+    racers: list[dict[str, Any]],
+) -> dict[int, dict[str, Any]]:
+    """Parse the selected BOATERS 6-month course block from the morning snapshot."""
+    section = bounded_section(
+        text,
+        "AI3連対率・枠別勝率",
+        ("AI3連対率の着順別表示", "枠別スタート順位"),
+    )
+    if not section or "直近6ヶ月" not in section:
+        return {}
+    parsed: dict[int, dict[str, Any]] = {}
+    ordered = sorted(racers, key=lambda row: int(row.get("lane") or 0))
+    for index, racer in enumerate(ordered):
+        lane = int(racer.get("lane") or 0)
+        if lane not in range(1, 7):
+            continue
+        next_name = ordered[index + 1].get("name") if index + 1 < len(ordered) else None
+        block = racer_block(section, racer.get("name") or "", next_name)
+        if not block:
+            continue
+        rates = [
+            float(value)
+            for value in re.findall(r"([0-9]+(?:\.[0-9]+)?)\s*%", block)
+        ]
+        starts_match = re.search(r"\(\s*[0-9]+\s*/\s*([0-9]+)\s*回\s*\)", block)
+        if len(rates) < 5 or not starts_match:
+            continue
+        starts = int(starts_match.group(1))
+        parsed[lane] = {
+            "starts": starts,
+            "win_rate": rates[2],
+            "top2_rate": round(rates[2] + rates[3], 1),
+            "top3_rate": rates[1],
+        }
+    return parsed
+
+
+def parse_recent_course_st(
+    text: str,
+    racers: list[dict[str, Any]],
+) -> dict[int, float]:
+    section = bounded_section(
+        text,
+        "枠別スタート順位",
+        ("枠別スタート順位について", "決まり手率"),
+    )
+    if not section or "直近6ヶ月" not in section:
+        return {}
+    parsed: dict[int, float] = {}
+    ordered = sorted(racers, key=lambda row: int(row.get("lane") or 0))
+    for index, racer in enumerate(ordered):
+        lane = int(racer.get("lane") or 0)
+        next_name = ordered[index + 1].get("name") if index + 1 < len(ordered) else None
+        block = racer_block(section, racer.get("name") or "", next_name)
+        match = re.search(r"(?m)^\s*(0?\.[0-9]{2})\s*$", block)
+        if lane in range(1, 7) and match:
+            parsed[lane] = float(match.group(1))
+    return parsed
+
+
+def recent_course_record(
+    racer: dict[str, Any],
+    performance: dict[str, Any] | None,
+    avg_st: float | None,
+    kimarite: dict[str, Any] | None,
+) -> dict[str, Any]:
+    registration_no = str(racer.get("player_id") or racer.get("reg_no") or "").strip()
+    course = int(
+        racer.get("actual_course")
+        or racer.get("entry_course")
+        or racer.get("course")
+        or racer.get("lane")
+        or 0
+    )
+    base: dict[str, Any] = {
+        "status": "insufficient",
+        "period_months": 6,
+        "registration_no": registration_no,
+        "course": course if course in range(1, 7) else None,
+        "source": "boaters_morning_snapshot",
+    }
+    if not registration_no or not performance or performance.get("starts", 0) <= 0:
+        return base
+    base.update(performance)
+    if avg_st is not None:
+        base["avg_st"] = avg_st
+    if kimarite:
+        base["kimarite"] = {
+            key.removeprefix("boaters_"): value
+            for key, value in kimarite.items()
+            if key != "boaters_kimarite_starts"
+        }
+        base["kimarite_starts"] = kimarite.get("boaters_kimarite_starts")
+    base["status"] = "available"
+    return base
+
+
 def racer_block(text: str, name: str, next_name: str | None) -> str:
     compact_name = normalize_name(name)
     if not compact_name:
@@ -230,10 +341,10 @@ def enrich_payload(
         if not source:
             warnings.append(f"race_{race_no:02d}:kimarite_source_missing")
             continue
-        parsed = parse_race_kimarite(
-            source.read_text(encoding="utf-8", errors="replace"),
-            racers,
-        )
+        source_text = source.read_text(encoding="utf-8", errors="replace")
+        parsed = parse_race_kimarite(source_text, racers)
+        performance = parse_recent_course_performance(source_text, racers)
+        course_st = parse_recent_course_st(source_text, racers)
         by_lane = {
             int(row.get("lane") or row.get("boatNumber") or 0): row
             for row in racers
@@ -244,6 +355,13 @@ def enrich_payload(
                 continue
             target.update(values)
             reflected += 1
+        for lane, target in by_lane.items():
+            target["recent_course_6m"] = recent_course_record(
+                target,
+                performance.get(lane),
+                course_st.get(lane),
+                parsed.get(lane),
+            )
         if len(parsed) != len(racers):
             warnings.append(
                 f"race_{race_no:02d}:kimarite_reflected_{len(parsed)}_of_{len(racers)}"

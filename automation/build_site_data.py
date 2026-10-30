@@ -354,8 +354,8 @@ def merge_shimonoseki_local_st(racers: list[dict], local_rows: list[dict]) -> in
     return merged
 
 
-def parse_biwako_player_ids(entry_html_path: Path) -> dict[int, int]:
-    """Read BOATERS registration numbers without changing the shared text parser."""
+def parse_player_ids(entry_html_path: Path) -> dict[int, int]:
+    """Read BOATERS registration numbers from the already-fetched entry HTML."""
     if not entry_html_path.is_file():
         return {}
     html = entry_html_path.read_text(encoding="utf-8", errors="replace")
@@ -366,6 +366,10 @@ def parse_biwako_player_ids(entry_html_path: Path) -> dict[int, int]:
             html,
         )
     }
+
+
+# Kept for existing engine/tests that imported the original venue-specific name.
+parse_biwako_player_ids = parse_player_ids
 
 
 def event_day_info(lines: list[str], date: str) -> tuple[int | None, str | None]:
@@ -1128,12 +1132,11 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
             if venue["slug"] == "shimonoseki":
                 merge_shimonoseki_local_st(racers, local_rows)
         backfill_boaters_local_avg_st(racers)
-        if venue["slug"] == "biwako":
-            player_ids = parse_biwako_player_ids(entry_path.with_suffix(".html"))
-            for racer in racers:
-                lane = int(racer.get("lane") or 0)
-                if lane in player_ids:
-                    racer["player_id"] = player_ids[lane]
+        player_ids = parse_player_ids(entry_path.with_suffix(".html"))
+        for racer in racers:
+            lane = int(racer.get("lane") or 0)
+            if lane in player_ids:
+                racer["player_id"] = player_ids[lane]
         deadline = parse_deadline(lines, race_no)
         race_type = parse_race_type(lines)
         entry_fixed = parse_entry_fixed(lines)
