@@ -23029,95 +23029,891 @@
         }
       ],
       "prediction": {
-        "status": "ready",
-        "reason": null,
+        "status": "complete",
         "engine": "karatsu_scenario_engine_v1_2",
-        "engine_version": "1.2.0",
-        "probabilities": {
-          "win": {
-            "1": 62.1,
-            "2": 2.1,
-            "3": 19.2,
-            "4": 1.8,
-            "5": 12.9,
-            "6": 1.8
-          },
-          "second": {
-            "1": 8.7,
-            "2": 23.3,
-            "3": 19.6,
-            "4": 17.0,
-            "5": 16.4,
-            "6": 15.0
-          },
-          "third": {
-            "1": 9.0,
-            "2": 20.7,
-            "3": 19.0,
-            "4": 17.9,
-            "5": 18.8,
-            "6": 14.7
-          }
+        "engineVersion": "1.2.0",
+        "win": {
+          "1": 63.8,
+          "2": 2.2,
+          "3": 18.5,
+          "4": 1.5,
+          "5": 12.4,
+          "6": 1.6
+        },
+        "second": {
+          "1": 9.0,
+          "2": 25.6,
+          "3": 19.8,
+          "4": 14.3,
+          "5": 17.9,
+          "6": 13.4
+        },
+        "third": {
+          "1": 9.2,
+          "2": 21.1,
+          "3": 20.4,
+          "4": 15.0,
+          "5": 20.3,
+          "6": 14.0
+        },
+        "top3": {
+          "1": 82.0,
+          "2": 48.9,
+          "3": 58.7,
+          "4": 30.8,
+          "5": 50.6,
+          "6": 29.0
         },
         "sab": "S",
-        "tickets": {
-          "ai": [
+        "confidence": 95.3,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "middle",
+        "weights": {
+          "early": {
+            "motorBoat": 0.24,
+            "exhibition": 0.2,
+            "playerCourse": 0.29,
+            "coursePrior": 0.17,
+            "season": 0.1
+          },
+          "middle": {
+            "motorBoat": 0.19,
+            "exhibition": 0.17,
+            "playerCourse": 0.24,
+            "coursePrior": 0.17,
+            "season": 0.23
+          },
+          "late": {
+            "motorBoat": 0.14,
+            "exhibition": 0.13,
+            "playerCourse": 0.21,
+            "coursePrior": 0.17,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-2-1",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-5-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-5-3",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-5-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 42.5,
+            "attackCourse": 1,
+            "notes": [
+              "dynamic_class_state",
+              "outer_linkage"
+            ]
+          },
+          {
+            "name": "primary_3_attack",
+            "probability": 21.8,
+            "attackCourse": 3,
+            "notes": [
+              "dynamic_class_state",
+              "outer_linkage"
+            ]
+          },
+          {
+            "name": "secondary_5_attack",
+            "probability": 13.2,
+            "attackCourse": 5,
+            "notes": [
+              "dynamic_class_state",
+              "outer_linkage"
+            ]
+          },
+          {
+            "name": "attacker_out_link",
+            "probability": 8.0,
+            "attackCourse": 3,
+            "notes": [
+              "attacker_finishes_out",
+              "inside_revival",
+              "second_outer_link"
+            ]
+          },
+          {
+            "name": "course6_catalyst_out",
+            "probability": 0.0,
+            "attackCourse": 6,
+            "notes": [
+              "course6_attack_catalyst",
+              "course5_second_link",
+              "course4_inside_third"
+            ]
+          },
+          {
+            "name": "residual",
+            "probability": 14.4,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 3,
+          "axisGap": 45.3
+        },
+        "trifectaTop20": [
+          {
+            "combo": "1-2-3",
+            "probability": 6.0451
+          },
+          {
+            "combo": "1-2-5",
+            "probability": 5.3607
+          },
+          {
+            "combo": "1-3-5",
+            "probability": 4.9721
+          },
+          {
+            "combo": "1-3-2",
+            "probability": 4.924
+          },
+          {
+            "combo": "1-5-3",
+            "probability": 4.3295
+          },
+          {
+            "combo": "1-5-2",
+            "probability": 3.8677
+          },
+          {
+            "combo": "1-2-4",
+            "probability": 3.3575
+          },
+          {
+            "combo": "1-3-4",
+            "probability": 3.0767
+          },
+          {
+            "combo": "1-2-6",
+            "probability": 2.9645
+          },
+          {
+            "combo": "1-4-3",
+            "probability": 2.8127
+          },
+          {
+            "combo": "1-3-6",
+            "probability": 2.6696
+          },
+          {
+            "combo": "1-6-3",
+            "probability": 2.624
+          },
+          {
+            "combo": "1-4-2",
+            "probability": 2.5703
+          },
+          {
+            "combo": "1-4-5",
+            "probability": 2.48
+          },
+          {
+            "combo": "1-5-4",
+            "probability": 2.3632
+          },
+          {
+            "combo": "1-6-2",
+            "probability": 2.3167
+          },
+          {
+            "combo": "1-6-5",
+            "probability": 2.2409
+          },
+          {
+            "combo": "1-5-6",
+            "probability": 2.063
+          },
+          {
+            "combo": "3-2-1",
+            "probability": 1.6018
+          },
+          {
+            "combo": "3-1-2",
+            "probability": 1.5116
+          }
+        ],
+        "diagnostics": {
+          "classState": [
             {
-              "combo": "1-2-3",
-              "role": "本線",
-              "odds": "-"
+              "lane": 1,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.1
+                },
+                {
+                  "finish": 4,
+                  "course": 2,
+                  "st": 0.17
+                },
+                {
+                  "finish": 5,
+                  "course": 6,
+                  "st": 0.07
+                },
+                {
+                  "finish": 4,
+                  "course": 4,
+                  "st": 0.11
+                },
+                {
+                  "finish": 2,
+                  "course": 3,
+                  "st": 0.07
+                }
+              ]
             },
             {
-              "combo": "3-2-1",
-              "role": "本線",
-              "odds": "-"
+              "lane": 2,
+              "class": "B1",
+              "seasonRuns": [
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.16
+                },
+                {
+                  "finish": 4,
+                  "course": 4,
+                  "st": 0.12
+                },
+                {
+                  "finish": 2,
+                  "course": 5,
+                  "st": 0.14
+                },
+                {
+                  "finish": 3,
+                  "course": 3,
+                  "st": 0.02
+                },
+                {
+                  "finish": 5,
+                  "course": 6,
+                  "st": 0.06
+                }
+              ]
             },
             {
-              "combo": "2-3-1",
-              "role": "本線",
-              "odds": "-"
+              "lane": 3,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.18
+                },
+                {
+                  "finish": 2,
+                  "course": 4,
+                  "st": 0.18
+                },
+                {
+                  "finish": 1,
+                  "course": 3,
+                  "st": 0.19
+                },
+                {
+                  "finish": 3,
+                  "course": 6,
+                  "st": 0.06
+                },
+                {
+                  "finish": 4,
+                  "course": 2,
+                  "st": 0.2
+                }
+              ]
             },
             {
-              "combo": "5-1-3",
-              "role": "本線",
-              "odds": "-"
+              "lane": 4,
+              "class": "B1",
+              "seasonRuns": [
+                {
+                  "finish": 4,
+                  "course": 2,
+                  "st": 0.21
+                },
+                {
+                  "finish": 6,
+                  "course": 3,
+                  "st": 0.25
+                },
+                {
+                  "finish": 5,
+                  "course": 5,
+                  "st": 0.32
+                },
+                {
+                  "finish": 2,
+                  "course": 1,
+                  "st": 0.08
+                },
+                {
+                  "finish": 5,
+                  "course": 6,
+                  "st": 0.26
+                }
+              ]
             },
             {
-              "combo": "1-2-5",
-              "role": "本線",
-              "odds": "-"
+              "lane": 5,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 6,
+                  "course": 6,
+                  "st": 0.09
+                },
+                {
+                  "finish": 3,
+                  "course": 2,
+                  "st": 0.16
+                },
+                {
+                  "finish": 2,
+                  "course": 3,
+                  "st": 0.14
+                },
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.22
+                },
+                {
+                  "finish": 2,
+                  "course": 4,
+                  "st": 0.13
+                }
+              ]
             },
             {
-              "combo": "1-5-4",
-              "role": "本線",
-              "odds": "-"
-            },
-            {
-              "combo": "1-3-2",
-              "role": "ズレ対応",
-              "odds": "-"
-            },
-            {
-              "combo": "1-3-5",
-              "role": "ズレ対応",
-              "odds": "-"
+              "lane": 6,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 6,
+                  "course": 6,
+                  "st": 0.14
+                },
+                {
+                  "finish": 4,
+                  "course": 3,
+                  "st": 0.07
+                },
+                {
+                  "finish": 2,
+                  "course": 2,
+                  "st": 0.07
+                }
+              ]
             }
           ],
-          "aiUpset": [
+          "sameDayWaterBias": {},
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [],
+          "actualEntrySource": "live.actual_entry",
+          "actualCourseByLane": {
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6
+          }
+        },
+        "phase": "final",
+        "finalPredictionStatus": "complete",
+        "generatedAt": "2026-10-30T10:16:33+09:00",
+        "predictionStage": {
+          "code": "final",
+          "label": "本予想",
+          "badge": "本予想",
+          "statusText": "直前・展示・オリ展示を反映して唐津v1.2で再精査済み"
+        },
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "realtimeApplied": true,
+          "reviewed": true,
+          "adjustedRequired": true
+        },
+        "liveInput": {
+          "required": [
+            "direct",
+            "exhibition",
+            "original_exhibition"
+          ],
+          "complete": true,
+          "fetchedAt": "2026-10-30T10:16:33+09:00"
+        },
+        "probabilityReview": {
+          "1": {
+            "morningWin": 62.1,
+            "win": 63.8,
+            "deltaWin": 1.7,
+            "morningSecond": 8.7,
+            "second": 9.0,
+            "deltaSecond": 0.3,
+            "morningThird": 9.0,
+            "third": 9.2,
+            "deltaThird": 0.2
+          },
+          "2": {
+            "morningWin": 2.1,
+            "win": 2.2,
+            "deltaWin": 0.1,
+            "morningSecond": 23.3,
+            "second": 25.6,
+            "deltaSecond": 2.3,
+            "morningThird": 20.7,
+            "third": 21.1,
+            "deltaThird": 0.4
+          },
+          "3": {
+            "morningWin": 19.2,
+            "win": 18.5,
+            "deltaWin": -0.7,
+            "morningSecond": 19.6,
+            "second": 19.8,
+            "deltaSecond": 0.2,
+            "morningThird": 19.0,
+            "third": 20.4,
+            "deltaThird": 1.4
+          },
+          "4": {
+            "morningWin": 1.8,
+            "win": 1.5,
+            "deltaWin": -0.3,
+            "morningSecond": 17.0,
+            "second": 14.3,
+            "deltaSecond": -2.7,
+            "morningThird": 17.9,
+            "third": 15.0,
+            "deltaThird": -2.9
+          },
+          "5": {
+            "morningWin": 12.9,
+            "win": 12.4,
+            "deltaWin": -0.5,
+            "morningSecond": 16.4,
+            "second": 17.9,
+            "deltaSecond": 1.5,
+            "morningThird": 18.8,
+            "third": 20.3,
+            "deltaThird": 1.5
+          },
+          "6": {
+            "morningWin": 1.8,
+            "win": 1.6,
+            "deltaWin": -0.2,
+            "morningSecond": 15.0,
+            "second": 13.4,
+            "deltaSecond": -1.6,
+            "morningThird": 14.7,
+            "third": 14.0,
+            "deltaThird": -0.7
+          }
+        },
+        "prediction_history": {
+          "morning": [
             {
-              "combo": "1-2-4",
-              "role": "荒れ対応",
-              "odds": "-"
-            },
+              "snapshotVersion": "karatsu_prediction_snapshot_v1",
+              "stage": "morning",
+              "generatedAt": null,
+              "engine": "karatsu_scenario_engine_v1_2",
+              "engineVersion": null,
+              "sab": "S",
+              "probabilities": {
+                "win": {
+                  "1": 62.1,
+                  "2": 2.1,
+                  "3": 19.2,
+                  "4": 1.8,
+                  "5": 12.9,
+                  "6": 1.8
+                },
+                "second": {
+                  "1": 8.7,
+                  "2": 23.3,
+                  "3": 19.6,
+                  "4": 17.0,
+                  "5": 16.4,
+                  "6": 15.0
+                },
+                "third": {
+                  "1": 9.0,
+                  "2": 20.7,
+                  "3": 19.0,
+                  "4": 17.9,
+                  "5": 18.8,
+                  "6": 14.7
+                }
+              },
+              "ai": [],
+              "aiUpset": []
+            }
+          ],
+          "live": [
             {
-              "combo": "1-3-4",
-              "role": "荒れ対応",
-              "odds": "-"
+              "snapshotVersion": "karatsu_prediction_snapshot_v1",
+              "stage": "final",
+              "generatedAt": "2026-10-30T10:16:33+09:00",
+              "engine": "karatsu_scenario_engine_v1_2",
+              "engineVersion": "1.2.0",
+              "sab": "S",
+              "probabilities": {
+                "win": {
+                  "1": 63.8,
+                  "2": 2.2,
+                  "3": 18.5,
+                  "4": 1.5,
+                  "5": 12.4,
+                  "6": 1.6
+                },
+                "second": {
+                  "1": 9.0,
+                  "2": 25.6,
+                  "3": 19.8,
+                  "4": 14.3,
+                  "5": 17.9,
+                  "6": 13.4
+                },
+                "third": {
+                  "1": 9.2,
+                  "2": 21.1,
+                  "3": 20.4,
+                  "4": 15.0,
+                  "5": 20.3,
+                  "6": 14.0
+                }
+              },
+              "ai": [
+                {
+                  "combo": "1-2-3",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "3-2-1",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "5-1-3",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-2-5",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-5-4",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-3-5",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-3-2",
+                  "role": "ズレ対応",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-5-3",
+                  "role": "ズレ対応",
+                  "odds": "-"
+                }
+              ],
+              "aiUpset": [
+                {
+                  "combo": "1-5-2",
+                  "role": "荒れ対応",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-2-4",
+                  "role": "荒れ対応",
+                  "odds": "-"
+                }
+              ]
             }
           ]
         }
       },
-      "live": {},
+      "live": {
+        "actual_entry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entry_changed": false,
+        "weather": {
+          "weather": "曇り",
+          "air_temperature": 18,
+          "water_temperature": 19,
+          "wind_direction": 2,
+          "wind_speed": 1,
+          "wave_height": 1
+        },
+        "exhibition": {
+          "entries": [
+            {
+              "exhibition_course": 1,
+              "exhibition_gap": 0.03,
+              "exhibition_rank": 2,
+              "exhibition_time": 6.67,
+              "lane": 1,
+              "name": "川島 圭司",
+              "player_id": 4254,
+              "start_rank": 1,
+              "start_raw": -0.01,
+              "start_time": -0.01,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 2,
+              "exhibition_gap": 0.0,
+              "exhibition_rank": 1,
+              "exhibition_time": 6.64,
+              "lane": 2,
+              "name": "伏島 祐介",
+              "player_id": 4815,
+              "start_rank": 5,
+              "start_raw": 0.01,
+              "start_time": 0.01,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 3,
+              "exhibition_gap": 0.06,
+              "exhibition_rank": 4,
+              "exhibition_time": 6.7,
+              "lane": 3,
+              "name": "今井 貴士",
+              "player_id": 4287,
+              "start_rank": 1,
+              "start_raw": -0.01,
+              "start_time": -0.01,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 4,
+              "exhibition_gap": 0.14,
+              "exhibition_rank": 6,
+              "exhibition_time": 6.78,
+              "lane": 4,
+              "name": "小池 公生",
+              "player_id": 4521,
+              "start_rank": 6,
+              "start_raw": 0.27,
+              "start_time": 0.27,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 5,
+              "exhibition_gap": 0.03,
+              "exhibition_rank": 2,
+              "exhibition_time": 6.67,
+              "lane": 5,
+              "name": "山田 丈",
+              "player_id": 5104,
+              "start_rank": 4,
+              "start_raw": -0.14,
+              "start_time": -0.14,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 6,
+              "exhibition_gap": 0.11,
+              "exhibition_rank": 5,
+              "exhibition_time": 6.75,
+              "lane": 6,
+              "name": "前出 達吉",
+              "player_id": 4711,
+              "start_rank": 3,
+              "start_raw": -0.04,
+              "start_time": -0.04,
+              "tilt": 0
+            }
+          ],
+          "slit_source": [
+            {
+              "course": 1,
+              "lane": 1,
+              "start_raw": -0.01,
+              "start_time": -0.01
+            },
+            {
+              "course": 2,
+              "lane": 2,
+              "start_raw": 0.01,
+              "start_time": 0.01
+            },
+            {
+              "course": 3,
+              "lane": 3,
+              "start_raw": -0.01,
+              "start_time": -0.01
+            },
+            {
+              "course": 4,
+              "lane": 4,
+              "start_raw": 0.27,
+              "start_time": 0.27
+            },
+            {
+              "course": 5,
+              "lane": 5,
+              "start_raw": -0.14,
+              "start_time": -0.14
+            },
+            {
+              "course": 6,
+              "lane": 6,
+              "start_raw": -0.04,
+              "start_time": -0.04
+            }
+          ],
+          "start_order": [
+            5,
+            6,
+            1,
+            3,
+            2,
+            4
+          ]
+        },
+        "original": {
+          "entries": [
+            {
+              "lane": 1,
+              "lap_time": 36.56,
+              "name": "川島 圭司",
+              "player_id": 4254,
+              "straight_time": 7.82,
+              "turn_time": 5.37
+            },
+            {
+              "lane": 2,
+              "lap_time": 36.97,
+              "name": "伏島 祐介",
+              "player_id": 4815,
+              "straight_time": 7.68,
+              "turn_time": 5.4
+            },
+            {
+              "lane": 3,
+              "lap_time": 36.88,
+              "name": "今井 貴士",
+              "player_id": 4287,
+              "straight_time": 7.75,
+              "turn_time": 5.3
+            },
+            {
+              "lane": 4,
+              "lap_time": 37.3,
+              "name": "小池 公生",
+              "player_id": 4521,
+              "straight_time": 7.72,
+              "turn_time": 5.34
+            },
+            {
+              "lane": 5,
+              "lap_time": 36.76,
+              "name": "山田 丈",
+              "player_id": 5104,
+              "straight_time": 7.69,
+              "turn_time": 5.41
+            },
+            {
+              "lane": 6,
+              "lap_time": 37.14,
+              "name": "前出 達吉",
+              "player_id": 4711,
+              "straight_time": 7.69,
+              "turn_time": 5.31
+            }
+          ],
+          "tab_clicked": true
+        }
+      },
       "odds": {},
       "result": {},
       "motorRecentAvailable": true,
@@ -23758,7 +24554,782 @@
           ],
           "source": "boaters_motor_recent10"
         }
-      ]
+      ],
+      "predictionPre": {
+        "status": "ready",
+        "reason": null,
+        "engine": "karatsu_scenario_engine_v1_2",
+        "engine_version": "1.2.0",
+        "probabilities": {
+          "win": {
+            "1": 62.1,
+            "2": 2.1,
+            "3": 19.2,
+            "4": 1.8,
+            "5": 12.9,
+            "6": 1.8
+          },
+          "second": {
+            "1": 8.7,
+            "2": 23.3,
+            "3": 19.6,
+            "4": 17.0,
+            "5": 16.4,
+            "6": 15.0
+          },
+          "third": {
+            "1": 9.0,
+            "2": 20.7,
+            "3": 19.0,
+            "4": 17.9,
+            "5": 18.8,
+            "6": 14.7
+          }
+        },
+        "sab": "S",
+        "tickets": {
+          "ai": [
+            {
+              "combo": "1-2-3",
+              "role": "本線",
+              "odds": "-"
+            },
+            {
+              "combo": "3-2-1",
+              "role": "本線",
+              "odds": "-"
+            },
+            {
+              "combo": "2-3-1",
+              "role": "本線",
+              "odds": "-"
+            },
+            {
+              "combo": "5-1-3",
+              "role": "本線",
+              "odds": "-"
+            },
+            {
+              "combo": "1-2-5",
+              "role": "本線",
+              "odds": "-"
+            },
+            {
+              "combo": "1-5-4",
+              "role": "本線",
+              "odds": "-"
+            },
+            {
+              "combo": "1-3-2",
+              "role": "ズレ対応",
+              "odds": "-"
+            },
+            {
+              "combo": "1-3-5",
+              "role": "ズレ対応",
+              "odds": "-"
+            }
+          ],
+          "aiUpset": [
+            {
+              "combo": "1-2-4",
+              "role": "荒れ対応",
+              "odds": "-"
+            },
+            {
+              "combo": "1-3-4",
+              "role": "荒れ対応",
+              "odds": "-"
+            }
+          ]
+        }
+      },
+      "predictionFinal": {
+        "status": "complete",
+        "engine": "karatsu_scenario_engine_v1_2",
+        "engineVersion": "1.2.0",
+        "win": {
+          "1": 63.8,
+          "2": 2.2,
+          "3": 18.5,
+          "4": 1.5,
+          "5": 12.4,
+          "6": 1.6
+        },
+        "second": {
+          "1": 9.0,
+          "2": 25.6,
+          "3": 19.8,
+          "4": 14.3,
+          "5": 17.9,
+          "6": 13.4
+        },
+        "third": {
+          "1": 9.2,
+          "2": 21.1,
+          "3": 20.4,
+          "4": 15.0,
+          "5": 20.3,
+          "6": 14.0
+        },
+        "top3": {
+          "1": 82.0,
+          "2": 48.9,
+          "3": 58.7,
+          "4": 30.8,
+          "5": 50.6,
+          "6": 29.0
+        },
+        "sab": "S",
+        "confidence": 95.3,
+        "actualEntry": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6
+        ],
+        "entryChanged": false,
+        "dayStage": "middle",
+        "weights": {
+          "early": {
+            "motorBoat": 0.24,
+            "exhibition": 0.2,
+            "playerCourse": 0.29,
+            "coursePrior": 0.17,
+            "season": 0.1
+          },
+          "middle": {
+            "motorBoat": 0.19,
+            "exhibition": 0.17,
+            "playerCourse": 0.24,
+            "coursePrior": 0.17,
+            "season": 0.23
+          },
+          "late": {
+            "motorBoat": 0.14,
+            "exhibition": 0.13,
+            "playerCourse": 0.21,
+            "coursePrior": 0.17,
+            "season": 0.35
+          }
+        },
+        "ai": [
+          {
+            "combo": "1-2-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "3-2-1",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "5-1-3",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-5-4",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-5",
+            "role": "本線",
+            "odds": "-"
+          },
+          {
+            "combo": "1-3-2",
+            "role": "ズレ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-5-3",
+            "role": "ズレ対応",
+            "odds": "-"
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "1-5-2",
+            "role": "荒れ対応",
+            "odds": "-"
+          },
+          {
+            "combo": "1-2-4",
+            "role": "荒れ対応",
+            "odds": "-"
+          }
+        ],
+        "scenarios": [
+          {
+            "name": "inner_hold",
+            "probability": 42.5,
+            "attackCourse": 1,
+            "notes": [
+              "dynamic_class_state",
+              "outer_linkage"
+            ]
+          },
+          {
+            "name": "primary_3_attack",
+            "probability": 21.8,
+            "attackCourse": 3,
+            "notes": [
+              "dynamic_class_state",
+              "outer_linkage"
+            ]
+          },
+          {
+            "name": "secondary_5_attack",
+            "probability": 13.2,
+            "attackCourse": 5,
+            "notes": [
+              "dynamic_class_state",
+              "outer_linkage"
+            ]
+          },
+          {
+            "name": "attacker_out_link",
+            "probability": 8.0,
+            "attackCourse": 3,
+            "notes": [
+              "attacker_finishes_out",
+              "inside_revival",
+              "second_outer_link"
+            ]
+          },
+          {
+            "name": "course6_catalyst_out",
+            "probability": 0.0,
+            "attackCourse": 6,
+            "notes": [
+              "course6_attack_catalyst",
+              "course5_second_link",
+              "course4_inside_third"
+            ]
+          },
+          {
+            "name": "residual",
+            "probability": 14.4,
+            "attackCourse": 0,
+            "notes": [
+              "residual"
+            ]
+          }
+        ],
+        "readability": {
+          "axisLane": 1,
+          "secondHeadLane": 3,
+          "axisGap": 45.3
+        },
+        "trifectaTop20": [
+          {
+            "combo": "1-2-3",
+            "probability": 6.0451
+          },
+          {
+            "combo": "1-2-5",
+            "probability": 5.3607
+          },
+          {
+            "combo": "1-3-5",
+            "probability": 4.9721
+          },
+          {
+            "combo": "1-3-2",
+            "probability": 4.924
+          },
+          {
+            "combo": "1-5-3",
+            "probability": 4.3295
+          },
+          {
+            "combo": "1-5-2",
+            "probability": 3.8677
+          },
+          {
+            "combo": "1-2-4",
+            "probability": 3.3575
+          },
+          {
+            "combo": "1-3-4",
+            "probability": 3.0767
+          },
+          {
+            "combo": "1-2-6",
+            "probability": 2.9645
+          },
+          {
+            "combo": "1-4-3",
+            "probability": 2.8127
+          },
+          {
+            "combo": "1-3-6",
+            "probability": 2.6696
+          },
+          {
+            "combo": "1-6-3",
+            "probability": 2.624
+          },
+          {
+            "combo": "1-4-2",
+            "probability": 2.5703
+          },
+          {
+            "combo": "1-4-5",
+            "probability": 2.48
+          },
+          {
+            "combo": "1-5-4",
+            "probability": 2.3632
+          },
+          {
+            "combo": "1-6-2",
+            "probability": 2.3167
+          },
+          {
+            "combo": "1-6-5",
+            "probability": 2.2409
+          },
+          {
+            "combo": "1-5-6",
+            "probability": 2.063
+          },
+          {
+            "combo": "3-2-1",
+            "probability": 1.6018
+          },
+          {
+            "combo": "3-1-2",
+            "probability": 1.5116
+          }
+        ],
+        "diagnostics": {
+          "classState": [
+            {
+              "lane": 1,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.1
+                },
+                {
+                  "finish": 4,
+                  "course": 2,
+                  "st": 0.17
+                },
+                {
+                  "finish": 5,
+                  "course": 6,
+                  "st": 0.07
+                },
+                {
+                  "finish": 4,
+                  "course": 4,
+                  "st": 0.11
+                },
+                {
+                  "finish": 2,
+                  "course": 3,
+                  "st": 0.07
+                }
+              ]
+            },
+            {
+              "lane": 2,
+              "class": "B1",
+              "seasonRuns": [
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.16
+                },
+                {
+                  "finish": 4,
+                  "course": 4,
+                  "st": 0.12
+                },
+                {
+                  "finish": 2,
+                  "course": 5,
+                  "st": 0.14
+                },
+                {
+                  "finish": 3,
+                  "course": 3,
+                  "st": 0.02
+                },
+                {
+                  "finish": 5,
+                  "course": 6,
+                  "st": 0.06
+                }
+              ]
+            },
+            {
+              "lane": 3,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.18
+                },
+                {
+                  "finish": 2,
+                  "course": 4,
+                  "st": 0.18
+                },
+                {
+                  "finish": 1,
+                  "course": 3,
+                  "st": 0.19
+                },
+                {
+                  "finish": 3,
+                  "course": 6,
+                  "st": 0.06
+                },
+                {
+                  "finish": 4,
+                  "course": 2,
+                  "st": 0.2
+                }
+              ]
+            },
+            {
+              "lane": 4,
+              "class": "B1",
+              "seasonRuns": [
+                {
+                  "finish": 4,
+                  "course": 2,
+                  "st": 0.21
+                },
+                {
+                  "finish": 6,
+                  "course": 3,
+                  "st": 0.25
+                },
+                {
+                  "finish": 5,
+                  "course": 5,
+                  "st": 0.32
+                },
+                {
+                  "finish": 2,
+                  "course": 1,
+                  "st": 0.08
+                },
+                {
+                  "finish": 5,
+                  "course": 6,
+                  "st": 0.26
+                }
+              ]
+            },
+            {
+              "lane": 5,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 6,
+                  "course": 6,
+                  "st": 0.09
+                },
+                {
+                  "finish": 3,
+                  "course": 2,
+                  "st": 0.16
+                },
+                {
+                  "finish": 2,
+                  "course": 3,
+                  "st": 0.14
+                },
+                {
+                  "finish": 1,
+                  "course": 1,
+                  "st": 0.22
+                },
+                {
+                  "finish": 2,
+                  "course": 4,
+                  "st": 0.13
+                }
+              ]
+            },
+            {
+              "lane": 6,
+              "class": "A2",
+              "seasonRuns": [
+                {
+                  "finish": 6,
+                  "course": 6,
+                  "st": 0.14
+                },
+                {
+                  "finish": 4,
+                  "course": 3,
+                  "st": 0.07
+                },
+                {
+                  "finish": 2,
+                  "course": 2,
+                  "st": 0.07
+                }
+              ]
+            }
+          ],
+          "sameDayWaterBias": {},
+          "oddsUsedForPrediction": false,
+          "engineDiagnostics": [],
+          "actualEntrySource": "live.actual_entry",
+          "actualCourseByLane": {
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6
+          }
+        },
+        "phase": "final",
+        "finalPredictionStatus": "complete",
+        "generatedAt": "2026-10-30T10:16:33+09:00",
+        "predictionStage": {
+          "code": "final",
+          "label": "本予想",
+          "badge": "本予想",
+          "statusText": "直前・展示・オリ展示を反映して唐津v1.2で再精査済み"
+        },
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "realtimeApplied": true,
+          "reviewed": true,
+          "adjustedRequired": true
+        },
+        "liveInput": {
+          "required": [
+            "direct",
+            "exhibition",
+            "original_exhibition"
+          ],
+          "complete": true,
+          "fetchedAt": "2026-10-30T10:16:33+09:00"
+        },
+        "probabilityReview": {
+          "1": {
+            "morningWin": 62.1,
+            "win": 63.8,
+            "deltaWin": 1.7,
+            "morningSecond": 8.7,
+            "second": 9.0,
+            "deltaSecond": 0.3,
+            "morningThird": 9.0,
+            "third": 9.2,
+            "deltaThird": 0.2
+          },
+          "2": {
+            "morningWin": 2.1,
+            "win": 2.2,
+            "deltaWin": 0.1,
+            "morningSecond": 23.3,
+            "second": 25.6,
+            "deltaSecond": 2.3,
+            "morningThird": 20.7,
+            "third": 21.1,
+            "deltaThird": 0.4
+          },
+          "3": {
+            "morningWin": 19.2,
+            "win": 18.5,
+            "deltaWin": -0.7,
+            "morningSecond": 19.6,
+            "second": 19.8,
+            "deltaSecond": 0.2,
+            "morningThird": 19.0,
+            "third": 20.4,
+            "deltaThird": 1.4
+          },
+          "4": {
+            "morningWin": 1.8,
+            "win": 1.5,
+            "deltaWin": -0.3,
+            "morningSecond": 17.0,
+            "second": 14.3,
+            "deltaSecond": -2.7,
+            "morningThird": 17.9,
+            "third": 15.0,
+            "deltaThird": -2.9
+          },
+          "5": {
+            "morningWin": 12.9,
+            "win": 12.4,
+            "deltaWin": -0.5,
+            "morningSecond": 16.4,
+            "second": 17.9,
+            "deltaSecond": 1.5,
+            "morningThird": 18.8,
+            "third": 20.3,
+            "deltaThird": 1.5
+          },
+          "6": {
+            "morningWin": 1.8,
+            "win": 1.6,
+            "deltaWin": -0.2,
+            "morningSecond": 15.0,
+            "second": 13.4,
+            "deltaSecond": -1.6,
+            "morningThird": 14.7,
+            "third": 14.0,
+            "deltaThird": -0.7
+          }
+        },
+        "prediction_history": {
+          "morning": [
+            {
+              "snapshotVersion": "karatsu_prediction_snapshot_v1",
+              "stage": "morning",
+              "generatedAt": null,
+              "engine": "karatsu_scenario_engine_v1_2",
+              "engineVersion": null,
+              "sab": "S",
+              "probabilities": {
+                "win": {
+                  "1": 62.1,
+                  "2": 2.1,
+                  "3": 19.2,
+                  "4": 1.8,
+                  "5": 12.9,
+                  "6": 1.8
+                },
+                "second": {
+                  "1": 8.7,
+                  "2": 23.3,
+                  "3": 19.6,
+                  "4": 17.0,
+                  "5": 16.4,
+                  "6": 15.0
+                },
+                "third": {
+                  "1": 9.0,
+                  "2": 20.7,
+                  "3": 19.0,
+                  "4": 17.9,
+                  "5": 18.8,
+                  "6": 14.7
+                }
+              },
+              "ai": [],
+              "aiUpset": []
+            }
+          ],
+          "live": [
+            {
+              "snapshotVersion": "karatsu_prediction_snapshot_v1",
+              "stage": "final",
+              "generatedAt": "2026-10-30T10:16:33+09:00",
+              "engine": "karatsu_scenario_engine_v1_2",
+              "engineVersion": "1.2.0",
+              "sab": "S",
+              "probabilities": {
+                "win": {
+                  "1": 63.8,
+                  "2": 2.2,
+                  "3": 18.5,
+                  "4": 1.5,
+                  "5": 12.4,
+                  "6": 1.6
+                },
+                "second": {
+                  "1": 9.0,
+                  "2": 25.6,
+                  "3": 19.8,
+                  "4": 14.3,
+                  "5": 17.9,
+                  "6": 13.4
+                },
+                "third": {
+                  "1": 9.2,
+                  "2": 21.1,
+                  "3": 20.4,
+                  "4": 15.0,
+                  "5": 20.3,
+                  "6": 14.0
+                }
+              },
+              "ai": [
+                {
+                  "combo": "1-2-3",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "3-2-1",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "5-1-3",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-2-5",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-5-4",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-3-5",
+                  "role": "本線",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-3-2",
+                  "role": "ズレ対応",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-5-3",
+                  "role": "ズレ対応",
+                  "odds": "-"
+                }
+              ],
+              "aiUpset": [
+                {
+                  "combo": "1-5-2",
+                  "role": "荒れ対応",
+                  "odds": "-"
+                },
+                {
+                  "combo": "1-2-4",
+                  "role": "荒れ対応",
+                  "odds": "-"
+                }
+              ]
+            }
+          ]
+        }
+      }
     },
     {
       "race": 6,
@@ -54618,39 +56189,39 @@
       "engine": "karatsu_scenario_engine_v1_2",
       "engineVersion": "1.2.0",
       "win": {
-        "1": 62.1,
-        "2": 2.1,
-        "3": 19.2,
-        "4": 1.8,
-        "5": 12.9,
-        "6": 1.8
+        "1": 63.8,
+        "2": 2.2,
+        "3": 18.5,
+        "4": 1.5,
+        "5": 12.4,
+        "6": 1.6
       },
       "second": {
-        "1": 8.7,
-        "2": 23.3,
-        "3": 19.6,
-        "4": 17.0,
-        "5": 16.4,
-        "6": 15.0
+        "1": 9.0,
+        "2": 25.6,
+        "3": 19.8,
+        "4": 14.3,
+        "5": 17.9,
+        "6": 13.4
       },
       "third": {
-        "1": 9.0,
-        "2": 20.7,
-        "3": 19.0,
-        "4": 17.9,
-        "5": 18.8,
-        "6": 14.7
+        "1": 9.2,
+        "2": 21.1,
+        "3": 20.4,
+        "4": 15.0,
+        "5": 20.3,
+        "6": 14.0
       },
       "top3": {
-        "1": 79.8,
-        "2": 46.1,
-        "3": 57.8,
-        "4": 36.7,
-        "5": 48.1,
-        "6": 31.5
+        "1": 82.0,
+        "2": 48.9,
+        "3": 58.7,
+        "4": 30.8,
+        "5": 50.6,
+        "6": 29.0
       },
       "sab": "S",
-      "confidence": 92.9,
+      "confidence": 95.3,
       "actualEntry": [
         1,
         2,
@@ -54696,11 +56267,6 @@
           "odds": "-"
         },
         {
-          "combo": "2-3-1",
-          "role": "本線",
-          "odds": "-"
-        },
-        {
           "combo": "5-1-3",
           "role": "本線",
           "odds": "-"
@@ -54716,24 +56282,29 @@
           "odds": "-"
         },
         {
+          "combo": "1-3-5",
+          "role": "本線",
+          "odds": "-"
+        },
+        {
           "combo": "1-3-2",
           "role": "ズレ対応",
           "odds": "-"
         },
         {
-          "combo": "1-3-5",
+          "combo": "1-5-3",
           "role": "ズレ対応",
           "odds": "-"
         }
       ],
       "aiUpset": [
         {
-          "combo": "1-2-4",
+          "combo": "1-5-2",
           "role": "荒れ対応",
           "odds": "-"
         },
         {
-          "combo": "1-3-4",
+          "combo": "1-2-4",
           "role": "荒れ対応",
           "odds": "-"
         }
@@ -54741,7 +56312,7 @@
       "scenarios": [
         {
           "name": "inner_hold",
-          "probability": 40.4,
+          "probability": 42.5,
           "attackCourse": 1,
           "notes": [
             "dynamic_class_state",
@@ -54750,7 +56321,7 @@
         },
         {
           "name": "primary_3_attack",
-          "probability": 22.6,
+          "probability": 21.8,
           "attackCourse": 3,
           "notes": [
             "dynamic_class_state",
@@ -54759,7 +56330,7 @@
         },
         {
           "name": "secondary_5_attack",
-          "probability": 13.7,
+          "probability": 13.2,
           "attackCourse": 5,
           "notes": [
             "dynamic_class_state",
@@ -54768,7 +56339,7 @@
         },
         {
           "name": "attacker_out_link",
-          "probability": 8.3,
+          "probability": 8.0,
           "attackCourse": 3,
           "notes": [
             "attacker_finishes_out",
@@ -54788,7 +56359,7 @@
         },
         {
           "name": "residual",
-          "probability": 14.9,
+          "probability": 14.4,
           "attackCourse": 0,
           "notes": [
             "residual"
@@ -54798,88 +56369,88 @@
       "readability": {
         "axisLane": 1,
         "secondHeadLane": 3,
-        "axisGap": 42.9
+        "axisGap": 45.3
       },
       "trifectaTop20": [
         {
           "combo": "1-2-3",
-          "probability": 4.9498
-        },
-        {
-          "combo": "1-3-2",
-          "probability": 4.4298
-        },
-        {
-          "combo": "1-3-5",
-          "probability": 4.3033
+          "probability": 6.0451
         },
         {
           "combo": "1-2-5",
-          "probability": 4.2898
+          "probability": 5.3607
         },
         {
-          "combo": "1-2-4",
-          "probability": 3.6905
+          "combo": "1-3-5",
+          "probability": 4.9721
         },
         {
-          "combo": "1-3-4",
-          "probability": 3.6539
+          "combo": "1-3-2",
+          "probability": 4.924
         },
         {
           "combo": "1-5-3",
-          "probability": 3.53
+          "probability": 4.3295
         },
         {
           "combo": "1-5-2",
-          "probability": 3.2084
+          "probability": 3.8677
         },
         {
-          "combo": "1-4-3",
-          "probability": 3.1819
+          "combo": "1-2-4",
+          "probability": 3.3575
         },
         {
-          "combo": "1-4-2",
-          "probability": 2.9633
+          "combo": "1-3-4",
+          "probability": 3.0767
         },
         {
           "combo": "1-2-6",
-          "probability": 2.789
+          "probability": 2.9645
         },
         {
-          "combo": "1-4-5",
-          "probability": 2.7395
-        },
-        {
-          "combo": "1-6-3",
-          "probability": 2.7213
+          "combo": "1-4-3",
+          "probability": 2.8127
         },
         {
           "combo": "1-3-6",
-          "probability": 2.7099
+          "probability": 2.6696
+        },
+        {
+          "combo": "1-6-3",
+          "probability": 2.624
+        },
+        {
+          "combo": "1-4-2",
+          "probability": 2.5703
+        },
+        {
+          "combo": "1-4-5",
+          "probability": 2.48
         },
         {
           "combo": "1-5-4",
-          "probability": 2.5824
+          "probability": 2.3632
         },
         {
           "combo": "1-6-2",
-          "probability": 2.4396
+          "probability": 2.3167
         },
         {
           "combo": "1-6-5",
-          "probability": 2.2614
-        },
-        {
-          "combo": "1-6-4",
-          "probability": 1.9478
+          "probability": 2.2409
         },
         {
           "combo": "1-5-6",
-          "probability": 1.9269
+          "probability": 2.063
         },
         {
-          "combo": "1-4-6",
-          "probability": 1.784
+          "combo": "3-2-1",
+          "probability": 1.6018
+        },
+        {
+          "combo": "3-1-2",
+          "probability": 1.5116
         }
       ],
       "diagnostics": {
@@ -55064,7 +56635,7 @@
         "sameDayWaterBias": {},
         "oddsUsedForPrediction": false,
         "engineDiagnostics": [],
-        "actualEntrySource": "racers.actual_course",
+        "actualEntrySource": "live.actual_entry",
         "actualCourseByLane": {
           "1": 1,
           "2": 2,
@@ -55073,6 +56644,230 @@
           "5": 5,
           "6": 6
         }
+      },
+      "phase": "final",
+      "finalPredictionStatus": "complete",
+      "generatedAt": "2026-10-30T10:16:33+09:00",
+      "predictionStage": {
+        "code": "final",
+        "label": "本予想",
+        "badge": "本予想",
+        "statusText": "直前・展示・オリ展示を反映して唐津v1.2で再精査済み"
+      },
+      "probabilityReviewStatus": "reviewed",
+      "probabilityFlow": {
+        "required": true,
+        "baseApplied": true,
+        "realtimeApplied": true,
+        "reviewed": true,
+        "adjustedRequired": true
+      },
+      "liveInput": {
+        "required": [
+          "direct",
+          "exhibition",
+          "original_exhibition"
+        ],
+        "complete": true,
+        "fetchedAt": "2026-10-30T10:16:33+09:00"
+      },
+      "probabilityReview": {
+        "1": {
+          "morningWin": 62.1,
+          "win": 63.8,
+          "deltaWin": 1.7,
+          "morningSecond": 8.7,
+          "second": 9.0,
+          "deltaSecond": 0.3,
+          "morningThird": 9.0,
+          "third": 9.2,
+          "deltaThird": 0.2
+        },
+        "2": {
+          "morningWin": 2.1,
+          "win": 2.2,
+          "deltaWin": 0.1,
+          "morningSecond": 23.3,
+          "second": 25.6,
+          "deltaSecond": 2.3,
+          "morningThird": 20.7,
+          "third": 21.1,
+          "deltaThird": 0.4
+        },
+        "3": {
+          "morningWin": 19.2,
+          "win": 18.5,
+          "deltaWin": -0.7,
+          "morningSecond": 19.6,
+          "second": 19.8,
+          "deltaSecond": 0.2,
+          "morningThird": 19.0,
+          "third": 20.4,
+          "deltaThird": 1.4
+        },
+        "4": {
+          "morningWin": 1.8,
+          "win": 1.5,
+          "deltaWin": -0.3,
+          "morningSecond": 17.0,
+          "second": 14.3,
+          "deltaSecond": -2.7,
+          "morningThird": 17.9,
+          "third": 15.0,
+          "deltaThird": -2.9
+        },
+        "5": {
+          "morningWin": 12.9,
+          "win": 12.4,
+          "deltaWin": -0.5,
+          "morningSecond": 16.4,
+          "second": 17.9,
+          "deltaSecond": 1.5,
+          "morningThird": 18.8,
+          "third": 20.3,
+          "deltaThird": 1.5
+        },
+        "6": {
+          "morningWin": 1.8,
+          "win": 1.6,
+          "deltaWin": -0.2,
+          "morningSecond": 15.0,
+          "second": 13.4,
+          "deltaSecond": -1.6,
+          "morningThird": 14.7,
+          "third": 14.0,
+          "deltaThird": -0.7
+        }
+      },
+      "prediction_history": {
+        "morning": [
+          {
+            "snapshotVersion": "karatsu_prediction_snapshot_v1",
+            "stage": "morning",
+            "generatedAt": null,
+            "engine": "karatsu_scenario_engine_v1_2",
+            "engineVersion": null,
+            "sab": "S",
+            "probabilities": {
+              "win": {
+                "1": 62.1,
+                "2": 2.1,
+                "3": 19.2,
+                "4": 1.8,
+                "5": 12.9,
+                "6": 1.8
+              },
+              "second": {
+                "1": 8.7,
+                "2": 23.3,
+                "3": 19.6,
+                "4": 17.0,
+                "5": 16.4,
+                "6": 15.0
+              },
+              "third": {
+                "1": 9.0,
+                "2": 20.7,
+                "3": 19.0,
+                "4": 17.9,
+                "5": 18.8,
+                "6": 14.7
+              }
+            },
+            "ai": [],
+            "aiUpset": []
+          }
+        ],
+        "live": [
+          {
+            "snapshotVersion": "karatsu_prediction_snapshot_v1",
+            "stage": "final",
+            "generatedAt": "2026-10-30T10:16:33+09:00",
+            "engine": "karatsu_scenario_engine_v1_2",
+            "engineVersion": "1.2.0",
+            "sab": "S",
+            "probabilities": {
+              "win": {
+                "1": 63.8,
+                "2": 2.2,
+                "3": 18.5,
+                "4": 1.5,
+                "5": 12.4,
+                "6": 1.6
+              },
+              "second": {
+                "1": 9.0,
+                "2": 25.6,
+                "3": 19.8,
+                "4": 14.3,
+                "5": 17.9,
+                "6": 13.4
+              },
+              "third": {
+                "1": 9.2,
+                "2": 21.1,
+                "3": 20.4,
+                "4": 15.0,
+                "5": 20.3,
+                "6": 14.0
+              }
+            },
+            "ai": [
+              {
+                "combo": "1-2-3",
+                "role": "本線",
+                "odds": "-"
+              },
+              {
+                "combo": "3-2-1",
+                "role": "本線",
+                "odds": "-"
+              },
+              {
+                "combo": "5-1-3",
+                "role": "本線",
+                "odds": "-"
+              },
+              {
+                "combo": "1-2-5",
+                "role": "本線",
+                "odds": "-"
+              },
+              {
+                "combo": "1-5-4",
+                "role": "本線",
+                "odds": "-"
+              },
+              {
+                "combo": "1-3-5",
+                "role": "本線",
+                "odds": "-"
+              },
+              {
+                "combo": "1-3-2",
+                "role": "ズレ対応",
+                "odds": "-"
+              },
+              {
+                "combo": "1-5-3",
+                "role": "ズレ対応",
+                "odds": "-"
+              }
+            ],
+            "aiUpset": [
+              {
+                "combo": "1-5-2",
+                "role": "荒れ対応",
+                "odds": "-"
+              },
+              {
+                "combo": "1-2-4",
+                "role": "荒れ対応",
+                "odds": "-"
+              }
+            ]
+          }
+        ]
       }
     },
     "6": {
