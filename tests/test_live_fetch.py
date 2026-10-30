@@ -268,6 +268,11 @@ class NarutoLiveTriggerTests(unittest.TestCase):
             AsyncMock(side_effect=processes),
         ) as create_process:
             race_dir = Path(temp)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": "complete", "complete": True}),
+                    encoding="utf-8",
+                )
             changed = asyncio.run(
                 apply_naruto_live_prediction(target, race_dir, fetch_result, Mock())
             )
@@ -282,6 +287,36 @@ class NarutoLiveTriggerTests(unittest.TestCase):
         self.assertEqual(stages, ["live", "result"])
         self.assertEqual(marker["status"], "complete")
         self.assertEqual(marker["stage"], "live")
+
+    def test_delayed_input_rechecks_saved_documents_on_next_update(self) -> None:
+        process = Mock(returncode=0)
+        process.communicate = AsyncMock(return_value=(b"live", b""))
+        fetch_result = {
+            "items": {
+                "original_exhibition": {
+                    "status": "complete",
+                    "complete": True,
+                    "changed": True,
+                }
+            }
+        }
+        target = {"venue": "naruto", "date": "2026-10-30", "race_no": 4}
+        with tempfile.TemporaryDirectory() as temp, patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(return_value=process),
+        ) as create_process:
+            race_dir = Path(temp)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": "complete", "complete": True}),
+                    encoding="utf-8",
+                )
+            changed = asyncio.run(
+                apply_naruto_live_prediction(target, race_dir, fetch_result, Mock())
+            )
+
+        self.assertTrue(changed)
+        self.assertEqual(create_process.await_count, 1)
 
 
 class VenueAndRaceTests(unittest.TestCase):

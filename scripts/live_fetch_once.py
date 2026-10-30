@@ -260,9 +260,20 @@ async def apply_naruto_live_prediction(
     prediction_changed = False
     items = fetch_result.get("items") or {}
     required = ("direct", "exhibition", "original_exhibition")
+    # A late source can complete in a later fetch cycle than the other LIVE
+    # inputs. Re-evaluate the authoritative saved documents every time instead
+    # of requiring all three to be reported complete in the current result.
+    saved_inputs: dict[str, dict[str, Any]] = {}
+    for name in required:
+        try:
+            saved_inputs[name] = json.loads(
+                (race_dir / f"{name}.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            saved_inputs[name] = {}
     live_complete = all(
-        (items.get(name) or {}).get("complete") is True
-        and (items.get(name) or {}).get("status") == "complete"
+        saved_inputs[name].get("complete") is True
+        and saved_inputs[name].get("status") == "complete"
         for name in required
     )
     live_updated = any((items.get(name) or {}).get("changed") is True for name in required)
