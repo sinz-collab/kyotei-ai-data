@@ -259,11 +259,17 @@ class TokonameBuildPreservationTests(unittest.TestCase):
         )
 
     def test_morning_workflow_generates_tokoname_preliminary_twice(self) -> None:
-        workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(
+        publisher = (ROOT / "automation" / "publish_morning_data.sh").read_text(
             encoding="utf-8"
         )
-        command = "--date \"$TARGET_DATE\" --stage preliminary --write"
-        self.assertEqual(workflow.count(command), 2)
+        self.assertEqual(publisher.count("python automation/run_tokoname_v1.py"), 1)
+        self.assertEqual(
+            sum(
+                line.strip().startswith("run_publication_pipeline ")
+                for line in publisher.splitlines()
+            ),
+            2,
+        )
 
     @staticmethod
     def _prediction() -> dict:
