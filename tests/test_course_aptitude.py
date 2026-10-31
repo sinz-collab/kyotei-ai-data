@@ -88,10 +88,11 @@ class CourseAptitudeTest(unittest.TestCase):
         entry = dict(racer)
         payload = {"races": [{"racers": [racer], "entries": [entry]}]}
         counts = self.evaluator.enrich_payload(payload)
-        self.assertEqual(counts, {"available": 2, "unavailable": 0})
+        self.assertEqual(counts, {"available": 1, "unavailable": 0})
         self.assertEqual(racer["recent_course_6m"]["course"], 2)
         self.assertEqual(entry["recent_course_6m"]["course"], 2)
         self.assertEqual(set(racer["recent_course_6m_by_course"]), {"1", "2", "3", "4", "5", "6"})
+        self.assertNotIn("recent_course_6m_by_course", entry)
 
     def test_official_fan_layout_and_period(self):
         line = bytearray(b" " * 416)

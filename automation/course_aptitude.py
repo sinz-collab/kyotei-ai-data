@@ -352,30 +352,37 @@ class CourseAptitudeEvaluator:
         available = 0
         unavailable = 0
         for race in payload.get("races") or []:
-            collections = []
+            collections: list[tuple[str, list[dict[str, Any]]]] = []
             for key in ("racers", "entries"):
                 rows = race.get(key)
                 if isinstance(rows, list):
-                    collections.append(rows)
+                    collections.append((key, rows))
+            primary_key = "racers" if isinstance(race.get("racers"), list) else "entries"
             seen: set[int] = set()
-            for racers in collections:
+            for collection_key, racers in collections:
                 for racer in racers:
                     if not isinstance(racer, dict) or id(racer) in seen:
                         continue
                     seen.add(id(racer))
                     by_course = {
-                        str(course): self.evaluate({**racer, "actual_course": course})
+                        str(course): self.public_record(
+                            self.evaluate({**racer, "actual_course": course})
+                        )
                         for course in range(1, 7)
                     }
                     record = by_course.get(str(self.actual_course(racer))) or unavailable_record(
                         "identity_or_course_missing", metadata=self.metadata
                     )
-                    racer["recent_course_6m_by_course"] = by_course
-                    racer["recent_course_6m"] = record
-                    if record["status"] == "available":
-                        available += 1
+                    if collection_key == primary_key:
+                        racer["recent_course_6m_by_course"] = by_course
                     else:
-                        unavailable += 1
+                        racer.pop("recent_course_6m_by_course", None)
+                    racer["recent_course_6m"] = record
+                    if collection_key == primary_key:
+                        if record["status"] == "available":
+                            available += 1
+                        else:
+                            unavailable += 1
         payload.setdefault("sourceStatus", {})["course_6m"] = {
             "status": "loaded" if available else "unavailable",
             "source": "official_race_results",
@@ -386,3 +393,14 @@ class CourseAptitudeEvaluator:
             "class_error": self.class_error,
         }
         return {"available": available, "unavailable": unavailable}
+
+    @staticmethod
+    def public_record(record: dict[str, Any]) -> dict[str, Any]:
+        """Keep payloads compact while retaining every field used by the UI."""
+        keys = (
+            "status", "aptitude_label", "aptitude_score", "reason",
+            "registration_no", "course", "starts", "win_rate", "top2_rate",
+            "top3_rate", "average_st", "kimarite", "evaluation_class",
+            "comparison_size", "source", "period_months", "as_of", "window_start",
+        )
+        return {key: record[key] for key in keys if key in record}
