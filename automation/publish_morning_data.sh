@@ -9,6 +9,15 @@ if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
 fi
 
 export TARGET_DATE="$target_date"
+course_target_date="$(date -d "$TARGET_DATE -1 day" +%F)"
+course_cache_dir="$RUNNER_TEMP/player-course-cache"
+
+# Display-only enrichment is soft-fail by contract. The previous cache remains
+# usable when the official archive is delayed or unavailable.
+python automation/player_course_6m.py daily \
+  --date "$course_target_date" --soft-fail
+rm -rf "$course_cache_dir"
+cp -a data/player_course_6m "$course_cache_dir"
 
 run_publication_pipeline() {
   local before_dir="$1"
@@ -57,6 +66,8 @@ PYTHONPATH="engines/ashiya/ashiya_engine_v1_6${PYTHONPATH:+:$PYTHONPATH}" \
     tests/test_ashiya_prediction_history.py \
     tests/test_ashiya_live_source_freshness.py
 run_publication_pipeline "$RUNNER_TEMP/morning-data-before" "preflight"
+rm -rf "$course_cache_dir"
+cp -a data/player_course_6m "$course_cache_dir"
 
 {
   echo "## Morning data report"
@@ -73,6 +84,8 @@ for attempt in 1 2 3 4 5; do
   git fetch origin main
   git reset --hard origin/main
   git clean -fd data
+  rm -rf data/player_course_6m
+  cp -a "$course_cache_dir" data/player_course_6m
 
   python engines/tokoname_v1/backfill_lane1_fly_v1.py \
     2026-10-06 2026-10-07 2026-10-08 2026-10-09 2026-10-10 \
@@ -83,7 +96,7 @@ for attempt in 1 2 3 4 5; do
   cp -a data "$before_publish"
   run_publication_pipeline "$before_publish" "sync-${attempt}"
 
-  git add data
+  git add data ':(exclude)data/player_course_6m/player_course_6m.sqlite'
   if git diff --cached --quiet; then
     echo "No data changes."
     exit 0

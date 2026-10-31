@@ -3,8 +3,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from datetime import date
 from pathlib import Path
 from typing import Any
+
+try:
+    from .course_aptitude import CourseAptitudeEvaluator
+except ImportError:  # Direct script execution in the morning workflow.
+    from course_aptitude import CourseAptitudeEvaluator
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -343,8 +349,6 @@ def enrich_payload(
             continue
         source_text = source.read_text(encoding="utf-8", errors="replace")
         parsed = parse_race_kimarite(source_text, racers)
-        performance = parse_recent_course_performance(source_text, racers)
-        course_st = parse_recent_course_st(source_text, racers)
         by_lane = {
             int(row.get("lane") or row.get("boatNumber") or 0): row
             for row in racers
@@ -355,13 +359,6 @@ def enrich_payload(
                 continue
             target.update(values)
             reflected += 1
-        for lane, target in by_lane.items():
-            target["recent_course_6m"] = recent_course_record(
-                target,
-                performance.get(lane),
-                course_st.get(lane),
-                parsed.get(lane),
-            )
         if len(parsed) != len(racers):
             warnings.append(
                 f"race_{race_no:02d}:kimarite_reflected_{len(parsed)}_of_{len(racers)}"
@@ -398,6 +395,12 @@ def main() -> int:
     selected = set(args.venues or []) or None
     report: dict[str, Any] = {}
     total_reflected = 0
+    try:
+        aptitude = CourseAptitudeEvaluator.from_files(date.fromisoformat(args.date))
+    except Exception as exc:
+        # Course data is display-only.  A broken cache must never stop the
+        # existing morning prediction publication path.
+        aptitude = CourseAptitudeEvaluator([], {}, class_error=f"course_cache_unavailable:{exc}")
 
     for venue, dated_path in target_payloads(args.date, selected):
         payload = json.loads(dated_path.read_text(encoding="utf-8"))
@@ -413,6 +416,7 @@ def main() -> int:
 
         sources = find_source_files(args.date, venue)
         reflected, expected, warnings = enrich_payload(payload, sources)
+        aptitude_counts = aptitude.enrich_payload(payload)
         status = (
             "loaded"
             if expected and reflected == expected
@@ -426,6 +430,7 @@ def main() -> int:
             "expected": expected,
             "source_races": sorted(sources),
             "warnings": warnings,
+            "course_6m": aptitude_counts,
         }
         payload.setdefault("sourceStatus", {})["kimarite"] = source_status
         atomic_write_json(dated_path, payload)

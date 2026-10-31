@@ -152,10 +152,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Restore official six-month course database
+        uses: actions/cache@v4
+        with:
+          path: data/player_course_6m/player_course_6m.sqlite
+          key: player-course-6m-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            player-course-6m-${{ runner.os }}-
 
       - name: Install prediction dependencies
         run: |
           python -m pip install lxml==6.0.0
+          python -m pip install lhafile==0.3.1
           python -m pip install -r engines/ashiya/ashiya_engine_v1_6/requirements.txt
         
       - name: Download east shard artifact
