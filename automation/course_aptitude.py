@@ -401,6 +401,7 @@ class CourseAptitudeEvaluator:
             "status", "aptitude_label", "aptitude_score", "reason",
             "registration_no", "course", "starts", "win_rate", "top2_rate",
             "top3_rate", "average_st", "kimarite", "evaluation_class",
-            "comparison_size", "source", "period_months", "as_of", "window_start",
+            "comparison_size", "comparison_mean", "source", "period_months",
+            "as_of", "window_start",
         )
         return {key: record[key] for key in keys if key in record}

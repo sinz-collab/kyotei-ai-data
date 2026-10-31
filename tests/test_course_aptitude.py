@@ -59,6 +59,9 @@ class CourseAptitudeTest(unittest.TestCase):
         weighted_z = 0.3 * z_scores[0] + 0.3 * z_scores[1] + 0.4 * z_scores[2]
         expected = 50 + 10 * weighted_z * 30 / 50
         self.assertAlmostEqual(result["aptitude_score_raw"], expected)
+        public = self.evaluator.public_record(result)
+        self.assertEqual(public["comparison_mean"], result["comparison_mean"])
+        self.assertNotIn("comparison_stddev", public)
 
     def test_unavailable_conditions(self):
         low_starts = row(4001, 0.5, starts=9)
