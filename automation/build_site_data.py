@@ -1383,6 +1383,10 @@ def main() -> int:
             "predictionReason": prediction_reason,
             "entryCount": 12 if race_data_available else 0,
             "firstDeadline": payload["races"][0]["deadline"] if race_data_available else "",
+            "deadlines": [
+                {"race": race["race"], "deadline": race["deadline"]}
+                for race in payload["races"]
+            ] if race_data_available else [],
             "eventDay": payload.get("eventDay") if race_data_available else None,
             "eventDayLabel": payload.get("eventDayLabel") if race_data_available else None,
             "eventLabel": payload.get("eventLabel") if race_data_available else "",
@@ -1391,7 +1395,10 @@ def main() -> int:
 
     manifest_venues = []
     for slug, name in ALL_VENUES:
-        state = statuses.get(slug, {"open": False, "entryCount": 0, "firstDeadline": ""})
+        state = statuses.get(
+            slug,
+            {"open": False, "entryCount": 0, "firstDeadline": "", "deadlines": []},
+        )
         item = {
             "slug": slug,
             "venue": slug,
@@ -1409,6 +1416,8 @@ def main() -> int:
             "prediction_available": state.get("predictionAvailable", False),
             "eventLabel": state.get("eventLabel", ""),
         }
+        if state["open"]:
+            item["deadlines"] = state.get("deadlines", [])
         reason = state.get("detail", {}).get("reason", "")
         if reason:
             item["availabilityReason"] = reason

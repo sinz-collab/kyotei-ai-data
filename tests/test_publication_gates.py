@@ -209,6 +209,13 @@ class PublicationGateIntegrationTests(unittest.TestCase):
             self.assertFalse(venue["prediction_available"])
             self.assertEqual(venue["prediction_status"], "unavailable")
             self.assertEqual(venue["prediction_reason"], "prediction_payload_unavailable")
+            self.assertEqual(
+                venue["deadlines"],
+                [
+                    {"race": race["race"], "deadline": race["deadline"]}
+                    for race in race_payload()["races"]
+                ],
+            )
             document = json.loads((data_root / venue["dataPath"]).read_text(encoding="utf-8"))
             self.assertEqual(len(document["races"]), 12)
             self.assertEqual(document["preds"], {})
@@ -266,6 +273,7 @@ class PublicationGateIntegrationTests(unittest.TestCase):
             self.assertFalse(venue["open"])
             self.assertFalse(venue["race_data_available"])
             self.assertEqual(venue["dataPath"], "")
+            self.assertNotIn("deadlines", venue)
             self.assertFalse((data_root / "venues" / "toda" / "20260725.json").exists())
 
 
