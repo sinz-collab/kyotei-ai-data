@@ -43,25 +43,25 @@ def test_each_finish_probability_sums_to_one():
         assert abs(sum(row[key] for row in rows) - 1.0) < 1e-9
 
 
-def test_tide_multiplier_is_capped():
+def test_compatibility_entry_point_reports_v22_runtime():
     output = apply_v21_adjustments(sample_result(), sample_input())
-    assert output["v21_adjustments"]["tide_multiplier"] == 1.35
+    assert output["v22_adjustments"]["engine"] == "wakamatsu_engine_v2.2"
+    assert output["v22_adjustments"]["version"] == "2.2"
+    assert output["v22_adjustments"]["applied_inside_predict"] is True
 
 
-def test_course3_to_course4_link_is_created():
+def test_compatibility_entry_point_does_not_reapply_probabilities():
+    original = sample_result()
     output = apply_v21_adjustments(sample_result(), sample_input())
-    links = output["v21_adjustments"]["attack_links"]
-    assert any(
-        link["attack_course"] == 3 and link["outside_course"] == 4
-        for link in links
-    )
+    assert output["probabilities"] == original["probabilities"]
 
 
-def test_course4_to_course5_and6_links_are_conditional():
+def test_v22_adjustment_metadata_matches_current_contract():
     output = apply_v21_adjustments(sample_result(), sample_input())
-    links = output["v21_adjustments"]["attack_links"]
-    assert any(link["outside_course"] == 5 for link in links)
-    assert any(link["outside_course"] == 6 for link in links)
+    metadata = output["v22_adjustments"]
+    assert metadata["odds_used"] is False
+    assert metadata["normalized"] is True
+    assert metadata["ticket_selection"] == "probability_top10_6_2_2"
 
 
 def test_input_result_is_not_mutated():
