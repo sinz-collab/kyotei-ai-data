@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import math
-import re
 
-from toda_ticket_engine_v5 import combo_prob
+from toda_ticket_engine_v5 import conditional_third
 from toda_utils_v5 import LANES, clamp, num
 
 
@@ -98,28 +97,6 @@ def _scenario_ids(scenarios, head):
     ]
 
 
-def _ranked_combos(prediction, head, category=None):
-    rows = []
-    for second in LANES:
-        if second == head:
-            continue
-        for third in LANES:
-            if third in (head, second):
-                continue
-            if category == "lane1Second" and second != 1:
-                continue
-            if category == "lane1Third" and third != 1:
-                continue
-            if category == "lane1Out" and 1 in (second, third):
-                continue
-            combo = f"{head}-{second}-{third}"
-            rows.append((
-                combo_prob(combo, prediction["win"], prediction["secondByHead"], prediction["thirdByHead"]),
-                combo,
-            ))
-    return sorted(rows, key=lambda row: (-row[0], row[1]))
-
-
 def _fly_heads(prediction):
     scenario_heads = {
         int(row.get("head") or 0)
@@ -140,83 +117,119 @@ def _fly_heads(prediction):
     return ranked
 
 
-def _normalize_combo(value):
-    if isinstance(value, dict):
-        value = value.get("combo") or value.get("combination") or value.get("ticket")
-    boats = re.findall(r"[1-6]", str(value or ""))
-    if len(boats) != 3 or len(set(boats)) != 3:
-        return ""
-    return "-".join(boats)
+def _probability_maps(prediction, baseline=False):
+    source = prediction.get("_baseline") if baseline else prediction
+    source = source if isinstance(source, dict) else prediction
+    return source["win"], source["secondByHead"], source["thirdByHead"]
 
 
-def build_fly_tickets(prediction, exclude_combos=None):
-    heads = _fly_heads(prediction)
-    main_head, second_head, development_head = heads[:3]
-    scenarios = prediction.get("scenarios") or []
-    selected = []
-    seen = set()
-    excluded = {
-        combo
-        for combo in (_normalize_combo(value) for value in (exclude_combos or []))
-        if combo
+def _scenario_map(prediction, baseline=False):
+    source = prediction.get("_baseline") if baseline else prediction
+    source = source if isinstance(source, dict) else prediction
+    return {
+        int(row.get("head") or 0): row
+        for row in source.get("scenarios") or []
+        if int(row.get("head") or 0) in (2, 3, 4, 5, 6)
     }
 
-    def add(head, category, role, limit):
-        added = 0
-        for probability, combo in _ranked_combos(prediction, head, category):
-            if combo in excluded or combo in seen:
+
+def _combo_values(combo, maps):
+    head, second, third = map(int, combo.split("-"))
+    win, second_by_head, third_by_head = maps
+    second_probability = num(second_by_head[str(head)][str(second)])
+    third_probability = num(conditional_third(head, second, third_by_head)[str(third)])
+    head_conditional = second_probability * third_probability / 100.0
+    return num(win[str(head)]) * head_conditional / 100.0, head_conditional
+
+
+def _scenario_establishment(row):
+    row = row or {}
+    return clamp(
+        num(row.get("attackEstablishment"), num(row.get("weight"), 0.0)),
+        0.0,
+        1.0,
+    )
+
+
+def build_fly_tickets(prediction, status="final"):
+    live_blend = status == "final" and isinstance(prediction.get("_baseline"), dict)
+    morning_weight = 0.8 if live_blend else 1.0
+    live_weight = 0.2 if live_blend else 0.0
+    morning_maps = _probability_maps(prediction, baseline=live_blend)
+    live_maps = _probability_maps(prediction)
+    morning_scenarios = _scenario_map(prediction, baseline=live_blend)
+    live_scenarios = _scenario_map(prediction)
+    scenarios = prediction.get("scenarios") or []
+    candidates = []
+
+    for head in (2, 3, 4, 5, 6):
+        morning_establishment = _scenario_establishment(morning_scenarios.get(head))
+        live_establishment = _scenario_establishment(live_scenarios.get(head))
+        establishment = morning_weight * morning_establishment + live_weight * live_establishment
+        for second in LANES:
+            if second == head:
                 continue
-            seen.add(combo)
-            selected.append({
-                "combo": combo,
-                "role": role,
-                "head": head,
-                "pattern": category,
-                "prob": round(probability, 4),
-                "scenarioIds": _scenario_ids(scenarios, head),
-            })
-            added += 1
-            if added >= limit:
-                break
-        return added
+            for third in LANES:
+                if third in (head, second):
+                    continue
+                combo = f"{head}-{second}-{third}"
+                morning_probability, morning_conditional = _combo_values(combo, morning_maps)
+                live_probability, live_conditional = _combo_values(combo, live_maps)
+                probability = morning_weight * morning_probability + live_weight * live_probability
+                head_conditional = morning_weight * morning_conditional + live_weight * live_conditional
+                scenario_score = (
+                    morning_weight * morning_establishment * morning_conditional
+                    + live_weight * live_establishment * live_conditional
+                )
+                candidates.append({
+                    "combo": combo,
+                    "head": head,
+                    "probability": probability,
+                    "headConditionalProbability": head_conditional,
+                    "scenarioEstablishment": establishment,
+                    "scenarioScore": scenario_score,
+                    "scenarioIds": _scenario_ids(scenarios, head),
+                })
 
-    add(main_head, "lane1Second", "Main HEAD", 2)
-    add(main_head, "lane1Third", "Main HEAD", 1)
-    add(main_head, "lane1Out", "Main HEAD", 2)
-    add(second_head, "lane1Second", "Second HEAD", 2)
-    add(second_head, "lane1Third", "Second HEAD", 1)
-    add(development_head, None, "展開連動", 2)
+    probability_ranked = sorted(
+        candidates,
+        key=lambda row: (-row["probability"], row["combo"]),
+    )
+    selected = []
+    seen = set()
+    for row in probability_ranked[:8]:
+        seen.add(row["combo"])
+        selected.append({
+            "combo": row["combo"],
+            "role": "条件付き確率上位",
+            "head": row["head"],
+            "pattern": "conditional_top8",
+            "prob": round(row["probability"], 4),
+            "headConditionalProbability": round(row["headConditionalProbability"], 4),
+            "scenarioIds": row["scenarioIds"],
+        })
 
-    for head, role, limit in (
-        (main_head, "Main HEAD", 5),
-        (second_head, "Second HEAD", 3),
-        (development_head, "展開連動", 2),
-    ):
-        missing = limit - sum(row["role"] == role for row in selected)
-        if missing > 0:
-            add(head, None, role, missing)
+    scenario_ranked = sorted(
+        (row for row in candidates if row["combo"] not in seen),
+        key=lambda row: (-row["scenarioScore"], -row["headConditionalProbability"], row["combo"]),
+    )
+    for row in scenario_ranked[:2]:
+        seen.add(row["combo"])
+        selected.append({
+            "combo": row["combo"],
+            "role": "展開シナリオ",
+            "head": row["head"],
+            "pattern": "scenario_top2",
+            "prob": round(row["probability"], 4),
+            "headConditionalProbability": round(row["headConditionalProbability"], 4),
+            "scenarioEstablishment": round(row["scenarioEstablishment"], 6),
+            "scenarioScore": round(row["scenarioScore"], 6),
+            "scenarioIds": row["scenarioIds"],
+        })
 
-    if len(selected) < 10:
-        remaining = []
-        for head_rank, head in enumerate(heads):
-            role = "Main HEAD" if head == main_head else "Second HEAD" if head == second_head else "展開連動"
-            for probability, combo in _ranked_combos(prediction, head):
-                if combo not in excluded and combo not in seen:
-                    remaining.append((-probability, head_rank, combo, head, role, probability))
-        for _, _, combo, head, role, probability in sorted(remaining):
-            if combo in seen:
-                continue
-            seen.add(combo)
-            selected.append({
-                "combo": combo,
-                "role": role,
-                "head": head,
-                "pattern": "conditional",
-                "prob": round(probability, 4),
-                "scenarioIds": _scenario_ids(scenarios, head),
-            })
-            if len(selected) >= 10:
-                break
+    heads = _fly_heads(prediction)
+    main_head, second_head = heads[:2]
+    development_head = selected[8]["head"] if len(selected) > 8 else heads[2]
 
     if any(int(row["combo"].split("-")[0]) == 1 for row in selected):
         raise RuntimeError("toda_fly_ticket_lane1_head_forbidden")
@@ -229,6 +242,9 @@ def build_fly_tickets(prediction, exclude_combos=None):
         "ticketStatus": "complete" if shortage == 0 else "insufficient",
         "ticketShortage": shortage,
         "ticketShortageReason": None if shortage == 0 else "valid_unique_candidates_below_10",
+        "ticketMethod": "conditional_top8_plus_scenario_top2",
+        "morningWeight": morning_weight,
+        "liveWeight": live_weight,
     }
 
 
@@ -254,7 +270,7 @@ def build_fly_prediction(prediction, racers, status="final"):
         1.0 + math.exp(-(SIGMOID_INTERCEPT + SIGMOID_SLOPE * raw_fly_score))
     )
     is_fly = probability >= FLY_THRESHOLD
-    ticket_result = build_fly_tickets(prediction, prediction.get("ai") or [])
+    ticket_result = build_fly_tickets(prediction, status=status)
     return {
         "probability": round(probability, 1),
         "threshold": FLY_THRESHOLD,

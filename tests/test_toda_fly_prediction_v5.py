@@ -24,9 +24,10 @@ from toda_fly_prediction_v5 import (
     SIGMOID_SLOPE,
     TODA_LANE1_ESCAPE_BASELINE,
     build_fly_prediction,
+    build_fly_tickets,
 )
 from toda_live_review_v5 import apply_live_review
-from toda_ticket_engine_v5 import build_tickets
+from toda_ticket_engine_v5 import build_tickets, conditional_third
 
 
 class TodaFlyPredictionV5Tests(unittest.TestCase):
@@ -104,7 +105,7 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         for component_id in actual_components.keys() - {"1_sashare_x_2_sashi"}:
             self.assertEqual(actual_components[component_id], expected_components[component_id])
 
-    def test_fly_tickets_are_ten_unique_conditional_tickets(self):
+    def test_fly_tickets_are_verified_eight_plus_two(self):
         prediction, racers = self._reviewed(1)
         fly = build_fly_prediction(prediction, racers)
         tickets = fly["tickets"]
@@ -112,13 +113,19 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         self.assertEqual(len(tickets), 10)
         self.assertEqual(len({row["combo"] for row in tickets}), 10)
         self.assertTrue(all(not row["combo"].startswith("1-") for row in tickets))
-        self.assertEqual(sum(row["role"] == "Main HEAD" for row in tickets), 5)
-        self.assertEqual(sum(row["role"] == "Second HEAD" for row in tickets), 3)
-        self.assertEqual(sum(row["role"] == "展開連動" for row in tickets), 2)
-        main = [row for row in tickets if row["role"] == "Main HEAD"]
-        second = [row for row in tickets if row["role"] == "Second HEAD"]
-        self.assertTrue(all(row["head"] == fly["mainHead"] for row in main))
-        self.assertTrue(all(row["head"] == fly["secondHead"] for row in second))
+        self.assertEqual(sum(row["role"] == "条件付き確率上位" for row in tickets), 8)
+        self.assertEqual(sum(row["role"] == "展開シナリオ" for row in tickets), 2)
+        self.assertEqual(fly["ticketMethod"], "conditional_top8_plus_scenario_top2")
+        self.assertEqual(fly["morningWeight"], 0.8)
+        self.assertEqual(fly["liveWeight"], 0.2)
+        top8 = tickets[:8]
+        self.assertEqual(
+            [row["prob"] for row in top8],
+            sorted((row["prob"] for row in top8), reverse=True),
+        )
+        scenario = tickets[8:]
+        self.assertTrue(all(row["scenarioScore"] >= 0 for row in scenario))
+        self.assertTrue(all("scenarioEstablishment" in row for row in scenario))
 
     def test_normal_tickets_keep_fixed_ten_role_contract(self):
         prediction, _ = self._reviewed(1)
@@ -137,13 +144,73 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
         self.assertEqual(roles.count("3着ズレ"), 1)
         self.assertEqual(roles.count("シナリオ穴"), 2)
 
-    def test_fly_tickets_exclude_all_normal_tickets(self):
+    def test_fly_tickets_allow_normal_overlap(self):
         prediction, racers = self._reviewed(1)
-        normal = {row["combo"] for row in prediction["ai"]}
-        fly = build_fly_prediction(prediction, racers)
-        fly_combos = {row["combo"] for row in fly["tickets"]}
-        self.assertEqual(len(fly_combos), 10)
-        self.assertFalse(normal & fly_combos)
+        expected = build_fly_prediction(prediction, racers)
+        prediction["ai"] = [{"combo": expected["tickets"][0]["combo"]}]
+        actual = build_fly_prediction(prediction, racers)
+        self.assertEqual(actual["tickets"], expected["tickets"])
+        self.assertIn(prediction["ai"][0]["combo"], {row["combo"] for row in actual["tickets"]})
+
+    def test_morning_uses_one_hundred_percent_morning_values(self):
+        prediction, _ = self._reviewed(1)
+        morning = copy.deepcopy(prediction)
+        baseline = morning.pop("_baseline")
+        for key in ("win", "secondByHead", "thirdByHead", "scenarios"):
+            morning[key] = copy.deepcopy(baseline[key])
+        tickets = build_fly_tickets(morning, status="pre")
+        self.assertEqual(tickets["morningWeight"], 1.0)
+        self.assertEqual(tickets["liveWeight"], 0.0)
+        self.assertEqual(len(tickets["tickets"]), 10)
+
+    def test_live_ticket_probability_is_morning_eighty_live_twenty(self):
+        prediction, _ = self._reviewed(1)
+        result = build_fly_tickets(prediction, status="final")
+        ticket = result["tickets"][0]
+        head, second, third = map(int, ticket["combo"].split("-"))
+
+        def probability(source):
+            third_map = conditional_third(head, second, source["thirdByHead"])
+            return (
+                float(source["win"][str(head)])
+                * float(source["secondByHead"][str(head)][str(second)])
+                * float(third_map[str(third)])
+                / 10000.0
+            )
+
+        expected = 0.8 * probability(prediction["_baseline"]) + 0.2 * probability(prediction)
+        self.assertEqual(ticket["prob"], round(expected, 4))
+
+    def test_live_scenario_score_is_morning_eighty_live_twenty(self):
+        prediction, _ = self._reviewed(1)
+        result = build_fly_tickets(prediction, status="final")
+        ticket = result["tickets"][8]
+        head, second, third = map(int, ticket["combo"].split("-"))
+
+        def scenario_value(source):
+            scenario = next(
+                (row for row in source.get("scenarios") or [] if int(row.get("head") or 0) == head),
+                {},
+            )
+            establishment = float(scenario.get("attackEstablishment", scenario.get("weight", 0.0)))
+            third_map = conditional_third(head, second, source["thirdByHead"])
+            conditional = (
+                float(source["secondByHead"][str(head)][str(second)])
+                * float(third_map[str(third)])
+                / 100.0
+            )
+            return establishment * conditional
+
+        expected = 0.8 * scenario_value(prediction["_baseline"]) + 0.2 * scenario_value(prediction)
+        self.assertEqual(ticket["scenarioScore"], round(expected, 6))
+
+    def test_odds_and_results_do_not_change_fly_tickets(self):
+        prediction, racers = self._reviewed(1)
+        expected = build_fly_prediction(prediction, racers)["tickets"]
+        changed = copy.deepcopy(prediction)
+        changed["odds"] = {"2-1-3": 9999.9}
+        changed["result"] = {"order": "6-5-4", "payout": 999999}
+        self.assertEqual(build_fly_prediction(changed, racers)["tickets"], expected)
 
     def test_non_fly_still_has_ten_recommended_tickets(self):
         prediction, racers = self._reviewed(1)
@@ -215,14 +282,38 @@ class TodaFlyPredictionV5Tests(unittest.TestCase):
             self.assertEqual(actual[key], expected[key], key)
         self.assertEqual(actual["flyPrediction"]["status"], "final")
         self.assertEqual(len(actual["flyPrediction"]["tickets"]), 10)
-        self.assertFalse(
-            {row["combo"] for row in actual["ai"]}
-            & {row["combo"] for row in actual["flyPrediction"]["tickets"]}
-        )
+        self.assertEqual(actual["flyPrediction"]["morningWeight"], 0.8)
+        self.assertEqual(actual["flyPrediction"]["liveWeight"], 0.2)
         self.assertEqual(
             next(row for row in actual_payload["races"] if row["race"] == race_no)["prediction"]["flyPrediction"],
             actual["flyPrediction"],
         )
+
+    def test_october_replay_preserves_non_ticket_outputs(self):
+        checked = 0
+        for path in sorted((REPO_ROOT / "data" / "venues" / "toda").glob("202610*.json")):
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            for prediction in (payload.get("preds") or {}).values():
+                racers = (prediction.get("modelInputs") or {}).get("racers") or []
+                if len(racers) != 6 or not prediction.get("flyPrediction"):
+                    continue
+                frozen = copy.deepcopy({
+                    key: prediction.get(key)
+                    for key in ("win", "second", "third", "sab", "ai", "aiUpset", "scenarios")
+                })
+                previous_probability = prediction["flyPrediction"]["probability"]
+                fly = build_fly_prediction(prediction, racers, status=prediction["flyPrediction"].get("status", "final"))
+                self.assertEqual(fly["probability"], previous_probability, path.name)
+                self.assertEqual(len(fly["tickets"]), 10, path.name)
+                self.assertEqual(len({row["combo"] for row in fly["tickets"]}), 10, path.name)
+                self.assertTrue(all(not row["combo"].startswith("1-") for row in fly["tickets"]), path.name)
+                self.assertEqual(
+                    {key: prediction.get(key) for key in frozen},
+                    frozen,
+                    path.name,
+                )
+                checked += 1
+        self.assertGreater(checked, 0)
 
     def test_other_venues_are_rejected_by_toda_connector(self):
         payload = copy.deepcopy(self.payload)
