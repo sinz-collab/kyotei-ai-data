@@ -60,9 +60,20 @@ class MorningConnectorTest(unittest.TestCase):
                 self.assertAlmostEqual(sum(prediction[key].values()), 100.0, places=1)
             self.assertFalse(prediction["sourceSummary"]["oddsUsedForProbability"])
             self.assertFalse(prediction["sourceSummary"]["exhibitionStartUsedAlone"])
-            self.assertIn(len(prediction["ai"]) + len(prediction["aiUpset"]), (10, 12, 15, 18, 19))
+            self.assertEqual(len(prediction["ai"]) + len(prediction["aiUpset"]), 12)
             self.assertEqual(prediction["ticketCount"], len(prediction["tickets"]))
-            self.assertEqual(prediction["coverageNeed"]["ruleVersion"], "heiwajima_coverage_v1")
+            self.assertEqual(prediction["purchaseTicketCount"], 20)
+            self.assertEqual(len(prediction["flyPrediction"]["tickets"]), 8)
+            self.assertEqual(
+                prediction["coverageNeed"]["ruleVersion"],
+                "heiwajima_fly_v6_normal12_plus_fly8",
+            )
+            self.assertTrue(
+                all(
+                    not ticket["combo"].startswith("1-")
+                    for ticket in prediction["flyPrediction"]["tickets"]
+                )
+            )
             self.assertFalse(prediction["readability"]["ticketCountUsed"])
             self.assertIn("player_id_unresolved", prediction["missingCodes"])
 

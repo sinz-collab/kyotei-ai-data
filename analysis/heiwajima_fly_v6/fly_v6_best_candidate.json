@@ -1,0 +1,24 @@
+{
+  "model_id": "heiwajima_fly_v6_attack_sum_candidate_20261102",
+  "status": "validation_only",
+  "baseline": "logit(1 - v2.7 lane1 win probability)",
+  "threshold": 0.5,
+  "features": {
+    "lane1_escape_weakness": 0.21,
+    "lane1_loss_pattern": 0.12,
+    "best_outer_attack": 0.27,
+    "player_course_matchup": 0.16,
+    "exhibition_sum_matchup": 0.015
+  },
+  "feature_transform": "model.py: source rates transformed to matchup values and clipped to [-2, 2]",
+  "missing": "neutral 0.0 and retain an explicit missing code; no imputation from result or future data",
+  "calibrator": {
+    "type": "identity",
+    "slope": 1.0,
+    "intercept": 0.0
+  },
+  "coefficient_selection": "sequential minimum Brier on 2026-09 LIVE-complete 173R; 2026-10 LIVE 77R held out",
+  "excluded_after_validation": {
+    "lap_matchup": "improved September Brier but reduced October accuracy from 51/77 to 48/77"
+  }
+}

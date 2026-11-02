@@ -158,7 +158,7 @@ def test_20260930_race4_tide_to_s16_read_only() -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         published = connector.apply_heiwajima_v1(replay, "2026-09-30", Path(temp_dir))
     public_race4 = published["preds"]["4"]
-    assert public_race4["engine"] == "heiwajima_complete_v2_7_20260930"
+    assert public_race4["engine"] == "heiwajima_fly_v6_20261102"
     assert public_race4["tideContext"]["minutes_to_low_tide"] == 37
     assert public_race4["s16"]["signals"]["lowTideFit"] is True
     assert hashlib.sha256(fixture.read_bytes()).hexdigest() == before

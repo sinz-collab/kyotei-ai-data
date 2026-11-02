@@ -1,0 +1,206 @@
+{
+  "model_id": "heiwajima_fly_v6_staged_calibration_20261102",
+  "train": "2026-09 LIVE complete 173R",
+  "holdout": "2026-10 LIVE saved 77R",
+  "threshold": 0.5,
+  "feature_transform": "model.py clip[-2,2]",
+  "missing": "neutral zero plus missing code",
+  "calibrator": "identity after additive logit residual",
+  "selection": "sequential minimum train Brier; accuracy/smaller-L1 tie break",
+  "stages": [
+    {
+      "name": "v2.7",
+      "coefficients": {},
+      "train": {
+        "races": 173,
+        "correct": 118,
+        "accuracy": 0.68208092,
+        "escape_recall": 0.33333333,
+        "fly_recall": 0.91346154,
+        "brier": 0.20982236,
+        "predicted_fly": 141,
+        "actual_fly": 104
+      },
+      "holdout": {
+        "races": 77,
+        "correct": 38,
+        "accuracy": 0.49350649,
+        "escape_recall": 0.2173913,
+        "fly_recall": 0.90322581,
+        "brier": 0.25102327,
+        "predicted_fly": 64,
+        "actual_fly": 31
+      },
+      "morning_train": {
+        "races": 180,
+        "correct": 121,
+        "accuracy": 0.67222222,
+        "escape_recall": 0.26388889,
+        "fly_recall": 0.94444444,
+        "brier": 0.21473546,
+        "predicted_fly": 155,
+        "actual_fly": 108
+      },
+      "morning_holdout": {
+        "races": 77,
+        "correct": 37,
+        "accuracy": 0.48051948,
+        "escape_recall": 0.13043478,
+        "fly_recall": 1.0,
+        "brier": 0.25760998,
+        "predicted_fly": 71,
+        "actual_fly": 31
+      }
+    },
+    {
+      "name": "+kimarite_attack_defense",
+      "coefficients": {
+        "lane1_escape_weakness": 0.21,
+        "lane1_loss_pattern": 0.12,
+        "best_outer_attack": 0.27,
+        "player_course_matchup": 0.16
+      },
+      "train": {
+        "races": 173,
+        "correct": 124,
+        "accuracy": 0.71676301,
+        "escape_recall": 0.57971014,
+        "fly_recall": 0.80769231,
+        "brier": 0.20099392,
+        "predicted_fly": 113,
+        "actual_fly": 104
+      },
+      "holdout": {
+        "races": 77,
+        "correct": 50,
+        "accuracy": 0.64935065,
+        "escape_recall": 0.67391304,
+        "fly_recall": 0.61290323,
+        "brier": 0.23233024,
+        "predicted_fly": 34,
+        "actual_fly": 31
+      },
+      "morning_train": {
+        "races": 180,
+        "correct": 128,
+        "accuracy": 0.71111111,
+        "escape_recall": 0.52777778,
+        "fly_recall": 0.83333333,
+        "brier": 0.2063906,
+        "predicted_fly": 124,
+        "actual_fly": 108
+      },
+      "morning_holdout": {
+        "races": 77,
+        "correct": 49,
+        "accuracy": 0.63636364,
+        "escape_recall": 0.65217391,
+        "fly_recall": 0.61290323,
+        "brier": 0.23760133,
+        "predicted_fly": 35,
+        "actual_fly": 31
+      }
+    },
+    {
+      "name": "+exhibition_sum",
+      "coefficients": {
+        "lane1_escape_weakness": 0.21,
+        "lane1_loss_pattern": 0.12,
+        "best_outer_attack": 0.27,
+        "player_course_matchup": 0.16,
+        "exhibition_sum_matchup": 0.015
+      },
+      "train": {
+        "races": 173,
+        "correct": 124,
+        "accuracy": 0.71676301,
+        "escape_recall": 0.56521739,
+        "fly_recall": 0.81730769,
+        "brier": 0.20097542,
+        "predicted_fly": 115,
+        "actual_fly": 104
+      },
+      "holdout": {
+        "races": 77,
+        "correct": 51,
+        "accuracy": 0.66233766,
+        "escape_recall": 0.69565217,
+        "fly_recall": 0.61290323,
+        "brier": 0.23155169,
+        "predicted_fly": 33,
+        "actual_fly": 31
+      },
+      "morning_train": {
+        "races": 180,
+        "correct": 128,
+        "accuracy": 0.71111111,
+        "escape_recall": 0.52777778,
+        "fly_recall": 0.83333333,
+        "brier": 0.2063906,
+        "predicted_fly": 124,
+        "actual_fly": 108
+      },
+      "morning_holdout": {
+        "races": 77,
+        "correct": 49,
+        "accuracy": 0.63636364,
+        "escape_recall": 0.65217391,
+        "fly_recall": 0.61290323,
+        "brier": 0.23760133,
+        "predicted_fly": 35,
+        "actual_fly": 31
+      }
+    },
+    {
+      "name": "+lap_time",
+      "coefficients": {
+        "lane1_escape_weakness": 0.21,
+        "lane1_loss_pattern": 0.12,
+        "best_outer_attack": 0.27,
+        "player_course_matchup": 0.16,
+        "exhibition_sum_matchup": 0.015,
+        "lap_matchup": -0.055
+      },
+      "train": {
+        "races": 173,
+        "correct": 124,
+        "accuracy": 0.71676301,
+        "escape_recall": 0.57971014,
+        "fly_recall": 0.80769231,
+        "brier": 0.20076964,
+        "predicted_fly": 113,
+        "actual_fly": 104
+      },
+      "holdout": {
+        "races": 77,
+        "correct": 48,
+        "accuracy": 0.62337662,
+        "escape_recall": 0.65217391,
+        "fly_recall": 0.58064516,
+        "brier": 0.23432555,
+        "predicted_fly": 34,
+        "actual_fly": 31
+      },
+      "morning_train": {
+        "races": 180,
+        "correct": 128,
+        "accuracy": 0.71111111,
+        "escape_recall": 0.52777778,
+        "fly_recall": 0.83333333,
+        "brier": 0.2063906,
+        "predicted_fly": 124,
+        "actual_fly": 108
+      },
+      "morning_holdout": {
+        "races": 77,
+        "correct": 49,
+        "accuracy": 0.63636364,
+        "escape_recall": 0.65217391,
+        "fly_recall": 0.61290323,
+        "brier": 0.23760133,
+        "predicted_fly": 35,
+        "actual_fly": 31
+      }
+    }
+  ]
+}

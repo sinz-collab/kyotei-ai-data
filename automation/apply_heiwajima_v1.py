@@ -13,7 +13,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "heiwajima_v1"
 MASTER_DB = ENGINE_DIR / "master_db" / "heiwajima_runtime_master.sqlite"
-ENGINE_ID = "heiwajima_complete_v2_7_20260930"
+ENGINE_ID = "heiwajima_fly_v6_20261102"
 MASTER_ID = "heiwajima_runtime_master_v1_20260728"
 V2_7_START_DATE = "2026-09-30"
 LANES = (1, 2, 3, 4, 5, 6)
@@ -480,14 +480,18 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
     axis_gap = round((float(ranked[0]["win_prob"]) - float(ranked[1]["win_prob"])) * 100.0, 1)
     scenarios = result.get("scenarios") or []
     primary_scenario = scenarios[0] if scenarios else {}
-    all_tickets = [site_ticket(ticket) for ticket in result.get("tickets") or []]
-    ai = [ticket for ticket in all_tickets if ticket["role"] in ("本線", "ズレ対応")]
-    ai_upset = [ticket for ticket in all_tickets if ticket["role"] == "荒れ対応"]
-    if not ai:
-        ai = all_tickets[:6]
-    # 荒れ対応が生成されていない場合、本線やズレ対応を重複表示しない。
-    if not ai_upset:
-        ai_upset = []
+    fly_v6 = result.get("flyV6") or {}
+    normal_tickets = [
+        {"combo": combo, "role": "通常12点", "odds": "-"}
+        for combo in fly_v6.get("normalTickets") or []
+    ]
+    fly_tickets = [
+        {"combo": combo, "role": "飛び専用8点", "odds": "-"}
+        for combo in fly_v6.get("flyTickets") or []
+    ]
+    all_tickets = normal_tickets
+    ai = normal_tickets
+    ai_upset = []
 
     completeness = result.get("data_completeness") or {}
     missing_codes = sorted(set((completeness.get("missing_codes") or []) + connector_missing))
@@ -512,6 +516,21 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
         "sab": sab,
         "confidence": confidence,
         "upsetIndex": upset_index,
+        "lane1FlyProbability": fly_v6.get("probability"),
+        "lane1FlyLevel": "飛び優勢" if fly_v6.get("isFly") else "逃げ優勢",
+        "flyPrediction": {
+            "status": fly_v6.get("status"),
+            "modelVersion": fly_v6.get("modelVersion"),
+            "probability": fly_v6.get("probability"),
+            "isFly": bool(fly_v6.get("isFly")),
+            "threshold": fly_v6.get("threshold"),
+            "tickets": fly_tickets,
+            "features": fly_v6.get("features") or {},
+            "missing": fly_v6.get("missing") or [],
+            "normalFlyOverlapAllowed": True,
+            "oddsUsedForProbability": False,
+            "resultUsedForProbability": False,
+        },
         "attack": {
             "attackLane": axis_lane,
             "scenario": primary_scenario.get("name"),
@@ -540,8 +559,15 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
         "ai": ai,
         "aiUpset": ai_upset,
         "tickets": all_tickets,
-        "ticketCount": len(all_tickets),
-        "coverageNeed": result.get("coverageNeed") or {},
+        "ticketCount": len(normal_tickets),
+        "purchaseTicketCount": len(normal_tickets) + len(fly_tickets),
+        "normalTicketCount": len(normal_tickets),
+        "flyTicketCount": len(fly_tickets),
+        "coverageNeed": {
+            "selectedTicketCount": len(normal_tickets),
+            "flyTicketCount": len(fly_tickets),
+            "ruleVersion": "heiwajima_fly_v6_normal12_plus_fly8",
+        },
         "s16": result.get("s16") or {
             "activated": False, "level": "off", "signalCount": 0, "signals": {}
         },
@@ -599,11 +625,11 @@ def site_prediction(result: dict, connector_missing: list[str]) -> dict:
             "engine": ENGINE_ID,
             "sab": sab,
             "coverageNeed": result.get("coverageNeed") or {},
-            "ticketCount": len(all_tickets),
+            "ticketCount": len(normal_tickets) + len(fly_tickets),
             "s16": result.get("s16") or {},
             "s16DedicatedTicket": result.get("s16DedicatedTicket"),
             "probabilities": {"p1": win, "p2": second, "p3": third},
-            "tickets": [ticket["combo"] for ticket in all_tickets],
+            "tickets": [ticket["combo"] for ticket in normal_tickets + fly_tickets],
             "resultAvailable": False,
             "hit": None,
         },
@@ -674,11 +700,7 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
         try:
             existing_prediction = existing_predictions.get(str(race_no)) or {}
             prediction_locked = bool(existing_prediction.get("liveApplied")) or result_combination(race) is not None
-            if (
-                existing_prediction.get("engine") == ENGINE_ID
-                and prediction_complete(existing_prediction)
-                and prediction_locked
-            ):
+            if prediction_complete(existing_prediction) and prediction_locked:
                 predictions[str(race_no)] = update_accuracy_only(existing_prediction, race)
                 continue
             live_context = exhibition_live_context(data_root, target_date, race_no)
@@ -733,6 +755,8 @@ def apply_heiwajima_v1(payload: dict, target_date: str, data_root: Path) -> dict
         "actualEntryReanalysis": True,
         "conditionalPlacement": True,
         "coverageRuleVersion": "heiwajima_coverage_v1",
+        "flyModelVersion": "heiwajima_fly_v6_attack_sum_candidate_20261102",
+        "ticketRuleVersion": "heiwajima_fly_v6_normal12_plus_fly8",
         "s16OuterHead": True,
         "sabTicketCountUsed": False,
         "raceCount": 12,

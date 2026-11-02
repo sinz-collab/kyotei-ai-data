@@ -1,0 +1,5984 @@
+{
+  "fixture_sha256": "056a5ba1b68e2a7917103d07f5b5d80d380eb444074ae5bc4e33f0803c986f56",
+  "input_policy": "inference_then_score; result/payout/odds/stored predictions excluded",
+  "baseline_definition": "v2.7 P(lane1 loses)=1-P1; top8 non-lane1 heads by v2.7 trifecta score",
+  "candidate_definition": "model.py frozen constants",
+  "stage_counts": {
+    "morning": 77
+  },
+  "actual_lane1_fly": 31,
+  "baseline": {
+    "races": 77,
+    "fly_decision_correct": 37,
+    "fly_decision_accuracy": 0.480519,
+    "normal_hits": 41,
+    "normal_hit_rate": 0.532468,
+    "fly_ticket_hits": 2,
+    "fly_ticket_hit_rate": 0.025974,
+    "union_hits": 43,
+    "union_hit_rate": 0.558442,
+    "overlap_total": 29,
+    "overlap_mean": 0.376623
+  },
+  "candidate": {
+    "races": 77,
+    "fly_decision_correct": 46,
+    "fly_decision_accuracy": 0.597403,
+    "normal_hits": 41,
+    "normal_hit_rate": 0.532468,
+    "fly_ticket_hits": 5,
+    "fly_ticket_hit_rate": 0.064935,
+    "union_hits": 46,
+    "union_hit_rate": 0.597403,
+    "overlap_total": 18,
+    "overlap_mean": 0.233766
+  },
+  "rows": [
+    {
+      "date": "2026-10-01",
+      "race_no": 1,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-2",
+        "1-3-2",
+        "1-2-4",
+        "1-2-3",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.647163,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-2",
+        "3-2-6",
+        "3-2-5",
+        "3-4-2",
+        "3-1-6",
+        "3-2-4",
+        "3-1-5",
+        "3-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.58646625,
+        "is_fly": true,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.856,
+          "lane1_loss_pattern": 0.86,
+          "best_outer_attack": 0.144,
+          "player_course_matchup": 0.1428,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "4-1-2",
+        "3-1-4",
+        "3-4-5",
+        "3-1-5",
+        "4-1-5"
+      ],
+      "actual": "1-4-3",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 3,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-3-2",
+        "1-4-2",
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-4-3",
+        "1-3-5",
+        "1-4-5",
+        "1-3-6",
+        "1-4-6",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.629294,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-4-2",
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "3-1-2",
+        "5-3-2",
+        "5-4-2",
+        "5-2-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.36216771,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.476,
+          "lane1_loss_pattern": -0.092,
+          "best_outer_attack": -0.616,
+          "player_course_matchup": -0.2224,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-1-2",
+        "5-4-3",
+        "6-1-2",
+        "4-5-1",
+        "4-1-5"
+      ],
+      "actual": "4-3-5",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 5,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-2-4",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-2",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.539924,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "2-4-3",
+        "2-4-5",
+        "2-4-6",
+        "2-1-3",
+        "2-1-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.32568999,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.6,
+          "lane1_loss_pattern": -0.8,
+          "best_outer_attack": -0.528,
+          "player_course_matchup": 1.0668,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "2-1-5",
+        "2-3-1",
+        "2-1-4",
+        "3-4-1",
+        "2-1-6",
+        "2-3-5",
+        "3-4-2"
+      ],
+      "actual": "1-2-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "3-1-2",
+        "3-1-6",
+        "3-2-6",
+        "3-1-5",
+        "3-4-2",
+        "3-2-5",
+        "3-4-6",
+        "1-2-6",
+        "3-1-4",
+        "1-4-2",
+        "3-4-5",
+        "3-2-4"
+      ],
+      "baseline_fly_probability": 0.727154,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-2",
+        "3-1-6",
+        "3-2-6",
+        "3-1-5",
+        "3-4-2",
+        "3-2-5",
+        "3-4-6",
+        "3-1-4"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.50505983,
+        "is_fly": true,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.668,
+          "lane1_loss_pattern": 0.332,
+          "best_outer_attack": 0.0,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-1-4",
+        "3-4-5",
+        "3-1-5",
+        "3-4-6",
+        "4-1-2"
+      ],
+      "actual": "1-2-3",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 8,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 6
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 7,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-4-2",
+        "1-2-3",
+        "1-4-6",
+        "1-4-5",
+        "1-3-2",
+        "1-3-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.642838,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-1-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.44024692,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.284,
+          "lane1_loss_pattern": -0.288,
+          "best_outer_attack": 0.092,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "player_course_win_rate",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-4",
+        "3-1-5"
+      ],
+      "actual": "3-1-5",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 1,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-2",
+        "1-4-6",
+        "1-2-4",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.647828,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-6",
+        "4-2-5",
+        "4-1-2",
+        "4-2-3",
+        "4-3-2",
+        "4-1-6",
+        "4-3-6",
+        "4-1-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.52340688,
+        "is_fly": true,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.72,
+          "lane1_loss_pattern": 0.08,
+          "best_outer_attack": 0.424,
+          "player_course_matchup": -0.3652,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "4-5-1",
+        "4-1-5",
+        "4-1-2",
+        "4-5-2",
+        "2-1-3",
+        "4-5-6",
+        "4-1-6",
+        "4-1-3"
+      ],
+      "actual": "1-4-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-4-2",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-2-3",
+        "1-4-6",
+        "1-4-5",
+        "1-3-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.582745,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-4-2",
+        "3-2-5",
+        "3-2-4",
+        "3-1-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.32540192,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.168,
+          "lane1_loss_pattern": -0.332,
+          "best_outer_attack": 0.088,
+          "player_course_matchup": -0.8948,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "4-1-2",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-3-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-2",
+        "1-4-6",
+        "1-4-5",
+        "1-3-2",
+        "1-2-4",
+        "1-3-6",
+        "3-1-2",
+        "1-3-5",
+        "3-1-6",
+        "3-1-5"
+      ],
+      "baseline_fly_probability": 0.72604,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-2",
+        "3-1-6",
+        "3-1-5",
+        "3-1-4",
+        "2-1-6",
+        "2-1-5",
+        "3-2-6",
+        "3-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.29906379,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.116,
+          "lane1_loss_pattern": -0.352,
+          "best_outer_attack": -0.464,
+          "player_course_matchup": -0.4,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-1-2",
+        "3-4-2",
+        "3-1-4",
+        "2-1-5",
+        "3-4-5",
+        "3-1-5"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 3,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 2
+    },
+    {
+      "date": "2026-10-01",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-4-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.501219,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "2-3-6",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.29667121,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.668,
+          "lane1_loss_pattern": -0.804,
+          "best_outer_attack": -0.092,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "player_course_win_rate",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-3",
+        "3-4-6",
+        "3-1-4",
+        "3-1-5"
+      ],
+      "actual": "1-3-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 1,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-3-6",
+        "1-3-2",
+        "1-4-6",
+        "1-4-2",
+        "1-3-5",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.631208,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-1-6",
+        "2-3-6",
+        "2-4-6",
+        "2-1-5",
+        "2-3-5",
+        "2-1-4",
+        "2-1-3",
+        "2-4-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.41620208,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.668,
+          "lane1_loss_pattern": 0.668,
+          "best_outer_attack": -0.616,
+          "player_course_matchup": -0.3332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "2-1-5",
+        "2-1-4",
+        "2-3-1",
+        "3-1-2",
+        "2-1-6",
+        "3-4-2"
+      ],
+      "actual": "4-1-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 2,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-3-2",
+        "1-4-2",
+        "1-2-4",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-4-3",
+        "1-4-5",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.63007,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-6",
+        "2-1-6",
+        "2-3-6",
+        "4-1-2",
+        "4-2-3",
+        "4-2-5",
+        "2-1-3",
+        "4-3-2"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.49138085,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 1.06,
+          "lane1_loss_pattern": 0.588,
+          "best_outer_attack": -0.52,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "player_course_win_rate",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "6-1-2",
+        "3-4-1",
+        "2-1-5",
+        "4-1-5",
+        "4-5-1",
+        "4-1-2",
+        "3-1-2"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 3,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "3-1-6",
+        "3-1-2",
+        "3-1-5",
+        "2-1-6",
+        "3-1-4",
+        "2-1-5",
+        "1-2-6",
+        "3-2-6",
+        "2-1-4",
+        "1-4-6",
+        "1-4-2",
+        "1-2-5"
+      ],
+      "baseline_fly_probability": 0.766051,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-6",
+        "3-1-2",
+        "3-1-5",
+        "2-1-6",
+        "3-1-4",
+        "2-1-5",
+        "3-2-6",
+        "2-1-4"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.64460869,
+        "is_fly": true,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 1.764,
+          "lane1_loss_pattern": 1.764,
+          "best_outer_attack": -0.332,
+          "player_course_matchup": -0.1548,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-1-2",
+        "3-1-4",
+        "3-4-2",
+        "2-1-5",
+        "3-1-5",
+        "2-1-4"
+      ],
+      "actual": "4-5-2",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 8,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 5
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 4,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-3-2",
+        "1-2-6",
+        "1-2-3",
+        "1-4-2",
+        "1-2-4",
+        "1-3-5",
+        "1-4-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-6",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.540979,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-4-2",
+        "3-2-4",
+        "3-4-5",
+        "3-4-6",
+        "4-2-5",
+        "3-1-2"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.26535165,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.668,
+          "lane1_loss_pattern": -0.856,
+          "best_outer_attack": -0.428,
+          "player_course_matchup": 0.1212,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "4-1-2",
+        "3-1-5",
+        "4-5-1"
+      ],
+      "actual": "1-3-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 5,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "3-1-2",
+        "3-1-5",
+        "4-1-2",
+        "3-1-6",
+        "4-1-5",
+        "4-1-6",
+        "3-2-5",
+        "3-1-4",
+        "1-2-5",
+        "4-1-3",
+        "3-2-6",
+        "2-1-5"
+      ],
+      "baseline_fly_probability": 0.770185,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-2",
+        "3-1-5",
+        "4-1-2",
+        "3-1-6",
+        "4-1-5",
+        "4-1-6",
+        "3-2-5",
+        "3-1-4"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.48343007,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.768,
+          "lane1_loss_pattern": 0.704,
+          "best_outer_attack": -0.456,
+          "player_course_matchup": 0.0888,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "4-5-1",
+        "4-1-2",
+        "3-1-2",
+        "4-1-5",
+        "2-1-3",
+        "3-4-2",
+        "3-1-5"
+      ],
+      "actual": "3-2-6",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 8,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 4
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.559733,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.18595484,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.036,
+          "lane1_loss_pattern": -1.032,
+          "best_outer_attack": -0.748,
+          "player_course_matchup": -0.1556,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "2-1-3",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-4-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-4-2",
+        "1-4-6",
+        "1-3-2",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.633875,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-4-6",
+        "2-3-6",
+        "2-4-5",
+        "2-1-6",
+        "2-3-5",
+        "2-1-5",
+        "3-2-6",
+        "3-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.42819973,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.284,
+          "lane1_loss_pattern": -0.572,
+          "best_outer_attack": -0.616,
+          "player_course_matchup": 2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "2-1-5",
+        "3-4-2",
+        "3-1-2",
+        "2-1-4",
+        "2-3-1",
+        "3-4-5"
+      ],
+      "actual": "1-4-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-6",
+        "1-4-3",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.500799,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "2-3-6",
+        "2-3-5",
+        "3-4-6",
+        "3-4-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.19338804,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.8,
+          "lane1_loss_pattern": -0.932,
+          "best_outer_attack": -0.236,
+          "player_course_matchup": -1.2532,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-4-5",
+        "3-1-2",
+        "2-1-5",
+        "3-1-4",
+        "3-4-6"
+      ],
+      "actual": "4-5-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-02",
+      "race_no": 11,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-2-6",
+        "1-4-2",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-3-6",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.52037,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-4",
+        "3-2-6",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "3-1-2",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.24299077,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.304,
+          "lane1_loss_pattern": -0.424,
+          "best_outer_attack": 0.0,
+          "player_course_matchup": -1.7716,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "2-1-3",
+        "3-1-4",
+        "3-1-5",
+        "2-1-5"
+      ],
+      "actual": "1-3-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 1,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-2",
+        "1-3-2",
+        "1-2-4",
+        "1-2-3",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.685508,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-2",
+        "3-1-6",
+        "3-2-6",
+        "3-1-5",
+        "3-2-5",
+        "3-4-2",
+        "3-1-4",
+        "3-2-4"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.64540369,
+        "is_fly": true,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 1.528,
+          "lane1_loss_pattern": 1.528,
+          "best_outer_attack": -0.332,
+          "player_course_matchup": 0.3428,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-1-2",
+        "3-4-2",
+        "2-1-3",
+        "3-1-4",
+        "6-1-2",
+        "3-1-5",
+        "3-4-5"
+      ],
+      "actual": "4-6-1",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 2,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-2-3",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-4-5",
+        "1-3-6",
+        "1-4-6",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.59722,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "3-1-2",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.36378813,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.544,
+          "lane1_loss_pattern": 0.0,
+          "best_outer_attack": -0.236,
+          "player_course_matchup": -1.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-4",
+        "3-1-5"
+      ],
+      "actual": "2-5-4",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 3,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-2-3",
+        "1-3-6",
+        "1-4-6",
+        "1-3-5",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.595256,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-1-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.25835961,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.4,
+          "lane1_loss_pattern": -0.136,
+          "best_outer_attack": -0.652,
+          "player_course_matchup": -1.5556,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "3-1-5",
+        "2-1-3",
+        "3-4-6"
+      ],
+      "actual": "3-1-4",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 1,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 4,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-2-3",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.545398,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.22061054,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.668,
+          "lane1_loss_pattern": -0.796,
+          "best_outer_attack": -0.428,
+          "player_course_matchup": -0.6856,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5",
+        "2-1-3"
+      ],
+      "actual": "5-3-6",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 5,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-6",
+        "1-4-5",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-3-2",
+        "1-2-4",
+        "1-2-3",
+        "3-1-6",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.7184,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-6",
+        "3-1-5",
+        "3-1-2",
+        "2-1-6",
+        "2-1-5",
+        "3-1-4",
+        "3-2-6",
+        "3-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.50595972,
+        "is_fly": true,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.5,
+          "lane1_loss_pattern": 0.004,
+          "best_outer_attack": -0.428,
+          "player_course_matchup": 1.2,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-1-2",
+        "2-1-5",
+        "3-4-2",
+        "3-1-4",
+        "3-1-5",
+        "2-1-4"
+      ],
+      "actual": "2-1-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 1,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 1,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-3-6",
+        "1-2-3",
+        "1-3-5",
+        "1-3-2",
+        "1-4-6",
+        "1-4-5",
+        "1-4-2",
+        "1-4-3",
+        "2-1-6",
+        "1-2-4"
+      ],
+      "baseline_fly_probability": 0.714486,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-1-6",
+        "2-1-5",
+        "2-1-3",
+        "4-1-6",
+        "4-1-5",
+        "4-1-2",
+        "2-3-6",
+        "4-1-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.47923196,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 2.0,
+          "lane1_loss_pattern": 1.2,
+          "best_outer_attack": -0.428,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "4-5-1",
+        "2-1-5",
+        "4-1-5",
+        "3-4-1",
+        "2-3-1",
+        "2-1-4",
+        "2-1-6"
+      ],
+      "actual": "4-6-5",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 1,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 1
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 7,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-2",
+        "1-3-2",
+        "1-4-6",
+        "1-2-3",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-2-4",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.710828,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-1-2",
+        "3-1-6",
+        "4-1-2",
+        "3-1-5",
+        "4-1-6",
+        "3-2-6",
+        "4-1-5",
+        "3-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.46862129,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 1.092,
+          "lane1_loss_pattern": 0.728,
+          "best_outer_attack": -0.776,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "4-5-1",
+        "3-1-2",
+        "3-4-2",
+        "2-1-3",
+        "4-1-5",
+        "3-1-5",
+        "4-1-2"
+      ],
+      "actual": "5-1-4",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-2",
+        "1-4-6",
+        "1-2-4",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.644104,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-6",
+        "4-2-5",
+        "4-2-3",
+        "4-3-2",
+        "4-1-2",
+        "4-3-6",
+        "4-3-5",
+        "4-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.29453901,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.316,
+          "lane1_loss_pattern": -0.316,
+          "best_outer_attack": 0.092,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "4-5-1",
+        "4-1-5",
+        "2-1-3",
+        "4-1-2",
+        "4-5-2",
+        "2-1-5",
+        "4-5-6",
+        "4-1-6"
+      ],
+      "actual": "2-3-4",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-2",
+        "1-2-4",
+        "1-3-2",
+        "1-2-3",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.609917,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-4-2",
+        "3-2-4",
+        "3-4-6",
+        "3-1-2",
+        "3-4-5",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.4554941,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.168,
+          "lane1_loss_pattern": -0.332,
+          "best_outer_attack": 0.752,
+          "player_course_matchup": -0.2948,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "3-1-5",
+        "3-4-6",
+        "2-1-3"
+      ],
+      "actual": "1-6-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 11,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-6",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3",
+        "1-4-6",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.502118,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-3",
+        "4-2-6",
+        "4-2-5",
+        "3-2-6",
+        "4-3-2",
+        "3-2-5",
+        "2-3-6",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.28138862,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.452,
+          "lane1_loss_pattern": -0.84,
+          "best_outer_attack": 0.112,
+          "player_course_matchup": -0.8332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-1-2",
+        "3-4-5",
+        "4-5-1",
+        "4-1-5"
+      ],
+      "actual": "5-1-4",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-03",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-3",
+        "1-2-6",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.536313,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "3-4-2",
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "3-4-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.13262981,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.588,
+          "lane1_loss_pattern": -1.724,
+          "best_outer_attack": -0.2,
+          "player_course_matchup": -1.0912,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-1-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-4",
+        "3-1-5"
+      ],
+      "actual": "3-6-1",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 2,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.514469,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "3-2-5",
+        "3-2-6",
+        "2-4-3",
+        "2-4-5",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.12535811,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.408,
+          "lane1_loss_pattern": -1.556,
+          "best_outer_attack": 0.004,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-4-5",
+        "3-1-2",
+        "2-1-4",
+        "2-3-1"
+      ],
+      "actual": "1-2-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 3,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.55345,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "2-3-6",
+        "3-2-5",
+        "2-3-5",
+        "2-4-6",
+        "3-2-4",
+        "2-3-4",
+        "2-4-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.13773774,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.484,
+          "lane1_loss_pattern": -1.48,
+          "best_outer_attack": -0.092,
+          "player_course_matchup": -1.4564,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-1-2",
+        "3-4-5",
+        "2-1-4",
+        "2-3-1"
+      ],
+      "actual": "1-4-3",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 4,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.535164,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "2-3-6",
+        "3-1-2"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.19986537,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.628,
+          "lane1_loss_pattern": -0.856,
+          "best_outer_attack": 0.036,
+          "player_course_matchup": -1.8668,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-3",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-2-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 5,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-6",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-4-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.584097,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "2-4-5",
+        "2-4-6",
+        "2-3-4",
+        "2-4-3",
+        "3-2-5",
+        "3-2-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.24282011,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.028,
+          "lane1_loss_pattern": -1.352,
+          "best_outer_attack": -0.076,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "player_course_win_rate",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "2-1-4",
+        "3-1-2",
+        "2-3-1",
+        "3-4-5"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-3-6",
+        "1-2-4",
+        "1-3-5",
+        "1-4-2",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.60202,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-6",
+        "2-3-5",
+        "2-4-6",
+        "3-2-6",
+        "2-4-5",
+        "4-2-6",
+        "2-1-6",
+        "2-4-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.38733128,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.316,
+          "lane1_loss_pattern": -0.524,
+          "best_outer_attack": -0.136,
+          "player_course_matchup": 0.6668,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "2-1-5",
+        "3-4-2",
+        "3-1-2",
+        "4-5-1",
+        "4-1-5",
+        "2-1-4"
+      ],
+      "actual": "1-3-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 7,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.517919,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "2-3-6",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.21422965,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.76,
+          "lane1_loss_pattern": -1.172,
+          "best_outer_attack": -0.04,
+          "player_course_matchup": -1.0548,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-3",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-2-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-4-2",
+        "1-3-2",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.587364,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.30644335,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.24,
+          "lane1_loss_pattern": -0.4,
+          "best_outer_attack": -0.4,
+          "player_course_matchup": -0.2,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "2-1-3",
+        "3-4-5",
+        "3-1-4",
+        "3-1-5",
+        "2-1-5"
+      ],
+      "actual": "4-5-6",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.516757,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "2-3-6",
+        "2-3-5",
+        "3-4-6",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.21315964,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.924,
+          "lane1_loss_pattern": -1.076,
+          "best_outer_attack": -0.276,
+          "player_course_matchup": -0.5332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-4-5",
+        "3-1-2",
+        "2-1-5",
+        "3-4-6",
+        "3-1-4"
+      ],
+      "actual": "3-1-5",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-3-6",
+        "1-4-2",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.583752,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "2-3-6",
+        "2-3-5",
+        "2-4-6",
+        "3-2-4",
+        "2-4-5",
+        "3-4-2"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.18104552,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.36,
+          "lane1_loss_pattern": -1.52,
+          "best_outer_attack": -0.432,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "player_course_win_rate",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-1-2",
+        "2-1-5",
+        "3-4-5",
+        "4-5-1",
+        "3-1-4"
+      ],
+      "actual": "1-4-6",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-13",
+      "race_no": 11,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-4-2",
+        "1-3-2",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.622524,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-1-2",
+        "3-4-5",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.47088896,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.24,
+          "lane1_loss_pattern": -0.4,
+          "best_outer_attack": 0.8,
+          "player_course_matchup": -0.6668,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-4",
+        "3-1-5"
+      ],
+      "actual": "1-6-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 4,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-3-6",
+        "1-4-2",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.545769,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-6",
+        "4-2-5",
+        "4-2-3",
+        "4-3-2",
+        "4-3-6",
+        "4-3-5",
+        "2-3-6",
+        "3-2-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.17155138,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.356,
+          "lane1_loss_pattern": -1.352,
+          "best_outer_attack": 0.144,
+          "player_course_matchup": -1.3076,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "4-5-1",
+        "3-4-1",
+        "2-1-3",
+        "4-1-5",
+        "4-5-2",
+        "4-1-2",
+        "3-4-2",
+        "2-1-5"
+      ],
+      "actual": "1-3-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-4-2",
+        "1-2-3",
+        "1-3-2",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.577957,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.3703154,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.332,
+          "lane1_loss_pattern": -0.832,
+          "best_outer_attack": 0.472,
+          "player_course_matchup": -0.3332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-3",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "3-4-5",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 1,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 1,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 7,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-6",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-4-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.540522,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "3-1-2",
+        "4-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.21890413,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.872,
+          "lane1_loss_pattern": -0.976,
+          "best_outer_attack": 0.176,
+          "player_course_matchup": -1.3332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-3",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.495856,
+      "baseline_is_fly": false,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "2-4-3",
+        "2-4-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.17107211,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.448,
+          "lane1_loss_pattern": -1.448,
+          "best_outer_attack": 0.0,
+          "player_course_matchup": -0.8824,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-2",
+        "2-1-4",
+        "2-3-1"
+      ],
+      "actual": "1-2-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.524808,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "4-2-6",
+        "4-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.23208489,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.716,
+          "lane1_loss_pattern": -0.856,
+          "best_outer_attack": 0.052,
+          "player_course_matchup": -1.1828,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "3-4-6",
+        "3-1-4",
+        "5-4-3",
+        "3-1-5"
+      ],
+      "actual": "1-2-3",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-3-6",
+        "1-4-2",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3",
+        "1-4-6",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.485803,
+      "baseline_is_fly": false,
+      "baseline_fly": [
+        "2-3-6",
+        "2-3-5",
+        "2-3-4",
+        "2-4-3",
+        "2-4-6",
+        "2-4-5",
+        "3-2-6",
+        "3-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.23853648,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.076,
+          "lane1_loss_pattern": -0.94,
+          "best_outer_attack": 0.92,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "2-1-5",
+        "3-4-2",
+        "2-1-4",
+        "2-3-1",
+        "2-3-5",
+        "2-1-6"
+      ],
+      "actual": "1-2-3",
+      "actual_fly": false,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 11,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-3-6",
+        "1-4-2",
+        "1-4-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.571556,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-6",
+        "2-4-6",
+        "2-3-5",
+        "2-3-4",
+        "2-4-3",
+        "2-4-5",
+        "2-1-6",
+        "3-2-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.19717707,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.092,
+          "lane1_loss_pattern": -1.092,
+          "best_outer_attack": 0.004,
+          "player_course_matchup": -1.0796,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "2-1-5",
+        "3-4-2",
+        "2-1-4",
+        "2-3-1",
+        "2-1-6",
+        "3-1-2"
+      ],
+      "actual": "1-4-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-14",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-4-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.492536,
+      "baseline_is_fly": false,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.18390492,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.232,
+          "lane1_loss_pattern": -1.228,
+          "best_outer_attack": -0.248,
+          "player_course_matchup": -0.6376,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "3-4-6",
+        "3-1-4",
+        "3-1-5",
+        "3-2-5"
+      ],
+      "actual": "1-5-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-15",
+      "race_no": 2,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-3-6",
+        "1-4-2",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.546212,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-6",
+        "3-2-6",
+        "2-3-5",
+        "4-2-6",
+        "2-4-6",
+        "3-2-5",
+        "4-2-3",
+        "4-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.26285153,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.26,
+          "lane1_loss_pattern": -1.26,
+          "best_outer_attack": 0.26,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "player_course_win_rate",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-1-2",
+        "4-5-1",
+        "3-4-5",
+        "4-1-5"
+      ],
+      "actual": "1-3-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-15",
+      "race_no": 4,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-2",
+        "1-2-4",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.619225,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-6",
+        "4-2-5",
+        "4-2-3",
+        "4-3-2",
+        "4-3-6",
+        "4-3-5",
+        "4-1-2",
+        "4-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.41528488,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.428,
+          "lane1_loss_pattern": -0.716,
+          "best_outer_attack": -0.064,
+          "player_course_matchup": 1.2,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "4-5-1",
+        "2-1-3",
+        "3-4-1",
+        "4-1-5",
+        "2-1-5",
+        "4-1-2",
+        "4-5-2",
+        "3-4-2"
+      ],
+      "actual": "2-4-6",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-15",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-3",
+        "1-2-6",
+        "1-3-2",
+        "1-2-4",
+        "1-3-5",
+        "1-4-2",
+        "1-3-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.595913,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "2-4-5",
+        "2-4-3",
+        "2-3-4",
+        "4-2-5",
+        "2-4-6",
+        "2-1-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.29550406,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.396,
+          "lane1_loss_pattern": -1.392,
+          "best_outer_attack": -0.46,
+          "player_course_matchup": 2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "2-1-5",
+        "4-5-1",
+        "2-1-4",
+        "2-3-1",
+        "4-1-5",
+        "3-4-2"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-15",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-4-2",
+        "1-2-4",
+        "1-3-2",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.619213,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-4-2",
+        "3-2-4",
+        "3-4-6",
+        "3-1-2",
+        "3-4-5",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.39556381,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.0,
+          "lane1_loss_pattern": -0.368,
+          "best_outer_attack": -0.156,
+          "player_course_matchup": 0.2768,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-1-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-4",
+        "3-1-5"
+      ],
+      "actual": "1-5-6",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-15",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.542363,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "2-3-6",
+        "2-3-5",
+        "2-3-4",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.11430321,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.48,
+          "lane1_loss_pattern": -1.48,
+          "best_outer_attack": -0.168,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-4-5",
+        "3-1-2",
+        "2-1-5",
+        "3-1-4",
+        "3-4-6"
+      ],
+      "actual": "1-2-3",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 1,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-6",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4",
+        "1-4-6",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.481647,
+      "baseline_is_fly": false,
+      "baseline_fly": [
+        "2-3-6",
+        "2-3-5",
+        "4-2-3",
+        "4-2-6",
+        "2-4-3",
+        "4-2-5",
+        "2-3-4",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.23559924,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.364,
+          "lane1_loss_pattern": -0.728,
+          "best_outer_attack": 0.076,
+          "player_course_matchup": -1.72,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "2-1-5",
+        "5-4-3",
+        "4-5-1",
+        "4-1-5",
+        "2-3-1",
+        "3-4-1",
+        "2-1-4"
+      ],
+      "actual": "1-2-6",
+      "actual_fly": false,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 5,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-3-6",
+        "1-3-5",
+        "1-2-4",
+        "1-4-2",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.610894,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-6",
+        "2-3-5",
+        "2-4-6",
+        "4-2-6",
+        "2-4-5",
+        "2-4-3",
+        "4-2-5",
+        "4-2-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.31788599,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.224,
+          "lane1_loss_pattern": -0.664,
+          "best_outer_attack": -0.236,
+          "player_course_matchup": -0.1332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "4-5-1",
+        "2-1-5",
+        "4-1-5",
+        "3-4-2",
+        "2-3-1",
+        "2-1-4"
+      ],
+      "actual": "2-1-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 1,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.559019,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.18059049,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.312,
+          "lane1_loss_pattern": -1.444,
+          "best_outer_attack": -0.048,
+          "player_course_matchup": -0.7776,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "3-1-4",
+        "2-1-3",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-2-6",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-4",
+        "1-4-5",
+        "1-3-6",
+        "1-4-3",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.504495,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-4",
+        "3-2-6",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "3-1-2",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.20758111,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.316,
+          "lane1_loss_pattern": -0.948,
+          "best_outer_attack": -0.168,
+          "player_course_matchup": -1.7144,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "3-1-4",
+        "3-4-6",
+        "2-1-3",
+        "3-1-5"
+      ],
+      "actual": "1-2-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-3-6",
+        "1-4-2",
+        "1-2-4",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.615566,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-6",
+        "4-2-5",
+        "4-2-3",
+        "4-3-2",
+        "4-3-6",
+        "3-2-6",
+        "2-3-6",
+        "4-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.26985468,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.0,
+          "lane1_loss_pattern": -0.46,
+          "best_outer_attack": 0.176,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "4-5-1",
+        "3-4-2",
+        "4-1-5",
+        "2-1-5",
+        "3-1-2",
+        "4-1-2"
+      ],
+      "actual": "3-2-4",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.599813,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "2-3-6",
+        "2-3-5",
+        "3-2-4",
+        "3-4-2",
+        "2-4-6",
+        "2-4-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.32863086,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.144,
+          "lane1_loss_pattern": -0.144,
+          "best_outer_attack": 0.14,
+          "player_course_matchup": -1.4872,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-1-2",
+        "2-1-5",
+        "6-1-2",
+        "3-4-5",
+        "2-1-4"
+      ],
+      "actual": "1-2-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 11,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-4-6",
+        "1-4-2",
+        "1-3-6",
+        "1-3-2",
+        "1-4-5",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.628135,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "2-4-6",
+        "2-3-6",
+        "3-2-5",
+        "2-1-6",
+        "2-4-5",
+        "3-2-4",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.2812754,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.88,
+          "lane1_loss_pattern": -1.2,
+          "best_outer_attack": 0.336,
+          "player_course_matchup": -0.3812,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-1-2",
+        "3-4-5",
+        "2-1-4",
+        "3-1-4"
+      ],
+      "actual": "2-1-6",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 1,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-16",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-2",
+        "1-3-4",
+        "1-4-6",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.577865,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-6",
+        "2-3-5",
+        "2-3-4",
+        "2-4-6",
+        "2-4-5",
+        "2-4-3",
+        "2-1-6",
+        "2-1-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.26859867,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.12,
+          "lane1_loss_pattern": -1.316,
+          "best_outer_attack": 0.428,
+          "player_course_matchup": -0.3332,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "2-1-5",
+        "2-1-4",
+        "2-3-1",
+        "3-4-2",
+        "2-1-6",
+        "3-1-2"
+      ],
+      "actual": "5-1-2",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 1,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.517145,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "2-3-6",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.14137456,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.304,
+          "lane1_loss_pattern": -1.304,
+          "best_outer_attack": 0.068,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-4-5",
+        "3-1-2",
+        "3-4-6",
+        "2-1-5",
+        "3-1-4"
+      ],
+      "actual": "6-4-2",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 2,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-4",
+        "1-2-6",
+        "1-4-2",
+        "1-3-2",
+        "1-2-3",
+        "1-4-5",
+        "1-3-5",
+        "1-3-4",
+        "1-4-6",
+        "1-3-6",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.539991,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-4",
+        "3-2-6",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "3-1-2",
+        "3-1-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.1725588,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.896,
+          "lane1_loss_pattern": -0.896,
+          "best_outer_attack": -0.236,
+          "player_course_matchup": -1.59,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5",
+        "3-2-5"
+      ],
+      "actual": "4-3-2",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 3,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-2-6",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-4",
+        "1-3-6",
+        "1-4-5",
+        "1-4-3",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.500896,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-4",
+        "3-2-6",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "3-1-2",
+        "2-3-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.13675825,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.12,
+          "lane1_loss_pattern": -1.32,
+          "best_outer_attack": -0.732,
+          "player_course_matchup": -1.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "3-1-4",
+        "3-4-6",
+        "2-1-3",
+        "3-1-5"
+      ],
+      "actual": "4-3-2",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 5,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-3",
+        "1-2-6",
+        "1-3-2",
+        "1-2-4",
+        "1-3-5",
+        "1-4-2",
+        "1-3-6",
+        "1-4-5",
+        "1-4-3",
+        "1-4-6",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.599801,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-5",
+        "4-2-3",
+        "2-3-5",
+        "4-2-6",
+        "2-3-6",
+        "4-3-2",
+        "2-4-5",
+        "2-4-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.38615111,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.4,
+          "lane1_loss_pattern": -0.6,
+          "best_outer_attack": 0.112,
+          "player_course_matchup": 0.4,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "3-4-1",
+        "4-5-1",
+        "2-1-5",
+        "4-1-5",
+        "3-4-2",
+        "2-1-4",
+        "4-1-2"
+      ],
+      "actual": "1-3-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-4",
+        "1-2-3",
+        "1-4-2",
+        "1-3-2",
+        "1-4-6",
+        "1-3-6",
+        "1-4-5",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.561272,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.22424944,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.332,
+          "lane1_loss_pattern": -1.468,
+          "best_outer_attack": -0.112,
+          "player_course_matchup": 0.2224,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-3",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5"
+      ],
+      "actual": "1-4-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 7,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-6",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-5",
+        "1-4-6",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.50579,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "3-2-5",
+        "3-2-6",
+        "2-3-4",
+        "3-2-4",
+        "2-4-5",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.13113687,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.26,
+          "lane1_loss_pattern": -1.26,
+          "best_outer_attack": -0.164,
+          "player_course_matchup": -1.9712,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-4-5",
+        "3-1-2",
+        "2-1-4",
+        "2-3-1"
+      ],
+      "actual": "4-2-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-3-2",
+        "1-3-5",
+        "1-3-6",
+        "1-4-2",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.501999,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "2-4-3",
+        "2-4-5",
+        "2-4-6",
+        "2-1-3",
+        "2-1-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.32209863,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.104,
+          "lane1_loss_pattern": -0.736,
+          "best_outer_attack": 0.26,
+          "player_course_matchup": -1.0132,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "2-1-5",
+        "2-1-4",
+        "2-3-1",
+        "2-3-5",
+        "2-1-6",
+        "3-4-1",
+        "2-3-4"
+      ],
+      "actual": "5-2-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 9,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-4-2",
+        "1-2-4",
+        "1-3-2",
+        "1-4-6",
+        "1-4-5",
+        "1-2-3",
+        "1-3-6",
+        "1-3-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.665327,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-1-2",
+        "3-4-2",
+        "3-2-4",
+        "3-1-6",
+        "3-1-5",
+        "3-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.37656355,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.088,
+          "lane1_loss_pattern": -0.44,
+          "best_outer_attack": -0.04,
+          "player_course_matchup": 0.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "3-1-5",
+        "3-4-6",
+        "4-1-2"
+      ],
+      "actual": "1-2-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 10,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-5",
+        "1-2-6",
+        "1-2-3",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-4-5",
+        "1-4-6",
+        "1-4-3",
+        "1-3-4"
+      ],
+      "baseline_fly_probability": 0.587769,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "3-4-2",
+        "3-4-5",
+        "3-4-6",
+        "2-3-5",
+        "2-3-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.29388118,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.876,
+          "lane1_loss_pattern": -0.996,
+          "best_outer_attack": -0.276,
+          "player_course_matchup": 0.6856,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-1-2",
+        "3-4-5",
+        "2-1-5",
+        "3-1-4",
+        "4-5-1"
+      ],
+      "actual": "4-1-3",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-17",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-6",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-3",
+        "1-3-4",
+        "1-4-6",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.491721,
+      "baseline_is_fly": false,
+      "baseline_fly": [
+        "2-3-6",
+        "4-2-3",
+        "2-3-5",
+        "4-2-6",
+        "4-2-5",
+        "2-4-3",
+        "2-3-4",
+        "4-3-2"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.16886678,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.924,
+          "lane1_loss_pattern": -0.94,
+          "best_outer_attack": 0.0,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "2-1-3",
+        "2-1-5",
+        "3-4-1",
+        "4-5-1",
+        "3-4-2",
+        "4-1-5",
+        "2-1-4",
+        "2-3-1"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 1,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-4-6",
+        "1-3-5",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.558801,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "2-3-6",
+        "2-4-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.25338795,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.4,
+          "lane1_loss_pattern": -1.0,
+          "best_outer_attack": -0.108,
+          "player_course_matchup": -0.8572,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "3-4-5",
+        "3-1-2",
+        "3-1-4",
+        "2-1-5",
+        "3-4-6"
+      ],
+      "actual": "5-6-1",
+      "actual_fly": true,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 0,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 0,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 0,
+      "candidate_normal_hit": 0,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 0,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 4,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-2-3",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.523925,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "4-2-6",
+        "3-2-4",
+        "4-2-5",
+        "4-2-3",
+        "3-4-2",
+        "4-3-2"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.29304517,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.364,
+          "lane1_loss_pattern": -0.728,
+          "best_outer_attack": 0.14,
+          "player_course_matchup": -0.902,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "4-5-1",
+        "4-1-5",
+        "3-4-6",
+        "3-1-4"
+      ],
+      "actual": "1-3-2",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 6,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-3",
+        "1-2-5",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-6",
+        "1-3-5",
+        "1-4-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5"
+      ],
+      "baseline_fly_probability": 0.528463,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "2-3-6",
+        "3-2-6",
+        "2-3-5",
+        "3-2-5",
+        "2-4-6",
+        "2-3-4",
+        "3-2-4",
+        "2-4-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.10913571,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.5,
+          "lane1_loss_pattern": -1.5,
+          "best_outer_attack": -0.24,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "2-1-5",
+        "3-1-2",
+        "3-4-5",
+        "2-1-4",
+        "2-3-1"
+      ],
+      "actual": "1-3-6",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 7,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-6",
+        "1-2-5",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-2-3",
+        "1-3-6",
+        "1-4-6",
+        "1-3-5",
+        "1-4-5",
+        "1-3-4",
+        "1-4-3"
+      ],
+      "baseline_fly_probability": 0.564104,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-6",
+        "3-2-5",
+        "3-2-4",
+        "3-4-2",
+        "3-4-6",
+        "3-4-5",
+        "3-1-2",
+        "3-1-6"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.32197287,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": 0.0,
+          "lane1_loss_pattern": -0.668,
+          "best_outer_attack": 0.14,
+          "player_course_matchup": -1.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "3-1-2",
+        "3-4-5",
+        "3-1-4",
+        "3-4-6",
+        "3-1-5",
+        "4-1-2"
+      ],
+      "actual": "1-3-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 8,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.406063,
+      "baseline_is_fly": false,
+      "baseline_fly": [
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "2-4-3",
+        "2-4-5",
+        "2-4-6",
+        "4-2-3",
+        "4-2-5"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.17427893,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -1.144,
+          "lane1_loss_pattern": -1.144,
+          "best_outer_attack": 0.036,
+          "player_course_matchup": -1.5,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "5-4-3",
+        "2-1-3",
+        "3-4-2",
+        "3-4-1",
+        "2-1-5",
+        "2-3-5",
+        "4-3-2",
+        "3-1-2"
+      ],
+      "actual": "1-2-4",
+      "actual_fly": false,
+      "baseline_fly_correct": 1,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 11,
+      "stage": "morning",
+      "connector_missing": [],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-3-2",
+        "1-2-4",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.507761,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "4-2-3",
+        "4-2-5",
+        "4-2-6",
+        "4-3-2",
+        "3-2-5",
+        "3-2-6",
+        "4-3-5",
+        "3-2-4"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.18785142,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.94,
+          "lane1_loss_pattern": -1.06,
+          "best_outer_attack": -0.428,
+          "player_course_matchup": -0.7616,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "3-4-2",
+        "2-1-3",
+        "4-5-1",
+        "3-1-2",
+        "4-1-5",
+        "3-4-5",
+        "4-1-2"
+      ],
+      "actual": "1-4-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    },
+    {
+      "date": "2026-10-18",
+      "race_no": 12,
+      "stage": "morning",
+      "connector_missing": [
+        "player_id_unresolved"
+      ],
+      "engine_missing": [
+        "exhibition_pending",
+        "original_exhibition_pending",
+        "player_course_missing",
+        "player_lane_missing"
+      ],
+      "normal": [
+        "1-2-3",
+        "1-2-5",
+        "1-2-6",
+        "1-2-4",
+        "1-3-2",
+        "1-4-2",
+        "1-3-5",
+        "1-3-6",
+        "1-3-4",
+        "1-4-3",
+        "1-4-5",
+        "1-4-6"
+      ],
+      "baseline_fly_probability": 0.526516,
+      "baseline_is_fly": true,
+      "baseline_fly": [
+        "3-2-5",
+        "3-2-6",
+        "3-2-4",
+        "2-3-5",
+        "2-3-6",
+        "2-3-4",
+        "3-4-2",
+        "2-4-3"
+      ],
+      "candidate": {
+        "model_id": "heiwajima_fly_v6_candidate_20261102",
+        "probability": 0.14896777,
+        "is_fly": false,
+        "threshold": 0.5,
+        "features": {
+          "lane1_escape_weakness": -0.924,
+          "lane1_loss_pattern": -0.94,
+          "best_outer_attack": -0.276,
+          "player_course_matchup": -2.0,
+          "exhibition_sum_matchup": 0.0,
+          "lap_matchup": 0.0
+        },
+        "missing": [
+          "lap_score",
+          "sum_score"
+        ]
+      },
+      "candidate_fly": [
+        "3-4-1",
+        "2-1-3",
+        "3-4-2",
+        "3-4-5",
+        "3-1-2",
+        "2-1-5",
+        "3-1-4",
+        "2-1-4"
+      ],
+      "actual": "1-4-5",
+      "actual_fly": false,
+      "baseline_fly_correct": 0,
+      "baseline_normal_hit": 1,
+      "baseline_ticket_hit": 0,
+      "baseline_union_hit": 1,
+      "baseline_overlap": 0,
+      "candidate_fly_correct": 1,
+      "candidate_normal_hit": 1,
+      "candidate_ticket_hit": 0,
+      "candidate_union_hit": 1,
+      "candidate_overlap": 0
+    }
+  ]
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from copy import deepcopy
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -241,6 +242,13 @@ def apply_live_review(payload: dict, race_no: int, live_root: Path) -> dict:
     for ticket in prediction.get("aiUpset") or []:
         combo = str(ticket.get("combo") or "")
         ticket["odds"] = display_odds.get(combo, "-")
+    for ticket in (prediction.get("flyPrediction") or {}).get("tickets") or []:
+        combo = str(ticket.get("combo") or "")
+        ticket["odds"] = display_odds.get(combo, "-")
+
+    for preserved_key in ("result", "realtime", "prediction_history", "active_prediction_stage"):
+        if preserved_key in previous:
+            prediction[preserved_key] = deepcopy(previous[preserved_key])
 
     prediction["liveReviewMeta"] = {
         "method": "heiwajima_server_live_review_v1",

@@ -27,6 +27,7 @@ from heiwajima_v2_7_adjustments import (
     apply_p1_adjustments,
     evaluate_s16,
 )
+from heiwajima_fly_v6_runtime import build_fly_v6_prediction
 
 ROOT = Path(__file__).resolve().parent
 CONFIG = json.loads((ROOT / "config.json").read_text(encoding="utf-8"))
@@ -511,10 +512,11 @@ def calculate(input_data, loader=None):
             r[f"{key}_prob"] = round(p, 6)
 
     p1_adjustment = apply_p1_adjustments(records, boats, scenarios, s16)
+    history_rows = loader.table("historical_tide_races")
     conditional = apply_conditional_placement(
         records,
         scenarios,
-        loader.table("historical_tide_races"),
+        history_rows,
     )
 
     for r in records:
@@ -549,6 +551,13 @@ def calculate(input_data, loader=None):
 
     sab = judge_sab(records, scenarios, completeness, len(tickets))
     sab = _apply_sab_guardrails(sab, records, scenarios, completeness, stage)
+    fly_v6 = build_fly_v6_prediction(
+        input_data,
+        loader,
+        records,
+        scenarios,
+        history_rows,
+    )
     top_heads = {b["boat_no"] for b in sorted(records, key=lambda x: x["win_prob"], reverse=True)[:3]}
     exclusions = [
         {
@@ -589,6 +598,7 @@ def calculate(input_data, loader=None):
         "race_specific_baseline": race_base,
         "slit_adjustments": slit_adjustments,
         "five_head_context": five_head,
+        "flyV6": fly_v6,
     }
 
 
