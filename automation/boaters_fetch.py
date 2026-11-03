@@ -41,6 +41,7 @@ except ImportError:
 BASE_SAVE_ROOT = Path("work/races")
 
 STADIUM_MAP = {
+    "kiryu": "桐生",
     "ashiya": "芦屋",
     "shimonoseki": "下関",
     "wakamatsu": "若松",
@@ -53,6 +54,7 @@ STADIUM_MAP = {
     "fukuoka": "福岡",
     "biwako": "びわこ",
     "naruto": "鳴門",
+    "桐生": "桐生",
     "芦屋": "芦屋",
     "下関": "下関",
     "若松": "若松",
@@ -68,6 +70,7 @@ STADIUM_MAP = {
 }
 
 STADIUM_SLUG_MAP = {
+    "桐生": "kiryu",
     "芦屋": "ashiya",
     "下関": "shimonoseki",
     "若松": "wakamatsu",

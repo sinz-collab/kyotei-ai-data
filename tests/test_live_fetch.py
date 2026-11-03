@@ -222,7 +222,7 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
         self.assertEqual(CONFIG["priority_interval_minutes"], 1)
         self.assertEqual(
             CONFIG["priority_venues"],
-            ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu", "naruto"],
+            ["ashiya", "fukuoka", "wakamatsu", "tokoname", "karatsu", "naruto", "kiryu"],
         )
 
     def test_naruto_prediction_change_triggers_immediate_publish(self) -> None:
