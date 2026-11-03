@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -40,10 +41,22 @@ class NarutoIntegrationTests(unittest.TestCase):
         workflow = (ROOT / ".github" / "workflows" / "morning-data.yml").read_text(encoding="utf-8")
         publisher = (SCRIPTS / "publish_live_data.py").read_text(encoding="utf-8")
 
-        self.assertIn('venues: "tokoname omura karatsu fukuoka heiwajima biwako naruto"', workflow)
-        self.assertIn(
-            'choices=("ashiya", "fukuoka", "karatsu", "naruto", "tokoname", "wakamatsu")',
-            publisher,
+        morning_venues = {
+            venue
+            for group in re.findall(r'venues: "([^"]+)"', workflow)
+            for venue in group.split()
+        }
+        self.assertGreaterEqual(
+            morning_venues,
+            {"kiryu", "tokoname", "omura", "karatsu", "fukuoka", "heiwajima", "biwako", "naruto"},
+        )
+
+        choices = re.search(r"choices=\(([^)]+)\)", publisher)
+        self.assertIsNotNone(choices)
+        live_venues = set(re.findall(r'"([a-z]+)"', choices.group(1)))
+        self.assertGreaterEqual(
+            live_venues,
+            {"ashiya", "fukuoka", "karatsu", "naruto", "tokoname", "wakamatsu", "kiryu"},
         )
 
     def test_generic_live_detector_accepts_complete_naruto_12_race_payload(self) -> None:
