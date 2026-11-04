@@ -10,7 +10,11 @@ from typing import Any
 from fetch_direct_info import parse_direct_info
 from fetch_exhibition import parse_exhibition
 from fetch_odds import odds_difference, official_odds_url, parse_official_odds
-from fetch_original_exhibition import parse_original_exhibition
+from fetch_original_exhibition import (
+    merge_kiryu_original_exhibition,
+    parse_kiryu_original_exhibition,
+    parse_original_exhibition,
+)
 from fetch_result import official_result_url, parse_result
 from live_common import atomic_write_json, is_fetch_window, load_json, now_local
 from live_data_hash import content_hash
@@ -18,6 +22,9 @@ from validate_live_data import validate_live_data
 
 
 RETRYABLE_HTTP = {429, 500, 502, 503, 504}
+KIRYU_ORIGINAL_EXHIBITION_URL = (
+    "https://www.kiryu-kyotei.com/sp/ajax/ajax_cyokuzen.php?race={race_no}"
+)
 
 
 class DomainThrottle:
@@ -237,9 +244,32 @@ class LiveSourceClient:
             original_text = await page.locator("body").inner_text()
             original = parse_original_exhibition(original_html, original_text, target["race_no"])
             original["tab_clicked"] = clicked
+            original_source = source_last
+            if target["venue"] == "kiryu":
+                kiryu_source = KIRYU_ORIGINAL_EXHIBITION_URL.format(
+                    race_no=target["race_no"]
+                )
+                try:
+                    await self._goto(page, kiryu_source, target, "kiryu_original_exhibition")
+                    kiryu_html = await page.content()
+                    official = parse_kiryu_original_exhibition(kiryu_html)
+                    if official["_published"]:
+                        original = merge_kiryu_original_exhibition(original, official)
+                        original["tab_clicked"] = clicked
+                        original_source = kiryu_source
+                except Exception as exc:
+                    self.logger.warning(
+                        str(exc),
+                        extra={
+                            "event": "kiryu_original_exhibition_fallback_failed",
+                            "venue": target["venue"],
+                            "race_no": target["race_no"],
+                            "source": kiryu_source,
+                        },
+                    )
             output["original_exhibition"] = _base_document(
                 target,
-                source_last,
+                original_source,
                 _status(original.pop("_published"), original.pop("_complete"), cancelled),
                 False,
                 original,
