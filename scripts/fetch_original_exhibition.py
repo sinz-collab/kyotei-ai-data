@@ -79,8 +79,12 @@ def parse_kiryu_original_exhibition(html_text: str) -> dict[str, Any]:
     Kiryu publishes a half-lap value in the first original-exhibition column,
     not the one-lap value exposed by the generic BOATERS schema.
     """
+    # The AJAX response concatenates several slider pages with this marker.
+    # Original exhibition measurements are only in the first page; parsing
+    # later prediction/ranking tables can otherwise duplicate lane numbers.
+    measurement_page = html_text.split("<!--sep-->", 1)[0]
     rows = []
-    for block in re.findall(r"<tr\b[^>]*>.*?</tr>", html_text, re.I | re.S):
+    for block in re.findall(r"<tr\b[^>]*>.*?</tr>", measurement_page, re.I | re.S):
         lane_match = re.search(
             r'<td\b[^>]*class=["\'][^"\']*\bcol1\b[^"\']*["\'][^>]*>(.*?)</td>',
             block,

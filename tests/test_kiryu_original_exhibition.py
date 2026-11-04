@@ -28,15 +28,19 @@ def official_table(rows: list[tuple[object, object, object]]) -> str:
 
 class KiryuOriginalExhibitionTests(unittest.TestCase):
     def test_november_4_race_1_official_values_are_half_lap_values(self) -> None:
-        parsed = parse_kiryu_original_exhibition(official_table([
+        html = official_table([
             (18.22, 4.54, 7.54),
             (18.46, 4.36, 7.54),
             (18.69, 4.65, 7.58),
             (18.53, 4.82, 7.55),
             (18.70, 4.68, 7.54),
             (18.69, 4.67, 7.68),
-        ]))
+        ])
+        parsed = parse_kiryu_original_exhibition(
+            html + "<!--sep-->" + html.replace("18.22", "99.99")
+        )
         self.assertTrue(parsed["_complete"])
+        self.assertEqual(len(parsed["entries"]), 6)
         self.assertEqual(
             [row["half_lap_time"] for row in parsed["entries"]],
             [18.22, 18.46, 18.69, 18.53, 18.70, 18.69],
