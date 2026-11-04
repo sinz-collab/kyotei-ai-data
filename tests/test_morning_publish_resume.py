@@ -112,6 +112,8 @@ class MorningPublishWorkflowTest(unittest.TestCase):
         common_call = 'bash automation/publish_morning_data.sh "$TARGET_DATE"'
         self.assertIn(common_call, resume)
         self.assertIn(common_call, normal)
+        self.assertIn("python -m pip install catboost==1.2.10", resume)
+        self.assertIn("python -m pip install catboost==1.2.10", normal)
 
 
 if __name__ == "__main__":
