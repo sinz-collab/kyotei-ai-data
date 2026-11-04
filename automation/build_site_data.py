@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 HERE = Path(__file__).resolve().parent
 CONFIG_PATH = HERE / "venues.json"
 PREDICTION_VENUES = {
+    "kiryu",
     "toda",
     "wakamatsu",
     "heiwajima",

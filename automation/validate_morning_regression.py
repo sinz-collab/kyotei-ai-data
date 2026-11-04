@@ -11,6 +11,7 @@ from build_site_data import tokoname_native_predictions_are_complete
 
 
 PREDICTION_VENUES = {
+    "kiryu",
     "toda",
     "wakamatsu",
     "heiwajima",

@@ -18,11 +18,15 @@ from detect_active_venues import detect_active_venues
 
 
 class KiryuIntegrationTests(unittest.TestCase):
-    def test_kiryu_is_a_morning_and_live_venue_without_prediction_engine(self) -> None:
+    def test_kiryu_is_a_morning_and_live_prediction_venue(self) -> None:
         venues = json.loads((AUTOMATION / "venues.json").read_text(encoding="utf-8"))["venues"]
         self.assertEqual([venue for venue in venues if venue["slug"] == "kiryu"], [{"slug": "kiryu", "name": "桐生"}])
         self.assertIn(("kiryu", "桐生"), build_site_data.ALL_VENUES)
-        self.assertNotIn("kiryu", build_site_data.PREDICTION_VENUES)
+        self.assertIn("kiryu", build_site_data.PREDICTION_VENUES)
+        morning = (AUTOMATION / "publish_morning_data.sh").read_text(encoding="utf-8")
+        self.assertIn("run_kiryu_v1.py", morning)
+        live = (SCRIPTS / "live_fetch_once.py").read_text(encoding="utf-8")
+        self.assertIn("apply_kiryu_live_prediction", live)
         self.assertEqual(normalize_stadium("kiryu"), "桐生")
         self.assertEqual(normalize_stadium("桐生"), "桐生")
         self.assertEqual(stadium_to_slug("桐生"), "kiryu")

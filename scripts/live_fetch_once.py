@@ -49,6 +49,8 @@ KARATSU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_karatsu_v1_live.py"
 KARATSU_DATA_ROOT = PUBLISHER_REPO / "data"
 NARUTO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_naruto_v5.py"
 NARUTO_DATA_ROOT = PUBLISHER_REPO / "data"
+KIRYU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_kiryu_v1.py"
+KIRYU_DATA_ROOT = PUBLISHER_REPO / "data"
 
 SHIMONOSEKI_LIVE_APPLIER = ROOT / "automation" / "apply_shimonoseki_live_v6_1.py"
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
@@ -247,6 +249,18 @@ async def apply_karatsu_live_prediction(
             "race_no": target["race_no"],
         },
     )
+
+async def apply_kiryu_live_prediction(target, race_dir, fetch_result, logger) -> bool:
+    if target.get("venue") != "kiryu" or fetch_result.get("error"): return False
+    required=("direct","exhibition","original_exhibition")
+    try: saved={n:json.loads((race_dir/f"{n}.json").read_text(encoding="utf-8")) for n in required}
+    except (OSError,ValueError): return False
+    if not all(x.get("complete") is True and x.get("status")=="complete" for x in saved.values()): return False
+    process=await asyncio.create_subprocess_exec(sys.executable,str(KIRYU_LIVE_RUNNER),"--date",str(target["date"]),"--race",str(target["race_no"]),"--stage","live","--data-root",str(KIRYU_DATA_ROOT),"--live-root",str(race_dir),cwd=str(PUBLISHER_REPO),stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
+    stdout,stderr=await process.communicate()
+    if process.returncode:
+        logger.error(stderr.decode("utf-8",errors="replace").strip(),extra={"event":"kiryu_live_prediction_failed","venue":"kiryu","race_no":target["race_no"]}); return False
+    logger.info(stdout.decode("utf-8",errors="replace").strip(),extra={"event":"kiryu_live_prediction_complete","venue":"kiryu","race_no":target["race_no"]}); return True
 
 
 async def apply_naruto_live_prediction(
@@ -1128,6 +1142,8 @@ async def run_once(
                                     result,
                                     logger,
                                 )
+                                if await apply_kiryu_live_prediction(target, race_dir, result, logger):
+                                    result["prediction_changed"] = True
                                 naruto_prediction_changed = await apply_naruto_live_prediction(
                                     target,
                                     race_dir,

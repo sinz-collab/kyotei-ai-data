@@ -27,6 +27,9 @@ run_publication_pipeline() {
     | tee "build-${log_suffix}.log"
   python automation/enrich_motor_recent.py --date "$TARGET_DATE"
   python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
+  if [ -f "data/venues/kiryu/${TARGET_DATE//-/}.json" ]; then
+    python automation/run_kiryu_v1.py --date "$TARGET_DATE" --stage morning
+  fi
   python automation/apply_toda_v5.py --date "$TARGET_DATE"
   python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
   python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
