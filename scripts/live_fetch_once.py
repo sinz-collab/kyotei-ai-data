@@ -251,16 +251,80 @@ async def apply_karatsu_live_prediction(
     )
 
 async def apply_kiryu_live_prediction(target, race_dir, fetch_result, logger) -> bool:
-    if target.get("venue") != "kiryu" or fetch_result.get("error"): return False
-    required=("direct","exhibition","original_exhibition")
-    try: saved={n:json.loads((race_dir/f"{n}.json").read_text(encoding="utf-8")) for n in required}
-    except (OSError,ValueError): return False
-    if not all(x.get("complete") is True and x.get("status")=="complete" for x in saved.values()): return False
-    process=await asyncio.create_subprocess_exec(sys.executable,str(KIRYU_LIVE_RUNNER),"--date",str(target["date"]),"--race",str(target["race_no"]),"--stage","live","--data-root",str(KIRYU_DATA_ROOT),"--live-root",str(race_dir),cwd=str(PUBLISHER_REPO),stdout=asyncio.subprocess.PIPE,stderr=asyncio.subprocess.PIPE)
-    stdout,stderr=await process.communicate()
+    if target.get("venue") != "kiryu":
+        return False
+    log_context = {"venue": "kiryu", "race_no": target["race_no"]}
+    if fetch_result.get("error"):
+        logger.warning(
+            "Kiryu LIVE prediction kept preliminary: fetch failed",
+            extra={
+                "event": "kiryu_live_prediction_waiting",
+                "reason": "fetch_error",
+                **log_context,
+            },
+        )
+        return False
+    required = ("direct", "exhibition", "original_exhibition")
+    try:
+        saved = {
+            name: json.loads((race_dir / f"{name}.json").read_text(encoding="utf-8"))
+            for name in required
+        }
+    except (OSError, ValueError) as exc:
+        logger.warning(
+            "Kiryu LIVE prediction kept preliminary: saved input unavailable",
+            extra={
+                "event": "kiryu_live_prediction_waiting",
+                "reason": f"saved_input_{type(exc).__name__}",
+                **log_context,
+            },
+        )
+        return False
+    incomplete = [
+        name
+        for name, document in saved.items()
+        if document.get("complete") is not True or document.get("status") != "complete"
+    ]
+    if incomplete:
+        logger.info(
+            "Kiryu LIVE prediction kept preliminary: required input incomplete",
+            extra={
+                "event": "kiryu_live_prediction_waiting",
+                "reason": "required_input_incomplete",
+                "incomplete_inputs": incomplete,
+                **log_context,
+            },
+        )
+        return False
+    process = await asyncio.create_subprocess_exec(
+        sys.executable,
+        str(KIRYU_LIVE_RUNNER),
+        "--date",
+        str(target["date"]),
+        "--race",
+        str(target["race_no"]),
+        "--stage",
+        "live",
+        "--data-root",
+        str(KIRYU_DATA_ROOT),
+        "--live-root",
+        str(race_dir),
+        cwd=str(PUBLISHER_REPO),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await process.communicate()
     if process.returncode:
-        logger.error(stderr.decode("utf-8",errors="replace").strip(),extra={"event":"kiryu_live_prediction_failed","venue":"kiryu","race_no":target["race_no"]}); return False
-    logger.info(stdout.decode("utf-8",errors="replace").strip(),extra={"event":"kiryu_live_prediction_complete","venue":"kiryu","race_no":target["race_no"]}); return True
+        logger.error(
+            stderr.decode("utf-8", errors="replace").strip(),
+            extra={"event": "kiryu_live_prediction_failed", **log_context},
+        )
+        return False
+    logger.info(
+        stdout.decode("utf-8", errors="replace").strip(),
+        extra={"event": "kiryu_live_prediction_complete", **log_context},
+    )
+    return True
 
 
 async def apply_naruto_live_prediction(
