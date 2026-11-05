@@ -6,13 +6,19 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "automation"))
+sys.path[:0] = [str(ROOT / "automation"), str(ROOT / "scripts")]
 
-from run_kiryu_v1 import complete_live_document, decorate_live_prediction
+from run_kiryu_v1 import (
+    build_live_calculation_input,
+    complete_live_document,
+    decorate_live_prediction,
+    require_live_probability_calculation,
+)
+from audit_kiryu_live import FAILURE_REASON, fallback_prediction
 
 
 class KiryuLiveReviewTests(unittest.TestCase):
-    def test_live_prediction_records_complete_review_and_zero_deltas(self) -> None:
+    def test_live_prediction_rejects_unexecuted_calculation(self) -> None:
         morning = {
             position: {str(lane): 100 / 6 for lane in range(1, 7)}
             for position in ("win", "second", "third")
@@ -26,15 +32,21 @@ class KiryuLiveReviewTests(unittest.TestCase):
             for index, name in enumerate(("direct", "exhibition", "original_exhibition"))
         }
 
-        decorate_live_prediction(live, morning, documents)
-
-        self.assertEqual(live["status"], "complete")
-        self.assertEqual(live["finalPredictionStatus"], "complete")
-        self.assertEqual(live["probabilityReviewStatus"], "reviewed")
-        self.assertTrue(live["probabilityFlow"]["realtimeApplied"])
-        self.assertTrue(live["probabilityFlow"]["reviewed"])
-        self.assertTrue(live["liveInput"]["complete"])
-        self.assertEqual(live["probabilityReview"]["1"]["deltaWin"], 0.0)
+        with self.assertRaisesRegex(RuntimeError, "without calculation"):
+            decorate_live_prediction(
+                live,
+                morning,
+                documents,
+                {"executed": False, "status": "not_executed", "inputHash": "abc"},
+            )
+        with self.assertRaisesRegex(RuntimeError, "omit required probability features"):
+            decorate_live_prediction(
+                live,
+                morning,
+                documents,
+                {"executed": True, "status": "success", "inputHash": "abc",
+                 "probabilityFeaturesUsed": ["exhibition_course"]},
+            )
 
     def test_live_document_requires_all_six_lanes(self) -> None:
         complete = {
@@ -52,6 +64,75 @@ class KiryuLiveReviewTests(unittest.TestCase):
             "data": {"racers": [{"lane": lane} for lane in range(1, 7)]},
         }
         self.assertTrue(complete_live_document(direct, "direct"))
+
+    def test_live_input_hash_covers_all_probability_features(self) -> None:
+        documents = {
+            "direct": {
+                "status": "complete",
+                "complete": True,
+                "data": {
+                    "racers": [{"lane": lane} for lane in range(1, 7)],
+                    "actual_entry": list(range(1, 7)),
+                    "weather": "曇り",
+                    "air_temperature": 13,
+                    "water_temperature": 16,
+                    "wind_direction": 4,
+                    "wind_speed": 2,
+                    "wave_height": 1,
+                },
+            },
+            "exhibition": {
+                "status": "complete",
+                "complete": True,
+                "data": {"entries": [
+                    {"lane": lane, "exhibition_course": lane,
+                     "start_time": lane / 100, "exhibition_time": 6.7 + lane / 100}
+                    for lane in range(1, 7)
+                ]},
+            },
+            "original_exhibition": {
+                "status": "complete",
+                "complete": True,
+                "data": {"entries": [
+                    {"lane": lane, "half_lap_time": 18 + lane / 10,
+                     "turn_time": 4 + lane / 10, "straight_time": 7 + lane / 10}
+                    for lane in range(1, 7)
+                ]},
+            },
+        }
+        value, first_hash = build_live_calculation_input(documents)
+        self.assertEqual(len(value["boats"]), 6)
+        self.assertEqual(len(first_hash), 64)
+        self.assertEqual(value["actual_entry"], list(range(1, 7)))
+        self.assertEqual(
+            set(value["boats"][0]),
+            {"lane", "exhibition_course", "start_time", "exhibition_time",
+             "half_lap_time", "turn_time", "straight_time"},
+        )
+        self.assertEqual(
+            set(value["weather"]),
+            {"weather", "air_temperature", "water_temperature", "wind_direction",
+             "wind_speed", "wave_height"},
+        )
+
+        documents["exhibition"]["data"]["entries"][0]["start_time"] = -0.03
+        _, changed_hash = build_live_calculation_input(documents)
+        self.assertNotEqual(first_hash, changed_hash)
+
+        with self.assertRaisesRegex(RuntimeError, "validated realtime coefficients"):
+            require_live_probability_calculation(value, first_hash)
+
+        fallback = fallback_prediction(morning={
+            **{position: {str(lane): 100 / 6 for lane in range(1, 7)}
+               for position in ("win", "second", "third")},
+            "predictionStage": "morning",
+        }, documents=documents, input_hash=first_hash)
+        self.assertEqual(fallback["predictionStage"], "morning")
+        self.assertEqual(fallback["finalPredictionStatus"], "failed")
+        self.assertEqual(fallback["predictionFailureReason"], FAILURE_REASON)
+        self.assertFalse(fallback["probabilityFlow"]["realtimeApplied"])
+        self.assertFalse(fallback["liveCalculation"]["executed"])
+        self.assertEqual(fallback["liveInput"]["inputHash"], first_hash)
 
 
 if __name__ == "__main__":
