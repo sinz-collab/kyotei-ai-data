@@ -649,6 +649,53 @@ def naruto_v5_prediction_is_complete(prediction: object) -> bool:
     )
 
 
+def kiryu_v1_prediction_is_complete(prediction: object) -> bool:
+    """Validate Kiryu C-improved/D and independent 6+4 public output."""
+    if not isinstance(prediction, dict):
+        return False
+    if prediction.get("modelVersion") != "kiryu_v1_20261104":
+        return False
+    stage = prediction.get("predictionStage")
+    if stage not in {"morning", "live"}:
+        return False
+    if any(not _probabilities_are_valid(prediction.get(key)) for key in ("win", "second", "third")):
+        return False
+
+    combo_pattern = re.compile(r"^[1-6]-[1-6]-[1-6]$")
+
+    def valid_combos(rows: object) -> list[str] | None:
+        if not isinstance(rows, list) or len(rows) != 10:
+            return None
+        combos = [row.get("combo") for row in rows if isinstance(row, dict)]
+        if len(combos) != 10 or len(set(combos)) != 10:
+            return None
+        if any(
+            not isinstance(combo, str)
+            or not combo_pattern.fullmatch(combo)
+            or len(set(combo.split("-"))) != 3
+            for combo in combos
+        ):
+            return None
+        return combos
+
+    normal_combos = valid_combos(prediction.get("tickets"))
+    fly = prediction.get("flyPrediction")
+    if normal_combos is None or not isinstance(fly, dict):
+        return False
+    fly_combos = valid_combos(fly.get("tickets"))
+    if fly_combos is None:
+        return False
+    fly_heads = [combo.split("-", 1)[0] for combo in fly_combos]
+    return (
+        fly.get("status") == stage
+        and fly.get("modelVersion") == "kiryu_independent_6plus4_frozen_20261104"
+        and fly.get("allocation") == [6, 4]
+        and len(set(fly_heads[:6])) == 1
+        and len(set(fly_heads[6:])) == 1
+        and fly_heads[0] != fly_heads[6]
+    )
+
+
 def prediction_payload_gate(payload: dict, expected_date: str) -> tuple[bool, str]:
     """Validate only the venue-engine prediction domain."""
     if payload.get("date") != expected_date:
@@ -668,6 +715,8 @@ def prediction_payload_gate(payload: dict, expected_date: str) -> tuple[bool, st
         complete = (
             naruto_v5_prediction_is_complete(prediction)
             if engine == "naruto_v5"
+            else kiryu_v1_prediction_is_complete(prediction)
+            if engine == "kiryu_v1"
             else _prediction_is_complete(prediction)
         )
         if not complete:

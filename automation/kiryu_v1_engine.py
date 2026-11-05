@@ -169,8 +169,8 @@ class KiryuV1:
             if len(fly)>=10:break
             if int(j) not in fly:fly.append(int(j))
         win=np.array([joint[A==k].sum() for k in range(6)]); second=np.array([joint[B==k].sum() for k in range(6)]); third=np.array([joint[C==k].sum() for k in range(6)])
-        def ticket(j): return {"combination":"-".join(str(x+1) for x in PERMS[j]),"probability":round(float(joint[j]*100),8)}
-        nt=[ticket(j) for j in normal[:10]]; ft=[{"combination":"-".join(str(x+1) for x in PERMS[j]),"probability":round(float(fj[j]*100),8)} for j in fly[:10]]
+        def ticket(j): return {"combo":"-".join(str(x+1) for x in PERMS[j]),"probability":round(float(joint[j]*100),8)}
+        nt=[ticket(j) for j in normal[:10]]; ft=[{"combo":"-".join(str(x+1) for x in PERMS[j]),"probability":round(float(fj[j]*100),8)} for j in fly[:10]]
         flyrate=round(float((1-win[0])*100),10)
         pct=lambda values:{str(i+1):round(float(x*100),10) for i,x in enumerate(values)}
         return {"modelVersion":CFG["modelVersion"],"predictionStage":stage,"win":pct(win),"second":pct(second),"third":pct(third),"lane1FlyRate":flyrate,"lane1FlyProbability":flyrate,"lane1Fly":bool(1-win[0]>=.5),"sab":"対象外","ai":nt[:6],"balance":nt[6:8],"aiUpset":nt[8:10],"tickets":nt,"oddsUsed":False,"flyPrediction":{"status":stage,"modelVersion":f["modelVersion"],"allocation":[6,4],"overlapPolicy":f["overlapPolicy"],"probability":flyrate,"isFly":bool(1-win[0]>=.5),"tickets":ft,"oddsUsed":False}}

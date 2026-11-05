@@ -69,6 +69,7 @@ def atomic(path,obj):
 
 def main():
     from kiryu_v1_engine import KiryuV1
+    from build_site_data import kiryu_v1_prediction_is_complete
     ap=argparse.ArgumentParser(); ap.add_argument("--date",required=True); ap.add_argument("--stage",choices=("morning","live"),default="morning"); ap.add_argument("--race",type=int); ap.add_argument("--data-root",default="data"); ap.add_argument("--live-root")
     a=ap.parse_args(); compact=a.date.replace("-",""); dated=Path(a.data_root)/"venues"/"kiryu"/(compact+".json")
     payload=json.loads(dated.read_text(encoding="utf-8")); engine=KiryuV1(); preds=payload.get("preds") if isinstance(payload.get("preds"),dict) else {}
@@ -88,6 +89,8 @@ def main():
         before=deepcopy(race.get("prediction"))
         morning=deepcopy(race.get("predictionPre") or before)
         pred=engine.predict(race,a.date,a.stage)
+        if not kiryu_v1_prediction_is_complete(pred):
+            raise RuntimeError(f"Kiryu {rn}R prediction failed the 10+10 public gate")
         if before and not race.get("predictionPre"): race["predictionPre"]=before
         if a.stage=="morning": race["predictionPre"]=deepcopy(pred)
         else:
@@ -97,8 +100,15 @@ def main():
         race["prediction"]=pred; preds[str(rn)]=pred
     if a.stage=="morning" and set(preds)!=set(map(str,range(1,13))): raise RuntimeError("Kiryu morning prediction requires all 12 races")
     payload["preds"]=preds; payload["engine"]="kiryu_v1"; payload["modelVersion"]="kiryu_v1_20261104"
-    if set(preds)==set(map(str,range(1,13))):
+    all_complete = set(preds)==set(map(str,range(1,13))) and all(
+        kiryu_v1_prediction_is_complete(preds[str(rn)])
+        for rn in range(1, 13)
+    )
+    if all_complete:
         payload["predictionAvailable"]=True; payload["predictionStatus"]="available"; payload["predictionReason"]=None
+    else:
+        payload["predictionAvailable"]=False; payload["predictionStatus"]="unavailable"; payload["predictionReason"]="kiryu_10_plus_10_gate_failed"
+        raise RuntimeError("Kiryu payload failed the 12-race 10+10 public gate")
     atomic(dated,payload); atomic(Path(a.data_root)/"venues"/"kiryu"/"latest.json",payload)
     print(json.dumps({"venue":"kiryu","date":a.date,"stage":a.stage,"predictions":len(preds)},ensure_ascii=False))
 if __name__=="__main__": main()

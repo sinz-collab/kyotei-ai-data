@@ -24,8 +24,8 @@ class KiryuReplay(unittest.TestCase):
             np.testing.assert_allclose(p3,internal["p3"][int(rn)-1],rtol=0,atol=1e-12)
             p=eng.predict(race,"2026-11-03")
             e=expected[expected.race==rn].iloc[0]
-            self.assertEqual(";".join(x["combination"] for x in p["tickets"]),e.normal_tickets)
-            self.assertEqual(";".join(x["combination"] for x in p["flyPrediction"]["tickets"]),fly.loc[rn].flight_tickets)
+            self.assertEqual(";".join(x["combo"] for x in p["tickets"]),e.normal_tickets)
+            self.assertEqual(";".join(x["combo"] for x in p["flyPrediction"]["tickets"]),fly.loc[rn].flight_tickets)
             for lane in range(1,7):
                 self.assertAlmostEqual(p["win"][str(lane)]/100,e[f"lane{lane}_win"],places=10)
                 self.assertAlmostEqual(p["second"][str(lane)]/100,e[f"lane{lane}_second"],places=10)
