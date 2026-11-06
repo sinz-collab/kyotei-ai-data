@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Frozen Kiryu v1 inference (C + variable escape, D/.15, independent 6+4)."""
+"""Frozen Kiryu v1 probabilities with the validated variable fly selector."""
 from __future__ import annotations
 
 import itertools, io, json, math, zipfile
@@ -168,6 +168,53 @@ class KiryuV1:
             if len(normal)>=10:break
         return normal[:10]
 
+    @staticmethod
+    def select_fly_indices(fly_joint, first_probabilities):
+        """Select the validated variable 10-ticket fly portfolio.
+
+        Heads are ranked by the frozen first-place probabilities among lanes
+        2..6.  Each head block is built from lane-1 reciprocal pairs; the
+        third-place candidates are ranked only by the existing fly joint.
+        """
+        fly_joint=np.asarray(fly_joint,float); first_probabilities=np.asarray(first_probabilities,float)
+        if fly_joint.shape!=(120,) or first_probabilities.shape!=(6,):
+            raise ValueError("Kiryu fly selection requires 120 joint and 6 first-place probabilities")
+        cfg=CFG["fly"]
+        pool=[int(lane)-1 for lane in cfg["candidatePool"]]
+        ranked_heads=sorted(pool,key=lambda lane:(-first_probabilities[lane],lane))
+        first,second,third=ranked_heads[:3]
+        balanced=cfg["balancedHeadCondition"]
+        use_balanced=(
+            first_probabilities[first]/max(first_probabilities[second],1e-12)<=float(balanced["maxFirstSecondRatio"])
+            and first_probabilities[third]>=float(balanced["minThirdSecondRatio"])*first_probabilities[second]
+        )
+        allocation=list(cfg["allocations"]["balanced" if use_balanced else "concentrated"])
+        heads=ranked_heads[:len(allocation)]
+        segments=[]
+        for head,count in zip(heads,allocation):
+            candidates=[]
+            for third_lane in pool:
+                if third_lane==head: continue
+                index=int(np.flatnonzero((A==head)&(B==0)&(C==third_lane))[0])
+                candidates.append((third_lane,index))
+            candidates.sort(key=lambda row:(-fly_joint[row[1]],row[0]))
+            segment=[]
+            for third_lane,index in candidates[:count//2]:
+                reverse=int(np.flatnonzero((A==head)&(B==third_lane)&(C==0))[0])
+                segment.extend((index,reverse))
+            segments.append(segment)
+
+        reserve=cfg["dominantHeadSecondReserve"]
+        if first_probabilities[first]>=float(reserve["minFirstRate"]) and first_probabilities[first]>=float(reserve["minLeadRatio"])*first_probabilities[second]:
+            replacement=int(np.flatnonzero((A==second)&(B==first)&(C==0))[0])
+            if replacement not in segments[1]:
+                segments[1][1]=replacement
+
+        selected=[j for segment in segments for j in segment]
+        if len(selected)!=10 or len(set(selected))!=10:
+            raise ValueError("Kiryu variable fly selector did not produce 10 unique tickets")
+        return selected,allocation,[head+1 for head in heads]
+
     def predict(self,race,date,stage="morning"):
         X,racers=self._matrix(race,date); entry=any(int(r.get("entry_course") or r["lane"])!=int(r["lane"]) for r in racers)
         p1=self._first(X,racers,entry); p2,p3=self._conditionals(X)
@@ -207,15 +254,10 @@ class KiryuV1:
         vals += [np.array([1,0,0,0,0,0]),np.array([0,1,1,1,1,1])]
         attack=_softmax(.65*np.log(np.maximum(p1,1e-10))+np.stack(vals,axis=1)@np.asarray(f["coefficients"]))
         cond=joint/np.maximum(np.array([joint[A==k].sum() for k in range(6)])[A],1e-12); fj=attack[A]*cond
-        nh=set(A[normal]); outside=sorted([k for k in range(6) if k not in nh],key=lambda k:-attack[k]); fly=[]
-        for head,count in zip(outside,(6,4)):
-            fly += sorted(np.where(A==head)[0],key=lambda j:-fj[j])[:count]
-        for j in sorted(np.flatnonzero(np.isin(A,outside)),key=lambda j:-fj[j]):
-            if len(fly)>=10:break
-            if int(j) not in fly:fly.append(int(j))
         win=np.array([joint[A==k].sum() for k in range(6)]); second=np.array([joint[B==k].sum() for k in range(6)]); third=np.array([joint[C==k].sum() for k in range(6)])
+        fly,fly_allocation,fly_heads=self.select_fly_indices(fj,win)
         def ticket(j): return {"combo":"-".join(str(x+1) for x in PERMS[j]),"probability":round(float(joint[j]*100),8)}
         nt=[ticket(j) for j in normal[:10]]; ft=[{"combo":"-".join(str(x+1) for x in PERMS[j]),"probability":round(float(fj[j]*100),8)} for j in fly[:10]]
         flyrate=round(float((1-win[0])*100),10)
         pct=lambda values:{str(i+1):round(float(x*100),10) for i,x in enumerate(values)}
-        return {"modelVersion":CFG["modelVersion"],"predictionStage":stage,"win":pct(win),"second":pct(second),"third":pct(third),"lane1FlyRate":flyrate,"lane1FlyProbability":flyrate,"lane1Fly":bool(1-win[0]>=.5),"sab":"対象外","ai":nt[:6],"balance":nt[6:8],"aiUpset":nt[8:10],"tickets":nt,"oddsUsed":False,"flyPrediction":{"status":stage,"modelVersion":f["modelVersion"],"allocation":[6,4],"overlapPolicy":f["overlapPolicy"],"probability":flyrate,"isFly":bool(1-win[0]>=.5),"tickets":ft,"oddsUsed":False}}
+        return {"modelVersion":CFG["modelVersion"],"predictionStage":stage,"win":pct(win),"second":pct(second),"third":pct(third),"lane1FlyRate":flyrate,"lane1FlyProbability":flyrate,"lane1Fly":bool(1-win[0]>=.5),"sab":"対象外","ai":nt[:6],"balance":nt[6:8],"aiUpset":nt[8:10],"tickets":nt,"oddsUsed":False,"flyPrediction":{"status":stage,"modelVersion":f["modelVersion"],"allocation":fly_allocation,"headCandidates":fly_heads,"overlapPolicy":f["overlapPolicy"],"probability":flyrate,"isFly":bool(1-win[0]>=.5),"tickets":ft,"oddsUsed":False}}

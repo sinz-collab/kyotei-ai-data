@@ -650,7 +650,7 @@ def naruto_v5_prediction_is_complete(prediction: object) -> bool:
 
 
 def kiryu_v1_prediction_is_complete(prediction: object) -> bool:
-    """Validate Kiryu C-improved/D and independent 6+4 public output."""
+    """Validate Kiryu C-improved/D and variable fly public output."""
     if not isinstance(prediction, dict):
         return False
     if prediction.get("modelVersion") != "kiryu_v1_20261104":
@@ -686,13 +686,23 @@ def kiryu_v1_prediction_is_complete(prediction: object) -> bool:
     if fly_combos is None:
         return False
     fly_heads = [combo.split("-", 1)[0] for combo in fly_combos]
+    allocation = fly.get("allocation")
+    if allocation not in ([6, 4], [4, 4, 2]):
+        return False
+    grouped_heads = []
+    offset = 0
+    for count in allocation:
+        segment = fly_heads[offset:offset + count]
+        if len(set(segment)) != 1:
+            return False
+        grouped_heads.append(segment[0])
+        offset += count
     return (
         fly.get("status") == stage
-        and fly.get("modelVersion") == "kiryu_independent_6plus4_frozen_20261104"
-        and fly.get("allocation") == [6, 4]
-        and len(set(fly_heads[:6])) == 1
-        and len(set(fly_heads[6:])) == 1
-        and fly_heads[0] != fly_heads[6]
+        and fly.get("modelVersion") == "kiryu_independent_variable_20261106"
+        and all(head != "1" for head in grouped_heads)
+        and fly.get("headCandidates") == [int(head) for head in grouped_heads]
+        and len(set(grouped_heads)) == len(grouped_heads)
     )
 
 

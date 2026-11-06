@@ -19,8 +19,9 @@ def prediction() -> dict:
         "2-1-4", "3-1-2", "3-1-4", "4-1-2", "4-1-3",
     ]
     fly = [
-        "5-1-2", "5-1-3", "5-1-4", "5-1-6", "5-2-1", "5-2-3",
+        "5-1-2", "5-1-3", "5-1-4", "5-1-6",
         "6-1-2", "6-1-3", "6-1-4", "6-1-5",
+        "2-1-3", "2-1-4",
     ]
     return {
         "modelVersion": "kiryu_v1_20261104",
@@ -31,15 +32,16 @@ def prediction() -> dict:
         "tickets": [{"combo": combo} for combo in normal],
         "flyPrediction": {
             "status": "morning",
-            "modelVersion": "kiryu_independent_6plus4_frozen_20261104",
-            "allocation": [6, 4],
+            "modelVersion": "kiryu_independent_variable_20261106",
+            "allocation": [4, 4, 2],
+            "headCandidates": [5, 6, 2],
             "tickets": [{"combo": combo} for combo in fly],
         },
     }
 
 
 class KiryuPublishGateTests(unittest.TestCase):
-    def test_accepts_complete_independent_six_plus_four(self) -> None:
+    def test_accepts_complete_independent_variable_allocation(self) -> None:
         value = prediction()
         self.assertTrue(kiryu_v1_prediction_is_complete(value))
         payload = {
@@ -59,9 +61,21 @@ class KiryuPublishGateTests(unittest.TestCase):
         ticket["combination"] = ticket.pop("combo")
         self.assertFalse(kiryu_v1_prediction_is_complete(legacy_key))
 
-    def test_rejects_broken_six_plus_four_allocation(self) -> None:
+    def test_accepts_concentrated_six_plus_four(self) -> None:
         value = prediction()
-        value["flyPrediction"]["tickets"][5]["combo"] = "6-2-3"
+        value["flyPrediction"]["allocation"] = [6, 4]
+        value["flyPrediction"]["headCandidates"] = [5, 6]
+        value["flyPrediction"]["tickets"] = [
+            {"combo": combo} for combo in (
+                "5-1-2", "5-1-3", "5-1-4", "5-1-6", "5-2-1", "5-2-3",
+                "6-1-2", "6-1-3", "6-1-4", "6-1-5",
+            )
+        ]
+        self.assertTrue(kiryu_v1_prediction_is_complete(value))
+
+    def test_rejects_broken_variable_allocation(self) -> None:
+        value = prediction()
+        value["flyPrediction"]["tickets"][3]["combo"] = "6-2-3"
         self.assertFalse(kiryu_v1_prediction_is_complete(value))
 
 
