@@ -364,11 +364,19 @@ def apply_file(path: Path) -> None:
     races = payload.get("races") or []
     if len(races) != 12:
         raise RuntimeError("karatsu_races_must_be_12")
+    previous_predictions = payload.get("preds") or {}
     predictions = {}
     for race in races:
-        prediction = site_prediction(payload, race)
-        race["prediction"] = prediction
         race_no = int(race.get("race") or (race.get("race_meta") or {}).get("race_no") or 0)
+        previous = race.get("prediction")
+        if not isinstance(previous, dict) and race_no:
+            previous = previous_predictions.get(str(race_no))
+        history = previous.get("prediction_history") if isinstance(previous, dict) else None
+
+        # A stored history means LIVE prediction has already started for this race.
+        # Re-running the morning publisher must keep that confirmed prediction intact.
+        prediction = previous if isinstance(history, dict) and history else site_prediction(payload, race)
+        race["prediction"] = prediction
         if race_no:
             predictions[str(race_no)] = prediction
 

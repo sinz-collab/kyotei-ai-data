@@ -36,6 +36,32 @@ def without_prediction_domains(payload: dict) -> dict:
 
 
 class KaratsuFinalBuildTests(unittest.TestCase):
+    def test_existing_live_prediction_history_is_not_rewritten(self) -> None:
+        source = json.loads(SOURCE.read_text(encoding="utf-8"))
+        protected_race = source["races"][8]
+        protected = deepcopy(protected_race["prediction"])
+        protected["phase"] = "final"
+        protected["generatedAt"] = "2026-07-31T12:00:00+09:00"
+        protected["prediction_history"] = {
+            "morning": [{"revision": 1, "content_sha256": "morning"}],
+            "live": [{"revision": 1, "content_sha256": "final"}],
+        }
+        protected_race["prediction"] = deepcopy(protected)
+        source.setdefault("preds", {})["9"] = deepcopy(protected)
+
+        with tempfile.TemporaryDirectory() as directory:
+            engine_path = Path(directory) / "karatsu.json"
+            engine_path.write_text(
+                json.dumps(source, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            apply_file(engine_path)
+
+            after = json.loads(engine_path.read_text(encoding="utf-8"))
+            self.assertEqual(after["races"][8]["prediction"], protected)
+            self.assertEqual(after["preds"]["9"], protected)
+
     def test_predictions_survive_the_three_stage_morning_pipeline(self) -> None:
         before_engine = json.loads(SOURCE.read_text(encoding="utf-8"))
         before_engine.setdefault("eventLabel", "")
