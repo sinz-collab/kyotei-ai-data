@@ -368,9 +368,18 @@ def apply_file(path: Path) -> None:
     predictions = {}
     for race in races:
         race_no = int(race.get("race") or (race.get("race_meta") or {}).get("race_no") or 0)
-        previous = race.get("prediction")
-        if not isinstance(previous, dict) and race_no:
-            previous = previous_predictions.get(str(race_no))
+        race_prediction = race.get("prediction")
+        stored_prediction = previous_predictions.get(str(race_no)) if race_no else None
+        previous = next(
+            (
+                candidate
+                for candidate in (stored_prediction, race_prediction)
+                if isinstance(candidate, dict)
+                and isinstance(candidate.get("prediction_history"), dict)
+                and candidate["prediction_history"]
+            ),
+            race_prediction if isinstance(race_prediction, dict) else stored_prediction,
+        )
         history = previous.get("prediction_history") if isinstance(previous, dict) else None
 
         # A stored history means LIVE prediction has already started for this race.

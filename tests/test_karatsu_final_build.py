@@ -46,7 +46,12 @@ class KaratsuFinalBuildTests(unittest.TestCase):
             "morning": [{"revision": 1, "content_sha256": "morning"}],
             "live": [{"revision": 1, "content_sha256": "final"}],
         }
-        protected_race["prediction"] = deepcopy(protected)
+        # The first site build converts the race-level object to a display
+        # envelope while the complete protected history remains in ``preds``.
+        protected_race["prediction"] = {
+            "status": "ready",
+            "engine": protected["engine"],
+        }
         source.setdefault("preds", {})["9"] = deepcopy(protected)
 
         with tempfile.TemporaryDirectory() as directory:
