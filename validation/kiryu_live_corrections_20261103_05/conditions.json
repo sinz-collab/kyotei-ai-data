@@ -1,0 +1,46 @@
+{
+  "dates": [
+    "2026-11-03",
+    "2026-11-04",
+    "2026-11-05"
+  ],
+  "excluded_races": [
+    "20261104_KIRYU_01R"
+  ],
+  "baseline": "frozen C improved + variable escape; normal D power 0.15; exact formal 6+2+2",
+  "baseline_reproduction": "36/36 formal tickets",
+  "wind_source": "validate_kiryu_20261104_05_wind_exhibition.py functions reused",
+  "wind_candidates": [
+    "straight_second_0.100",
+    "straight_second_0.125",
+    "straight_second_0.150",
+    "composite_all_0.100",
+    "composite_all_0.125",
+    "composite_all_0.150",
+    "composite_all_0.175"
+  ],
+  "wind_selection_scope": "2026-11-04/05 strict pre-deadline 23 races; entry-change corrections neutralized",
+  "wind_selection_order": [
+    "trifecta_logloss",
+    "trifecta_brier",
+    "second_conditional_logloss"
+  ],
+  "selected_wind": {
+    "name": "straight_second_0.150",
+    "kind": "straight_second",
+    "coefficient": 0.15,
+    "trifecta_logloss": 3.8403906783329544,
+    "trifecta_brier": 0.9579172938306596,
+    "second_conditional_logloss": 1.327620278424788
+  },
+  "left_st_main": "national100; wall; second-place conditional; coefficient 0.10",
+  "left_st_missing": "missing national=race valid national mean; missing local/exhibition=national",
+  "application_order": [
+    "wind",
+    "left_st"
+  ],
+  "entry_change_policy": "both corrections disabled",
+  "outcome_use": "results are used only for metric evaluation and requested wind-candidate selection; never probability features",
+  "production_modified": false,
+  "source_limits": "2026-11-03 documents come from Git ebe872e6d and are retrospective; 2026-11-04/05 use preserved VPS snapshot C:\\Users\\sinz1\\Documents\\競艇予想マスタ作成\\kiryu_ai_prod_20261104\\validation\\kiryu_wind_exhibition_20261104_05\\vps_snapshot"
+}

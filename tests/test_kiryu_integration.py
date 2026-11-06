@@ -31,11 +31,20 @@ class KiryuIntegrationTests(unittest.TestCase):
             AsyncMock(return_value=process),
         ) as create_process:
             race_dir = Path(temp)
-            for name in ("direct", "exhibition", "original_exhibition"):
-                (race_dir / f"{name}.json").write_text(
-                    json.dumps({"status": "complete", "complete": True}),
-                    encoding="utf-8",
-                )
+            documents = {
+                "direct": {"status": "complete", "complete": True, "data": {
+                    "racers": [{"lane": lane} for lane in range(1, 7)],
+                    "actual_entry": list(range(1, 7)), "wind_speed": 2,
+                }},
+                "exhibition": {"status": "complete", "complete": True, "data": {
+                    "entries": [{"lane": lane, "exhibition_course": lane} for lane in range(1, 7)],
+                }},
+                "original_exhibition": {"status": "partial", "complete": False, "data": {
+                    "entries": [{"lane": lane, "straight_time": 7 + lane / 100} for lane in range(1, 7)],
+                }},
+            }
+            for name, document in documents.items():
+                (race_dir / f"{name}.json").write_text(json.dumps(document), encoding="utf-8")
             self.assertTrue(asyncio.run(
                 apply_kiryu_live_prediction(target, race_dir, {}, logger)
             ))
