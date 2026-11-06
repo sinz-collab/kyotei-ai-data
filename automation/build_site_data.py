@@ -649,7 +649,11 @@ def naruto_v5_prediction_is_complete(prediction: object) -> bool:
     )
 
 
-def kiryu_v1_prediction_is_complete(prediction: object) -> bool:
+def kiryu_v1_prediction_is_complete(
+    prediction: object,
+    *,
+    allow_legacy_frozen_fly: bool = False,
+) -> bool:
     """Validate Kiryu C-improved/D and variable fly public output."""
     if not isinstance(prediction, dict):
         return False
@@ -697,12 +701,27 @@ def kiryu_v1_prediction_is_complete(prediction: object) -> bool:
             return False
         grouped_heads.append(segment[0])
         offset += count
-    return (
+    variable_fly_complete = (
         fly.get("status") == stage
         and fly.get("modelVersion") == "kiryu_independent_variable_20261106"
         and all(head != "1" for head in grouped_heads)
         and fly.get("headCandidates") == [int(head) for head in grouped_heads]
         and len(set(grouped_heads)) == len(grouped_heads)
+    )
+    if variable_fly_complete:
+        return True
+
+    # A same-day LIVE run must preserve the already-published morning fly
+    # tickets.  Predictions generated before the variable-fly release use the
+    # validated frozen 6+4 schema and do not have headCandidates.  Keep the
+    # public gate strict by allowing this compatibility path only when the
+    # caller explicitly opts in (the Kiryu LIVE runner does so).
+    return (
+        allow_legacy_frozen_fly
+        and fly.get("status") == stage
+        and fly.get("modelVersion") == "kiryu_independent_6plus4_frozen_20261104"
+        and allocation == [6, 4]
+        and len(grouped_heads) == 2
     )
 
 

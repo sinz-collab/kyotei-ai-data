@@ -1,0 +1,117 @@
+name: Kiryu live prediction
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Target date in YYYY-MM-DD"
+        required: true
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - "automation/build_site_data.py"
+      - "automation/run_kiryu_v1.py"
+      - ".github/workflows/kiryu-live-prediction.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kiryu-live-prediction
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Kiryu prediction dependencies
+        run: python -m pip install numpy==2.3.2 pandas==2.3.1 catboost==1.2.10
+      - id: target
+        name: Resolve target date
+        shell: bash
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          set -euo pipefail
+          target_date="${INPUT_DATE:-$(TZ=Asia/Tokyo date +%F)}"
+          if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] \
+            || [ "$(date -d "$target_date" +%F 2>/dev/null)" != "$target_date" ]; then
+            echo "Invalid target date: $target_date" >&2
+            exit 1
+          fi
+          echo "date=$target_date" >> "$GITHUB_OUTPUT"
+      - name: Recalculate ready LIVE races
+        shell: bash
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+        run: |
+          set -euo pipefail
+          for race in $(seq -w 1 12); do
+            live_root="data/live/${TARGET_DATE}/kiryu/${race}"
+            if [ ! -d "$live_root" ]; then
+              echo "${race}R skipped: live directory missing"
+              continue
+            fi
+            if python - "$live_root" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          root = Path(sys.argv[1])
+          try:
+              documents = {
+                  name: json.loads((root / f"{name}.json").read_text(encoding="utf-8"))
+                  for name in ("direct", "exhibition", "original_exhibition")
+              }
+          except (OSError, ValueError):
+              raise SystemExit(1)
+          sys.path.insert(0, "automation")
+          from run_kiryu_v1 import kiryu_live_documents_ready
+          raise SystemExit(0 if kiryu_live_documents_ready(documents) else 1)
+          PY
+            then
+              python automation/run_kiryu_v1.py \
+                --date "$TARGET_DATE" \
+                --race "$((10#$race))" \
+                --stage live \
+                --data-root data \
+                --live-root "$live_root" \
+                | tee -a "kiryu-live-${TARGET_DATE}.log"
+            else
+              echo "${race}R skipped: required LIVE input incomplete" \
+                | tee -a "kiryu-live-${TARGET_DATE}.log"
+            fi
+          done
+      - name: Commit and push generated data
+        shell: bash
+        env:
+          TARGET_DATE: ${{ steps.target.outputs.date }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          compact_date="${TARGET_DATE//-/}"
+          git add "data/venues/kiryu/${compact_date}.json" data/venues/kiryu/latest.json
+          if git diff --cached --quiet; then
+            echo "No Kiryu LIVE prediction changes."
+            exit 0
+          fi
+          git commit -m "Update Kiryu live predictions ${TARGET_DATE}"
+          git pull --rebase --autostash origin main
+          git push origin HEAD:main
+      - name: Upload LIVE prediction report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kiryu-live-prediction-${{ github.run_id }}
+          path: kiryu-live-*.log
+          if-no-files-found: warn
+          retention-days: 2

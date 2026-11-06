@@ -244,7 +244,10 @@ def main():
             decorate_live_prediction(pred,morning,documents,calculation)
         else:
             pred=engine.predict(race,a.date,a.stage)
-        if not kiryu_v1_prediction_is_complete(pred):
+        if not kiryu_v1_prediction_is_complete(
+            pred,
+            allow_legacy_frozen_fly=a.stage == "live",
+        ):
             raise RuntimeError(f"Kiryu {rn}R prediction failed the 10+10 public gate")
         if before and not race.get("predictionPre"): race["predictionPre"]=before
         if a.stage=="morning": race["predictionPre"]=deepcopy(pred)
@@ -254,7 +257,10 @@ def main():
     if a.stage=="morning" and set(preds)!=set(map(str,range(1,13))): raise RuntimeError("Kiryu morning prediction requires all 12 races")
     payload["preds"]=preds; payload["engine"]="kiryu_v1"; payload["modelVersion"]="kiryu_v1_20261104"
     all_complete = set(preds)==set(map(str,range(1,13))) and all(
-        kiryu_v1_prediction_is_complete(preds[str(rn)])
+        kiryu_v1_prediction_is_complete(
+            preds[str(rn)],
+            allow_legacy_frozen_fly=a.stage == "live",
+        )
         for rn in range(1, 13)
     )
     if all_complete:

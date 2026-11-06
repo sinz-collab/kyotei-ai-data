@@ -78,6 +78,28 @@ class KiryuPublishGateTests(unittest.TestCase):
         value["flyPrediction"]["tickets"][3]["combo"] = "6-2-3"
         self.assertFalse(kiryu_v1_prediction_is_complete(value))
 
+    def test_live_runner_can_preserve_same_day_frozen_fly_tickets(self) -> None:
+        value = prediction()
+        value["predictionStage"] = "live"
+        value["flyPrediction"] = {
+            "status": "live",
+            "modelVersion": "kiryu_independent_6plus4_frozen_20261104",
+            "allocation": [6, 4],
+            "tickets": [
+                {"combo": combo} for combo in (
+                    "1-2-3", "1-2-4", "1-2-5", "1-3-2", "1-3-4", "1-4-2",
+                    "5-1-2", "5-1-3", "5-1-4", "5-2-1",
+                )
+            ],
+        }
+        self.assertFalse(kiryu_v1_prediction_is_complete(value))
+        self.assertTrue(
+            kiryu_v1_prediction_is_complete(
+                value,
+                allow_legacy_frozen_fly=True,
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
