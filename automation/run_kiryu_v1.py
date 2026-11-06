@@ -7,18 +7,9 @@ from pathlib import Path
 POSITIONS = ("win", "second", "third")
 LIVE_REQUIRED_FEATURES = (
     "actual_entry",
-    "exhibition_course",
-    "start_time",
-    "exhibition_time",
-    "half_lap_time",
-    "turn_time",
+    "national_avg_st",
     "straight_time",
-    "weather",
-    "air_temperature",
-    "water_temperature",
-    "wind_direction",
     "wind_speed",
-    "wave_height",
 )
 
 def probability_review(before, after):
@@ -47,12 +38,35 @@ def complete_live_document(document, name=None):
         and {int(row.get("lane") or 0) for row in entries} == set(range(1, 7))
     )
 
-def build_live_calculation_input(documents):
+def kiryu_live_documents_ready(documents):
+    """Field-level gate for the two validated Kiryu LIVE corrections.
+
+    Original exhibition can be marked partial when unused half-lap data is
+    absent.  The correction still requires all six straight times and fails
+    closed when any feature it actually uses is missing.
+    """
+    try:
+        direct = documents["direct"].get("data") or {}
+        exhibition = (documents["exhibition"].get("data") or {}).get("entries") or []
+        original = (documents["original_exhibition"].get("data") or {}).get("entries") or []
+        actual_entry = direct.get("actual_entry")
+        return (
+            len((direct.get("racers") or [])) == 6
+            and sorted(actual_entry or []) == list(range(1, 7))
+            and direct.get("wind_speed") is not None
+            and len(exhibition) == 6
+            and {int(row.get("lane") or 0) for row in exhibition} == set(range(1, 7))
+            and all(row.get("exhibition_course") is not None for row in exhibition)
+            and len(original) == 6
+            and {int(row.get("lane") or 0) for row in original} == set(range(1, 7))
+            and all(row.get("straight_time") is not None for row in original)
+        )
+    except (KeyError, TypeError, ValueError):
+        return False
+
+def build_live_calculation_input(documents, racers=None):
     """Build the canonical input that a Kiryu LIVE probability model must use."""
-    if any(
-        not complete_live_document(document, name)
-        for name, document in documents.items()
-    ):
+    if not kiryu_live_documents_ready(documents):
         raise RuntimeError("incomplete Kiryu LIVE inputs")
 
     direct = documents["direct"]["data"]
@@ -64,12 +78,23 @@ def build_live_calculation_input(documents):
         int(row["lane"]): row
         for row in documents["original_exhibition"]["data"]["entries"]
     }
+    racers_supplied = racers is not None
+    racer_by_lane = {
+        int(row["lane"]): row
+        for row in (racers or direct.get("racers") or [])
+        if row.get("lane") is not None
+    }
     boats = []
     for lane in range(1, 7):
         exhibit = exhibition[lane]
         measured = original[lane]
         row = {
             "lane": lane,
+            "national_avg_st": (racer_by_lane.get(lane) or {}).get("avg_st"),
+            "local_avg_st": (
+                (racer_by_lane.get(lane) or {}).get("boaters_local_avg_st")
+                or (racer_by_lane.get(lane) or {}).get("local_st")
+            ),
             "exhibition_course": exhibit.get("exhibition_course"),
             "start_time": exhibit.get("start_time"),
             "exhibition_time": exhibit.get("exhibition_time"),
@@ -77,12 +102,18 @@ def build_live_calculation_input(documents):
             "turn_time": measured.get("turn_time"),
             "straight_time": measured.get("straight_time"),
         }
-        missing = [key for key, value in row.items() if key != "lane" and value is None]
+        missing = [
+            key for key, value in row.items()
+            if key in {"exhibition_course", "straight_time"} and value is None
+        ]
         if missing:
             raise RuntimeError(
                 f"incomplete Kiryu LIVE features lane {lane}: {','.join(missing)}"
             )
         boats.append(row)
+
+    if racers_supplied and not any(row["national_avg_st"] not in (None, "", "-") for row in boats):
+        raise RuntimeError("incomplete Kiryu LIVE national average ST")
 
     weather = {
         key: direct.get(key)
@@ -95,7 +126,7 @@ def build_live_calculation_input(documents):
             "wave_height",
         )
     }
-    missing_weather = [key for key, value in weather.items() if value is None]
+    missing_weather = ["wind_speed"] if weather.get("wind_speed") is None else []
     if missing_weather:
         raise RuntimeError(
             "incomplete Kiryu LIVE weather: " + ",".join(missing_weather)
@@ -175,6 +206,7 @@ def atomic(path,obj):
 
 def main():
     from kiryu_v1_engine import KiryuV1
+    from kiryu_live_corrections import apply_live_corrections, normal_prediction_fields
     from build_site_data import kiryu_v1_prediction_is_complete
     ap=argparse.ArgumentParser(); ap.add_argument("--date",required=True); ap.add_argument("--stage",choices=("morning","live"),default="morning"); ap.add_argument("--race",type=int); ap.add_argument("--data-root",default="data"); ap.add_argument("--live-root")
     a=ap.parse_args(); compact=a.date.replace("-",""); dated=Path(a.data_root)/"venues"/"kiryu"/(compact+".json")
@@ -183,27 +215,40 @@ def main():
     for race in races:
         rn=int(race.get("race") or 0)
         if a.race and rn!=a.race: continue
+        before=deepcopy(race.get("prediction"))
+        morning=deepcopy(race.get("predictionPre") or before)
         if a.stage=="live":
             if not a.live_root: raise RuntimeError("--live-root is required for live")
             live=Path(a.live_root)
             documents={name:json.loads((live/f"{name}.json").read_text(encoding="utf-8")) for name in ("direct","exhibition","original_exhibition")}
-            direct=documents["direct"]; exhibit=documents["exhibition"]
-            if any(not complete_live_document(document,name) for name,document in documents.items()): raise RuntimeError("incomplete Kiryu LIVE inputs")
-            live_input,input_hash=build_live_calculation_input(documents)
-            require_live_probability_calculation(live_input,input_hash)
-            course={int(x["lane"]):int(x.get("exhibition_course") or x["lane"]) for x in exhibit.get("data",{}).get("entries",[])}
-            for r in race.get("racers") or []:
-                lane=int(r["lane"]); r["entry_course"]=course.get(lane,lane); r["actual_course"]=course.get(lane,lane)
-        before=deepcopy(race.get("prediction"))
-        morning=deepcopy(race.get("predictionPre") or before)
-        pred=engine.predict(race,a.date,a.stage)
+            if not kiryu_live_documents_ready(documents): raise RuntimeError("incomplete Kiryu LIVE inputs")
+            if not morning or morning.get("predictionStage") != "morning": raise RuntimeError("Kiryu morning prediction unavailable")
+            live_input,input_hash=build_live_calculation_input(documents,race.get("racers") or [])
+            model_race=deepcopy(race)
+            for racer in model_race.get("racers") or []:
+                racer["entry_course"]=int(racer["lane"]); racer["actual_course"]=int(racer["lane"])
+            base_joint=engine.normal_joint(model_race,a.date)
+            corrected_joint,correction=apply_live_corrections(base_joint,model_race.get("racers") or [],live_input)
+            pred=deepcopy(morning)
+            pred.update(normal_prediction_fields(engine,corrected_joint))
+            pred["predictionStage"]="live"
+            pred["flyPrediction"]=deepcopy(morning["flyPrediction"])
+            pred["flyPrediction"]["status"]="live"
+            calculation={
+                "executed":True,
+                "status":"success",
+                "inputHash":input_hash,
+                "probabilityFeaturesUsed":list(LIVE_REQUIRED_FEATURES),
+                "correction":correction,
+            }
+            decorate_live_prediction(pred,morning,documents,calculation)
+        else:
+            pred=engine.predict(race,a.date,a.stage)
         if not kiryu_v1_prediction_is_complete(pred):
             raise RuntimeError(f"Kiryu {rn}R prediction failed the 10+10 public gate")
         if before and not race.get("predictionPre"): race["predictionPre"]=before
         if a.stage=="morning": race["predictionPre"]=deepcopy(pred)
         else:
-            if not morning or morning.get("predictionStage") != "morning": raise RuntimeError("Kiryu morning prediction unavailable")
-            decorate_live_prediction(pred,morning,documents,{"executed":True,"status":"success","inputHash":input_hash,"probabilityFeaturesUsed":list(LIVE_REQUIRED_FEATURES)})
             race["predictionFinal"]=deepcopy(pred)
         race["prediction"]=pred; preds[str(rn)]=pred
     if a.stage=="morning" and set(preds)!=set(map(str,range(1,13))): raise RuntimeError("Kiryu morning prediction requires all 12 races")

@@ -123,6 +123,51 @@ class KiryuV1:
                     v=np.maximum(rr[js],1e-8); p3[js]=v/v.sum()
         return p2,p3
 
+    def normal_joint(self,race,date):
+        """Return the frozen C-improved + normal-D 120-way distribution.
+
+        This is the same calculation used by ``predict``.  It is exposed for
+        the validated Kiryu LIVE transform; morning and fly selection remain
+        in ``predict`` and are not changed by the LIVE correction.
+        """
+        X,racers=self._matrix(race,date); entry=any(int(r.get("entry_course") or r["lane"])!=int(r["lane"]) for r in racers)
+        p1=self._first(X,racers,entry); p2,p3=self._conditionals(X)
+        def centered(v,scale):
+            v=np.asarray(v,float); return np.clip((v-v.mean())/scale,-2,2)
+        ft2=.5*centered([_num(r.get("nat_2"),0) for r in racers],18)+.5*centered([_num(r.get("local_2"),0) for r in racers],20)+.18*centered(X[:,FEATURES.index("ath_second")],.16)+.18*centered(X[:,FEATURES.index("course_second")],.15)
+        ft3=.5*centered([_num(r.get("nat_3"),0) for r in racers],22)+.5*centered([_num(r.get("local_3"),0) for r in racers],23)+.18*centered(X[:,FEATURES.index("ath_third")],.16)+.18*centered(X[:,FEATURES.index("course_third")],.15)
+        p2n=p2.copy()
+        for a in range(6):
+            inds=np.array([j for j in range(6) if j!=a]); score=np.log(np.maximum(p2[a,inds],1e-10))+.09*ft2[inds]+.09*self.hist2_pair[a,inds]
+            p2n[a,inds]=_softmax(score)
+        z=np.log(np.maximum(p3,1e-12))+.075*ft3[C]+.09*self.hist3; p3n=np.zeros(120)
+        for a in range(6):
+            for b in range(6):
+                js=np.where((A==a)&(B==b))[0]
+                if len(js): p3n[js]=_softmax(z[js])
+        joint=p1[A]*p2n[A,B]*p3n
+        return joint/joint.sum()
+
+    def select_normal_indices(self,joint):
+        """Exact frozen formal 6+2+2 selector for a normalized joint."""
+        joint=np.asarray(joint,float)
+        if joint.shape!=(120,) or not np.isfinite(joint).all() or not np.isclose(joint.sum(),1.0,atol=1e-12):
+            raise ValueError("Kiryu normal joint must contain 120 normalized probabilities")
+        ranked=np.argsort(-joint,kind="stable"); normal=ranked[:6].tolist()
+        for j in np.argsort(-(joint*np.exp(.25*self.prior_rel)),kind="stable"):
+            if int(j) not in normal:normal.append(int(j))
+            if len(normal)>=8:break
+        cand=normal[:6]
+        for _ in range(4):
+            used={A[j] for j in cand}; score=np.array([joint[j]*(1.3 if A[j] not in used else 1) for j in range(120)]); score[cand]=-1; cand.append(int(np.argmax(score)))
+        for j in cand:
+            if j not in normal:normal.append(j)
+            if len(normal)>=10:break
+        for j in ranked:
+            if int(j) not in normal:normal.append(int(j))
+            if len(normal)>=10:break
+        return normal[:10]
+
     def predict(self,race,date,stage="morning"):
         X,racers=self._matrix(race,date); entry=any(int(r.get("entry_course") or r["lane"])!=int(r["lane"]) for r in racers)
         p1=self._first(X,racers,entry); p2,p3=self._conditionals(X)
