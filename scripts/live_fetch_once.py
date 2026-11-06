@@ -280,27 +280,11 @@ async def apply_kiryu_live_prediction(target, race_dir, fetch_result, logger) ->
             },
         )
         return False
-    direct = saved["direct"].get("data") or {}
-    exhibition = (saved["exhibition"].get("data") or {}).get("entries") or []
-    original = (saved["original_exhibition"].get("data") or {}).get("entries") or []
-    readiness = {
-        "direct": (
-            len(direct.get("racers") or []) == 6
-            and sorted(direct.get("actual_entry") or []) == list(range(1, 7))
-            and direct.get("wind_speed") is not None
-        ),
-        "exhibition": (
-            len(exhibition) == 6
-            and {int(row.get("lane") or 0) for row in exhibition} == set(range(1, 7))
-            and all(row.get("exhibition_course") is not None for row in exhibition)
-        ),
-        "original_exhibition": (
-            len(original) == 6
-            and {int(row.get("lane") or 0) for row in original} == set(range(1, 7))
-            and all(row.get("straight_time") is not None for row in original)
-        ),
-    }
-    incomplete = [name for name, ready in readiness.items() if not ready]
+    incomplete = [
+        name
+        for name, document in saved.items()
+        if document.get("complete") is not True or document.get("status") != "complete"
+    ]
     if incomplete:
         logger.info(
             "Kiryu LIVE prediction kept preliminary: required input incomplete",

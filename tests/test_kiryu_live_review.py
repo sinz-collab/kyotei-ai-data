@@ -106,8 +106,7 @@ class KiryuLiveReviewTests(unittest.TestCase):
         self.assertEqual(value["actual_entry"], list(range(1, 7)))
         self.assertEqual(
             set(value["boats"][0]),
-            {"lane", "national_avg_st", "local_avg_st",
-             "exhibition_course", "start_time", "exhibition_time",
+            {"lane", "exhibition_course", "start_time", "exhibition_time",
              "half_lap_time", "turn_time", "straight_time"},
         )
         self.assertEqual(
