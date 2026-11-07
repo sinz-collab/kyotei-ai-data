@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:0] = [str(ROOT / "automation"), str(ROOT / "scripts")]
 
 from run_kiryu_v1 import (
+    attach_live_display,
     build_live_calculation_input,
     complete_live_document,
     decorate_live_prediction,
@@ -18,6 +19,48 @@ from audit_kiryu_live import FAILURE_REASON, fallback_prediction
 
 
 class KiryuLiveReviewTests(unittest.TestCase):
+    def test_live_documents_are_attached_to_the_public_display_domain(self) -> None:
+        documents = {
+            "direct": {
+                "fetched_at": "2026-11-07T16:04:39+09:00",
+                "data": {"weather": "曇り", "wind_speed": 2},
+            },
+            "exhibition": {
+                "fetched_at": "2026-11-07T16:04:40+09:00",
+                "data": {"entries": [{"lane": lane} for lane in range(1, 7)]},
+            },
+            "original_exhibition": {
+                "fetched_at": "2026-11-07T16:04:41+09:00",
+                "data": {"entries": [
+                    {
+                        "lane": lane,
+                        "half_lap_time": 19 + lane / 100,
+                        "turn_time": 5 + lane / 100,
+                        "straight_time": 7 + lane / 100,
+                    }
+                    for lane in range(1, 7)
+                ]},
+            },
+        }
+        prediction = {"predictionStage": "live", "win": {"1": 30.0}}
+        race = {"race": 3, "prediction": prediction, "live": {"retained": True}}
+
+        attach_live_display(race, documents)
+
+        self.assertIs(race["prediction"], prediction)
+        self.assertEqual(race["prediction"], {"predictionStage": "live", "win": {"1": 30.0}})
+        self.assertTrue(race["live"]["retained"])
+        self.assertTrue(race["live"]["originalExhibitionAvailable"])
+        self.assertEqual(len(race["live"]["original"]), 6)
+        self.assertEqual(
+            set(race["live"]["original"][0]),
+            {"lane", "half_lap_time", "turn_time", "straight_time"},
+        )
+        self.assertEqual(
+            race["live"]["sourceFetchedAt"]["original_exhibition"],
+            "2026-11-07T16:04:41+09:00",
+        )
+
     def test_live_prediction_rejects_unexecuted_calculation(self) -> None:
         morning = {
             position: {str(lane): 100 / 6 for lane in range(1, 7)}

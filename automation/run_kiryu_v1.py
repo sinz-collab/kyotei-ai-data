@@ -195,6 +195,29 @@ def decorate_live_prediction(prediction, morning, documents, calculation):
     prediction["liveCalculation"] = calculation
     return prediction
 
+def attach_live_display(race, documents):
+    """Publish the fetched LIVE documents in the site-facing race domain."""
+    direct = deepcopy(documents["direct"]["data"])
+    exhibition = deepcopy(documents["exhibition"]["data"])
+    original = deepcopy(documents["original_exhibition"]["data"])
+    original_rows = deepcopy(original.get("entries") or [])
+    live = deepcopy(race.get("live") or {})
+    live.update({
+        "direct": direct,
+        "weather": direct,
+        "exhibition": exhibition,
+        # app.js rowMap() consumes either a lane-keyed object or a row array.
+        "original": original_rows,
+        "original_exhibition": original,
+        "originalExhibitionAvailable": bool(original_rows),
+        "sourceFetchedAt": {
+            name: document.get("fetched_at")
+            for name, document in documents.items()
+        },
+    })
+    race["live"] = live
+    return race
+
 def atomic(path,obj):
     path.parent.mkdir(parents=True,exist_ok=True)
     fd,tmp=tempfile.mkstemp(dir=path.parent,suffix=".tmp")
@@ -242,6 +265,7 @@ def main():
                 "correction":correction,
             }
             decorate_live_prediction(pred,morning,documents,calculation)
+            attach_live_display(race,documents)
         else:
             pred=engine.predict(race,a.date,a.stage)
         if not kiryu_v1_prediction_is_complete(
