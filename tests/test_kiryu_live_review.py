@@ -51,9 +51,9 @@ class KiryuLiveReviewTests(unittest.TestCase):
         self.assertEqual(race["prediction"], {"predictionStage": "live", "win": {"1": 30.0}})
         self.assertTrue(race["live"]["retained"])
         self.assertTrue(race["live"]["originalExhibitionAvailable"])
-        self.assertEqual(len(race["live"]["original"]), 6)
+        self.assertEqual(set(race["live"]["original"]), set("123456"))
         self.assertEqual(
-            set(race["live"]["original"][0]),
+            set(race["live"]["original"]["1"]),
             {"lane", "half_lap_time", "turn_time", "straight_time"},
         )
         self.assertEqual(

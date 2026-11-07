@@ -200,13 +200,17 @@ def attach_live_display(race, documents):
     direct = deepcopy(documents["direct"]["data"])
     exhibition = deepcopy(documents["exhibition"]["data"])
     original = deepcopy(documents["original_exhibition"]["data"])
-    original_rows = deepcopy(original.get("entries") or [])
+    original_rows = {
+        str(int(row["lane"])): deepcopy(row)
+        for row in original.get("entries") or []
+    }
     live = deepcopy(race.get("live") or {})
     live.update({
         "direct": direct,
         "weather": direct,
         "exhibition": exhibition,
-        # app.js rowMap() consumes either a lane-keyed object or a row array.
+        # app.js mergeOriginalExhibitionRows() requires lane-keyed rows when
+        # the browser refreshes the embedded values from the LIVE documents.
         "original": original_rows,
         "original_exhibition": original,
         "originalExhibitionAvailable": bool(original_rows),
