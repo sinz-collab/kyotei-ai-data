@@ -9,6 +9,27 @@ from live_common import deadline_datetime, normalize_now
 
 STOP_STATUSES = {"finished", "cancelled", "canceled", "aborted"}
 NARUTO_BACKFILL_BATCH_SIZE = 4
+KIRYU_LIVE_BACKFILL_MINUTES = 60
+
+
+def _kiryu_live_inputs_missing(
+    date_value: str,
+    race_no: int,
+    output_root: Path,
+) -> bool:
+    race_dir = output_root / date_value / "kiryu" / f"{race_no:02d}"
+    for name in ("direct", "exhibition", "original_exhibition"):
+        path = race_dir / f"{name}.json"
+        if not path.is_file():
+            return True
+        try:
+            import json
+            document = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return True
+        if document.get("complete") is not True or document.get("status") != "complete":
+            return True
+    return False
 
 
 def _naruto_final_missing(
@@ -62,10 +83,24 @@ def select_target_races(
             and post_deadline_window
             and _naruto_final_missing(payload, race, race_no, output_root)
         )
+        # Kiryu's pre-race source can publish the direct/exhibition payload only
+        # a few minutes before (or just after) the advertised deadline.  Keep a
+        # bounded post-deadline recovery window for genuinely incomplete saved
+        # inputs; complete data is never replaced or fabricated.
+        kiryu_live_backfill = (
+            venue["slug"] == "kiryu"
+            and output_root is not None
+            and close_at <= current < close_at + timedelta(
+                minutes=KIRYU_LIVE_BACKFILL_MINUTES
+            )
+            and _kiryu_live_inputs_missing(
+                payload["date"], race_no, output_root
+            )
+        )
         # Naruto morning data can arrive after an early race has closed. Keep
         # polling its LIVE inputs in the existing result window until a
         # verified final prediction has actually been written.
-        fetch_live = fetch_live or naruto_live_backfill
+        fetch_live = fetch_live or naruto_live_backfill or kiryu_live_backfill
         result_path = (
             output_root / payload["date"] / venue["slug"] / f"{race_no:02d}" / "result.json"
             if output_root else None
@@ -95,6 +130,7 @@ def select_target_races(
                     "fetch_live": fetch_live,
                     "fetch_result": fetch_result,
                     "naruto_live_backfill": naruto_live_backfill,
+                    "kiryu_live_backfill": kiryu_live_backfill,
                 }
             )
     if venue["slug"] == "naruto":

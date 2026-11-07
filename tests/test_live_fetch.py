@@ -558,6 +558,80 @@ class VenueAndRaceTests(unittest.TestCase):
         self.assertFalse(targets[0]["fetch_result"])
         self.assertTrue(targets[0]["naruto_live_backfill"])
 
+    def test_kiryu_missing_live_inputs_backfill_after_deadline(self) -> None:
+        venue = {
+            "slug": "kiryu",
+            "name": "桐生",
+            "payload": {
+                "date": "2026-07-24",
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            race_dir = root / "2026-07-24" / "kiryu" / "01"
+            race_dir.mkdir(parents=True)
+            (race_dir / "result.json").write_text(
+                json.dumps({"complete": True}), encoding="utf-8"
+            )
+            for name in ("direct", "exhibition", "original_exhibition"):
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": "pending", "complete": False}),
+                    encoding="utf-8",
+                )
+            targets = select_target_races(venue, at("09:09"), CONFIG, root)
+
+        self.assertEqual(len(targets), 1)
+        self.assertTrue(targets[0]["fetch_live"])
+        self.assertFalse(targets[0]["fetch_result"])
+        self.assertTrue(targets[0]["kiryu_live_backfill"])
+
+    def test_kiryu_complete_live_inputs_stop_backfill(self) -> None:
+        venue = {
+            "slug": "kiryu",
+            "name": "桐生",
+            "payload": {
+                "date": "2026-07-24",
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            race_dir = root / "2026-07-24" / "kiryu" / "01"
+            race_dir.mkdir(parents=True)
+            for name in ("direct", "exhibition", "original_exhibition", "result"):
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": "complete", "complete": True}),
+                    encoding="utf-8",
+                )
+            targets = select_target_races(venue, at("09:09"), CONFIG, root)
+
+        self.assertEqual(targets, [])
+
+    def test_kiryu_live_backfill_expires_without_faking_completion(self) -> None:
+        venue = {
+            "slug": "kiryu",
+            "name": "桐生",
+            "payload": {
+                "date": "2026-07-24",
+                "races": [{"race": 1, "deadline": "09:00", "racers": racers()}],
+            },
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            race_dir = root / "2026-07-24" / "kiryu" / "01"
+            race_dir.mkdir(parents=True)
+            (race_dir / "result.json").write_text(
+                json.dumps({"complete": True}), encoding="utf-8"
+            )
+            (race_dir / "direct.json").write_text(
+                json.dumps({"status": "pending", "complete": False}),
+                encoding="utf-8",
+            )
+            targets = select_target_races(venue, at("10:01"), CONFIG, root)
+
+        self.assertEqual(targets, [])
+
     def test_naruto_verified_final_stops_live_backfill(self) -> None:
         final = {
             "phase": "final",
