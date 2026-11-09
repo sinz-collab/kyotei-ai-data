@@ -55,6 +55,22 @@ ALL_VENUES = [
     ("omura", "大村"),
 ]
 
+SEASON_ST_RE = re.compile(r"(?:[FＦLＬ]\.?[0-9]{1,2}|\.?[0-9]{1,2})")
+SPECIAL_SEASON_FINISHES = {
+    "転",
+    "妨",
+    "落",
+    "失",
+    "不",
+    "F",
+    "Ｆ",
+    "L",
+    "Ｌ",
+    "欠",
+    "エ",
+    "沈",
+}
+
 
 def as_float(value: object, default: float = 0.0) -> float:
     try:
@@ -199,24 +215,36 @@ def parse_racers(lines: list[str]) -> list[dict]:
         runs = []
         hayami = ""
         index = 0
-        while index + 4 < len(tokens):
+        while index + 3 < len(tokens):
+            race = tokens[index]
+            course = tokens[index + 1]
+            st = tokens[index + 2]
+            raw_finish = tokens[index + 3]
+            numeric_finish = re.fullmatch(r"[1-6]", raw_finish)
+            special_finish = raw_finish in SPECIAL_SEASON_FINISHES
             if (
-                re.fullmatch(r"[0-9]{1,2}R", tokens[index])
-                and re.fullmatch(r"[1-6]", tokens[index + 1])
-                and re.fullmatch(r"\.?[0-9]{1,2}", tokens[index + 2])
-                and re.fullmatch(r"[1-6]", tokens[index + 3])
-                and tokens[index + 4] == "着"
+                re.fullmatch(r"[0-9]{1,2}R", race)
+                and re.fullmatch(r"[1-6]", course)
+                and SEASON_ST_RE.fullmatch(st)
+                and (
+                    special_finish
+                    or (
+                        numeric_finish
+                        and index + 4 < len(tokens)
+                        and tokens[index + 4] == "着"
+                    )
+                )
             ):
                 runs.append(
                     {
-                        "race": tokens[index],
-                        "course": tokens[index + 1],
-                        "entry_course": tokens[index + 1],
-                        "st": tokens[index + 2],
-                        "finish": f"{tokens[index + 3]}着",
+                        "race": race,
+                        "course": course,
+                        "entry_course": course,
+                        "st": st,
+                        "finish": f"{raw_finish}着" if numeric_finish else raw_finish,
                     }
                 )
-                index += 5
+                index += 5 if numeric_finish else 4
                 continue
             if re.fullmatch(r"[0-9]{1,2}R", tokens[index]):
                 hayami = tokens[index]
@@ -442,6 +470,51 @@ def load_prior_meeting_payloads(
     return prior_payloads
 
 
+def align_season_groups_to_prior_appearances(
+    payload: dict,
+    prior_payloads: list[dict],
+) -> None:
+    """Align flattened BOATERS meeting runs with their actual meeting days."""
+    appearances: dict[str, list[tuple[str, list[str]]]] = {}
+    for prior in prior_payloads:
+        day_label = str(prior.get("eventDayLabel") or prior.get("seriesDay") or "")
+        daily: dict[str, list[str]] = {}
+        for race in prior.get("races") or []:
+            race_label = f"{int(race.get('race') or 0)}R"
+            for racer in race.get("racers") or []:
+                name = normalize_racer_name(racer.get("name"))
+                if name:
+                    daily.setdefault(name, []).append(race_label)
+        for name, race_labels in daily.items():
+            appearances.setdefault(name, []).append((day_label, race_labels))
+
+    for race in payload.get("races") or []:
+        for racer in race.get("racers") or []:
+            runs = racer.get("season_runs") or []
+            name = normalize_racer_name(racer.get("name"))
+            expected_days = appearances.get(name) or []
+            expected_races = [
+                race_label
+                for _day_label, race_labels in expected_days
+                for race_label in race_labels
+            ]
+            parsed_races = [str(run.get("race") or "") for run in runs]
+            if not runs or parsed_races != expected_races:
+                continue
+            offset = 0
+            groups = []
+            for day_label, race_labels in expected_days:
+                count = len(race_labels)
+                groups.append(
+                    {
+                        "day": day_label,
+                        "runs": deepcopy(runs[offset:offset + count]),
+                    }
+                )
+                offset += count
+            racer["season_groups"] = groups
+
+
 def annotate_no_prior_meeting_runs(payload: dict, slug: str, data_root: Path) -> dict:
     event_day = payload.get("eventDay")
     target_date = payload.get("date")
@@ -456,6 +529,7 @@ def annotate_no_prior_meeting_runs(payload: dict, slug: str, data_root: Path) ->
     )
     prior_names = None
     if prior_payloads is not None:
+        align_season_groups_to_prior_appearances(payload, prior_payloads)
         prior_names = {
             normalize_racer_name(racer.get("name"))
             for prior in prior_payloads

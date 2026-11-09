@@ -40,6 +40,7 @@ from live_fetch_once import (
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
 sys.path.insert(0, str(AUTOMATION))
 from build_site_data import (
+    align_season_groups_to_prior_appearances,
     event_day_info,
     merge_validated_morning_metadata,
     parse_racers,
@@ -382,6 +383,61 @@ class VenueAndRaceTests(unittest.TestCase):
         self.assertEqual(len(parsed), 6)
         self.assertTrue(all(len(racer["season_runs"]) == 1 for racer in parsed))
         self.assertEqual(parsed[0]["season_runs"][0]["finish"], "2着")
+
+    def test_racer_parser_keeps_special_setsukan_finishes(self) -> None:
+        special_finishes = ["転", "妨", "落", "失", "不", "F"]
+        lines = ["節間成績", "初日", "2日目", "最終日", "早見"]
+        for lane, finish in enumerate(special_finishes, start=1):
+            lines.extend(
+                [
+                    str(lane), f"選手{lane}", "A1", "30", "歳", "52.0", "kg", "東京",
+                    "支部", "F", "L", "F0", "L0", ".15", ".16", "6.00", "40%",
+                    "60%", "5.50", "35%", "55%", "モーター", "No.", str(lane),
+                    "30%", "50%", "No.", str(lane + 10), "25%", "45%",
+                    "3R", str(lane), ".09", finish,
+                ]
+            )
+            if lane == 1:
+                lines.extend(["9R", "1", "L.01", "L"])
+
+        parsed = parse_racers(lines)
+
+        self.assertEqual(len(parsed), 6)
+        self.assertEqual(
+            [racer["season_runs"][0]["finish"] for racer in parsed],
+            special_finishes,
+        )
+        self.assertEqual(parsed[0]["season_runs"][1], {
+            "race": "9R", "course": "1", "entry_course": "1", "st": "L.01", "finish": "L",
+        })
+
+    def test_setsukan_groups_follow_actual_prior_day_appearances(self) -> None:
+        runs = [
+            {"race": "1R", "finish": "3着"},
+            {"race": "3R", "finish": "転"},
+            {"race": "11R", "finish": "3着"},
+            {"race": "5R", "finish": "4着"},
+        ]
+        payload = {
+            "races": [{"racers": [{"name": "竹田 和哉", "season_runs": runs, "season_groups": []}]}],
+        }
+        prior_payloads = [
+            {"eventDayLabel": "初日", "races": [{"race": 1, "racers": [{"name": "竹田 和哉"}]}]},
+            {"eventDayLabel": "2日目", "races": [
+                {"race": 3, "racers": [{"name": "竹田 和哉"}]},
+                {"race": 11, "racers": [{"name": "竹田 和哉"}]},
+            ]},
+            {"eventDayLabel": "3日目", "races": [{"race": 5, "racers": [{"name": "竹田 和哉"}]}]},
+        ]
+
+        align_season_groups_to_prior_appearances(payload, prior_payloads)
+
+        groups = payload["races"][0]["racers"][0]["season_groups"]
+        self.assertEqual([group["day"] for group in groups], ["初日", "2日目", "3日目"])
+        self.assertEqual(
+            [[run["finish"] for run in group["runs"]] for group in groups],
+            [["3着"], ["転", "3着"], ["4着"]],
+        )
 
     def test_safe_morning_merge_preserves_domains_and_rejects_empty_regression(self) -> None:
         existing = {
