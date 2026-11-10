@@ -411,6 +411,32 @@ class VenueAndRaceTests(unittest.TestCase):
             "race": "9R", "course": "1", "entry_course": "1", "st": "L.01", "finish": "L",
         })
 
+    def test_special_finish_does_not_shift_following_setsukan_runs(self) -> None:
+        lines = ["節間成績", "初日", "2日目", "最終日", "早見"]
+        target_runs = [
+            "2R", "2", ".15", "1", "着",
+            "8R", "6", ".14", "3", "着",
+            "2R", "4", ".13", "転",
+            "6R", "5", ".05", "4", "着",
+            "2R", "3", ".13", "6", "着",
+            "7R", "1", ".11", "1", "着",
+        ]
+        for lane in range(1, 7):
+            lines.extend(
+                [
+                    str(lane), f"選手{lane}", "A1", "30", "歳", "52.0", "kg", "東京",
+                    "支部", "F", "L", "F0", "L0", ".15", ".16", "6.00", "40%",
+                    "60%", "5.50", "35%", "55%", "モーター", "No.", str(lane),
+                    "30%", "50%", "No.", str(lane + 10), "25%", "45%",
+                ]
+            )
+            lines.extend(target_runs if lane == 1 else ["1R", str(lane), ".12", "2", "着"])
+
+        runs = parse_racers(lines)[0]["season_runs"]
+
+        self.assertEqual([run["race"] for run in runs], ["2R", "8R", "2R", "6R", "2R", "7R"])
+        self.assertEqual([run["finish"] for run in runs], ["1着", "3着", "転", "4着", "6着", "1着"])
+
     def test_setsukan_groups_follow_actual_prior_day_appearances(self) -> None:
         runs = [
             {"race": "1R", "finish": "3着"},
