@@ -3,11 +3,11 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 import sys
-import tempfile
 from copy import deepcopy
 from pathlib import Path
+
+from public_json import write_public_json_atomic
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -122,54 +122,7 @@ def atomic_write_json(
     path: Path,
     payload: dict,
 ) -> None:
-    """
-    同じディレクトリ内に一時ファイルを書き、
-    最後にos.replaceする。
-    """
-    path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    fd, temporary_name = tempfile.mkstemp(
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-        dir=path.parent,
-    )
-
-    try:
-        with os.fdopen(
-            fd,
-            "w",
-            encoding="utf-8",
-        ) as handle:
-            json.dump(
-                payload,
-                handle,
-                ensure_ascii=False,
-                indent=2,
-            )
-
-            handle.write("\n")
-            handle.flush()
-            os.fsync(
-                handle.fileno()
-            )
-
-        os.replace(
-            temporary_name,
-            path,
-        )
-
-    except Exception:
-        try:
-            os.unlink(
-                temporary_name
-            )
-        except OSError:
-            pass
-
-        raise
+    write_public_json_atomic(path, payload)
 
 
 def as_race_no(value) -> int:

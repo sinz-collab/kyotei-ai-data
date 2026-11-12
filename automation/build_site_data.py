@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from public_json import serialize_public_json
+
 
 HERE = Path(__file__).resolve().parent
 CONFIG_PATH = HERE / "venues.json"
@@ -1379,7 +1381,7 @@ def main() -> int:
         if not prediction_available:
             raise RuntimeError(f"live prediction payload invalid: {reason}")
 
-        serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+        serialized = serialize_public_json(payload)
         write_text_atomic(data_root / "venues" / slug / "latest.json", serialized)
 
         now = datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(timespec="seconds")
@@ -1523,7 +1525,7 @@ def main() -> int:
                 prediction_available,
                 prediction_reason,
             )
-            serialized = json.dumps(payload, ensure_ascii=False, indent=2) + "\n"
+            serialized = serialize_public_json(payload)
             write_text_atomic(existing_path, serialized)
             write_text_atomic(venue_dir / "latest.json", serialized)
         statuses[slug] = {
