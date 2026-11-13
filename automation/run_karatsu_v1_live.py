@@ -70,6 +70,9 @@ def prediction_snapshot(prediction: dict, stage: str, generated_at: str | None) 
         },
         "ai": deepcopy(prediction.get("ai") or []),
         "aiUpset": deepcopy(prediction.get("aiUpset") or []),
+        "normalTickets": deepcopy(prediction.get("normalTickets") or []),
+        "lane1FlyProbability": prediction.get("lane1FlyProbability"),
+        "flyPrediction": deepcopy(prediction.get("flyPrediction") or {}),
     }
 
 
@@ -152,7 +155,7 @@ def apply_live_race(payload: dict, race_no: int, documents: dict[str, dict]) -> 
         "original": deepcopy(original),
     }
 
-    final = site_prediction(payload, race)
+    final = site_prediction(payload, race, live_fetched_at=generated_at)
     final.update({
         "phase": "final",
         "finalPredictionStatus": "complete",

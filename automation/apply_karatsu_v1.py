@@ -1,20 +1,26 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime
 import json
 import math
 import re
 import sys
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 ENGINE_DIR = REPO_ROOT / "engines" / "karatsu_v1"
 sys.path.insert(0, str(ENGINE_DIR))
 from karatsu_prediction_engine import KaratsuScenarioEngine, RaceInput, RacerInput, SeasonRun
+from karatsu_conditional_second_v1 import select_normal_tickets
+from karatsu_fly_v1 import build_fly_prediction
 
 ENGINE_ID = "karatsu_scenario_engine_v1_2"
+ENGINE_VERSION = "1.3.0"
 LANES = (1, 2, 3, 4, 5, 6)
+JST = ZoneInfo("Asia/Tokyo")
 
 
 def number(value: Any, default: float = 0.0) -> float:
@@ -142,7 +148,32 @@ def original_index(race: dict) -> dict[int, dict]:
 
 def weather(race: dict, payload: dict) -> dict:
     live = race.get("live") or {}
-    return race.get("weather") or live.get("weather") or payload.get("weather") or {}
+    # LIVE must win over the morning snapshot.  Historical/result weather is
+    # never used to fill a missing pre-deadline LIVE capture.
+    return live.get("weather") or race.get("weather") or payload.get("weather") or {}
+
+
+def live_wind_eligibility(payload: dict, race: dict, fetched_at: str | None) -> tuple[bool, str]:
+    """Require an explicitly timestamped pre-deadline LIVE capture."""
+    if not fetched_at:
+        return False, "live_timestamp_missing"
+    target_date = str(payload.get("date") or (race.get("race_meta") or {}).get("date") or "")
+    deadline = str(race.get("deadline") or (race.get("race_meta") or {}).get("deadline") or "")
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", target_date) or not re.fullmatch(r"\d{1,2}:\d{2}", deadline):
+        return False, "deadline_missing"
+    try:
+        captured = datetime.fromisoformat(fetched_at.replace("Z", "+00:00"))
+        if captured.tzinfo is None:
+            return False, "live_timestamp_timezone_missing"
+        cutoff = datetime.fromisoformat(f"{target_date}T{deadline}:00").replace(tzinfo=JST)
+    except ValueError:
+        return False, "live_timestamp_invalid"
+    if captured.astimezone(JST) >= cutoff:
+        return False, "live_timestamp_after_deadline"
+    live_weather = (race.get("live") or {}).get("weather") or {}
+    if live_weather.get("wind_speed") in (None, "", "-"):
+        return False, "live_wind_missing"
+    return True, "pre_deadline_live_wind"
 
 
 def day_no(race: dict, payload: dict) -> int:
@@ -300,10 +331,32 @@ def build_race_input(payload: dict, race: dict) -> tuple[RaceInput, dict[int, di
     ), ex_map, org_map
 
 
-def site_prediction(payload: dict, race: dict) -> dict:
+def site_prediction(payload: dict, race: dict, *, live_fetched_at: str | None = None) -> dict:
     race_input, ex_map, org_map = build_race_input(payload, race)
     prediction = KaratsuScenarioEngine().predict(race_input, ticket_count=10)
     first, second, third = dict(prediction.marginal_first), dict(prediction.marginal_second), dict(prediction.marginal_third)
+    live_wind_eligible, live_wind_reason = live_wind_eligibility(payload, race, live_fetched_at)
+    normal_combos, normal_detail = select_normal_tickets(
+        prediction.tickets,
+        first,
+        second,
+        third,
+        race_input.racers,
+        race_input.wind_speed,
+        live_wind_eligible=live_wind_eligible,
+    )
+    production_distribution = {
+        "ai": [{"combo": combo} for combo in prediction.tickets[:8]],
+        "aiUpset": [{"combo": combo} for combo in prediction.tickets[8:]],
+        "trifectaProbabilities": prediction.trifecta_probabilities,
+    }
+    fly_output = build_fly_prediction(
+        production_distribution,
+        race,
+        stage="live" if live_fetched_at else "morning",
+        normal_tickets=normal_combos,
+        allow_normal_overlap=True,
+    )
     state_diag = [
         {
             "lane": int(r["lane"]),
@@ -319,7 +372,7 @@ def site_prediction(payload: dict, race: dict) -> dict:
     entry = [r.lane for r in sorted(race_input.racers, key=lambda x: x.actual_course)]
     _, entry_source = actual_entry_order(race)
     tickets = []
-    for idx, combo in enumerate(prediction.tickets):
+    for idx, combo in enumerate(normal_combos):
         role = "本線" if idx < 6 else ("ズレ対応" if idx < 8 else "荒れ対応")
         tickets.append({"combo": combo, "role": role, "odds": "-"})
     scenarios = [{"name": s.name, "probability": round(s.weight * 100, 1), "attackCourse": s.attack_course, "notes": s.notes} for s in prediction.scenarios]
@@ -327,7 +380,7 @@ def site_prediction(payload: dict, race: dict) -> dict:
     return {
         "status": "complete",
         "engine": ENGINE_ID,
-        "engineVersion": "1.2.0",
+        "engineVersion": ENGINE_VERSION,
         "win": {str(k): round(v * 100, 1) for k, v in first.items()},
         "second": {str(k): round(v * 100, 1) for k, v in second.items()},
         "third": {str(k): round(v * 100, 1) for k, v in third.items()},
@@ -340,6 +393,11 @@ def site_prediction(payload: dict, race: dict) -> dict:
         "weights": {"early": {"motorBoat": 0.24, "exhibition": 0.20, "playerCourse": 0.29, "coursePrior": 0.17, "season": 0.10}, "middle": {"motorBoat": 0.19, "exhibition": 0.17, "playerCourse": 0.24, "coursePrior": 0.17, "season": 0.23}, "late": {"motorBoat": 0.14, "exhibition": 0.13, "playerCourse": 0.21, "coursePrior": 0.17, "season": 0.35}},
         "ai": tickets[:8],
         "aiUpset": tickets[8:10],
+        "normalTickets": tickets,
+        "lane1FlyProbability": fly_output["lane1FlyProbability"],
+        "lane1FlyLevel": "飛び優勢" if fly_output["lane1FlyProbability"] >= 50 else "逃げ優勢",
+        "lane1FlyStage": fly_output["stage"],
+        "flyPrediction": fly_output["flyPrediction"],
         "scenarios": scenarios,
         "readability": {"axisLane": ranked[0], "secondHeadLane": ranked[1], "axisGap": round((first[ranked[0]] - first[ranked[1]]) * 100, 1)},
         "trifectaTop20": [
@@ -353,6 +411,8 @@ def site_prediction(payload: dict, race: dict) -> dict:
             "engineDiagnostics": prediction.diagnostics,
             "actualEntrySource": entry_source,
             "actualCourseByLane": {str(r.lane): r.actual_course for r in race_input.racers},
+            "normalTicketModel": normal_detail,
+            "liveWindEligibilityReason": live_wind_reason,
         },
     }
 
@@ -392,7 +452,7 @@ def apply_file(path: Path) -> None:
     # Keep the top-level prediction domains synchronized with the race-level output.
     # The morning three-stage pipeline validates and preserves these fields.
     payload["engine"] = ENGINE_ID
-    payload["engineVersion"] = "1.2.0"
+    payload["engineVersion"] = ENGINE_VERSION
     payload["preds"] = predictions
     payload["predictionStatus"] = "ready"
     payload["predictionReason"] = ""

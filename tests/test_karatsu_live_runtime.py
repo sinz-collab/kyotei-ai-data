@@ -37,6 +37,9 @@ class KaratsuLiveRuntimeTests(unittest.TestCase):
 
     def test_complete_inputs_publish_final_and_preserve_morning(self) -> None:
         before = json.loads((self.data_root / "venues" / "karatsu" / "20261027.json").read_text(encoding="utf-8"))
+        initial_live_history = len(
+            ((before["races"][6].get("prediction") or {}).get("prediction_history") or {}).get("live") or []
+        )
         morning = deepcopy(
             before["races"][6].get("predictionPre")
             or before["races"][6]["prediction"]
@@ -59,7 +62,10 @@ class KaratsuLiveRuntimeTests(unittest.TestCase):
         self.assertEqual(len(final["ai"]) + len(final["aiUpset"]), 10)
         self.assertIn(final["sab"], {"S", "A", "B"})
         self.assertEqual(len(final["prediction_history"]["morning"]), 1)
-        self.assertEqual(len(final["prediction_history"]["live"]), 1)
+        self.assertEqual(len(final["prediction_history"]["live"]), initial_live_history + 1)
+        self.assertEqual(len(final["normalTickets"]), 10)
+        self.assertEqual(len(final["flyPrediction"]["tickets"]), 10)
+        self.assertEqual(final["flyPrediction"]["overlapPolicy"], "allowed")
         self.assertEqual(len(race["live"]["exhibition"]["entries"]), 6)
         self.assertEqual(len(race["live"]["original"]["entries"]), 6)
         self.assertGreater(final["probabilityReview"]["1"]["morningWin"], 0)
@@ -67,7 +73,7 @@ class KaratsuLiveRuntimeTests(unittest.TestCase):
         run("2026-10-27", 7, self.data_root, LIVE_SOURCE)
         repeated = json.loads(dated.read_text(encoding="utf-8"))["races"][6]["predictionFinal"]
         self.assertEqual(len(repeated["prediction_history"]["morning"]), 1)
-        self.assertEqual(len(repeated["prediction_history"]["live"]), 1)
+        self.assertEqual(len(repeated["prediction_history"]["live"]), initial_live_history + 1)
 
     def test_nested_morning_probabilities_are_used_as_review_baseline(self) -> None:
         dated = self.data_root / "venues" / "karatsu" / "20261027.json"

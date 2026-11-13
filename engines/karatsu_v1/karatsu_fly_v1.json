@@ -1,0 +1,39 @@
+{
+  "model_version": "karatsu_lane1_fly_v1",
+  "production_enabled": true,
+  "water_condition": "no_tidal_range_adjustment",
+  "lane1_debias": {
+    "head_multiplier": 0.86
+  },
+  "course2_sashi_wall": {
+    "rate_weight": 0.35,
+    "max_boost": 0.18
+  },
+  "attack_and_wall": {
+    "attack_weight": 0.12,
+    "wall_weight": 0.1
+  },
+  "lane1_remain": {
+    "multiplier": 1.1
+  },
+  "outer_remain": {
+    "multiplier": 1.07
+  },
+  "candidates": {
+    "current": [],
+    "ticket_rerank": [],
+    "lane1_debias": ["lane1_debias"],
+    "course2_sashi_wall": ["course2_sashi_wall"],
+    "attack_and_wall": ["attack_and_wall"],
+    "lane1_remain": ["lane1_remain"],
+    "outer_remain": ["outer_remain"],
+    "fly_v1": ["lane1_debias", "lane1_remain"],
+    "combined": [
+      "lane1_debias",
+      "course2_sashi_wall",
+      "attack_and_wall",
+      "lane1_remain",
+      "outer_remain"
+    ]
+  }
+}
