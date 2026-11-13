@@ -179,6 +179,38 @@ def _ticket_rows(combos: Iterable[str], trifectas: dict[str, float], role: str) 
     ]
 
 
+def select_fly_tickets(trifectas: dict[str, float]) -> list[str]:
+    """Select ten fly tickets using the frozen adjusted distribution.
+
+    Heads other than lane 1 are ranked by their total adjusted win
+    probability.  The leading head contributes eight tickets and the next
+    two heads contribute one ticket each.  Ticket order inside each head is
+    the adjusted trifecta-probability order already carried by ``trifectas``.
+    """
+    head_totals = {
+        lane: sum(
+            probability
+            for combo, probability in trifectas.items()
+            if int(combo.split("-", 1)[0]) == lane
+        )
+        for lane in range(2, 7)
+    }
+    ranked_heads = sorted(head_totals, key=lambda lane: (-head_totals[lane], lane))
+    allocation = (8, 1, 1)
+    selected = [
+        combo
+        for head, count in zip(ranked_heads[:3], allocation)
+        for combo in [
+            item
+            for item in trifectas
+            if int(item.split("-", 1)[0]) == head
+        ][:count]
+    ]
+    if len(selected) != 10 or len(set(selected)) != 10:
+        raise RuntimeError("karatsu_fly_tickets_invalid")
+    return selected
+
+
 def build_fly_prediction(
     production_prediction: dict,
     race: dict,
@@ -195,14 +227,18 @@ def build_fly_prediction(
     probability = marginals(trifectas)
     normal = list(normal_tickets)
     normal_set = set(normal)
-    fly = [
-        combo
-        for combo in trifectas
-        if not combo.startswith("1-")
-        and (allow_normal_overlap or combo not in normal_set)
-    ][:10]
-    if len(fly) != 10 or len(set(fly)) != 10:
-        raise RuntimeError("karatsu_fly_tickets_invalid")
+    if allow_normal_overlap:
+        fly = select_fly_tickets(trifectas)
+    else:
+        # Archived comparison mode only. Production explicitly allows overlap
+        # and always uses the fixed 8+1+1 allocation above.
+        fly = [
+            combo
+            for combo in trifectas
+            if not combo.startswith("1-") and combo not in normal_set
+        ][:10]
+        if len(fly) != 10 or len(set(fly)) != 10:
+            raise RuntimeError("karatsu_fly_tickets_invalid")
     fly_probability = 1.0 - probability["win"]["1"]
     return {
         "status": "complete",

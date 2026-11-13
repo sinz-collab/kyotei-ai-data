@@ -91,6 +91,7 @@ class KaratsuResearchPortTests(unittest.TestCase):
 
     def test_fly_rate_is_frozen_and_overlap_is_allowed(self) -> None:
         old_hits = old_return = new_hits = new_return = overlap_total = overlap_races = 0
+        gains = losses = 0
         rate_equal = archived_tickets_equal = 0
         for archived in self.fly_rows:
             key = (archived["date"], int(archived["race_no"]))
@@ -123,16 +124,26 @@ class KaratsuResearchPortTests(unittest.TestCase):
             if result in new:
                 new_hits += 1
                 new_return += prize
+            gains += result in new and result not in old
+            losses += result in old and result not in new
             overlap = len(set(normal).intersection(new))
             overlap_total += overlap
             overlap_races += overlap > 0
             self.assertEqual(len(new), 10)
             self.assertEqual(len(set(new)), 10)
+            head_counts = sorted(
+                (
+                    sum(combo.startswith(f"{head}-") for combo in new)
+                    for head in {combo.split("-", 1)[0] for combo in new}
+                ),
+                reverse=True,
+            )
+            self.assertEqual(head_counts, [8, 1, 1])
 
         self.assertEqual((archived_tickets_equal, rate_equal), (126, 126))
         self.assertEqual((old_hits, old_return), (20, 140_270))
-        self.assertEqual((new_hits, new_return), (20, 140_270))
-        self.assertEqual((overlap_total, overlap_races), (211, 126))
+        self.assertEqual((new_hits, new_return, gains, losses), (21, 147_780, 2, 1))
+        self.assertEqual((overlap_total, overlap_races), (241, 126))
 
     def test_saved_live_wind_gate_recalculates_126_without_forcing_old_hits(self) -> None:
         eligible = fallback = active = hits = gains = losses = payout = 0

@@ -204,16 +204,27 @@ async def apply_karatsu_live_prediction(
     race_dir: Path,
     fetch_result: dict[str, Any],
     logger: Any,
-) -> None:
-    if target.get("venue") != "karatsu" or fetch_result.get("error"):
-        return
+) -> bool:
+    if target.get("venue") != "karatsu":
+        return False
     items = fetch_result.get("items") or {}
-    if not all(
-        (items.get(name) or {}).get("complete") is True
-        and (items.get(name) or {}).get("status") == "complete"
-        for name in ("direct", "exhibition", "original_exhibition")
+    if target.get("fetch_live") is False and not any(
+        name in items for name in ("direct", "exhibition", "original_exhibition")
     ):
-        return
+        return False
+    try:
+        saved = {
+            name: json.loads((race_dir / f"{name}.json").read_text(encoding="utf-8"))
+            for name in ("direct", "exhibition", "original_exhibition")
+        }
+    except (OSError, ValueError):
+        return False
+    if not all(
+        document.get("complete") is True
+        and document.get("status") == "complete"
+        for document in saved.values()
+    ):
+        return False
 
     process = await asyncio.create_subprocess_exec(
         sys.executable,
@@ -240,7 +251,7 @@ async def apply_karatsu_live_prediction(
                 "race_no": target["race_no"],
             },
         )
-        return
+        return False
     logger.info(
         stdout.decode("utf-8", errors="replace").strip(),
         extra={
@@ -249,6 +260,11 @@ async def apply_karatsu_live_prediction(
             "race_no": target["race_no"],
         },
     )
+    try:
+        report = json.loads(stdout.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError):
+        return False
+    return report.get("status") == "complete"
 
 async def apply_kiryu_live_prediction(target, race_dir, fetch_result, logger) -> bool:
     if target.get("venue") != "kiryu":
@@ -1216,12 +1232,13 @@ async def run_once(
                                     result,
                                     logger,
                                 )
-                                await apply_karatsu_live_prediction(
+                                if await apply_karatsu_live_prediction(
                                     target,
                                     race_dir,
                                     result,
                                     logger,
-                                )
+                                ):
+                                    result["prediction_changed"] = True
                                 if await apply_kiryu_live_prediction(target, race_dir, result, logger):
                                     result["prediction_changed"] = True
                                 naruto_prediction_changed = await apply_naruto_live_prediction(

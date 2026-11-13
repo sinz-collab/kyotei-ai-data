@@ -30,11 +30,20 @@ def complete_live_documents(race_dir: Path) -> dict[str, dict] | None:
             return None
         documents[name] = document
 
-    if len(documents["direct"]["data"].get("racers") or []) != 6:
+    def six_lanes(rows: list[dict]) -> bool:
+        try:
+            return len(rows) == 6 and {int(row.get("lane")) for row in rows} == set(range(1, 7))
+        except (AttributeError, TypeError, ValueError):
+            return False
+
+    direct = documents["direct"]["data"]
+    if not six_lanes(direct.get("racers") or []):
         return None
-    if len(documents["exhibition"]["data"].get("entries") or []) != 6:
+    if sorted(direct.get("actual_entry") or []) != list(range(1, 7)):
         return None
-    if len(documents["original_exhibition"]["data"].get("entries") or []) != 6:
+    if not six_lanes(documents["exhibition"]["data"].get("entries") or []):
+        return None
+    if not six_lanes(documents["original_exhibition"]["data"].get("entries") or []):
         return None
     return documents
 

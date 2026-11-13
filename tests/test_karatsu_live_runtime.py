@@ -119,7 +119,7 @@ class KaratsuLiveRuntimeTests(unittest.TestCase):
         self.assertEqual(report["status"], "skipped")
         self.assertEqual(dated.read_bytes(), before)
 
-    def test_live_fetch_invokes_runner_only_for_complete_inputs(self) -> None:
+    def test_live_fetch_uses_complete_saved_inputs(self) -> None:
         target = {"venue": "karatsu", "date": "2026-10-27", "race_no": 7}
         complete = {
             "items": {
@@ -141,7 +141,89 @@ class KaratsuLiveRuntimeTests(unittest.TestCase):
             incomplete = deepcopy(complete)
             incomplete["items"]["original_exhibition"]["complete"] = False
             asyncio.run(apply_karatsu_live_prediction(target, LIVE_SOURCE, incomplete, Mock()))
-            self.assertEqual(create_process.await_count, 1)
+            self.assertEqual(create_process.await_count, 2)
+
+    def test_live_fetch_does_not_run_with_incomplete_saved_original(self) -> None:
+        target = {"venue": "karatsu", "date": "2026-10-27", "race_no": 7}
+        with tempfile.TemporaryDirectory() as live_temp, patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(),
+        ) as create_process:
+            live_root = Path(live_temp)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                complete = name != "original_exhibition"
+                (live_root / f"{name}.json").write_text(
+                    json.dumps({
+                        "status": "complete" if complete else "pending",
+                        "complete": complete,
+                        "data": {},
+                    }),
+                    encoding="utf-8",
+                )
+            import asyncio
+
+            changed = asyncio.run(
+                apply_karatsu_live_prediction(target, live_root, {"items": {}}, Mock())
+            )
+
+        self.assertFalse(changed)
+        self.assertEqual(create_process.await_count, 0)
+
+    def test_live_fetch_rechecks_complete_saved_inputs_after_split_arrival(self) -> None:
+        target = {
+            "venue": "karatsu",
+            "date": "2026-10-27",
+            "race_no": 7,
+            "fetch_live": True,
+        }
+        fetch_result = {
+            "items": {
+                "original_exhibition": {
+                    "status": "complete",
+                    "complete": True,
+                    "changed": True,
+                }
+            }
+        }
+        process = Mock(returncode=0)
+        process.communicate = AsyncMock(return_value=(b'{"status":"complete"}', b""))
+        with patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(return_value=process),
+        ) as create_process:
+            import asyncio
+
+            changed = asyncio.run(
+                apply_karatsu_live_prediction(target, LIVE_SOURCE, fetch_result, Mock())
+            )
+
+        self.assertTrue(changed)
+        self.assertEqual(create_process.await_count, 1)
+
+    def test_result_only_poll_does_not_repeat_karatsu_runner(self) -> None:
+        target = {
+            "venue": "karatsu",
+            "date": "2026-10-27",
+            "race_no": 7,
+            "fetch_live": False,
+        }
+        with patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(),
+        ) as create_process:
+            import asyncio
+
+            changed = asyncio.run(
+                apply_karatsu_live_prediction(
+                    target,
+                    LIVE_SOURCE,
+                    {"items": {"result": {"complete": True}}},
+                    Mock(),
+                )
+            )
+
+        self.assertFalse(changed)
+        self.assertEqual(create_process.await_count, 0)
 
 
 if __name__ == "__main__":
