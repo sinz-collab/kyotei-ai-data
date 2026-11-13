@@ -19,6 +19,7 @@ from wakamatsu_v2_3_adjustments import (
     _actual_entry_map,
     _classify_full_reflection,
     _rank_tickets,
+    _refresh_probability_review,
     _set_tickets,
     _slit_attack,
     _strong_attack,
@@ -164,6 +165,25 @@ class WakamatsuV23UnitTest(unittest.TestCase):
             self.assertEqual(normalize_tide_phase(value), "rising")
         for value in ("falling", "下げ潮", "下げ", "下降"):
             self.assertEqual(normalize_tide_phase(value), "falling")
+
+    def test_probability_review_publishes_morning_live_and_zero_delta(self):
+        pre = {
+            "win": self.probability_map([20, 20, 20, 15, 15, 10]),
+            "second": self.probability_map([10, 20, 20, 20, 20, 10]),
+            "third": self.probability_map([10, 15, 20, 20, 20, 15]),
+        }
+        final = deepcopy(pre)
+        final["win"].update({"1": 25, "2": 15})
+
+        _refresh_probability_review(pre, final)
+
+        lane1 = final["probabilityReview"]["1"]
+        self.assertEqual(lane1["morningWin"], 20.0)
+        self.assertEqual(lane1["win"], 25.0)
+        self.assertEqual(lane1["deltaWin"], 5.0)
+        self.assertEqual(lane1["morningSecond"], 10.0)
+        self.assertEqual(lane1["second"], 10.0)
+        self.assertEqual(lane1["deltaSecond"], 0.0)
 
     def test_tide_zone_uses_sixty_minutes_inclusively(self):
         tide = {

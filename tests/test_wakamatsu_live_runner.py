@@ -18,6 +18,7 @@ from automation import run_wakamatsu_v2_live as runner
 from automation import run_wakamatsu_v2_3_live as runner23
 from live_fetch_once import apply_wakamatsu_live_prediction
 from wakamatsu_fly_tickets_v1 import build_fly_prediction
+from wakamatsu_v2_3_adjustments import _refresh_probability_review
 
 
 def write_json(path: Path, value: dict) -> None:
@@ -172,6 +173,7 @@ class WakamatsuLiveRunnerTest(unittest.TestCase):
 
             pre = v23_prediction("pre")
             final = v23_prediction("final")
+            _refresh_probability_review(pre, final)
             payload = {
                 "engine": runner23.ENGINE_ID,
                 "engineVersion": runner23.ENGINE_VERSION,

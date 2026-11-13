@@ -208,6 +208,29 @@ def validate_published_data(data_root: Path, target_date: str, expected_races: l
             total = sum(float(value) for value in (final.get(finish) or {}).values())
             if abs(total - 100.0) > 0.02:
                 raise RuntimeError(f"probability_sum_invalid: race={race_no} finish={finish} total={total}")
+        review = final.get("probabilityReview") or {}
+        if final.get("probabilityReviewStatus") != "reviewed" or len(review) != 6:
+            raise RuntimeError(f"wakamatsu_probability_review_missing: {race_no}")
+        for lane in range(1, 7):
+            key = str(lane)
+            row = review.get(key) or {}
+            expected = {
+                "morningWin": round(float(pre["win"][key]), 1),
+                "morningSecond": round(float(pre["second"][key]), 1),
+                "morningThird": round(float(pre["third"][key]), 1),
+                "win": round(float(final["win"][key]), 1),
+                "second": round(float(final["second"][key]), 1),
+                "third": round(float(final["third"][key]), 1),
+            }
+            expected.update({
+                "deltaWin": round(float(final["win"][key]) - float(pre["win"][key]), 1),
+                "deltaSecond": round(float(final["second"][key]) - float(pre["second"][key]), 1),
+                "deltaThird": round(float(final["third"][key]) - float(pre["third"][key]), 1),
+            })
+            if any(row.get(field) != value for field, value in expected.items()):
+                raise RuntimeError(
+                    f"wakamatsu_probability_review_invalid: race={race_no} lane={lane}"
+                )
         tickets = final.get("tickets") or []
         combos = [ticket.get("combo") for ticket in tickets]
         if len(tickets) != 10 or len(set(combos)) != 10:
