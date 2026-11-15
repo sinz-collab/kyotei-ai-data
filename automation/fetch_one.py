@@ -22,6 +22,28 @@ from tide_type_parser import add_tide_type
 HERE = Path(__file__).resolve().parent
 CONFIG_PATH = HERE / "venues.json"
 
+OFFICIAL_VENUE_CODES = {
+    "kiryu": "01",
+    "toda": "02",
+    "heiwajima": "04",
+    "tokoname": "08",
+    "biwako": "11",
+    "naruto": "14",
+    "shimonoseki": "19",
+    "wakamatsu": "20",
+    "ashiya": "21",
+    "fukuoka": "22",
+    "karatsu": "23",
+    "omura": "24",
+}
+
+
+class RequestFailed(RuntimeError):
+    def __init__(self, errors: list[str], http_status: int | None = None):
+        super().__init__("; ".join(errors))
+        self.errors = errors
+        self.http_status = http_status
+
 
 def today_jst() -> str:
     return datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d")
@@ -37,6 +59,7 @@ def load_venue(slug: str) -> dict:
 
 def request_text(url: str, timeout: int = 30, attempts: int = 3) -> tuple[str, str]:
     errors = []
+    http_status = None
     for attempt in range(1, attempts + 1):
         request = urllib.request.Request(
             url,
@@ -48,27 +71,54 @@ def request_text(url: str, timeout: int = 30, attempts: int = 3) -> tuple[str, s
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 return response.geturl(), response.read().decode("utf-8", errors="replace")
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            if isinstance(exc, urllib.error.HTTPError):
+                http_status = exc.code
             errors.append(f"attempt={attempt}:{type(exc).__name__}:{exc}")
             print(f"[http retry] url={url} {errors[-1]}", flush=True)
             if attempt < attempts:
                 time.sleep(5 * attempt)
-    raise RuntimeError("; ".join(errors))
+    raise RequestFailed(errors, http_status=http_status)
 
 
 def venue_is_open(slug: str, date: str) -> dict:
-    url = f"https://boaters-boatrace.com/race/{slug}/{date}/1R/data"
+    venue_code = OFFICIAL_VENUE_CODES[slug]
+    compact_date = date.replace("-", "")
+    url = (
+        "https://www.boatrace.jp/owpc/pc/race/racelist"
+        f"?rno=1&jcd={venue_code}&hd={compact_date}"
+    )
     try:
         final_url, html = request_text(url)
+    except RequestFailed as exc:
+        reason = (
+            f"precheck_failed:http_{exc.http_status}"
+            if exc.http_status is not None
+            else "precheck_failed:request"
+        )
+        return {
+            "open": False,
+            "reason": reason,
+            "url": url,
+            "source": "BOAT RACE official",
+            "httpStatus": exc.http_status,
+            "error": str(exc),
+        }
     except Exception as exc:
-        return {"open": False, "reason": f"precheck_failed:{type(exc).__name__}", "url": url}
-    expected = f"/race/{slug}/{date}/1R/"
-    body_markers = ("出走表", "レーサー", "全国勝率")
-    is_open = expected in final_url and any(marker in html for marker in body_markers)
+        return {
+            "open": False,
+            "reason": f"precheck_failed:{type(exc).__name__}",
+            "url": url,
+            "source": "BOAT RACE official",
+            "error": f"{type(exc).__name__}:{exc}",
+        }
+    body_markers = ("出走表", "ボートレーサー", "モーター")
+    is_open = all(marker in html for marker in body_markers)
     return {
         "open": is_open,
         "reason": "race_page_found" if is_open else "not_scheduled",
         "url": url,
         "final_url": final_url,
+        "source": "BOAT RACE official",
     }
 
 
@@ -229,6 +279,13 @@ def main() -> int:
             "tide": fetch_tide(venue, args.date, output_dir),
         }
     )
+    if not status["open"]:
+        status["failure"] = {
+            "reason": "fetch_incomplete",
+            "source": "boaters-boatrace.com",
+            "returnCode": return_code,
+            "entryCount": entry_count,
+        }
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "fetch_status.json").write_text(
         json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8"
