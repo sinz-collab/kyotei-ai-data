@@ -30,6 +30,8 @@ from html import unescape
 
 from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 
+from browser_identity import chromium_user_agent, is_security_challenge
+
 try:
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
@@ -151,7 +153,6 @@ MOTOR_KEYWORDS = [
     "出走回数",
 ]
 
-
 def normalize_stadium(stadium: str) -> str:
     if stadium not in STADIUM_MAP:
         raise ValueError(f"未対応の競艇場です: {stadium}")
@@ -258,6 +259,8 @@ async def goto_page(page, url: str, wait_ms: int) -> Dict:
         result["warning"] = f"error: {e}"
 
     await page.wait_for_timeout(wait_ms)
+    if is_security_challenge(await get_body_text(page)):
+        raise RuntimeError(f"security verification blocked fetch: {url}")
     return result
 
 
@@ -1206,11 +1209,9 @@ async def main():
         browser = await p.chromium.launch(headless=not args.headed)
         context = await browser.new_context(
             viewport={"width": 1365, "height": 900},
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/124.0.0.0 Safari/537.36"
-            ),
+            user_agent=chromium_user_agent(browser.version),
+            locale="ja-JP",
+            extra_http_headers={"Accept-Language": "ja-JP,ja;q=0.9,en;q=0.8"},
         )
         page = await context.new_page()
 

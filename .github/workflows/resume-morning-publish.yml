@@ -19,7 +19,7 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 70
     env:
       TARGET_DATE: ${{ inputs.target_date }}
     steps:
@@ -95,6 +95,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: automation/requirements.txt
+
+      - name: Install fetch runtime
+        shell: bash
+        run: |
+          python -m pip install -r automation/requirements.txt
+          python -m playwright install --with-deps chromium
 
       - name: Install prediction dependencies
         run: |
@@ -125,6 +133,13 @@ jobs:
             --east work/artifacts/east \
             --west work/artifacts/west \
             --output work/races
+
+      - name: Retry incomplete scheduled venues only
+        shell: bash
+        run: |
+          python automation/retry_incomplete_morning.py \
+            --date "$TARGET_DATE" \
+            --root work/races
 
       - name: Validate and publish public data
         shell: bash
