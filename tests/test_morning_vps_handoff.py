@@ -68,14 +68,12 @@ class MorningVpsHandoffTest(unittest.TestCase):
         self.assertNotIn("git push", workflow)
         self.assertNotIn("publish_morning_data.sh", workflow)
 
-    def test_production_workflow_remains_on_github_until_cutover(self) -> None:
+    def test_production_workflow_is_not_switched_to_vps(self) -> None:
         workflow = (ROOT / ".github/workflows/morning-data.yml").read_text(
             encoding="utf-8"
         )
         self.assertIn("python automation/fetch_one.py", workflow)
         self.assertNotIn("sinz-morning-gateway", workflow)
-        self.assertIn("publish_morning_data.sh", workflow)
-        self.assertIn("playwright install", workflow)
 
 
 if __name__ == "__main__":

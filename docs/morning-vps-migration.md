@@ -13,12 +13,9 @@ fetch, prediction engines, coefficients, tickets, or history.
 - SSH gateway user: `sinz-morning-gateway`
 - Execution user: `sinz-morning` (no login shell)
 - Forced command: `/usr/local/sbin/sinz-morning-gateway`
-- One non-blocking `flock` per shard (east/west can run concurrently)
+- One global non-blocking `flock`
 - Dummy timeout: 5 minutes; fetch timeout: 90 minutes
-- Transient systemd unit: `CPUQuota=50%`, `MemoryMax=1536M`, `TasksMax=256`,
-  `Nice=10`, `IOWeight=10`
-- Production start window: 06:00-06:45 JST; the shard loop stops fetching at
-  08:15 JST and records remaining venues as unavailable before LIVE processing
+- Transient systemd unit: `CPUQuota=100%`, `MemoryMax=1536M`, `TasksMax=256`
 - Production fetch gate: `/etc/sinz-morning-fetch/enabled` containing exactly
   `ENABLED`. The installer removes this marker and never enables it.
 
