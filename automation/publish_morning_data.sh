@@ -19,6 +19,11 @@ python automation/player_course_6m.py daily \
 rm -rf "$course_cache_dir"
 cp -a data/player_course_6m "$course_cache_dir"
 
+venue_data_exists() {
+  local slug="$1"
+  [ -f "data/venues/${slug}/${TARGET_DATE//-/}.json" ]
+}
+
 run_publication_pipeline() {
   local before_dir="$1"
   local log_suffix="$2"
@@ -27,21 +32,23 @@ run_publication_pipeline() {
     | tee "build-${log_suffix}.log"
   python automation/enrich_motor_recent.py --date "$TARGET_DATE"
   python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
-  if [ -f "data/venues/kiryu/${TARGET_DATE//-/}.json" ]; then
+  if venue_data_exists kiryu; then
     python automation/run_kiryu_v1.py --date "$TARGET_DATE" --stage morning
   fi
-  python automation/apply_toda_v5.py --date "$TARGET_DATE"
-  python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"
-  python automation/apply_karatsu_v1.py --date "$TARGET_DATE"
-  python automation/apply_wakamatsu_v2_3.py --date "$TARGET_DATE"
-  python automation/apply_omura_v1.py --date "$TARGET_DATE"
-  python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre
-  python automation/run_biwako_v1_2.py --date "$TARGET_DATE" --stage preliminary
-  python automation/run_shimonoseki_v6_1.py --date "$TARGET_DATE" --stage preliminary
-  python automation/run_fukuoka_v1.py --date "$TARGET_DATE" --stage preliminary
-  python automation/run_tokoname_v1.py \
-    --date "$TARGET_DATE" --stage preliminary --write
-  if [ -f "data/venues/naruto/${TARGET_DATE//-/}.json" ]; then
+  if venue_data_exists toda; then python automation/apply_toda_v5.py --date "$TARGET_DATE"; fi
+  if venue_data_exists heiwajima; then python automation/apply_heiwajima_v1.py --date "$TARGET_DATE"; fi
+  if venue_data_exists karatsu; then python automation/apply_karatsu_v1.py --date "$TARGET_DATE"; fi
+  if venue_data_exists wakamatsu; then python automation/apply_wakamatsu_v2_3.py --date "$TARGET_DATE"; fi
+  if venue_data_exists omura; then python automation/apply_omura_v1.py --date "$TARGET_DATE"; fi
+  if venue_data_exists ashiya; then python automation/run_ashiya_v16.py --date "$TARGET_DATE" --stage pre; fi
+  if venue_data_exists biwako; then python automation/run_biwako_v1_2.py --date "$TARGET_DATE" --stage preliminary; fi
+  if venue_data_exists shimonoseki; then python automation/run_shimonoseki_v6_1.py --date "$TARGET_DATE" --stage preliminary; fi
+  if venue_data_exists fukuoka; then python automation/run_fukuoka_v1.py --date "$TARGET_DATE" --stage preliminary; fi
+  if venue_data_exists tokoname; then
+    python automation/run_tokoname_v1.py \
+      --date "$TARGET_DATE" --stage preliminary --write
+  fi
+  if venue_data_exists naruto; then
     python automation/run_naruto_v5.py --date "$TARGET_DATE" --stage morning
   fi
 
@@ -52,6 +59,11 @@ run_publication_pipeline() {
   python automation/validate_morning_regression.py \
     --before "$before_dir" \
     --after data
+}
+
+venue_data_exists() {
+  local slug="$1"
+  [ -f "data/venues/${slug}/${TARGET_DATE//-/}.json" ]
 }
 
 python engines/tokoname_v1/backfill_lane1_fly_v1.py \

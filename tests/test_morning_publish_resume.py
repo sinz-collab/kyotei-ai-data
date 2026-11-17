@@ -115,6 +115,15 @@ class MorningPublishWorkflowTest(unittest.TestCase):
         self.assertIn("python -m pip install catboost==1.2.10", resume)
         self.assertIn("python -m pip install catboost==1.2.10", normal)
 
+    def test_publisher_skips_engines_for_explicitly_missing_venue_data(self):
+        publisher = (ROOT / "automation" / "publish_morning_data.sh").read_text(encoding="utf-8")
+        self.assertIn("venue_data_exists()", publisher)
+        for slug in (
+            "kiryu", "toda", "heiwajima", "karatsu", "wakamatsu", "omura",
+            "ashiya", "biwako", "shimonoseki", "fukuoka", "tokoname", "naruto",
+        ):
+            self.assertIn(f"venue_data_exists {slug}", publisher)
+
 
 if __name__ == "__main__":
     unittest.main()
