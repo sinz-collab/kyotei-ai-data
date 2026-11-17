@@ -24,6 +24,16 @@ jobs:
       TARGET_DATE: ${{ inputs.date }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            automation/requirements.txt
+            automation/prepare_morning_artifacts.py
+            automation/build_site_data.py
+            automation/public_json.py
+            automation/validate_morning_vps_dry_run.py
+            automation/venues.json
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
