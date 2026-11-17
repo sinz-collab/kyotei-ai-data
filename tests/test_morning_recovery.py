@@ -45,6 +45,8 @@ class MorningRecoveryTest(unittest.TestCase):
             "prepare_morning_recovery_cache.py",
         ):
             self.assertIn(expected, executor)
+        self.assertEqual(executor.count("awk -v load_one="), 2)
+        self.assertNotIn("awk -v load=", executor)
         gateway = (ROOT / "deploy/morning-vps/sinz-morning-gateway").read_text(
             encoding="utf-8"
         )
