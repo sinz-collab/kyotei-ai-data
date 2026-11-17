@@ -56,6 +56,13 @@ run_publication_pipeline() {
     | tee "build-after-engine-${log_suffix}.log"
   python automation/enrich_motor_recent.py --date "$TARGET_DATE"
   python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
+  if [ -n "${MORNING_RECOVERY_MODE:-}" ]; then
+    python automation/protect_manual_recovery_predictions.py \
+      --date "$TARGET_DATE" \
+      --before "$before_dir" \
+      --after data \
+      --scope "$MORNING_RECOVERY_MODE"
+  fi
   python automation/validate_morning_regression.py \
     --before "$before_dir" \
     --after data
@@ -70,16 +77,23 @@ python engines/tokoname_v1/backfill_lane1_fly_v1.py \
   2026-10-06 2026-10-07 2026-10-08 2026-10-09 2026-10-10 \
   --missing-only --write
 cp -a data "$RUNNER_TEMP/morning-data-before"
-python -m unittest discover -s tests
-PYTHONPATH="engines/ashiya/ashiya_engine_v1_6${PYTHONPATH:+:$PYTHONPATH}" \
-  python -m pytest -q \
-    engines/ashiya/ashiya_engine_v1_6/tests \
-    tests/test_ashiya_live_v42.py \
-    tests/test_ashiya_fly_probability_stages.py \
-    tests/test_ashiya_native_prediction_preservation.py \
-    tests/test_ashiya_non_running.py \
-    tests/test_ashiya_prediction_history.py \
-    tests/test_ashiya_live_source_freshness.py
+if [ -n "${MORNING_RECOVERY_MODE:-}" ]; then
+  python -m unittest \
+    tests.test_morning_recovery \
+    tests.test_morning_regression_guard \
+    tests.test_morning_vps_production
+else
+  python -m unittest discover -s tests
+  PYTHONPATH="engines/ashiya/ashiya_engine_v1_6${PYTHONPATH:+:$PYTHONPATH}" \
+    python -m pytest -q \
+      engines/ashiya/ashiya_engine_v1_6/tests \
+      tests/test_ashiya_live_v42.py \
+      tests/test_ashiya_fly_probability_stages.py \
+      tests/test_ashiya_native_prediction_preservation.py \
+      tests/test_ashiya_non_running.py \
+      tests/test_ashiya_prediction_history.py \
+      tests/test_ashiya_live_source_freshness.py
+fi
 run_publication_pipeline "$RUNNER_TEMP/morning-data-before" "preflight"
 rm -rf "$course_cache_dir"
 cp -a data/player_course_6m "$course_cache_dir"
@@ -117,7 +131,11 @@ for attempt in 1 2 3 4 5; do
     exit 0
   fi
 
-  git commit -m "Update morning race data ${TARGET_DATE}"
+  if [ -n "${MORNING_RECOVERY_MODE:-}" ]; then
+    git commit -m "Recover morning race data ${TARGET_DATE} (${MORNING_RECOVERY_MODE})"
+  else
+    git commit -m "Update morning race data ${TARGET_DATE}"
+  fi
   if git push origin HEAD:main; then
     echo "Morning data published successfully."
     exit 0

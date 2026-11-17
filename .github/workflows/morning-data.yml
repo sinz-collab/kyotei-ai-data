@@ -9,6 +9,14 @@ on:
         description: "Target date in YYYY-MM-DD. Empty uses JST today."
         required: false
         type: string
+      scope:
+        description: "Manual recovery scope"
+        required: true
+        default: failed
+        type: choice
+        options:
+          - failed
+          - all
 
 permissions:
   contents: write
@@ -23,6 +31,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       should_run: ${{ steps.schedule_guard.outputs.should_run }}
+      run_mode: ${{ steps.schedule_guard.outputs.run_mode }}
       target_date: ${{ steps.target.outputs.target_date }}
     steps:
       - id: schedule_guard
@@ -32,15 +41,21 @@ jobs:
           now_jst="$(TZ=Asia/Tokyo date +'%Y-%m-%d %H:%M:%S %Z')"
           now_hm="$(TZ=Asia/Tokyo date +%H%M)"
           should_run=false
-          if [ $((10#$now_hm)) -ge 600 ] && [ $((10#$now_hm)) -le 645 ]; then
+          run_mode=automatic
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            should_run=true
+            run_mode="recovery-${{ inputs.scope }}"
+          elif [ $((10#$now_hm)) -ge 600 ] && [ $((10#$now_hm)) -le 645 ]; then
             should_run=true
           else
             echo "Morning run skipped outside 06:00-06:45 JST (${now_jst})."
           fi
           echo "should_run=$should_run" >> "$GITHUB_OUTPUT"
+          echo "run_mode=$run_mode" >> "$GITHUB_OUTPUT"
           {
             echo "## Schedule guard"
             echo "- Event: $GITHUB_EVENT_NAME"
+            echo "- Mode: $run_mode"
             echo "- Current JST: $now_jst"
             echo "- Continue: $should_run"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -67,7 +82,7 @@ jobs:
 
   fetch:
     needs: prepare
-    if: needs.prepare.outputs.should_run == 'true'
+    if: needs.prepare.outputs.should_run == 'true' && needs.prepare.outputs.run_mode == 'automatic'
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -155,13 +170,77 @@ jobs:
           if-no-files-found: error
           retention-days: 2
 
+  recover:
+    needs: prepare
+    if: needs.prepare.outputs.should_run == 'true' && startsWith(needs.prepare.outputs.run_mode, 'recovery-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
+      RECOVERY_ACTION: ${{ needs.prepare.outputs.run_mode }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            automation/write_morning_fetch_status.py
+            automation/venues.json
+          sparse-checkout-cone-mode: false
+      - name: Configure pinned VPS SSH host
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+          VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.MORNING_VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_KEY" > "$HOME/.ssh/morning-vps"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/morning-vps" "$HOME/.ssh/known_hosts"
+          test -n "$VPS_HOST"
+          ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
+
+      - name: Recover venues sequentially on isolated VPS runtime
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+        run: |
+          mkdir -p work/recovery/east work/recovery/west
+          for shard in east west; do
+            archive="$RUNNER_TEMP/morning-recovery-${shard}.tgz"
+            timeout --signal=TERM --kill-after=20s 26m \
+              ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+                -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+                -o ConnectTimeout=10 -o ServerAliveInterval=15 \
+                -o ServerAliveCountMax=2 \
+                "sinz-morning-gateway@$VPS_HOST" \
+                "$RECOVERY_ACTION $TARGET_DATE $shard" > "$archive"
+            tar -tzf "$archive" >/dev/null
+            tar -xzf "$archive" -C "work/recovery/$shard"
+          done
+
+      - name: Upload east recovery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-east-${{ needs.prepare.outputs.target_date }}
+          path: work/recovery/east/work/races
+          if-no-files-found: error
+          retention-days: 2
+      - name: Upload west recovery artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-west-${{ needs.prepare.outputs.target_date }}
+          path: work/recovery/west/work/races
+          if-no-files-found: error
+          retention-days: 2
+
   publish:
-    needs: [prepare, fetch]
+    needs: [prepare, fetch, recover]
     if: always() && needs.prepare.result == 'success' && needs.prepare.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
       TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
+      MORNING_RECOVERY_MODE: ${{ startsWith(needs.prepare.outputs.run_mode, 'recovery-') && inputs.scope || '' }}
     steps:
       - uses: actions/checkout@v4
         with:

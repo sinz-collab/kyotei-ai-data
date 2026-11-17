@@ -21,7 +21,7 @@ target_date="$2"
 shard="$3"
 
 case "$action" in
-  dummy|fetch) ;;
+  dummy|fetch|recovery-all|recovery-failed) ;;
   *) die "Unsupported action." 64 ;;
 esac
 if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
@@ -34,21 +34,46 @@ case "$shard" in
   *) die "Invalid shard." 64 ;;
 esac
 
-if [ "$action" = fetch ]; then
+if [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; then
   [ -f "$enable_file" ] || die "Production morning fetch is disabled." 69
   [ "$(cat "$enable_file")" = ENABLED ] || die "Production enable marker is invalid." 69
   [ "$target_date" = "$(TZ=Asia/Tokyo date +%F)" ] ||
     die "Production target date must be today in JST." 69
+fi
+if [ "$action" = fetch ]; then
   now_hm="$(TZ=Asia/Tokyo date +%H%M)"
   if [ $((10#$now_hm)) -lt 600 ] || [ $((10#$now_hm)) -gt 645 ]; then
     die "Production morning fetch may start only from 06:00 through 06:45 JST." 69
   fi
 fi
 
+live_is_safe() {
+  systemctl is-active --quiet sinz-live-fetch.service || return 1
+  live_pid="$(systemctl show sinz-live-fetch.service -p MainPID --value)"
+  [[ "$live_pid" =~ ^[1-9][0-9]*$ ]] || return 1
+  [ -r "/proc/$live_pid/stat" ] || return 1
+  available_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
+  [ "${available_kb:-0}" -ge 1048576 ] || return 1
+  load_one="$(cut -d' ' -f1 /proc/loadavg)"
+  cpu_count="$(nproc)"
+  awk -v load="$load_one" -v cpus="$cpu_count" 'BEGIN {exit !(load <= cpus)}'
+}
+
+if [[ "$action" == recovery-* ]]; then
+  live_is_safe || die "LIVE safety preflight failed; recovery was not started." 78
+fi
+
 install -d -o "$worker_user" -g "$worker_group" -m 0750 "$guard_root"
 readonly lock_file="$guard_root/${shard}.lock"
 exec 9>"$lock_file"
 flock -n 9 || die "Another morning fetch is already running for this shard." 75
+if [[ "$action" == recovery-* ]]; then
+  exec 8>"$guard_root/recovery.lock"
+  flock -n 8 || die "Another manual recovery is already running." 75
+fi
+
+cache_root="$state_root/artifacts/$target_date/$shard"
+install -d -o "$worker_user" -g "$worker_group" -m 0750 "$cache_root"
 
 run_dir="$(mktemp -d "$state_root/work/${action}-${target_date}-${shard}.XXXXXXXX")"
 cleanup() {
@@ -58,6 +83,16 @@ trap cleanup EXIT
 chown "$worker_user:$worker_group" "$run_dir"
 
 unit="sinz-morning-${action}-${shard}-$(date +%s)-$$"
+cpu_quota=50%
+memory_max=1536M
+nice_level=10
+io_weight=10
+if [[ "$action" == recovery-* ]]; then
+  cpu_quota=25%
+  memory_max=1024M
+  nice_level=15
+  io_weight=5
+fi
 common_properties=(
   --property="User=$worker_user"
   --property="Group=$worker_group"
@@ -69,12 +104,18 @@ common_properties=(
   --property="ProtectHome=yes"
   --property="ProtectSystem=strict"
   --property="ReadWritePaths=$run_dir $guard_root"
-  --property="CPUQuota=50%"
-  --property="MemoryMax=1536M"
+  --property="CPUQuota=$cpu_quota"
+  --property="MemoryMax=$memory_max"
   --property="TasksMax=256"
-  --property="Nice=10"
-  --property="IOWeight=10"
+  --property="Nice=$nice_level"
+  --property="IOWeight=$io_weight"
 )
+
+if [[ "$action" == recovery-* ]]; then
+  common_properties+=(
+    --property="ReadOnlyPaths=$cache_root"
+  )
+fi
 
 if [ "$action" = dummy ]; then
   command=(
@@ -83,33 +124,81 @@ if [ "$action" = dummy ]; then
   )
   timeout_value=5m
 else
-  fetch_deadline_epoch="$(TZ=Asia/Tokyo date -d "$target_date 08:15" +%s)"
-  outer_deadline_epoch="$(TZ=Asia/Tokyo date -d "$target_date 08:18" +%s)"
-  outer_timeout_seconds=$((outer_deadline_epoch - $(date +%s)))
-  [ "$outer_timeout_seconds" -gt 0 ] || die "Morning fetch deadline has passed." 69
+  recovery_scope=
+  if [ "$action" = fetch ]; then
+    fetch_deadline_epoch="$(TZ=Asia/Tokyo date -d "$target_date 08:15" +%s)"
+    outer_deadline_epoch="$(TZ=Asia/Tokyo date -d "$target_date 08:18" +%s)"
+    outer_timeout_seconds=$((outer_deadline_epoch - $(date +%s)))
+    [ "$outer_timeout_seconds" -gt 0 ] || die "Morning fetch deadline has passed." 69
+  else
+    recovery_scope="${action#recovery-}"
+    fetch_deadline_epoch=$(($(date +%s) + 1500))
+    outer_timeout_seconds=1560
+  fi
   challenge_file="$guard_root/security-challenge-$target_date"
+  live_stop_file="$guard_root/live-safety-stop-$target_date"
   fetch_script="$run_dir/fetch-shard.sh"
   {
     echo '#!/usr/bin/env bash'
     echo 'set -uo pipefail'
     printf 'challenge_file=%q\n' "$challenge_file"
+    printf 'live_stop_file=%q\n' "$live_stop_file"
     printf 'deadline=%q\n' "$fetch_deadline_epoch"
+    printf 'recovery_scope=%q\n' "$recovery_scope"
+    printf 'cache_root=%q\n' "$cache_root"
+    if [ -n "$recovery_scope" ]; then
+      cat <<'SAFETY'
+live_is_safe() {
+  systemctl is-active --quiet sinz-live-fetch.service || return 1
+  live_pid="$(systemctl show sinz-live-fetch.service -p MainPID --value)"
+  [[ "$live_pid" =~ ^[1-9][0-9]*$ ]] || return 1
+  [ -r "/proc/$live_pid/stat" ] || return 1
+  available_kb="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
+  [ "${available_kb:-0}" -ge 1048576 ] || return 1
+  load_one="$(cut -d' ' -f1 /proc/loadavg)"
+  cpu_count="$(nproc)"
+  awk -v load="$load_one" -v cpus="$cpu_count" 'BEGIN {exit !(load <= cpus)}'
+}
+SAFETY
+    fi
     printf 'for venue in'
     printf ' %q' "${venues[@]}"
     echo '; do'
+    echo '  if [ -n "$recovery_scope" ] && { [ -e "$live_stop_file" ] || ! live_is_safe; }; then'
+    echo '    : > "$live_stop_file"'
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason live_safety_stop --if-missing\n' \
+      "$venv_python" "$target_date" "$run_dir/work/races"
+    echo '    continue'
+    echo '  fi'
     echo '  if [ -e "$challenge_file" ]; then'
     printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason security_challenge_global_stop --if-missing\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
     echo '    continue'
     echo '  fi'
+    if [ -n "$recovery_scope" ]; then
+      printf '  %q automation/prepare_morning_recovery_cache.py --cache-root "$cache_root" --run-root %q --venue "$venue" --date %q --scope "$recovery_scope"\n' \
+        "$venv_python" "$run_dir/work/races" "$target_date"
+      echo '  selection_rc=$?'
+      echo '  if [ "$selection_rc" -eq 10 ] || [ "$selection_rc" -eq 11 ]; then continue; fi'
+      echo '  if [ "$selection_rc" -ne 0 ]; then'
+      printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason recovery_cache_validation_failed --if-missing\n' \
+        "$venv_python" "$target_date" "$run_dir/work/races"
+      echo '    continue'
+      echo '  fi'
+    fi
     echo '  remaining=$((deadline - $(date +%s)))'
     echo '  if [ "$remaining" -le 90 ]; then'
-    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason cutoff_before_live\n' \
+    printf '    reason=%q\n' "$([ -n "$recovery_scope" ] && echo recovery_timeout || echo cutoff_before_live)"
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason "$reason"\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
     echo '    continue'
     echo '  fi'
     echo '  venue_timeout=$((remaining - 60))'
-    echo '  if [ "$venue_timeout" -gt 900 ]; then venue_timeout=900; fi'
+    if [ -n "$recovery_scope" ]; then
+      echo '  if [ "$venue_timeout" -gt 240 ]; then venue_timeout=240; fi'
+    else
+      echo '  if [ "$venue_timeout" -gt 900 ]; then venue_timeout=900; fi'
+    fi
     printf '  /usr/bin/timeout --signal=TERM --kill-after=20s "${venue_timeout}s" %q automation/fetch_one.py --venue "$venue" --date %q --root %q\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
     echo '  rc=$?'
@@ -134,11 +223,25 @@ systemd-run --quiet --collect --wait --pipe --service-type=exec \
 unit_rc=$?
 set -e
 
-if [ "$action" = fetch ] && [ "$unit_rc" -ne 0 ]; then
+if { [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; } && [ "$unit_rc" -ne 0 ]; then
   for venue in "${venues[@]}"; do
     "$venv_python" "$app_root/automation/write_morning_fetch_status.py" \
       --venue "$venue" --date "$target_date" --root "$run_dir/work/races" \
       --reason executor_timeout_or_failure --if-missing
+  done
+fi
+
+if [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; then
+  for venue in "${venues[@]}"; do
+    venue_name="$($venv_python -c 'import json,sys; p=json.load(open(sys.argv[1], encoding="utf-8")); print(next(v["name"] for v in p["venues"] if v["slug"] == sys.argv[2]))' "$app_root/automation/venues.json" "$venue")"
+    source="$run_dir/work/races/$venue_name/${target_date//-/}"
+    destination="$cache_root/$venue_name/${target_date//-/}"
+    if [ -d "$source" ]; then
+      rm -rf -- "$destination"
+      install -d -o "$worker_user" -g "$worker_group" -m 0750 "$(dirname "$destination")"
+      cp -a "$source" "$destination"
+      chown -R "$worker_user:$worker_group" "$destination"
+    fi
   done
 fi
 

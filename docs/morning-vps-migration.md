@@ -47,3 +47,24 @@ The production `morning-data.yml` runs at 06:05 JST and rejects starts outside
 the artifact names and existing prediction/publication process remain unchanged.
 Removing the enable marker disables VPS production fetch again. Access-control
 bypasses are outside this design.
+
+## Manual recovery
+
+`Morning race data` can also be started with `Run workflow`. Select `failed` to
+retry only venues whose cached status is missing or failed, or `all` to inspect
+every configured venue. A validated complete cache is reused in either mode and
+is never fetched again. Manual recovery is limited to the current JST date.
+
+The forced command accepts only `recovery-failed DATE SHARD` and
+`recovery-all DATE SHARD`. GitHub runs the east and west shards sequentially;
+the executor also holds a global non-blocking recovery lock. Before the run and
+before every venue it verifies that `sinz-live-fetch.service` is active with a
+live PID, at least 1 GiB of memory is available, and one-minute load does not
+exceed the CPU count. Recovery uses `CPUQuota=25%`, `MemoryMax=1024M`,
+`Nice=15`, `IOWeight=5`, a four-minute venue timeout, and a 26-minute shard
+timeout. A failed safety check stops subsequent venue requests.
+
+Existing predictions and prediction history are restored after recovery model
+execution. A prediction created after its race deadline is marked
+`manual_recovery_post_deadline`, has `performanceEligible=false`, is excluded
+from prediction history, and carries an explicit metrics-exclusion marker.
