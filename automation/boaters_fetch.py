@@ -22,6 +22,7 @@ import argparse
 import asyncio
 import json
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
@@ -41,6 +42,11 @@ except ImportError:
 
 
 BASE_SAVE_ROOT = Path("work/races")
+SECURITY_CHALLENGE_EXIT = 86
+
+
+class SecurityVerificationBlocked(RuntimeError):
+    """BOATERS displayed a security-verification page; do not retry."""
 
 STADIUM_MAP = {
     "kiryu": "桐生",
@@ -260,7 +266,9 @@ async def goto_page(page, url: str, wait_ms: int) -> Dict:
 
     await page.wait_for_timeout(wait_ms)
     if is_security_challenge(await get_body_text(page)):
-        raise RuntimeError(f"security verification blocked fetch: {url}")
+        raise SecurityVerificationBlocked(
+            f"security verification blocked fetch: {url}"
+        )
     return result
 
 
@@ -1277,4 +1285,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except SecurityVerificationBlocked as exc:
+        print(f"[SECURITY_CHALLENGE] {exc}", file=sys.stderr, flush=True)
+        raise SystemExit(SECURITY_CHALLENGE_EXIT) from exc

@@ -69,6 +69,7 @@ def allowed_relative_path(relative: Path, date_dir: str) -> bool:
             name.endswith(suffix)
             for suffix in (
                 "_entry.txt",
+                "_entry.html",
                 "_data.txt",
                 "_motor.txt",
                 "_boaters_local_st.json",

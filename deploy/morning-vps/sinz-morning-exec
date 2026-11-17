@@ -5,7 +5,7 @@ readonly app_root=/opt/sinz-morning-fetch/app
 readonly venv_python=/opt/sinz-morning-fetch/venv/bin/python
 readonly state_root=/var/lib/sinz-morning-fetch
 readonly enable_file=/etc/sinz-morning-fetch/enabled
-readonly lock_file=/run/lock/sinz-morning-fetch.lock
+readonly guard_root=/run/sinz-morning-fetch
 readonly worker_user=sinz-morning
 readonly worker_group=sinz-morning
 
@@ -37,10 +37,18 @@ esac
 if [ "$action" = fetch ]; then
   [ -f "$enable_file" ] || die "Production morning fetch is disabled." 69
   [ "$(cat "$enable_file")" = ENABLED ] || die "Production enable marker is invalid." 69
+  [ "$target_date" = "$(TZ=Asia/Tokyo date +%F)" ] ||
+    die "Production target date must be today in JST." 69
+  now_hm="$(TZ=Asia/Tokyo date +%H%M)"
+  if [ $((10#$now_hm)) -lt 600 ] || [ $((10#$now_hm)) -gt 645 ]; then
+    die "Production morning fetch may start only from 06:00 through 06:45 JST." 69
+  fi
 fi
 
+install -d -o "$worker_user" -g "$worker_group" -m 0750 "$guard_root"
+readonly lock_file="$guard_root/${shard}.lock"
 exec 9>"$lock_file"
-flock -n 9 || die "Another morning fetch is already running." 75
+flock -n 9 || die "Another morning fetch is already running for this shard." 75
 
 run_dir="$(mktemp -d "$state_root/work/${action}-${target_date}-${shard}.XXXXXXXX")"
 cleanup() {
@@ -60,10 +68,12 @@ common_properties=(
   --property="PrivateTmp=yes"
   --property="ProtectHome=yes"
   --property="ProtectSystem=strict"
-  --property="ReadWritePaths=$run_dir"
-  --property="CPUQuota=100%"
+  --property="ReadWritePaths=$run_dir $guard_root"
+  --property="CPUQuota=50%"
   --property="MemoryMax=1536M"
   --property="TasksMax=256"
+  --property="Nice=10"
+  --property="IOWeight=10"
 )
 
 if [ "$action" = dummy ]; then
@@ -73,26 +83,75 @@ if [ "$action" = dummy ]; then
   )
   timeout_value=5m
 else
+  fetch_deadline_epoch="$(TZ=Asia/Tokyo date -d "$target_date 08:15" +%s)"
+  outer_deadline_epoch="$(TZ=Asia/Tokyo date -d "$target_date 08:18" +%s)"
+  outer_timeout_seconds=$((outer_deadline_epoch - $(date +%s)))
+  [ "$outer_timeout_seconds" -gt 0 ] || die "Morning fetch deadline has passed." 69
+  challenge_file="$guard_root/security-challenge-$target_date"
   fetch_script="$run_dir/fetch-shard.sh"
   {
     echo '#!/usr/bin/env bash'
-    echo 'set -euo pipefail'
+    echo 'set -uo pipefail'
+    printf 'challenge_file=%q\n' "$challenge_file"
+    printf 'deadline=%q\n' "$fetch_deadline_epoch"
     printf 'for venue in'
     printf ' %q' "${venues[@]}"
     echo '; do'
-    printf '  %q automation/fetch_one.py --venue "$venue" --date %q --root %q\n' \
+    echo '  if [ -e "$challenge_file" ]; then'
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason security_challenge_global_stop --if-missing\n' \
+      "$venv_python" "$target_date" "$run_dir/work/races"
+    echo '    continue'
+    echo '  fi'
+    echo '  remaining=$((deadline - $(date +%s)))'
+    echo '  if [ "$remaining" -le 90 ]; then'
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason cutoff_before_live\n' \
+      "$venv_python" "$target_date" "$run_dir/work/races"
+    echo '    continue'
+    echo '  fi'
+    echo '  venue_timeout=$((remaining - 60))'
+    echo '  if [ "$venue_timeout" -gt 900 ]; then venue_timeout=900; fi'
+    printf '  /usr/bin/timeout --signal=TERM --kill-after=20s "${venue_timeout}s" %q automation/fetch_one.py --venue "$venue" --date %q --root %q\n' \
+      "$venv_python" "$target_date" "$run_dir/work/races"
+    echo '  rc=$?'
+    echo '  if [ "$rc" -eq 86 ]; then'
+    echo '    : > "$challenge_file"'
+    echo '  fi'
+    printf '  %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason fetch_failed_without_status --if-missing\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
     echo 'done'
   } >"$fetch_script"
   chown "$worker_user:$worker_group" "$fetch_script"
   chmod 0500 "$fetch_script"
   command=(/usr/bin/bash "$fetch_script")
-  timeout_value=90m
+  timeout_value="${outer_timeout_seconds}s"
 fi
 
+set +e
 systemd-run --quiet --collect --wait --pipe --service-type=exec \
   --unit="$unit" "${common_properties[@]}" \
   /usr/bin/timeout --signal=TERM --kill-after=30s "$timeout_value" \
   "${command[@]}" >&2
+unit_rc=$?
+set -e
 
-tar --create --gzip --directory="$run_dir" --file=- work
+if [ "$action" = fetch ] && [ "$unit_rc" -ne 0 ]; then
+  for venue in "${venues[@]}"; do
+    "$venv_python" "$app_root/automation/write_morning_fetch_status.py" \
+      --venue "$venue" --date "$target_date" --root "$run_dir/work/races" \
+      --reason executor_timeout_or_failure --if-missing
+  done
+fi
+
+if [ "$action" = dummy ]; then
+  tar --create --gzip --directory="$run_dir" --file=- work
+else
+  (
+    cd "$run_dir"
+    find work/races -type f \
+      \( -name fetch_status.json -o -name tide_today.json \
+      -o -name '*_entry.txt' -o -name '*_entry.html' \
+      -o -name '*_data.txt' -o -name '*_motor.txt' \
+      -o -name '*_boaters_local_st.json' \) -print0 |
+      tar --null --create --gzip --file=- --files-from=-
+  )
+fi

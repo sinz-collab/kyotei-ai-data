@@ -21,6 +21,7 @@ from tide_type_parser import add_tide_type
 
 HERE = Path(__file__).resolve().parent
 CONFIG_PATH = HERE / "venues.json"
+SECURITY_CHALLENGE_EXIT = 86
 
 OFFICIAL_VENUE_CODES = {
     "kiryu": "01",
@@ -268,6 +269,8 @@ def main() -> int:
         }
         status["fetchAttempts"].append(attempt_result)
         print(f"[fetch result] {json.dumps(attempt_result, ensure_ascii=False)}", flush=True)
+        if return_code == SECURITY_CHALLENGE_EXIT:
+            break
         if return_code == 0 and entry_count == 12:
             break
         # A hard fetcher failure with no usable entries is not improved by
@@ -278,17 +281,26 @@ def main() -> int:
         if attempt < 2:
             time.sleep(20)
 
+    tide = (
+        {"status": "skipped", "reason": "security_challenge"}
+        if return_code == SECURITY_CHALLENGE_EXIT
+        else fetch_tide(venue, args.date, output_dir)
+    )
     status.update(
         {
             "open": return_code == 0 and entry_count == 12,
             "entryCount": entry_count,
             "fetchReturnCode": return_code,
-            "tide": fetch_tide(venue, args.date, output_dir),
+            "tide": tide,
         }
     )
     if not status["open"]:
         status["failure"] = {
-            "reason": "fetch_incomplete",
+            "reason": (
+                "security_challenge"
+                if return_code == SECURITY_CHALLENGE_EXIT
+                else "fetch_incomplete"
+            ),
             "source": "boaters-boatrace.com",
             "returnCode": return_code,
             "entryCount": entry_count,
@@ -298,6 +310,8 @@ def main() -> int:
         json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     print(json.dumps(status, ensure_ascii=False))
+    if return_code == SECURITY_CHALLENGE_EXIT:
+        return SECURITY_CHALLENGE_EXIT
     return 0 if status["open"] else 1
 
 
