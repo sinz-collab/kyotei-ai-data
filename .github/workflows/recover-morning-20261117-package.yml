@@ -1,0 +1,255 @@
+name: 2026-11-17 morning recovery package
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: morning-race-data
+  cancel-in-progress: false
+
+jobs:
+  recover-and-publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      TARGET_DATE: "2026-11-17"
+      RECOVERY_COMMIT: 5cfcdc9884fd327d54212c432e02447895cd6d44
+    steps:
+      - id: source
+        name: Find original morning artifacts
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const required = [
+              `morning-east-${process.env.TARGET_DATE}`,
+              `morning-west-${process.env.TARGET_DATE}`,
+            ];
+            let sourceRunId = null;
+            for await (const response of github.paginate.iterator(
+              github.rest.actions.listWorkflowRuns,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'morning-data.yml',
+                branch: 'main',
+                per_page: 100,
+              }
+            )) {
+              for (const run of response.data) {
+                if (run.status !== 'completed') continue;
+                const artifacts = await github.paginate(
+                  github.rest.actions.listWorkflowRunArtifacts,
+                  {owner: context.repo.owner, repo: context.repo.repo, run_id: run.id, per_page: 100}
+                );
+                const valid = required.every(name => {
+                  const matches = artifacts.filter(item => item.name === name);
+                  return matches.length === 1 && !matches[0].expired && matches[0].size_in_bytes > 0;
+                });
+                if (valid) { sourceRunId = run.id; break; }
+              }
+              if (sourceRunId !== null) break;
+            }
+            if (sourceRunId === null) {
+              core.setFailed(`No complete source artifacts for ${process.env.TARGET_DATE}.`);
+              return;
+            }
+            core.setOutput('run_id', sourceRunId.toString());
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RECOVERY_COMMIT }}
+          path: recovery-package
+          sparse-checkout: emergency-artifacts/20261117/recovery.tar.gz
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: automation/requirements.txt
+
+      - name: Install publication dependencies
+        run: |
+          python -m pip install -r automation/requirements.txt
+          python -m pip install lxml==6.0.0 catboost==1.2.10
+          python -m pip install -r engines/ashiya/ashiya_engine_v1_6/requirements.txt
+
+      - name: Download original east artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: morning-east-${{ env.TARGET_DATE }}
+          path: work/artifacts/east
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.run_id }}
+      - name: Download original west artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: morning-west-${{ env.TARGET_DATE }}
+          path: work/artifacts/west
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.source.outputs.run_id }}
+
+      - name: Extract immutable recovery package
+        shell: bash
+        run: |
+          mkdir -p work/recovery
+          tar -xzf recovery-package/emergency-artifacts/20261117/recovery.tar.gz \
+            -C work/recovery --no-same-owner --no-same-permissions
+
+      - name: Validate 48 races and overlay four venues
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import shutil
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, "automation")
+          from build_site_data import build_payload
+          from prepare_morning_artifacts import allowed_relative_path, artifact_root
+          from public_json import serialize_public_json
+
+          target_date = "2026-11-17"
+          date_dir = "20261117"
+          targets = {
+              "tokoname": "常滑",
+              "karatsu": "唐津",
+              "heiwajima": "平和島",
+              "biwako": "びわこ",
+          }
+          required = {
+              "lane", "name", "class", "age", "weight", "branch", "avg_st",
+              "nat_win", "nat_2", "nat_3", "local_win", "local_2", "local_3",
+              "motor_no", "motor_2", "motor_3", "boat_no", "boat_2", "boat_3",
+              "player_id",
+          }
+          forbidden = {"result", "odds", "realtime", "prediction_history", "live", "direct", "exhibition"}
+          recovery = Path("work/recovery/work/races")
+          actual_names = {path.name for path in recovery.iterdir() if path.is_dir()}
+          if actual_names != set(targets.values()):
+              raise RuntimeError(f"recovery venue mismatch: {sorted(actual_names)}")
+
+          report = {}
+          for slug, name in targets.items():
+              venue_dir = recovery / name / date_dir
+              status = json.loads((venue_dir / "fetch_status.json").read_text(encoding="utf-8"))
+              if not (
+                  status.get("slug") == slug
+                  and status.get("name") == name
+                  and status.get("date") == target_date
+                  and status.get("open") is True
+                  and status.get("entryCount") == 12
+                  and (status.get("precheck") or {}).get("open") is True
+                  and len(status.get("fetchAttempts") or []) == 1
+              ):
+                  raise RuntimeError(f"invalid recovery status: {slug}")
+
+              for path in venue_dir.rglob("*"):
+                  if path.is_symlink():
+                      raise RuntimeError(f"symlink is not allowed: {path}")
+                  if path.is_file():
+                      relative = path.relative_to(recovery)
+                      entry_html = (
+                          len(relative.parts) == 4
+                          and relative.parts[1] == date_dir
+                          and relative.parts[2] == "races"
+                          and relative.name.endswith("_entry.html")
+                      )
+                      if not entry_html and not allowed_relative_path(relative, date_dir):
+                          raise RuntimeError(f"unexpected recovery path: {path}")
+
+              for race_no in range(1, 13):
+                  prefix = venue_dir / "races" / f"race_{race_no:02d}"
+                  for suffix in ("_entry.txt", "_data.txt", "_motor.txt"):
+                      path = Path(f"{prefix}{suffix}")
+                      if not path.is_file() or path.stat().st_size <= 500:
+                          raise RuntimeError(f"missing recovery file: {path}")
+                  local_path = Path(f"{prefix}_boaters_local_st.json")
+                  rows = json.loads(local_path.read_text(encoding="utf-8")).get("racers") or []
+                  if len(rows) != 6:
+                      raise RuntimeError(f"invalid local ST file: {local_path}")
+
+              payload, detail = build_payload({"slug": slug, "name": name}, target_date, venue_dir)
+              if payload is None or detail.get("reason") != "ok" or len(payload.get("races") or []) != 12:
+                  raise RuntimeError(f"public JSON compatibility failed: {slug}/{detail}")
+              for race in payload["races"]:
+                  racers = race.get("racers") or []
+                  if len(racers) != 6:
+                      raise RuntimeError(f"racer count failed: {slug}")
+                  for racer in racers:
+                      missing = required - racer.keys()
+                      if missing:
+                          raise RuntimeError(f"required fields missing: {slug}/{sorted(missing)}")
+
+              def forbidden_keys(value):
+                  if isinstance(value, dict):
+                      found = forbidden & value.keys()
+                      return found | set().union(*(forbidden_keys(item) for item in value.values()))
+                  if isinstance(value, list):
+                      return set().union(*(forbidden_keys(item) for item in value))
+                  return set()
+
+              found = forbidden_keys(payload)
+              if found:
+                  raise RuntimeError(f"post-race/live keys detected: {slug}/{sorted(found)}")
+              json.loads(serialize_public_json(payload))
+              report[slug] = {"races": 12, "racersPerRace": 6, "status": "validated"}
+
+          west = artifact_root(Path("work/artifacts/west"))
+          for slug, name in targets.items():
+              destination = west / name / date_dir
+              if destination.exists():
+                  shutil.rmtree(destination)
+              shutil.copytree(
+                  recovery / name / date_dir,
+                  destination,
+                  ignore=shutil.ignore_patterns("*_entry.html"),
+              )
+          Path("work/recovery-validation.json").write_text(
+              json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+          )
+          PY
+
+          python automation/prepare_morning_artifacts.py \
+            --date "$TARGET_DATE" \
+            --east work/artifacts/east \
+            --west work/artifacts/west \
+            --output work/races
+
+          python - <<'PY'
+          import shutil
+          from pathlib import Path
+
+          for name in ("常滑", "唐津", "平和島", "びわこ"):
+              source = Path("work/recovery/work/races") / name / "20261117" / "races"
+              destination = Path("work/races") / name / "20261117" / "races"
+              html_files = sorted(source.glob("race_*_entry.html"))
+              if len(html_files) != 12:
+                  raise RuntimeError(f"entry HTML count is not 12: {name}")
+              for path in html_files:
+                  shutil.copy2(path, destination / path.name)
+          PY
+
+      - name: Generate predictions and publish with existing process
+        shell: bash
+        run: bash automation/publish_morning_data.sh "$TARGET_DATE"
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-emergency-recovery-${{ env.TARGET_DATE }}-${{ github.run_id }}
+          path: |
+            build-*.log
+            data/morning_report.json
+            work/recovery-validation.json
+          if-no-files-found: warn
+          retention-days: 2
