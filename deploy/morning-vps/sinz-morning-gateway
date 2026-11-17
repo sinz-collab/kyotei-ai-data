@@ -5,7 +5,9 @@ readonly executor=/usr/local/sbin/sinz-morning-exec
 readonly original_command="${SSH_ORIGINAL_COMMAND:-}"
 
 if [ "$original_command" = version ]; then
-  sha256sum "$executor" | awk '{print $1}'
+  printf 'executor=%s\n' "$(sha256sum "$executor" | awk '{print $1}')"
+  printf 'recovery=%s\n' "$(sha256sum /opt/sinz-morning-fetch/app/automation/prepare_morning_recovery_cache.py | awk '{print $1}')"
+  printf 'validator=%s\n' "$(sha256sum /opt/sinz-morning-fetch/app/automation/validate_morning_vps_artifacts.py | awk '{print $1}')"
   exit 0
 fi
 

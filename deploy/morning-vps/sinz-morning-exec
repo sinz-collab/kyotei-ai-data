@@ -183,7 +183,7 @@ SAFETY
       echo '  if [ "$selection_rc" -ne 0 ]; then'
       printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason recovery_cache_validation_failed --if-missing\n' \
         "$venv_python" "$target_date" "$run_dir/work/races"
-      echo '    continue'
+      echo '    exit "$selection_rc"'
       echo '  fi'
     fi
     echo '  remaining=$((deadline - $(date +%s)))'
@@ -231,7 +231,7 @@ if { [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; } && [ "$unit_rc" -
   done
 fi
 
-if [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; then
+if { [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; } && [ "$unit_rc" -eq 0 ]; then
   for venue in "${venues[@]}"; do
     venue_name="$($venv_python -c 'import json,sys; p=json.load(open(sys.argv[1], encoding="utf-8")); print(next(v["name"] for v in p["venues"] if v["slug"] == sys.argv[2]))' "$app_root/automation/venues.json" "$venue")"
     source="$run_dir/work/races/$venue_name/${target_date//-/}"
@@ -243,6 +243,10 @@ if [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; then
       chown -R "$worker_user:$worker_group" "$destination"
     fi
   done
+fi
+
+if [[ "$action" == recovery-* ]] && [ "$unit_rc" -ne 0 ]; then
+  die "Recovery executor failed; cached artifacts were left unchanged." 70
 fi
 
 if [ "$action" = dummy ]; then

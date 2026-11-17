@@ -43,6 +43,8 @@ class MorningRecoveryTest(unittest.TestCase):
             "memory_max=1024M",
             "venue_timeout=240",
             "prepare_morning_recovery_cache.py",
+            'exit "$selection_rc"',
+            "cached artifacts were left unchanged",
         ):
             self.assertIn(expected, executor)
         self.assertEqual(executor.count("awk -v load_one="), 2)
@@ -53,6 +55,8 @@ class MorningRecoveryTest(unittest.TestCase):
         self.assertIn("dummy|fetch|recovery-all|recovery-failed", gateway)
         self.assertIn('[ "$original_command" = version ]', gateway)
         self.assertIn('sha256sum "$executor"', gateway)
+        self.assertIn("prepare_morning_recovery_cache.py", gateway)
+        self.assertIn("validate_morning_vps_artifacts.py", gateway)
         workflow = (ROOT / ".github/workflows/morning-data.yml").read_text(
             encoding="utf-8"
         )

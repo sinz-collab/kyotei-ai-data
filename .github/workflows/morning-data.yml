@@ -102,6 +102,8 @@ jobs:
           sparse-checkout: |
             automation/write_morning_fetch_status.py
             automation/venues.json
+            automation/prepare_morning_recovery_cache.py
+            automation/validate_morning_vps_artifacts.py
             deploy/morning-vps/sinz-morning-exec
           sparse-checkout-cone-mode: false
       - name: Configure pinned VPS SSH host
@@ -123,7 +125,10 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
         run: |
-          expected="$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')"
+          expected="$(printf 'executor=%s\nrecovery=%s\nvalidator=%s\n' \
+            "$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')" \
+            "$(sha256sum automation/prepare_morning_recovery_cache.py | awk '{print $1}')" \
+            "$(sha256sum automation/validate_morning_vps_artifacts.py | awk '{print $1}')")"
           actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
             -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" version)"
@@ -199,6 +204,8 @@ jobs:
           sparse-checkout: |
             automation/write_morning_fetch_status.py
             automation/venues.json
+            automation/prepare_morning_recovery_cache.py
+            automation/validate_morning_vps_artifacts.py
             deploy/morning-vps/sinz-morning-exec
           sparse-checkout-cone-mode: false
       - name: Configure pinned VPS SSH host
@@ -220,7 +227,10 @@ jobs:
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
         run: |
-          expected="$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')"
+          expected="$(printf 'executor=%s\nrecovery=%s\nvalidator=%s\n' \
+            "$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')" \
+            "$(sha256sum automation/prepare_morning_recovery_cache.py | awk '{print $1}')" \
+            "$(sha256sum automation/validate_morning_vps_artifacts.py | awk '{print $1}')")"
           actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
             -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" version)"
