@@ -305,7 +305,7 @@ class BiwakoFlowTests(unittest.TestCase):
             self.assertFalse(manifest["venues"][0]["open"])
             self.assertFalse((data_root / "venues" / "biwako" / f"{COMPACT_DATE}.json").exists())
 
-    def test_running_meeting_failure_stops_site_build(self) -> None:
+    def test_running_meeting_failure_is_published_as_explicit_missing_data(self) -> None:
         status = {
             "slug": "biwako",
             "name": "びわこ",
@@ -316,8 +316,13 @@ class BiwakoFlowTests(unittest.TestCase):
             "precheck": {"open": True, "reason": "race_page_found"},
         }
         with tempfile.TemporaryDirectory() as temporary:
-            with self.assertRaisesRegex(RuntimeError, "scheduled meeting fetch incomplete"):
-                self.run_build(Path(temporary), status, None)
+            manifest, data_root = self.run_build(Path(temporary), status, None)
+            venue = manifest["venues"][0]
+            self.assertFalse(venue["open"])
+            self.assertEqual(venue["availabilityReason"], "fetch_incomplete")
+            self.assertFalse(
+                (data_root / "venues" / "biwako" / f"{COMPACT_DATE}.json").exists()
+            )
 
     def test_precheck_error_is_failure_but_non_running_is_success(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

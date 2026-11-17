@@ -69,8 +69,7 @@ def main() -> int:
             failed.append(venue)
 
     if failed:
-        print(f"Retry failed: {' '.join(failed)}", file=sys.stderr)
-        return 1
+        print(f"Retry incomplete (will publish explicit gaps): {' '.join(failed)}", file=sys.stderr)
     return 0
 
 

@@ -236,6 +236,8 @@ def main() -> int:
         "4",
         "--click-wait",
         "1.2",
+        "--abort-after-empty-entries",
+        "2",
     ]
     entry_count = 0
     return_code = 1
@@ -250,7 +252,7 @@ def main() -> int:
                 timeout=900,
             )
             return_code = process.returncode
-            error = ""
+            error = "" if return_code == 0 else f"fetch_process_exit_{return_code}"
         except subprocess.TimeoutExpired:
             return_code = 124
             error = "timeout_after_900_seconds"
@@ -267,6 +269,11 @@ def main() -> int:
         status["fetchAttempts"].append(attempt_result)
         print(f"[fetch result] {json.dumps(attempt_result, ensure_ascii=False)}", flush=True)
         if return_code == 0 and entry_count == 12:
+            break
+        # A hard fetcher failure with no usable entries is not improved by
+        # immediately repeating the same blocked browser session. The resume
+        # workflow retries this venue later without touching successful ones.
+        if return_code != 0 and entry_count == 0:
             break
         if attempt < 2:
             time.sleep(20)

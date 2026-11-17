@@ -1451,26 +1451,26 @@ def main() -> int:
                 f"fetch status identity mismatch: expected={slug}/{venue['name']}/{args.date} "
                 f"actual={fetch_status.get('slug')}/{fetch_status.get('name')}/{fetch_status.get('date')}"
             )
+        payload = None
         precheck = fetch_status.get("precheck") or {}
-        if str(precheck.get("reason", "")).startswith("precheck_failed:"):
-            raise RuntimeError(f"{slug}: venue precheck failed: {precheck.get('reason')}")
-        if precheck.get("open") is True and not (
+        fetch_complete = (
             fetch_status.get("open") is True
             and fetch_status.get("entryCount") == 12
-        ):
-            raise RuntimeError(
-                f"{slug}: scheduled meeting fetch incomplete: "
-                f"returnCode={fetch_status.get('fetchReturnCode')} "
-                f"entryCount={fetch_status.get('entryCount')}"
-            )
-        payload = None
+        )
+        failure = fetch_status.get("failure") or {}
+        if str(precheck.get("reason", "")).startswith("precheck_failed:"):
+            availability_reason = str(precheck.get("reason"))
+        elif precheck.get("open") is True and not fetch_complete:
+            availability_reason = str(failure.get("reason") or "fetch_incomplete")
+        else:
+            availability_reason = str(precheck.get("reason") or "fetch_incomplete")
         detail = {
-            "reason": fetch_status.get("precheck", {}).get("reason", "fetch_incomplete"),
+            "reason": availability_reason,
             "fetchReturnCode": fetch_status.get("fetchReturnCode"),
             "fetchAttempts": fetch_status.get("fetchAttempts", []),
             "tide": fetch_status.get("tide", {}),
         }
-        if fetch_status.get("open") and fetch_status.get("entryCount") == 12:
+        if fetch_complete:
             payload, detail = build_payload(venue, args.date, source_dir)
             if payload is not None:
                 payload = annotate_no_prior_meeting_runs(payload, slug, data_root)

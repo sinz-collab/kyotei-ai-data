@@ -1176,6 +1176,12 @@ async def main():
     parser.add_argument("--headed", action="store_true")
     parser.add_argument("--start-race", type=int, default=1)
     parser.add_argument("--end-race", type=int, default=12)
+    parser.add_argument(
+        "--abort-after-empty-entries",
+        type=int,
+        default=0,
+        help="Abort after this many consecutive races without an entry table (0 disables).",
+    )
     args = parser.parse_args()
 
     stadium_jp = normalize_stadium(args.stadium)
@@ -1215,11 +1221,25 @@ async def main():
         )
         page = await context.new_page()
 
+        consecutive_empty_entries = 0
         for race_no in range(args.start_race, args.end_race + 1):
             print(f"\n========== {race_no}R ==========")
 
             entry_result = await capture_entry_by_click(page, stadium_slug, actual_date, race_no, race_dir, wait_ms)
             log["entry_results"].append(entry_result)
+
+            if entry_result.get("analysis", {}).get("has_entry_core"):
+                consecutive_empty_entries = 0
+            else:
+                consecutive_empty_entries += 1
+                if (
+                    args.abort_after_empty_entries > 0
+                    and consecutive_empty_entries >= args.abort_after_empty_entries
+                ):
+                    raise RuntimeError(
+                        "entry source unavailable: "
+                        f"{consecutive_empty_entries} consecutive races had no entry table"
+                    )
 
             data_result = await capture_data_page(page, stadium_slug, actual_date, race_no, race_dir, wait_ms, click_wait_ms)
             log["data_results"].append(data_result)

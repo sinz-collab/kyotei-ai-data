@@ -5,6 +5,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
@@ -59,6 +60,31 @@ class MorningFetchResumeTest(unittest.TestCase):
                 retry_incomplete_morning.retry_slugs(root, "2026-11-16"),
                 ["tokoname"],
             )
+
+    def test_retry_failure_does_not_block_partial_publish(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            status_dir = root / "常滑" / "20261117"
+            status_dir.mkdir(parents=True)
+            (status_dir / "fetch_status.json").write_text(
+                json.dumps({
+                    "slug": "tokoname", "name": "常滑", "date": "2026-11-17",
+                    "open": False, "entryCount": 0, "precheck": {"open": True},
+                }, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            with (
+                patch.object(sys, "argv", [
+                    "retry_incomplete_morning.py", "--date", "2026-11-17",
+                    "--root", str(root),
+                ]),
+                patch.object(
+                    retry_incomplete_morning.subprocess,
+                    "run",
+                    return_value=type("Result", (), {"returncode": 1})(),
+                ),
+            ):
+                self.assertEqual(retry_incomplete_morning.main(), 0)
 
 
 if __name__ == "__main__":

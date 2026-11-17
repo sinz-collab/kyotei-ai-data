@@ -85,6 +85,28 @@ class FetchOnePrecheckTest(unittest.TestCase):
             self.assertEqual(status["precheck"]["reason"], "precheck_failed:http_403")
             self.assertEqual(status["precheck"]["httpStatus"], 403)
 
+    def test_hard_empty_fetch_is_not_repeated_immediately(self) -> None:
+        precheck = {"open": True, "reason": "race_page_found"}
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            with (
+                patch.object(fetch_one, "load_venue", return_value={"slug": "tokoname", "name": "常滑"}),
+                patch.object(fetch_one, "venue_is_open", return_value=precheck),
+                patch.object(fetch_one.subprocess, "run", return_value=type("Result", (), {"returncode": 1})()) as run,
+                patch.object(fetch_one, "fetch_tide", return_value={"status": "not_configured"}),
+                patch.object(sys, "argv", [
+                    "fetch_one.py", "--venue", "tokoname", "--date", "2026-11-17",
+                    "--root", str(root),
+                ]),
+            ):
+                self.assertEqual(fetch_one.main(), 1)
+            run.assert_called_once()
+            status = json.loads(
+                (root / "常滑" / "20261117" / "fetch_status.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(len(status["fetchAttempts"]), 1)
+            self.assertEqual(status["fetchAttempts"][0]["error"], "fetch_process_exit_1")
+
 
 if __name__ == "__main__":
     unittest.main()
