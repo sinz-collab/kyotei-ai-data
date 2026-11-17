@@ -3224,129 +3224,749 @@
         }
       ],
       "prediction": {
-        "status": "ready",
-        "reason": null,
-        "engine": "kiryu_v1",
-        "engine_version": "kiryu_v1",
-        "probabilities": {
-          "win": {
-            "1": 25.6899818744,
-            "2": 16.0597668262,
-            "3": 15.8002262315,
-            "4": 19.3075182899,
-            "5": 20.5872488491,
-            "6": 2.5552579288
-          },
-          "second": {
-            "1": 24.32401275,
-            "2": 20.4278827953,
-            "3": 17.9957171305,
-            "4": 15.4133365379,
-            "5": 13.3656317519,
-            "6": 8.4734190344
-          },
-          "third": {
-            "1": 14.6564298691,
-            "2": 17.3948420211,
-            "3": 18.3658659946,
-            "4": 20.6865605773,
-            "5": 17.004210726,
-            "6": 11.8920908117
-          }
+        "modelVersion": "kiryu_v1_20261104",
+        "predictionStage": "live",
+        "win": {
+          "1": 25.6899818744,
+          "2": 16.0597668262,
+          "3": 15.8002262315,
+          "4": 19.3075182899,
+          "5": 20.5872488491,
+          "6": 2.5552579288
         },
+        "second": {
+          "1": 24.32401275,
+          "2": 20.4278827953,
+          "3": 17.9957171305,
+          "4": 15.4133365379,
+          "5": 13.3656317519,
+          "6": 8.4734190344
+        },
+        "third": {
+          "1": 14.6564298691,
+          "2": 17.3947501497,
+          "3": 18.3658659946,
+          "4": 20.6864553142,
+          "5": 17.0051688577,
+          "6": 11.8913298146
+        },
+        "lane1FlyRate": 74.3100181256,
+        "lane1FlyProbability": 74.3100181256,
+        "lane1Fly": true,
         "sab": "対象外",
-        "tickets": {
-          "ai": [
-            {
-              "combo": "1-2-4",
-              "probability": 2.67370286
-            },
-            {
-              "combo": "1-2-3",
-              "probability": 2.53773013
-            },
-            {
-              "combo": "1-3-4",
-              "probability": 2.2744082
-            },
-            {
-              "combo": "2-1-4",
-              "probability": 2.0173027
-            },
-            {
-              "combo": "1-3-2",
-              "probability": 1.98505501
-            },
-            {
-              "combo": "5-1-4",
-              "probability": 1.9621929
-            }
+        "ai": [
+          {
+            "combo": "1-2-4",
+            "probability": 2.67370286
+          },
+          {
+            "combo": "1-2-3",
+            "probability": 2.53773013
+          },
+          {
+            "combo": "1-3-4",
+            "probability": 2.27430294
+          },
+          {
+            "combo": "2-1-4",
+            "probability": 2.0173027
+          },
+          {
+            "combo": "1-3-2",
+            "probability": 1.98496314
+          },
+          {
+            "combo": "5-1-4",
+            "probability": 1.9621929
+          }
+        ],
+        "balance": [
+          {
+            "combo": "1-2-5",
+            "probability": 1.90363861
+          },
+          {
+            "combo": "3-1-4",
+            "probability": 1.81137176
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "4-1-2",
+            "probability": 1.73146187
+          },
+          {
+            "combo": "2-1-3",
+            "probability": 1.77940949
+          }
+        ],
+        "tickets": [
+          {
+            "combo": "1-2-4",
+            "probability": 2.67370286
+          },
+          {
+            "combo": "1-2-3",
+            "probability": 2.53773013
+          },
+          {
+            "combo": "1-3-4",
+            "probability": 2.27430294
+          },
+          {
+            "combo": "2-1-4",
+            "probability": 2.0173027
+          },
+          {
+            "combo": "1-3-2",
+            "probability": 1.98496314
+          },
+          {
+            "combo": "5-1-4",
+            "probability": 1.9621929
+          },
+          {
+            "combo": "1-2-5",
+            "probability": 1.90363861
+          },
+          {
+            "combo": "3-1-4",
+            "probability": 1.81137176
+          },
+          {
+            "combo": "4-1-2",
+            "probability": 1.73146187
+          },
+          {
+            "combo": "2-1-3",
+            "probability": 1.77940949
+          }
+        ],
+        "oddsUsed": false,
+        "flyPrediction": {
+          "status": "live",
+          "modelVersion": "kiryu_independent_variable_20261106",
+          "allocation": [
+            4,
+            4,
+            2
           ],
-          "aiUpset": [
-            {
-              "combo": "4-1-2",
-              "probability": 1.73146187
-            },
-            {
-              "combo": "2-1-3",
-              "probability": 1.77940949
-            }
+          "headCandidates": [
+            5,
+            4,
+            2
           ],
-          "balance": [
-            {
-              "combo": "1-2-5",
-              "probability": 1.90363861
-            },
-            {
-              "combo": "3-1-4",
-              "probability": 1.81137176
-            }
-          ],
+          "overlapPolicy": "lane1_head_exclusion_only",
+          "probability": 74.3100181256,
+          "isFly": true,
           "tickets": [
             {
-              "combo": "1-2-4",
-              "probability": 2.67370286
-            },
-            {
-              "combo": "1-2-3",
-              "probability": 2.53773013
-            },
-            {
-              "combo": "1-3-4",
-              "probability": 2.2744082
-            },
-            {
-              "combo": "2-1-4",
-              "probability": 2.0173027
-            },
-            {
-              "combo": "1-3-2",
-              "probability": 1.98505501
-            },
-            {
               "combo": "5-1-4",
-              "probability": 1.9621929
+              "probability": 2.66030364
             },
             {
-              "combo": "1-2-5",
-              "probability": 1.90363861
+              "combo": "5-4-1",
+              "probability": 1.69521348
             },
             {
-              "combo": "3-1-4",
-              "probability": 1.81137176
+              "combo": "5-1-2",
+              "probability": 2.31514948
+            },
+            {
+              "combo": "5-2-1",
+              "probability": 1.6575612
             },
             {
               "combo": "4-1-2",
-              "probability": 1.73146187
+              "probability": 1.23764133
             },
             {
-              "combo": "2-1-3",
-              "probability": 1.77940949
+              "combo": "4-2-1",
+              "probability": 0.88630495
+            },
+            {
+              "combo": "4-1-3",
+              "probability": 1.20441911
+            },
+            {
+              "combo": "4-3-1",
+              "probability": 0.83093046
+            },
+            {
+              "combo": "2-1-4",
+              "probability": 1.58841927
+            },
+            {
+              "combo": "2-4-1",
+              "probability": 0.63572169
             }
-          ]
+          ],
+          "oddsUsed": false
+        },
+        "phase": "final",
+        "status": "complete",
+        "finalPredictionStatus": "complete",
+        "probabilityReview": {
+          "1": {
+            "morningWin": 25.6899818744,
+            "win": 25.6899818744,
+            "deltaWin": 0.0,
+            "morningSecond": 24.32401275,
+            "second": 24.32401275,
+            "deltaSecond": 0.0,
+            "morningThird": 14.6564298691,
+            "third": 14.6564298691,
+            "deltaThird": 0.0
+          },
+          "2": {
+            "morningWin": 16.0597668262,
+            "win": 16.0597668262,
+            "deltaWin": 0.0,
+            "morningSecond": 20.4278827953,
+            "second": 20.4278827953,
+            "deltaSecond": 0.0,
+            "morningThird": 17.3948420211,
+            "third": 17.3947501497,
+            "deltaThird": -9.18714e-05
+          },
+          "3": {
+            "morningWin": 15.8002262315,
+            "win": 15.8002262315,
+            "deltaWin": 0.0,
+            "morningSecond": 17.9957171305,
+            "second": 17.9957171305,
+            "deltaSecond": 0.0,
+            "morningThird": 18.3658659946,
+            "third": 18.3658659946,
+            "deltaThird": 0.0
+          },
+          "4": {
+            "morningWin": 19.3075182899,
+            "win": 19.3075182899,
+            "deltaWin": 0.0,
+            "morningSecond": 15.4133365379,
+            "second": 15.4133365379,
+            "deltaSecond": 0.0,
+            "morningThird": 20.6865605773,
+            "third": 20.6864553142,
+            "deltaThird": -0.0001052631
+          },
+          "5": {
+            "morningWin": 20.5872488491,
+            "win": 20.5872488491,
+            "deltaWin": 0.0,
+            "morningSecond": 13.3656317519,
+            "second": 13.3656317519,
+            "deltaSecond": 0.0,
+            "morningThird": 17.004210726,
+            "third": 17.0051688577,
+            "deltaThird": 0.0009581317
+          },
+          "6": {
+            "morningWin": 2.5552579288,
+            "win": 2.5552579288,
+            "deltaWin": 0.0,
+            "morningSecond": 8.4734190344,
+            "second": 8.4734190344,
+            "deltaSecond": 0.0,
+            "morningThird": 11.8920908117,
+            "third": 11.8913298146,
+            "deltaThird": -0.0007609971
+          }
+        },
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "baseLabel": "朝予想",
+          "realtimeApplied": true,
+          "realtimeLabel": "展示・スリット・直前反映",
+          "reviewed": true,
+          "reviewLabel": "再精査後の調整数字",
+          "adjustedRequired": true
+        },
+        "liveInput": {
+          "complete": true,
+          "inputHash": "e2a7ad5ffc401fb21f2281626aa36a5f7a748ec6d3ec1e3520355a618aa51868",
+          "required": [
+            "direct",
+            "exhibition",
+            "original_exhibition"
+          ],
+          "fetchedAt": {
+            "direct": "2026-11-17T15:07:31+09:00",
+            "exhibition": "2026-11-17T15:07:31+09:00",
+            "original_exhibition": "2026-11-17T15:09:59+09:00"
+          }
+        },
+        "liveCalculation": {
+          "executed": true,
+          "status": "success",
+          "inputHash": "e2a7ad5ffc401fb21f2281626aa36a5f7a748ec6d3ec1e3520355a618aa51868",
+          "probabilityFeaturesUsed": [
+            "actual_entry",
+            "national_avg_st",
+            "straight_time",
+            "wind_speed"
+          ],
+          "correction": {
+            "modelVersion": "kiryu_live_wind_st_v1_20261106",
+            "applicationOrder": [
+              "windStraightSecond",
+              "leftNeighborNationalStSecond"
+            ],
+            "entryChanged": true,
+            "stoppedForEntryChange": true,
+            "windStraight": {
+              "applied": false,
+              "coefficient": 0.15,
+              "condition": "wind_speed<=2m; second-place conditional only",
+              "windSpeed": 0.0,
+              "straightScore": [
+                -0.5174769818825167,
+                -1.2936924547063005,
+                0.45279235914720856,
+                0.6468462273531502,
+                1.6171155683828755,
+                -0.9055847182944171
+              ]
+            },
+            "leftNeighborSt": {
+              "applied": false,
+              "coefficient": 0.1,
+              "basis": "national_avg_st_100pct",
+              "condition": "second-place conditional only",
+              "nationalStAfterNeutralFill": [
+                0.14,
+                0.17,
+                0.16,
+                0.21,
+                0.17,
+                0.16
+              ],
+              "wall": [
+                0.0,
+                -0.75,
+                0.2500000000000002,
+                -1.2499999999999998,
+                0.9999999999999994,
+                0.2500000000000002
+              ]
+            },
+            "probabilitySum": 1.0
+          }
         }
       },
-      "live": {},
+      "live": {
+        "direct": {
+          "actual_entry": [
+            1,
+            3,
+            2,
+            4,
+            5,
+            6
+          ],
+          "air_temperature": 7,
+          "entry_changed": false,
+          "lap_shortened": null,
+          "other_changes": [
+            "部品交換"
+          ],
+          "racers": [
+            {
+              "lane": 1,
+              "name": "小倉 康典",
+              "parts_exchange": [],
+              "player_id": 4203,
+              "tilt": -0.5,
+              "weight": 51.5,
+              "weight_adjustment": 0.5,
+              "withdrawn": false
+            },
+            {
+              "lane": 2,
+              "name": "坂口 貴彦",
+              "parts_exchange": [],
+              "player_id": 4423,
+              "tilt": 0,
+              "weight": 54.4,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 3,
+              "name": "野長瀬 正孝",
+              "parts_exchange": [],
+              "player_id": 3327,
+              "tilt": -0.5,
+              "weight": 51,
+              "weight_adjustment": 1,
+              "withdrawn": false
+            },
+            {
+              "lane": 4,
+              "name": "阿波 勝哉",
+              "parts_exchange": [],
+              "player_id": 3857,
+              "tilt": -0.5,
+              "weight": 54.8,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 5,
+              "name": "数原 魁",
+              "parts_exchange": [],
+              "player_id": 5060,
+              "tilt": 0,
+              "weight": 51.5,
+              "weight_adjustment": 0.5,
+              "withdrawn": false
+            },
+            {
+              "lane": 6,
+              "name": "待鳥 雄紀",
+              "parts_exchange": [],
+              "player_id": 4022,
+              "tilt": -0.5,
+              "weight": 55.5,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            }
+          ],
+          "stabilizer": null,
+          "water_temperature": 13,
+          "wave_height": 0,
+          "weather": "雨",
+          "wind_direction": 17,
+          "wind_speed": 0,
+          "withdrawals": []
+        },
+        "weather": {
+          "actual_entry": [
+            1,
+            3,
+            2,
+            4,
+            5,
+            6
+          ],
+          "air_temperature": 7,
+          "entry_changed": false,
+          "lap_shortened": null,
+          "other_changes": [
+            "部品交換"
+          ],
+          "racers": [
+            {
+              "lane": 1,
+              "name": "小倉 康典",
+              "parts_exchange": [],
+              "player_id": 4203,
+              "tilt": -0.5,
+              "weight": 51.5,
+              "weight_adjustment": 0.5,
+              "withdrawn": false
+            },
+            {
+              "lane": 2,
+              "name": "坂口 貴彦",
+              "parts_exchange": [],
+              "player_id": 4423,
+              "tilt": 0,
+              "weight": 54.4,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 3,
+              "name": "野長瀬 正孝",
+              "parts_exchange": [],
+              "player_id": 3327,
+              "tilt": -0.5,
+              "weight": 51,
+              "weight_adjustment": 1,
+              "withdrawn": false
+            },
+            {
+              "lane": 4,
+              "name": "阿波 勝哉",
+              "parts_exchange": [],
+              "player_id": 3857,
+              "tilt": -0.5,
+              "weight": 54.8,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            },
+            {
+              "lane": 5,
+              "name": "数原 魁",
+              "parts_exchange": [],
+              "player_id": 5060,
+              "tilt": 0,
+              "weight": 51.5,
+              "weight_adjustment": 0.5,
+              "withdrawn": false
+            },
+            {
+              "lane": 6,
+              "name": "待鳥 雄紀",
+              "parts_exchange": [],
+              "player_id": 4022,
+              "tilt": -0.5,
+              "weight": 55.5,
+              "weight_adjustment": 0,
+              "withdrawn": false
+            }
+          ],
+          "stabilizer": null,
+          "water_temperature": 13,
+          "wave_height": 0,
+          "weather": "雨",
+          "wind_direction": 17,
+          "wind_speed": 0,
+          "withdrawals": []
+        },
+        "exhibition": {
+          "entries": [
+            {
+              "exhibition_course": 1,
+              "exhibition_gap": 0.16,
+              "exhibition_rank": 5,
+              "exhibition_time": 6.76,
+              "lane": 1,
+              "name": "小倉 康典",
+              "player_id": 4203,
+              "start_rank": 2,
+              "start_raw": -0.1,
+              "start_time": -0.1,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 3,
+              "exhibition_gap": 0.11,
+              "exhibition_rank": 3,
+              "exhibition_time": 6.71,
+              "lane": 2,
+              "name": "坂口 貴彦",
+              "player_id": 4423,
+              "start_rank": 3,
+              "start_raw": 0.04,
+              "start_time": 0.04,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 2,
+              "exhibition_gap": 0.0,
+              "exhibition_rank": 1,
+              "exhibition_time": 6.6,
+              "lane": 3,
+              "name": "野長瀬 正孝",
+              "player_id": 3327,
+              "start_rank": 1,
+              "start_raw": -0.06,
+              "start_time": -0.06,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 4,
+              "exhibition_gap": 0.18,
+              "exhibition_rank": 6,
+              "exhibition_time": 6.78,
+              "lane": 4,
+              "name": "阿波 勝哉",
+              "player_id": 3857,
+              "start_rank": 6,
+              "start_raw": 0.22,
+              "start_time": 0.22,
+              "tilt": -0.5
+            },
+            {
+              "exhibition_course": 5,
+              "exhibition_gap": 0.12,
+              "exhibition_rank": 4,
+              "exhibition_time": 6.72,
+              "lane": 5,
+              "name": "数原 魁",
+              "player_id": 5060,
+              "start_rank": 4,
+              "start_raw": 0.1,
+              "start_time": 0.1,
+              "tilt": 0
+            },
+            {
+              "exhibition_course": 6,
+              "exhibition_gap": 0.04,
+              "exhibition_rank": 2,
+              "exhibition_time": 6.64,
+              "lane": 6,
+              "name": "待鳥 雄紀",
+              "player_id": 4022,
+              "start_rank": 5,
+              "start_raw": 0.18,
+              "start_time": 0.18,
+              "tilt": -0.5
+            }
+          ],
+          "slit_source": [
+            {
+              "course": 1,
+              "lane": 1,
+              "start_raw": -0.1,
+              "start_time": -0.1
+            },
+            {
+              "course": 3,
+              "lane": 2,
+              "start_raw": 0.04,
+              "start_time": 0.04
+            },
+            {
+              "course": 2,
+              "lane": 3,
+              "start_raw": -0.06,
+              "start_time": -0.06
+            },
+            {
+              "course": 4,
+              "lane": 4,
+              "start_raw": 0.22,
+              "start_time": 0.22
+            },
+            {
+              "course": 5,
+              "lane": 5,
+              "start_raw": 0.1,
+              "start_time": 0.1
+            },
+            {
+              "course": 6,
+              "lane": 6,
+              "start_raw": 0.18,
+              "start_time": 0.18
+            }
+          ],
+          "start_order": [
+            1,
+            3,
+            2,
+            5,
+            6,
+            4
+          ]
+        },
+        "original": {
+          "1": {
+            "half_lap_time": 18.44,
+            "lane": 1,
+            "name": "小倉 康典",
+            "player_id": 4203,
+            "straight_time": 7.51,
+            "turn_time": 4.82
+          },
+          "2": {
+            "half_lap_time": 18.41,
+            "lane": 2,
+            "name": "坂口 貴彦",
+            "player_id": 4423,
+            "straight_time": 7.55,
+            "turn_time": 4.94
+          },
+          "3": {
+            "half_lap_time": 18.63,
+            "lane": 3,
+            "name": "野長瀬 正孝",
+            "player_id": 3327,
+            "straight_time": 7.46,
+            "turn_time": 4.57
+          },
+          "4": {
+            "half_lap_time": 18.66,
+            "lane": 4,
+            "name": "阿波 勝哉",
+            "player_id": 3857,
+            "straight_time": 7.45,
+            "turn_time": 4.71
+          },
+          "5": {
+            "half_lap_time": 18.69,
+            "lane": 5,
+            "name": "数原 魁",
+            "player_id": 5060,
+            "straight_time": 7.4,
+            "turn_time": 5.11
+          },
+          "6": {
+            "half_lap_time": 18.93,
+            "lane": 6,
+            "name": "待鳥 雄紀",
+            "player_id": 4022,
+            "straight_time": 7.53,
+            "turn_time": 4.88
+          }
+        },
+        "original_exhibition": {
+          "entries": [
+            {
+              "half_lap_time": 18.44,
+              "lane": 1,
+              "name": "小倉 康典",
+              "player_id": 4203,
+              "straight_time": 7.51,
+              "turn_time": 4.82
+            },
+            {
+              "half_lap_time": 18.41,
+              "lane": 2,
+              "name": "坂口 貴彦",
+              "player_id": 4423,
+              "straight_time": 7.55,
+              "turn_time": 4.94
+            },
+            {
+              "half_lap_time": 18.63,
+              "lane": 3,
+              "name": "野長瀬 正孝",
+              "player_id": 3327,
+              "straight_time": 7.46,
+              "turn_time": 4.57
+            },
+            {
+              "half_lap_time": 18.66,
+              "lane": 4,
+              "name": "阿波 勝哉",
+              "player_id": 3857,
+              "straight_time": 7.45,
+              "turn_time": 4.71
+            },
+            {
+              "half_lap_time": 18.69,
+              "lane": 5,
+              "name": "数原 魁",
+              "player_id": 5060,
+              "straight_time": 7.4,
+              "turn_time": 5.11
+            },
+            {
+              "half_lap_time": 18.93,
+              "lane": 6,
+              "name": "待鳥 雄紀",
+              "player_id": 4022,
+              "straight_time": 7.53,
+              "turn_time": 4.88
+            }
+          ],
+          "metric": "half_lap",
+          "tab_clicked": true
+        },
+        "originalExhibitionAvailable": true,
+        "sourceFetchedAt": {
+          "direct": "2026-11-17T15:07:31+09:00",
+          "exhibition": "2026-11-17T15:07:31+09:00",
+          "original_exhibition": "2026-11-17T15:09:59+09:00"
+        }
+      },
       "odds": {},
       "result": {},
       "motorRecentAvailable": true,
@@ -4167,6 +4787,340 @@
             }
           ],
           "oddsUsed": false
+        }
+      },
+      "predictionFinal": {
+        "modelVersion": "kiryu_v1_20261104",
+        "predictionStage": "live",
+        "win": {
+          "1": 25.6899818744,
+          "2": 16.0597668262,
+          "3": 15.8002262315,
+          "4": 19.3075182899,
+          "5": 20.5872488491,
+          "6": 2.5552579288
+        },
+        "second": {
+          "1": 24.32401275,
+          "2": 20.4278827953,
+          "3": 17.9957171305,
+          "4": 15.4133365379,
+          "5": 13.3656317519,
+          "6": 8.4734190344
+        },
+        "third": {
+          "1": 14.6564298691,
+          "2": 17.3947501497,
+          "3": 18.3658659946,
+          "4": 20.6864553142,
+          "5": 17.0051688577,
+          "6": 11.8913298146
+        },
+        "lane1FlyRate": 74.3100181256,
+        "lane1FlyProbability": 74.3100181256,
+        "lane1Fly": true,
+        "sab": "対象外",
+        "ai": [
+          {
+            "combo": "1-2-4",
+            "probability": 2.67370286
+          },
+          {
+            "combo": "1-2-3",
+            "probability": 2.53773013
+          },
+          {
+            "combo": "1-3-4",
+            "probability": 2.27430294
+          },
+          {
+            "combo": "2-1-4",
+            "probability": 2.0173027
+          },
+          {
+            "combo": "1-3-2",
+            "probability": 1.98496314
+          },
+          {
+            "combo": "5-1-4",
+            "probability": 1.9621929
+          }
+        ],
+        "balance": [
+          {
+            "combo": "1-2-5",
+            "probability": 1.90363861
+          },
+          {
+            "combo": "3-1-4",
+            "probability": 1.81137176
+          }
+        ],
+        "aiUpset": [
+          {
+            "combo": "4-1-2",
+            "probability": 1.73146187
+          },
+          {
+            "combo": "2-1-3",
+            "probability": 1.77940949
+          }
+        ],
+        "tickets": [
+          {
+            "combo": "1-2-4",
+            "probability": 2.67370286
+          },
+          {
+            "combo": "1-2-3",
+            "probability": 2.53773013
+          },
+          {
+            "combo": "1-3-4",
+            "probability": 2.27430294
+          },
+          {
+            "combo": "2-1-4",
+            "probability": 2.0173027
+          },
+          {
+            "combo": "1-3-2",
+            "probability": 1.98496314
+          },
+          {
+            "combo": "5-1-4",
+            "probability": 1.9621929
+          },
+          {
+            "combo": "1-2-5",
+            "probability": 1.90363861
+          },
+          {
+            "combo": "3-1-4",
+            "probability": 1.81137176
+          },
+          {
+            "combo": "4-1-2",
+            "probability": 1.73146187
+          },
+          {
+            "combo": "2-1-3",
+            "probability": 1.77940949
+          }
+        ],
+        "oddsUsed": false,
+        "flyPrediction": {
+          "status": "live",
+          "modelVersion": "kiryu_independent_variable_20261106",
+          "allocation": [
+            4,
+            4,
+            2
+          ],
+          "headCandidates": [
+            5,
+            4,
+            2
+          ],
+          "overlapPolicy": "lane1_head_exclusion_only",
+          "probability": 74.3100181256,
+          "isFly": true,
+          "tickets": [
+            {
+              "combo": "5-1-4",
+              "probability": 2.66030364
+            },
+            {
+              "combo": "5-4-1",
+              "probability": 1.69521348
+            },
+            {
+              "combo": "5-1-2",
+              "probability": 2.31514948
+            },
+            {
+              "combo": "5-2-1",
+              "probability": 1.6575612
+            },
+            {
+              "combo": "4-1-2",
+              "probability": 1.23764133
+            },
+            {
+              "combo": "4-2-1",
+              "probability": 0.88630495
+            },
+            {
+              "combo": "4-1-3",
+              "probability": 1.20441911
+            },
+            {
+              "combo": "4-3-1",
+              "probability": 0.83093046
+            },
+            {
+              "combo": "2-1-4",
+              "probability": 1.58841927
+            },
+            {
+              "combo": "2-4-1",
+              "probability": 0.63572169
+            }
+          ],
+          "oddsUsed": false
+        },
+        "phase": "final",
+        "status": "complete",
+        "finalPredictionStatus": "complete",
+        "probabilityReview": {
+          "1": {
+            "morningWin": 25.6899818744,
+            "win": 25.6899818744,
+            "deltaWin": 0.0,
+            "morningSecond": 24.32401275,
+            "second": 24.32401275,
+            "deltaSecond": 0.0,
+            "morningThird": 14.6564298691,
+            "third": 14.6564298691,
+            "deltaThird": 0.0
+          },
+          "2": {
+            "morningWin": 16.0597668262,
+            "win": 16.0597668262,
+            "deltaWin": 0.0,
+            "morningSecond": 20.4278827953,
+            "second": 20.4278827953,
+            "deltaSecond": 0.0,
+            "morningThird": 17.3948420211,
+            "third": 17.3947501497,
+            "deltaThird": -9.18714e-05
+          },
+          "3": {
+            "morningWin": 15.8002262315,
+            "win": 15.8002262315,
+            "deltaWin": 0.0,
+            "morningSecond": 17.9957171305,
+            "second": 17.9957171305,
+            "deltaSecond": 0.0,
+            "morningThird": 18.3658659946,
+            "third": 18.3658659946,
+            "deltaThird": 0.0
+          },
+          "4": {
+            "morningWin": 19.3075182899,
+            "win": 19.3075182899,
+            "deltaWin": 0.0,
+            "morningSecond": 15.4133365379,
+            "second": 15.4133365379,
+            "deltaSecond": 0.0,
+            "morningThird": 20.6865605773,
+            "third": 20.6864553142,
+            "deltaThird": -0.0001052631
+          },
+          "5": {
+            "morningWin": 20.5872488491,
+            "win": 20.5872488491,
+            "deltaWin": 0.0,
+            "morningSecond": 13.3656317519,
+            "second": 13.3656317519,
+            "deltaSecond": 0.0,
+            "morningThird": 17.004210726,
+            "third": 17.0051688577,
+            "deltaThird": 0.0009581317
+          },
+          "6": {
+            "morningWin": 2.5552579288,
+            "win": 2.5552579288,
+            "deltaWin": 0.0,
+            "morningSecond": 8.4734190344,
+            "second": 8.4734190344,
+            "deltaSecond": 0.0,
+            "morningThird": 11.8920908117,
+            "third": 11.8913298146,
+            "deltaThird": -0.0007609971
+          }
+        },
+        "probabilityReviewStatus": "reviewed",
+        "probabilityFlow": {
+          "required": true,
+          "baseApplied": true,
+          "baseLabel": "朝予想",
+          "realtimeApplied": true,
+          "realtimeLabel": "展示・スリット・直前反映",
+          "reviewed": true,
+          "reviewLabel": "再精査後の調整数字",
+          "adjustedRequired": true
+        },
+        "liveInput": {
+          "complete": true,
+          "inputHash": "e2a7ad5ffc401fb21f2281626aa36a5f7a748ec6d3ec1e3520355a618aa51868",
+          "required": [
+            "direct",
+            "exhibition",
+            "original_exhibition"
+          ],
+          "fetchedAt": {
+            "direct": "2026-11-17T15:07:31+09:00",
+            "exhibition": "2026-11-17T15:07:31+09:00",
+            "original_exhibition": "2026-11-17T15:09:59+09:00"
+          }
+        },
+        "liveCalculation": {
+          "executed": true,
+          "status": "success",
+          "inputHash": "e2a7ad5ffc401fb21f2281626aa36a5f7a748ec6d3ec1e3520355a618aa51868",
+          "probabilityFeaturesUsed": [
+            "actual_entry",
+            "national_avg_st",
+            "straight_time",
+            "wind_speed"
+          ],
+          "correction": {
+            "modelVersion": "kiryu_live_wind_st_v1_20261106",
+            "applicationOrder": [
+              "windStraightSecond",
+              "leftNeighborNationalStSecond"
+            ],
+            "entryChanged": true,
+            "stoppedForEntryChange": true,
+            "windStraight": {
+              "applied": false,
+              "coefficient": 0.15,
+              "condition": "wind_speed<=2m; second-place conditional only",
+              "windSpeed": 0.0,
+              "straightScore": [
+                -0.5174769818825167,
+                -1.2936924547063005,
+                0.45279235914720856,
+                0.6468462273531502,
+                1.6171155683828755,
+                -0.9055847182944171
+              ]
+            },
+            "leftNeighborSt": {
+              "applied": false,
+              "coefficient": 0.1,
+              "basis": "national_avg_st_100pct",
+              "condition": "second-place conditional only",
+              "nationalStAfterNeutralFill": [
+                0.14,
+                0.17,
+                0.16,
+                0.21,
+                0.17,
+                0.16
+              ],
+              "wall": [
+                0.0,
+                -0.75,
+                0.2500000000000002,
+                -1.2499999999999998,
+                0.9999999999999994,
+                0.2500000000000002
+              ]
+            },
+            "probabilitySum": 1.0
+          }
         }
       }
     },
@@ -49530,7 +50484,7 @@
   "preds": {
     "1": {
       "modelVersion": "kiryu_v1_20261104",
-      "predictionStage": "morning",
+      "predictionStage": "live",
       "win": {
         "1": 25.6899818744,
         "2": 16.0597668262,
@@ -49549,11 +50503,11 @@
       },
       "third": {
         "1": 14.6564298691,
-        "2": 17.3948420211,
+        "2": 17.3947501497,
         "3": 18.3658659946,
-        "4": 20.6865605773,
-        "5": 17.004210726,
-        "6": 11.8920908117
+        "4": 20.6864553142,
+        "5": 17.0051688577,
+        "6": 11.8913298146
       },
       "lane1FlyRate": 74.3100181256,
       "lane1FlyProbability": 74.3100181256,
@@ -49570,7 +50524,7 @@
         },
         {
           "combo": "1-3-4",
-          "probability": 2.2744082
+          "probability": 2.27430294
         },
         {
           "combo": "2-1-4",
@@ -49578,7 +50532,7 @@
         },
         {
           "combo": "1-3-2",
-          "probability": 1.98505501
+          "probability": 1.98496314
         },
         {
           "combo": "5-1-4",
@@ -49616,7 +50570,7 @@
         },
         {
           "combo": "1-3-4",
-          "probability": 2.2744082
+          "probability": 2.27430294
         },
         {
           "combo": "2-1-4",
@@ -49624,7 +50578,7 @@
         },
         {
           "combo": "1-3-2",
-          "probability": 1.98505501
+          "probability": 1.98496314
         },
         {
           "combo": "5-1-4",
@@ -49649,7 +50603,7 @@
       ],
       "oddsUsed": false,
       "flyPrediction": {
-        "status": "morning",
+        "status": "live",
         "modelVersion": "kiryu_independent_variable_20261106",
         "allocation": [
           4,
@@ -49707,6 +50661,159 @@
           }
         ],
         "oddsUsed": false
+      },
+      "phase": "final",
+      "status": "complete",
+      "finalPredictionStatus": "complete",
+      "probabilityReview": {
+        "1": {
+          "morningWin": 25.6899818744,
+          "win": 25.6899818744,
+          "deltaWin": 0.0,
+          "morningSecond": 24.32401275,
+          "second": 24.32401275,
+          "deltaSecond": 0.0,
+          "morningThird": 14.6564298691,
+          "third": 14.6564298691,
+          "deltaThird": 0.0
+        },
+        "2": {
+          "morningWin": 16.0597668262,
+          "win": 16.0597668262,
+          "deltaWin": 0.0,
+          "morningSecond": 20.4278827953,
+          "second": 20.4278827953,
+          "deltaSecond": 0.0,
+          "morningThird": 17.3948420211,
+          "third": 17.3947501497,
+          "deltaThird": -9.18714e-05
+        },
+        "3": {
+          "morningWin": 15.8002262315,
+          "win": 15.8002262315,
+          "deltaWin": 0.0,
+          "morningSecond": 17.9957171305,
+          "second": 17.9957171305,
+          "deltaSecond": 0.0,
+          "morningThird": 18.3658659946,
+          "third": 18.3658659946,
+          "deltaThird": 0.0
+        },
+        "4": {
+          "morningWin": 19.3075182899,
+          "win": 19.3075182899,
+          "deltaWin": 0.0,
+          "morningSecond": 15.4133365379,
+          "second": 15.4133365379,
+          "deltaSecond": 0.0,
+          "morningThird": 20.6865605773,
+          "third": 20.6864553142,
+          "deltaThird": -0.0001052631
+        },
+        "5": {
+          "morningWin": 20.5872488491,
+          "win": 20.5872488491,
+          "deltaWin": 0.0,
+          "morningSecond": 13.3656317519,
+          "second": 13.3656317519,
+          "deltaSecond": 0.0,
+          "morningThird": 17.004210726,
+          "third": 17.0051688577,
+          "deltaThird": 0.0009581317
+        },
+        "6": {
+          "morningWin": 2.5552579288,
+          "win": 2.5552579288,
+          "deltaWin": 0.0,
+          "morningSecond": 8.4734190344,
+          "second": 8.4734190344,
+          "deltaSecond": 0.0,
+          "morningThird": 11.8920908117,
+          "third": 11.8913298146,
+          "deltaThird": -0.0007609971
+        }
+      },
+      "probabilityReviewStatus": "reviewed",
+      "probabilityFlow": {
+        "required": true,
+        "baseApplied": true,
+        "baseLabel": "朝予想",
+        "realtimeApplied": true,
+        "realtimeLabel": "展示・スリット・直前反映",
+        "reviewed": true,
+        "reviewLabel": "再精査後の調整数字",
+        "adjustedRequired": true
+      },
+      "liveInput": {
+        "complete": true,
+        "inputHash": "e2a7ad5ffc401fb21f2281626aa36a5f7a748ec6d3ec1e3520355a618aa51868",
+        "required": [
+          "direct",
+          "exhibition",
+          "original_exhibition"
+        ],
+        "fetchedAt": {
+          "direct": "2026-11-17T15:07:31+09:00",
+          "exhibition": "2026-11-17T15:07:31+09:00",
+          "original_exhibition": "2026-11-17T15:09:59+09:00"
+        }
+      },
+      "liveCalculation": {
+        "executed": true,
+        "status": "success",
+        "inputHash": "e2a7ad5ffc401fb21f2281626aa36a5f7a748ec6d3ec1e3520355a618aa51868",
+        "probabilityFeaturesUsed": [
+          "actual_entry",
+          "national_avg_st",
+          "straight_time",
+          "wind_speed"
+        ],
+        "correction": {
+          "modelVersion": "kiryu_live_wind_st_v1_20261106",
+          "applicationOrder": [
+            "windStraightSecond",
+            "leftNeighborNationalStSecond"
+          ],
+          "entryChanged": true,
+          "stoppedForEntryChange": true,
+          "windStraight": {
+            "applied": false,
+            "coefficient": 0.15,
+            "condition": "wind_speed<=2m; second-place conditional only",
+            "windSpeed": 0.0,
+            "straightScore": [
+              -0.5174769818825167,
+              -1.2936924547063005,
+              0.45279235914720856,
+              0.6468462273531502,
+              1.6171155683828755,
+              -0.9055847182944171
+            ]
+          },
+          "leftNeighborSt": {
+            "applied": false,
+            "coefficient": 0.1,
+            "basis": "national_avg_st_100pct",
+            "condition": "second-place conditional only",
+            "nationalStAfterNeutralFill": [
+              0.14,
+              0.17,
+              0.16,
+              0.21,
+              0.17,
+              0.16
+            ],
+            "wall": [
+              0.0,
+              -0.75,
+              0.2500000000000002,
+              -1.2499999999999998,
+              0.9999999999999994,
+              0.2500000000000002
+            ]
+          },
+          "probabilitySum": 1.0
+        }
       }
     },
     "2": {
@@ -51695,7 +52802,7 @@
   "eventLabel": "",
   "eventType": "general",
   "eventScheduleLabels": {},
-  "predictionStatus": "ready",
+  "predictionStatus": "available",
   "predictionReason": null,
   "sourceStatus": {
     "course_6m": {
