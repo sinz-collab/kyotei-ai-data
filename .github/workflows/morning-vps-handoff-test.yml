@@ -1,0 +1,100 @@
+name: Morning VPS handoff test
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Synthetic target date in YYYY-MM-DD"
+        required: true
+        default: "2026-11-17"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: morning-vps-handoff-test
+  cancel-in-progress: false
+
+jobs:
+  handoff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      TARGET_DATE: ${{ inputs.date }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: automation/requirements.txt
+      - name: Validate target date
+        shell: bash
+        run: |
+          if [[ ! "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
+            [ "$(date -d "$TARGET_DATE" +%F 2>/dev/null)" != "$TARGET_DATE" ]; then
+            echo "Invalid target date: $TARGET_DATE" >&2
+            exit 1
+          fi
+      - name: Configure pinned VPS SSH host
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+          VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.MORNING_VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_KEY" > "$HOME/.ssh/morning-vps"
+          chmod 0600 "$HOME/.ssh/morning-vps"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+          test -n "$VPS_HOST"
+      - name: Receive existing-format dummy artifacts from VPS
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+        run: |
+          mkdir -p work/artifacts/east work/artifacts/west
+          ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" \
+            "dummy $TARGET_DATE east" > "$RUNNER_TEMP/morning-east.tgz"
+          ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" \
+            "dummy $TARGET_DATE west" > "$RUNNER_TEMP/morning-west.tgz"
+          tar -xzf "$RUNNER_TEMP/morning-east.tgz" -C work/artifacts/east
+          tar -xzf "$RUNNER_TEMP/morning-west.tgz" -C work/artifacts/west
+      - name: Upload east shard in production artifact format
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-east-${{ inputs.date }}
+          path: work/artifacts/east/work/races/**/fetch_status.json
+          if-no-files-found: error
+          retention-days: 2
+      - name: Upload west shard in production artifact format
+        uses: actions/upload-artifact@v4
+        with:
+          name: morning-west-${{ inputs.date }}
+          path: work/artifacts/west/work/races/**/fetch_status.json
+          if-no-files-found: error
+          retention-days: 2
+      - name: Install dry-run prediction dependencies
+        run: python -m pip install -r automation/requirements.txt
+      - name: Validate handoff and build to the publication boundary
+        shell: bash
+        run: |
+          python automation/prepare_morning_artifacts.py \
+            --date "$TARGET_DATE" \
+            --east work/artifacts/east \
+            --west work/artifacts/west \
+            --output work/races
+          python automation/build_site_data.py \
+            --date "$TARGET_DATE" \
+            --source-root work/races \
+            --data-root "$RUNNER_TEMP/dry-run-data"
+          python automation/validate_morning_vps_dry_run.py \
+            --date "$TARGET_DATE" \
+            --data-root "$RUNNER_TEMP/dry-run-data"
+          git diff --exit-code

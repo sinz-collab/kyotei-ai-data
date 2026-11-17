@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly app_root=/opt/sinz-morning-fetch/app
+readonly venv_python=/opt/sinz-morning-fetch/venv/bin/python
+readonly state_root=/var/lib/sinz-morning-fetch
+readonly enable_file=/etc/sinz-morning-fetch/enabled
+readonly lock_file=/run/lock/sinz-morning-fetch.lock
+readonly worker_user=sinz-morning
+readonly worker_group=sinz-morning
+
+die() {
+  echo "$1" >&2
+  exit "${2:-1}"
+}
+
+[ "${EUID:-$(id -u)}" -eq 0 ] || die "Executor must run as root."
+[ "$#" -eq 3 ] || die "Expected ACTION YYYY-MM-DD SHARD." 64
+action="$1"
+target_date="$2"
+shard="$3"
+
+case "$action" in
+  dummy|fetch) ;;
+  *) die "Unsupported action." 64 ;;
+esac
+if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
+  [ "$(date -d "$target_date" +%F 2>/dev/null || true)" != "$target_date" ]; then
+  die "Invalid date." 64
+fi
+case "$shard" in
+  east) venues=(kiryu ashiya shimonoseki toda wakamatsu) ;;
+  west) venues=(tokoname omura karatsu fukuoka heiwajima biwako naruto) ;;
+  *) die "Invalid shard." 64 ;;
+esac
+
+if [ "$action" = fetch ]; then
+  [ -f "$enable_file" ] || die "Production morning fetch is disabled." 69
+  [ "$(cat "$enable_file")" = ENABLED ] || die "Production enable marker is invalid." 69
+fi
+
+exec 9>"$lock_file"
+flock -n 9 || die "Another morning fetch is already running." 75
+
+run_dir="$(mktemp -d "$state_root/work/${action}-${target_date}-${shard}.XXXXXXXX")"
+cleanup() {
+  rm -rf -- "$run_dir"
+}
+trap cleanup EXIT
+chown "$worker_user:$worker_group" "$run_dir"
+
+unit="sinz-morning-${action}-${shard}-$(date +%s)-$$"
+common_properties=(
+  --property="User=$worker_user"
+  --property="Group=$worker_group"
+  --property="WorkingDirectory=$app_root"
+  --property="Environment=HOME=$state_root"
+  --property="Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/sinz-morning-fetch/playwright"
+  --property="NoNewPrivileges=yes"
+  --property="PrivateTmp=yes"
+  --property="ProtectHome=yes"
+  --property="ProtectSystem=strict"
+  --property="ReadWritePaths=$run_dir"
+  --property="CPUQuota=100%"
+  --property="MemoryMax=1536M"
+  --property="TasksMax=256"
+)
+
+if [ "$action" = dummy ]; then
+  command=(
+    "$venv_python" automation/make_dummy_morning_artifact.py
+    --date "$target_date" --shard "$shard" --output "$run_dir"
+  )
+  timeout_value=5m
+else
+  fetch_script="$run_dir/fetch-shard.sh"
+  {
+    echo '#!/usr/bin/env bash'
+    echo 'set -euo pipefail'
+    printf 'for venue in'
+    printf ' %q' "${venues[@]}"
+    echo '; do'
+    printf '  %q automation/fetch_one.py --venue "$venue" --date %q --root %q\n' \
+      "$venv_python" "$target_date" "$run_dir/work/races"
+    echo 'done'
+  } >"$fetch_script"
+  chown "$worker_user:$worker_group" "$fetch_script"
+  chmod 0500 "$fetch_script"
+  command=(/usr/bin/bash "$fetch_script")
+  timeout_value=90m
+fi
+
+systemd-run --quiet --collect --wait --pipe --service-type=exec \
+  --unit="$unit" "${common_properties[@]}" \
+  /usr/bin/timeout --signal=TERM --kill-after=30s "$timeout_value" \
+  "${command[@]}" >&2
+
+tar --create --gzip --directory="$run_dir" --file=- work

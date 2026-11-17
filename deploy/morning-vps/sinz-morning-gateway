@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly executor=/usr/local/sbin/sinz-morning-exec
+readonly original_command="${SSH_ORIGINAL_COMMAND:-}"
+
+read -r -a command_parts <<<"$original_command"
+if [ "${#command_parts[@]}" -ne 3 ]; then
+  echo "Rejected: expected ACTION YYYY-MM-DD SHARD." >&2
+  exit 64
+fi
+
+action="${command_parts[0]}"
+target_date="${command_parts[1]}"
+shard="${command_parts[2]}"
+
+case "$action" in
+  dummy|fetch) ;;
+  *) echo "Rejected: unsupported action." >&2; exit 64 ;;
+esac
+if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
+  echo "Rejected: invalid date." >&2
+  exit 64
+fi
+case "$shard" in
+  east|west) ;;
+  *) echo "Rejected: invalid shard." >&2; exit 64 ;;
+esac
+
+exec sudo -n "$executor" "$action" "$target_date" "$shard"
