@@ -51,6 +51,12 @@ class MorningRecoveryTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("dummy|fetch|recovery-all|recovery-failed", gateway)
+        self.assertIn('[ "$original_command" = version ]', gateway)
+        self.assertIn('sha256sum "$executor"', gateway)
+        workflow = (ROOT / ".github/workflows/morning-data.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertEqual(workflow.count("Verify deployed VPS executor version"), 2)
 
     def test_complete_cache_is_reused_without_fetch_selection(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

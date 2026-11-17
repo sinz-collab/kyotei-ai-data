@@ -102,6 +102,7 @@ jobs:
           sparse-checkout: |
             automation/write_morning_fetch_status.py
             automation/venues.json
+            deploy/morning-vps/sinz-morning-exec
           sparse-checkout-cone-mode: false
       - name: Configure pinned VPS SSH host
         shell: bash
@@ -116,6 +117,20 @@ jobs:
           chmod 0600 "$HOME/.ssh/morning-vps" "$HOME/.ssh/known_hosts"
           test -n "$VPS_HOST"
           ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
+
+      - name: Verify deployed VPS executor version
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+        run: |
+          expected="$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')"
+          actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" version)"
+          [ "$actual" = "$expected" ] || {
+            echo "VPS executor version does not match the checked-out commit." >&2
+            exit 78
+          }
 
       - name: Fetch shard on isolated VPS runtime
         shell: bash
@@ -184,6 +199,7 @@ jobs:
           sparse-checkout: |
             automation/write_morning_fetch_status.py
             automation/venues.json
+            deploy/morning-vps/sinz-morning-exec
           sparse-checkout-cone-mode: false
       - name: Configure pinned VPS SSH host
         shell: bash
@@ -198,6 +214,20 @@ jobs:
           chmod 0600 "$HOME/.ssh/morning-vps" "$HOME/.ssh/known_hosts"
           test -n "$VPS_HOST"
           ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
+
+      - name: Verify deployed VPS executor version
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+        run: |
+          expected="$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')"
+          actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" version)"
+          [ "$actual" = "$expected" ] || {
+            echo "VPS executor version does not match the checked-out commit." >&2
+            exit 78
+          }
 
       - name: Recover venues sequentially on isolated VPS runtime
         shell: bash

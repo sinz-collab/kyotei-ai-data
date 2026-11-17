@@ -4,6 +4,11 @@ set -euo pipefail
 readonly executor=/usr/local/sbin/sinz-morning-exec
 readonly original_command="${SSH_ORIGINAL_COMMAND:-}"
 
+if [ "$original_command" = version ]; then
+  sha256sum "$executor" | awk '{print $1}'
+  exit 0
+fi
+
 read -r -a command_parts <<<"$original_command"
 if [ "${#command_parts[@]}" -ne 3 ]; then
   echo "Rejected: expected ACTION YYYY-MM-DD SHARD." >&2
