@@ -7,6 +7,7 @@ import argparse
 import json
 import subprocess
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 
@@ -50,8 +51,7 @@ def main() -> int:
 
     venues = retry_slugs(args.root, args.date)
     print(f"Retry venues: {' '.join(venues) if venues else '(none)'}", flush=True)
-    failed: list[str] = []
-    for venue in venues:
+    def retry(venue: str) -> tuple[str, int]:
         result = subprocess.run(
             [
                 sys.executable,
@@ -65,8 +65,18 @@ def main() -> int:
             ],
             check=False,
         )
-        if result.returncode != 0:
-            failed.append(venue)
+        return venue, result.returncode
+
+    failed: list[str] = []
+    if venues:
+        with ThreadPoolExecutor(max_workers=min(4, len(venues))) as executor:
+            futures = [executor.submit(retry, venue) for venue in venues]
+            for future in as_completed(futures):
+                venue, return_code = future.result()
+                if return_code != 0:
+                    failed.append(venue)
+    order = {slug: index for index, slug in enumerate(VENUE_ORDER)}
+    failed.sort(key=order.__getitem__)
 
     if failed:
         print(f"Retry incomplete (will publish explicit gaps): {' '.join(failed)}", file=sys.stderr)
