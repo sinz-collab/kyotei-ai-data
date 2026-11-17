@@ -83,58 +83,48 @@ jobs:
           - shard: west
             venues: "tokoname omura karatsu fukuoka heiwajima biwako naruto"
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 105
     env:
       TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: automation/requirements.txt
-      - name: Install runtime with retry
+      - name: Configure pinned VPS SSH host
         shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+          VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.MORNING_VPS_KNOWN_HOSTS }}
         run: |
-          retry() {
-            local attempt
-            for attempt in 1 2 3; do
-              echo "Attempt ${attempt}: $*"
-              if "$@"; then
-                return 0
-              fi
-              if [ "$attempt" -lt 3 ]; then
-                sleep $((attempt * 20))
-              fi
-            done
-            return 1
-          }
-          retry python -m pip install -r automation/requirements.txt
-          retry python -m playwright install --with-deps chromium
-      - name: Fetch shard
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_KEY" > "$HOME/.ssh/morning-vps"
+          chmod 0600 "$HOME/.ssh/morning-vps"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/known_hosts"
+          test -n "$VPS_HOST"
+      - name: Fetch shard on isolated VPS runtime
         shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
         run: |
-          failed=0
-          for venue in ${{ matrix.venues }}; do
-            echo "::group::Fetch ${venue} ${TARGET_DATE}"
-            if ! python automation/fetch_one.py --venue "$venue" --date "$TARGET_DATE"; then
-              failed=1
-            fi
-            echo "::endgroup::"
-          done
-          exit "$failed"
+          mkdir -p work/vps-artifact
+          ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=10 "sinz-morning-gateway@$VPS_HOST" \
+            "fetch $TARGET_DATE ${{ matrix.shard }}" \
+            > "$RUNNER_TEMP/morning-${{ matrix.shard }}.tgz"
+          tar -xzf "$RUNNER_TEMP/morning-${{ matrix.shard }}.tgz" \
+            -C work/vps-artifact
       - name: Upload shard data
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: morning-${{ matrix.shard }}-${{ needs.prepare.outputs.target_date }}
           path: |
-            work/races/**/fetch_status.json
-            work/races/**/tide_today.json
-            work/races/**/races/*_entry.txt
-            work/races/**/races/*_data.txt
-            work/races/**/races/*_motor.txt
-            work/races/**/races/*_boaters_local_st.json
+            work/vps-artifact/work/races/**/fetch_status.json
+            work/vps-artifact/work/races/**/tide_today.json
+            work/vps-artifact/work/races/**/races/*_entry.txt
+            work/vps-artifact/work/races/**/races/*_data.txt
+            work/vps-artifact/work/races/**/races/*_motor.txt
+            work/vps-artifact/work/races/**/races/*_boaters_local_st.json
           if-no-files-found: warn
           retention-days: 2
 
