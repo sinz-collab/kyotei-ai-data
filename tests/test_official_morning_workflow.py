@@ -29,13 +29,25 @@ class OfficialMorningWorkflowTests(unittest.TestCase):
         self.assertNotIn("git push", self.workflow)
         self.assertIn("sinz-morning-gateway", self.workflow)
         self.assertIn("supplement-version", self.workflow)
-        self.assertIn("maximum three", self.workflow)
+        self.assertIn('races="$(seq -s, 1 12)"', self.workflow)
+        self.assertIn("validate_boaters_supplement.py", self.workflow)
         self.assertIn("--boaters-root", self.workflow)
+        self.assertIn("--course-db", self.workflow)
         self.assertIn("--venues all", self.workflow)
         self.assertIn("--races all", self.workflow)
         self.assertIn("actions/cache/restore@v4", self.workflow)
         self.assertIn("actions/cache/save@v4", self.workflow)
         self.assertIn("official-morning-cache", self.workflow)
+        self.assertIn("heldVenues", self.workflow)
+
+    def test_vps_supplement_accepts_twelve_and_never_overwrites_valid_cache(self) -> None:
+        gateway = (ROOT / "deploy/morning-vps/sinz-morning-gateway").read_text(encoding="utf-8")
+        executor = (ROOT / "deploy/morning-vps/sinz-morning-exec").read_text(encoding="utf-8")
+        self.assertIn("maximum twelve", gateway)
+        self.assertIn("maximum twelve", executor)
+        self.assertIn("validate_boaters_supplement.py", executor)
+        self.assertIn("${missing[@]}", executor)
+        self.assertIn(".replaced-invalid", executor)
 
 
 if __name__ == "__main__":

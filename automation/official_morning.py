@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from bs4 import BeautifulSoup
+from course_aptitude import CourseAptitudeEvaluator
 from enrich_all_venues_kimarite import parse_race_kimarite
 from enrich_motor_recent import parse_motor_recent_text
 from validate_morning_vps_artifacts import payload_error as existing_payload_error
@@ -60,11 +61,6 @@ PROTECTED_RACE_KEYS = {
     "motor_recent", "motorRecentAvailable",
 }
 PROTECTED_TOP_KEYS = {"preds", "predictionStatus", "predictionReason"}
-SUPPLEMENT_KEYS = {
-    "local_st", "boaters_local_avg_st", "boaters_local_st_rank",
-    "motor_recent", "recent_course_6m", "recent_course_6m_by_course",
-}
-SUPPLEMENT_PREFIXES = ("boaters_",)
 SPECIAL_FINISHES = {"転", "妨", "落", "失", "不", "F", "L", "欠", "エ", "沈"}
 
 
@@ -375,15 +371,6 @@ def protected_projection(payload: dict[str, Any]) -> dict[str, Any]:
     projection["races"] = []
     for race in payload.get("races") or []:
         item = {key: copy.deepcopy(race.get(key)) for key in PROTECTED_RACE_KEYS if key in race}
-        item["racers"] = []
-        for racer in race.get("racers") or []:
-            item["racers"].append(
-                {
-                    key: copy.deepcopy(value)
-                    for key, value in racer.items()
-                    if key in SUPPLEMENT_KEYS or key.startswith(SUPPLEMENT_PREFIXES)
-                }
-            )
         projection["races"].append(item)
     return projection
 
@@ -475,7 +462,7 @@ def validate_candidate(
 ) -> list[str]:
     errors: list[str] = []
     if baseline is not None and protected_projection(baseline) != protected_projection(candidate):
-        errors.append("protected_prediction_live_or_supplement_domain_changed")
+        errors.append("protected_prediction_or_live_domain_changed")
     by_race = {int(item.get("race") or 0): item for item in candidate.get("races") or []}
     for race_no in requested_races:
         race = by_race.get(int(race_no))
@@ -1077,6 +1064,7 @@ def run_validation(
     cache_root: Path,
     client: OfficialClient,
     boaters_root: Path | None = None,
+    course_evaluator: CourseAptitudeEvaluator | None = None,
 ) -> dict[str, Any]:
     """Detect held venues, acquire requested races, and build isolated candidates."""
     started = time.perf_counter()
@@ -1194,6 +1182,8 @@ def run_validation(
                         slug=slug,
                         target_date=target_date,
                     )
+                if course_evaluator is not None:
+                    venue_report["recentCourse6m"] = course_evaluator.enrich_payload(candidate)
                 venue_report["supplementCoverageAfterBoatersCache"] = supplement_coverage(candidate)
                 candidate_errors = validate_candidate(
                     baseline, candidate, requested_races=expected
@@ -1255,6 +1245,16 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, default=Path("work/official-morning"))
     parser.add_argument("--cache-root", type=Path, default=Path("work/official-morning-cache"))
     parser.add_argument("--boaters-root", type=Path)
+    parser.add_argument(
+        "--course-db",
+        type=Path,
+        default=Path("data/player_course_6m/player_course_6m.sqlite"),
+    )
+    parser.add_argument(
+        "--course-class-cache",
+        type=Path,
+        default=Path("data/player_course_6m/racer_classes.json"),
+    )
     parser.add_argument("--min-interval", type=float, default=1.0)
     parser.add_argument("--timeout", type=float, default=25.0)
     args = parser.parse_args()
@@ -1265,6 +1265,12 @@ def main() -> int:
     if any(item not in range(1, 13) for item in race_numbers):
         raise ValueError("race selection must be 1 through 12")
 
+    course_evaluator = CourseAptitudeEvaluator.from_files(
+        datetime.strptime(args.date, "%Y-%m-%d").date(),
+        db_path=args.course_db,
+        class_cache=args.course_class_cache,
+        refresh_classes=False,
+    )
     report = run_validation(
         target_date=args.date,
         venues=venues,
@@ -1274,6 +1280,7 @@ def main() -> int:
         cache_root=args.cache_root,
         client=OfficialClient(args.min_interval, args.timeout),
         boaters_root=args.boaters_root,
+        course_evaluator=course_evaluator,
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["status"] == "ok" else 1

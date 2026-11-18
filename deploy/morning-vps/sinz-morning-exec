@@ -34,7 +34,7 @@ if [ "$action" = supplement ]; then
   venue="$shard"
   supplement_races="$4"
   [[ "$venue" =~ ^(kiryu|toda|heiwajima|tokoname|biwako|naruto|shimonoseki|wakamatsu|ashiya|fukuoka|karatsu|omura)$ ]] || die "Invalid venue." 64
-  [[ "$supplement_races" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,2}$ ]] || die "Invalid race list (maximum three)." 64
+  [[ "$supplement_races" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,11}$ ]] || die "Invalid race list (maximum twelve)." 64
   venues=("$venue")
   case "$venue" in kiryu|ashiya|shimonoseki|toda|wakamatsu) shard=east ;; *) shard=west ;; esac
 else
@@ -151,6 +151,11 @@ elif [ "$action" = supplement ]; then
     for suffix in _boaters_local_st.json _data.txt _motor.txt; do
       [ -f "$source/races/${prefix}${suffix}" ] || complete=false
     done
+    if [ "$complete" = true ] && ! "$venv_python" \
+      "$app_root/automation/validate_boaters_supplement.py" \
+      --race-dir "$source/races" --races "$race_no" >&2; then
+      complete=false
+    fi
     if [ "$complete" = true ]; then
       find "$source/races" -maxdepth 1 -type f -name "${prefix}_*" -exec cp -a -t "$destination/races" -- {} +
     else
@@ -164,7 +169,7 @@ elif [ "$action" = supplement ]; then
     missing_csv="$(IFS=,; echo "${missing[*]}")"
     command=("$venv_python" automation/boaters_fetch.py --stadium "$venue" --date "$target_date" --root "$run_dir/work/races" --races "$missing_csv" --wait 6 --click-wait 1.5)
   fi
-  timeout_value=12m
+  timeout_value="$((120 + ${#missing[@]} * 150))s"
 else
   recovery_scope=
   if [ "$action" = fetch ]; then
@@ -278,6 +283,33 @@ systemd-run --quiet --collect --wait --pipe --service-type=exec \
 unit_rc=$?
 set -e
 
+if [ "$action" = supplement ] && [ "$unit_rc" -eq 0 ]; then
+  supplement_race_dir="$run_dir/work/races/$venue_name/${target_date//-/}/races"
+  supplement_report="$run_dir/work/races/$venue_name/${target_date//-/}/supplement_validation.json"
+  set +e
+  "$venv_python" "$app_root/automation/validate_boaters_supplement.py" \
+    --race-dir "$supplement_race_dir" --races "$supplement_races" \
+    --report "$supplement_report" >&2
+  unit_rc=$?
+  set -e
+  if [ "$unit_rc" -eq 0 ]; then
+    cache_race_dir="$cache_root/$venue_name/${target_date//-/}/races"
+    install -d -o "$worker_user" -g "$worker_group" -m 0750 "$cache_race_dir"
+    for race_no in "${missing[@]}"; do
+      printf -v prefix 'race_%02d' "$race_no"
+      backup_dir="$cache_root/.replaced-invalid/$(date +%Y%m%dT%H%M%S)/$venue_name/${prefix}"
+      if find "$cache_race_dir" -maxdepth 1 -type f -name "${prefix}_*" -print -quit | grep -q .; then
+        install -d -o root -g root -m 0700 "$backup_dir"
+        find "$cache_race_dir" -maxdepth 1 -type f -name "${prefix}_*" \
+          -exec mv -t "$backup_dir" -- {} +
+      fi
+      find "$supplement_race_dir" -maxdepth 1 -type f -name "${prefix}_*" \
+        -exec cp -a -t "$cache_race_dir" -- {} +
+    done
+    chown -R "$worker_user:$worker_group" "$cache_race_dir"
+  fi
+fi
+
 if { [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; } && [ "$unit_rc" -ne 0 ]; then
   for venue in "${venues[@]}"; do
     "$venv_python" "$app_root/automation/write_morning_fetch_status.py" \
@@ -318,7 +350,8 @@ else
       -o -name '*_data.txt' -o -name '*_motor.txt' \
       -o -name '*_boaters_local_st.json' \
       -o -name '*_boaters_local_st_clicked.html' \
-      -o -name '*_boaters_local_st_clicked.txt' \) -print0 |
+      -o -name '*_boaters_local_st_clicked.txt' \
+      -o -name supplement_validation.json \) -print0 |
       tar --null --create --gzip --file=- --files-from=-
   )
 fi

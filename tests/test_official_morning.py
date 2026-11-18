@@ -396,6 +396,34 @@ class OfficialMorningTests(unittest.TestCase):
         self.assertFalse(any("supplement_missing:local_st" in item for item in errors))
         self.assertEqual(existing_validator.payload_error(candidate, {"reason": "ok"}), "")
 
+    def test_existing_course_database_enricher_is_applied(self) -> None:
+        class FakeCourseEvaluator:
+            def enrich_payload(self, payload):
+                for race in payload["races"]:
+                    for racer in race["racers"]:
+                        racer["recent_course_6m"] = {
+                            "status": "available", "source": "official_race_results"
+                        }
+                return {"available": 72, "unavailable": 0}
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            history = root / "baseline" / "kiryu" / "20261117.json"
+            history.parent.mkdir(parents=True)
+            history.write_text(json.dumps(synthetic_payload(), ensure_ascii=False), encoding="utf-8")
+            report = official.run_validation(
+                target_date="2026-11-18",
+                venues=["kiryu"],
+                race_numbers=list(range(1, 13)),
+                baseline_root=root / "baseline",
+                output_root=root / "output",
+                cache_root=root / "cache",
+                client=FakeClient(),
+                course_evaluator=FakeCourseEvaluator(),
+            )
+            self.assertEqual(report["status"], "ok")
+            self.assertEqual(report["venues"]["kiryu"]["recentCourse6m"]["available"], 72)
+
     def test_apply_boaters_cache_uses_registration_and_records_provenance(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -13,6 +13,7 @@ fi
 if [ "$original_command" = supplement-version ]; then
   printf 'executor=%s\n' "$(sha256sum "$executor" | awk '{print $1}')"
   printf 'boaters=%s\n' "$(sha256sum /opt/sinz-morning-fetch/app/automation/boaters_fetch.py | awk '{print $1}')"
+  printf 'supplement_validator=%s\n' "$(sha256sum /opt/sinz-morning-fetch/app/automation/validate_boaters_supplement.py | awk '{print $1}')"
   exit 0
 fi
 
@@ -40,8 +41,8 @@ if [ "$action" = supplement ]; then
     echo "Rejected: invalid venue." >&2; exit 64;
   }
   races="${command_parts[3]}"
-  [[ "$races" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,2}$ ]] || {
-    echo "Rejected: invalid race list (maximum three)." >&2; exit 64;
+  [[ "$races" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,11}$ ]] || {
+    echo "Rejected: invalid race list (maximum twelve)." >&2; exit 64;
   }
   exec sudo -n "$executor" "$action" "$target_date" "$shard" "$races"
 fi
