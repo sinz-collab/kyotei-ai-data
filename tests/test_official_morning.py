@@ -115,6 +115,7 @@ def synthetic_payload() -> dict:
                     "entry_course": lane,
                     "local_st": ".15",
                     "boaters_local_avg_st": "0.15",
+                    "boaters_local_st_rank": "3.0位",
                     "boaters_kimarite_starts": 20,
                     "boaters_escape_rate": 50.0,
                     "motor_recent": {"available": True, "runs_count": 10},

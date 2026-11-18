@@ -531,6 +531,10 @@ def validate_candidate(
                 errors.append(
                     f"race_{race_no:02d}_lane_{racer.get('lane')}_supplement_missing:local_st"
                 )
+            if not racer.get("boaters_local_st_rank") and not local_source_missing:
+                errors.append(
+                    f"race_{race_no:02d}_lane_{racer.get('lane')}_supplement_missing:local_st_rank"
+                )
             for label, keys in supplement_groups.items():
                 if not any(key in racer for key in keys):
                     errors.append(
