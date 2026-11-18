@@ -7,11 +7,6 @@ from datetime import date
 from pathlib import Path
 from typing import Any
 
-try:
-    from .course_aptitude import CourseAptitudeEvaluator
-except ImportError:  # Direct script execution in the morning workflow.
-    from course_aptitude import CourseAptitudeEvaluator
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 WORK_ROOT = REPO_ROOT / "work" / "races"
@@ -383,6 +378,11 @@ def target_payloads(
 
 
 def main() -> int:
+    try:
+        from .course_aptitude import CourseAptitudeEvaluator
+    except ImportError:  # Direct script execution in the morning workflow.
+        from course_aptitude import CourseAptitudeEvaluator
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
     parser.add_argument(

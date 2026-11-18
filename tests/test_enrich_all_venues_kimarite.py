@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import importlib.util
+import sys
 import unittest
+from pathlib import Path
+from unittest import mock
 
 from automation.enrich_all_venues_kimarite import (
     parse_race_kimarite,
@@ -11,6 +15,15 @@ from automation.enrich_all_venues_kimarite import (
 
 
 class AllVenueKimariteTest(unittest.TestCase):
+    def test_parser_module_does_not_require_course_aptitude_at_import(self) -> None:
+        module_path = Path(__file__).parents[1] / "automation" / "enrich_all_venues_kimarite.py"
+        spec = importlib.util.spec_from_file_location("isolated_kimarite_parser", module_path)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        with mock.patch.dict(sys.modules, {"course_aptitude": None}):
+            spec.loader.exec_module(module)
+        self.assertTrue(callable(module.parse_race_kimarite))
+
     def test_parse_six_month_course_performance_and_st(self) -> None:
         racers = [
             {"lane": 1, "name": "選手 一郎", "player_id": 4321, "actual_course": 1},
