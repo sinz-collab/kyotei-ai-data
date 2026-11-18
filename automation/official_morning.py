@@ -160,6 +160,10 @@ def parse_official_html(
 ) -> dict[str, Any]:
     """Parse one official PC race-card page into the existing morning schema."""
     soup = BeautifulSoup(html, "html.parser")
+    target = datetime.strptime(target_date, "%Y-%m-%d")
+    page_text = normalize_text(soup.get_text(" ", strip=True))
+    if re.search(rf"{target.month}月\s*{target.day}日\s*中止", page_text):
+        raise NoMeetingError("official meeting day cancelled")
     tables = soup.find_all("table")
     entry_table = next(
         (

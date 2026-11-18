@@ -220,6 +220,18 @@ class OfficialMorningTests(unittest.TestCase):
                 race_no=1,
             )
 
+    def test_parser_treats_target_day_cancellation_as_not_held(self) -> None:
+        cancelled = official_fixture().replace(
+            "11月18日2日目".encode(), "11月18日中止".encode()
+        )
+        with self.assertRaisesRegex(official.NoMeetingError, "day cancelled"):
+            official.parse_official_html(
+                cancelled,
+                slug="wakamatsu",
+                target_date="2026-11-18",
+                race_no=1,
+            )
+
     def test_detection_distinguishes_no_meeting_from_parser_failure(self) -> None:
         class StaticClient:
             def __init__(self, body: bytes) -> None:
