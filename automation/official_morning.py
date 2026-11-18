@@ -520,7 +520,7 @@ def validate_candidate(
                 "recent_course_6m": ("recent_course_6m",),
             }
             local_available = any(
-                key in racer and racer.get(key) not in (None, "")
+                re.fullmatch(r"0?\.\d{2}", str(racer.get(key) or ""))
                 for key in ("local_st", "boaters_local_avg_st")
             )
             local_source_missing = (
