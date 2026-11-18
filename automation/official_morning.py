@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from bs4 import BeautifulSoup
+from validate_morning_vps_artifacts import payload_error as existing_payload_error
 
 
 OFFICIAL_BASE = "https://www.boatrace.jp/owpc/pc/race/racelist"
@@ -456,13 +457,13 @@ def merge_official_races(
 
 
 def validate_candidate(
-    baseline: dict[str, Any],
+    baseline: dict[str, Any] | None,
     candidate: dict[str, Any],
     *,
     requested_races: Iterable[int],
 ) -> list[str]:
     errors: list[str] = []
-    if protected_projection(baseline) != protected_projection(candidate):
+    if baseline is not None and protected_projection(baseline) != protected_projection(candidate):
         errors.append("protected_prediction_live_or_supplement_domain_changed")
     by_race = {int(item.get("race") or 0): item for item in candidate.get("races") or []}
     for race_no in requested_races:
@@ -489,6 +490,19 @@ def validate_candidate(
                 errors.append(
                     f"race_{race_no:02d}_lane_{racer.get('lane')}_missing:{','.join(missing)}"
                 )
+            if not isinstance(racer.get("season_runs"), list):
+                errors.append(
+                    f"race_{race_no:02d}_lane_{racer.get('lane')}_season_runs_invalid"
+                )
+            if not isinstance(racer.get("season_groups"), list):
+                errors.append(
+                    f"race_{race_no:02d}_lane_{racer.get('lane')}_season_groups_invalid"
+                )
+            for run in racer.get("season_runs") or []:
+                if not all(key in run for key in ("race", "course", "st", "finish")):
+                    errors.append(
+                        f"race_{race_no:02d}_lane_{racer.get('lane')}_season_run_incomplete"
+                    )
             supplement_groups = {
                 "local_st": ("local_st", "boaters_local_avg_st"),
                 "motor_recent": ("motor_recent",),
@@ -576,90 +590,471 @@ def parse_csv(value: str, *, allowed: set[str] | None = None) -> list[str]:
     return values
 
 
+def cached_race_path(cache_root: Path, target_date: str, slug: str, race_no: int) -> Path:
+    return cache_root / target_date.replace("-", "") / slug / f"{race_no:02d}.json"
+
+
+def validate_official_race(race: dict[str, Any], race_no: int) -> None:
+    if int(race.get("race") or 0) != race_no:
+        raise ValueError("cached race number mismatch")
+    racers = race.get("racers") or []
+    if len(racers) != 6:
+        raise ValueError(f"official racer count invalid: {len(racers)}")
+    if sorted(int(item.get("lane") or 0) for item in racers) != list(range(1, 7)):
+        raise ValueError("official lanes invalid")
+    for racer in racers:
+        missing = [
+            key for key in sorted(REQUIRED_RACER_FIELDS)
+            if key not in racer or racer[key] in (None, "")
+        ]
+        if missing:
+            raise ValueError(f"official racer fields missing: {','.join(missing)}")
+        if not isinstance(racer.get("season_runs"), list) or not isinstance(
+            racer.get("season_groups"), list
+        ):
+            raise ValueError("official meeting history invalid")
+
+
+def load_cached_race(
+    cache_root: Path, target_date: str, slug: str, race_no: int
+) -> dict[str, Any] | None:
+    path = cached_race_path(cache_root, target_date, slug, race_no)
+    if not path.is_file():
+        return None
+    try:
+        envelope = json.loads(path.read_text(encoding="utf-8"))
+        expected_url = official_url(slug, target_date, race_no)
+        if (
+            envelope.get("schemaVersion") != 1
+            or envelope.get("date") != target_date
+            or envelope.get("venue") != slug
+            or envelope.get("url") != expected_url
+        ):
+            return None
+        race = envelope["parsed"]
+        validate_official_race(race, race_no)
+        return race
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def save_cached_race(
+    cache_root: Path,
+    target_date: str,
+    slug: str,
+    race_no: int,
+    race: dict[str, Any],
+) -> None:
+    validate_official_race(race, race_no)
+    atomic_json(
+        cached_race_path(cache_root, target_date, slug, race_no),
+        {
+            "schemaVersion": 1,
+            "date": target_date,
+            "venue": slug,
+            "race": race_no,
+            "url": official_url(slug, target_date, race_no),
+            "parsed": race,
+        },
+    )
+
+
+def history_files(baseline_root: Path, target_date: str) -> list[tuple[str, Path]]:
+    """Return recent immutable public payloads, newest first, for supplementation."""
+    cutoff = target_date.replace("-", "")
+    found: list[tuple[str, Path]] = []
+    for slug in VENUES:
+        venue_root = baseline_root / slug
+        if not venue_root.is_dir():
+            continue
+        dated = [
+            path for path in venue_root.glob("????????.json")
+            if path.stem.isdigit() and path.stem <= cutoff
+        ]
+        # Six months covers the course master horizon while bounding Actions I/O.
+        for path in sorted(dated, key=lambda item: item.stem, reverse=True)[:180]:
+            found.append((slug, path))
+    return sorted(found, key=lambda item: item[1].stem, reverse=True)
+
+
+def build_supplement_indexes(
+    baseline_root: Path, target_date: str
+) -> tuple[
+    dict[tuple[str, str], dict[str, Any]],
+    dict[tuple[str, str], dict[str, Any]],
+    dict[tuple[str, str, int], dict[str, Any]],
+]:
+    local_by_name: dict[tuple[str, str], dict[str, Any]] = {}
+    motor_by_number: dict[tuple[str, str], dict[str, Any]] = {}
+    course_by_name_lane: dict[tuple[str, str, int], dict[str, Any]] = {}
+    for slug, path in history_files(baseline_root, target_date):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for race in payload.get("races") or []:
+            for racer in race.get("racers") or []:
+                name = normalize_name(racer.get("name"))
+                lane = int(racer.get("lane") or 0)
+                motor_no = str(racer.get("motor_no") or "")
+                if not name:
+                    continue
+                local_by_name.setdefault((slug, name), racer)
+                if motor_no:
+                    motor_by_number.setdefault((slug, motor_no), racer)
+                if lane in range(1, 7):
+                    course_by_name_lane.setdefault((slug, name, lane), racer)
+                    course_by_name_lane.setdefault(("*", name, lane), racer)
+    return local_by_name, motor_by_number, course_by_name_lane
+
+
+def supplement_official_racer(
+    racer: dict[str, Any],
+    *,
+    slug: str,
+    local_by_name: dict[tuple[str, str], dict[str, Any]],
+    motor_by_number: dict[tuple[str, str], dict[str, Any]],
+    course_by_name_lane: dict[tuple[str, str, int], dict[str, Any]],
+) -> dict[str, Any]:
+    enriched = copy.deepcopy(racer)
+    enriched["actual_course"] = enriched["lane"]
+    enriched["entry_course"] = enriched["lane"]
+    name = normalize_name(enriched.get("name"))
+    lane = int(enriched["lane"])
+    local_source = local_by_name.get((slug, name), {})
+    motor_source = motor_by_number.get((slug, str(enriched.get("motor_no") or "")), {})
+    course_source = course_by_name_lane.get((slug, name, lane)) or course_by_name_lane.get(
+        ("*", name, lane), {}
+    )
+    for key in ("local_st", "boaters_local_avg_st", "boaters_local_st_rank"):
+        if key in local_source:
+            enriched[key] = copy.deepcopy(local_source[key])
+    if "motor_recent" in motor_source:
+        enriched["motor_recent"] = copy.deepcopy(motor_source["motor_recent"])
+        enriched["motor_recent"]["lane"] = lane
+        enriched["motor_recent"]["motor_no"] = str(enriched["motor_no"])
+    for key, value in course_source.items():
+        if key.startswith("boaters_") and key not in {
+            "boaters_local_avg_st", "boaters_local_st_rank"
+        }:
+            enriched[key] = copy.deepcopy(value)
+    by_course = course_source.get("recent_course_6m_by_course")
+    if isinstance(by_course, dict):
+        enriched["recent_course_6m_by_course"] = copy.deepcopy(by_course)
+        selected = by_course.get(str(lane)) or by_course.get(lane)
+        if selected:
+            enriched["recent_course_6m"] = copy.deepcopy(selected)
+    elif isinstance(course_source.get("recent_course_6m"), dict):
+        selected = course_source["recent_course_6m"]
+        if selected.get("course") in (None, "", lane, str(lane)):
+            enriched["recent_course_6m"] = copy.deepcopy(selected)
+    enriched["officialSupplementSource"] = "existing_public_history"
+    return enriched
+
+
+def build_candidate_from_official(
+    official_races: list[dict[str, Any]],
+    *,
+    slug: str,
+    target_date: str,
+    supplement_indexes: tuple[
+        dict[tuple[str, str], dict[str, Any]],
+        dict[tuple[str, str], dict[str, Any]],
+        dict[tuple[str, str, int], dict[str, Any]],
+    ],
+) -> dict[str, Any]:
+    local_by_name, motor_by_number, course_by_name_lane = supplement_indexes
+    races: list[dict[str, Any]] = []
+    for official in sorted(official_races, key=lambda item: int(item["race"])):
+        racers = [
+            supplement_official_racer(
+                racer,
+                slug=slug,
+                local_by_name=local_by_name,
+                motor_by_number=motor_by_number,
+                course_by_name_lane=course_by_name_lane,
+            )
+            for racer in official["racers"]
+        ]
+        races.append(
+            {
+                "race": official["race"],
+                "deadline": official["deadline"],
+                "title": official["title"],
+                "type": official["type"],
+                "entryFixed": official["entryFixed"],
+                "eventDay": official.get("eventDay"),
+                "eventDayLabel": official.get("eventDayLabel"),
+                "racers": racers,
+                "entries": copy.deepcopy(racers),
+                "setsukan": [
+                    {
+                        "lane": racer["lane"],
+                        "season_runs": copy.deepcopy(racer["season_runs"]),
+                        "season_groups": copy.deepcopy(racer["season_groups"]),
+                    }
+                    for racer in racers
+                ],
+                "source": official["source"],
+            }
+        )
+    first = official_races[0]
+    return {
+        "venueId": slug,
+        "venue": VENUES[slug][1],
+        "date": target_date,
+        "eventDay": first.get("eventDay"),
+        "eventDayLabel": first.get("eventDayLabel"),
+        "seriesDay": first.get("eventDayLabel"),
+        "officialEventTitle": first.get("officialEventTitle"),
+        "races": races,
+        "sourceStatus": {
+            "official_morning": {
+                "status": "validated_candidate",
+                "source": "boatrace_official_racelist",
+                "supplements": "existing_public_history",
+                "date": target_date,
+                "races": [int(item["race"]) for item in official_races],
+                "production_publish_enabled": False,
+            }
+        },
+    }
+
+
+def acquire_race(
+    client: OfficialClient,
+    *,
+    cache_root: Path,
+    target_date: str,
+    slug: str,
+    race_no: int,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    url = official_url(slug, target_date, race_no)
+    cached = load_cached_race(cache_root, target_date, slug, race_no)
+    if cached is not None:
+        return cached, {
+            "race": race_no,
+            "url": url,
+            "source": "cache",
+            "status": 200,
+            "elapsedSeconds": 0.0,
+            "bytes": cached_race_path(cache_root, target_date, slug, race_no).stat().st_size,
+        }
+    fetched = client.get(url)
+    parsed = parse_official_html(
+        fetched.html,
+        slug=slug,
+        target_date=target_date,
+        race_no=race_no,
+        source_url=url,
+    )
+    validate_official_race(parsed, race_no)
+    save_cached_race(cache_root, target_date, slug, race_no, parsed)
+    return parsed, {
+        "race": race_no,
+        "url": url,
+        "source": "network",
+        "status": fetched.status,
+        "elapsedSeconds": fetched.elapsed_seconds,
+        "bytes": fetched.bytes_received,
+    }
+
+
+def run_validation(
+    *,
+    target_date: str,
+    venues: list[str],
+    race_numbers: list[int],
+    baseline_root: Path,
+    output_root: Path,
+    cache_root: Path,
+    client: OfficialClient,
+) -> dict[str, Any]:
+    """Detect held venues, acquire requested races, and build isolated candidates."""
+    started = time.perf_counter()
+    report: dict[str, Any] = {
+        "date": target_date,
+        "mode": "manual_validation_only",
+        "productionPublishEnabled": False,
+        "requestedVenues": venues,
+        "requestedRaces": race_numbers,
+        "venues": {},
+        "errors": [],
+    }
+    date_compact = target_date.replace("-", "")
+    held: list[str] = []
+    first_races: dict[str, tuple[dict[str, Any], dict[str, Any]]] = {}
+
+    # A valid official 1R card is the held/not-held signal. The fetched card is
+    # retained and reused below, so detection does not add a duplicate request.
+    for slug in venues:
+        try:
+            first_races[slug] = acquire_race(
+                client,
+                cache_root=cache_root,
+                target_date=target_date,
+                slug=slug,
+                race_no=1,
+            )
+            held.append(slug)
+        except ValueError as exc:
+            report["venues"][slug] = {
+                "held": False,
+                "status": "not_held",
+                "officialCoverage": [],
+                "errors": [],
+                "detection": str(exc),
+            }
+        except RuntimeError as exc:
+            message = f"{slug}:detection_failed:{exc}"
+            report["venues"][slug] = {
+                "held": None,
+                "status": "detection_failed",
+                "officialCoverage": [],
+                "errors": [str(exc)],
+            }
+            report["errors"].append(message)
+
+    supplement_indexes: tuple[
+        dict[tuple[str, str], dict[str, Any]],
+        dict[tuple[str, str], dict[str, Any]],
+        dict[tuple[str, str, int], dict[str, Any]],
+    ] | None = None
+    for slug in held:
+        baseline_path = baseline_root / slug / f"{date_compact}.json"
+        fetches: list[dict[str, Any]] = []
+        official_by_race: dict[int, dict[str, Any]] = {}
+        race_errors: list[str] = []
+        if 1 in race_numbers:
+            official_by_race[1], first_fetch = first_races[slug]
+            fetches.append(first_fetch)
+        for race_no in race_numbers:
+            if race_no == 1:
+                continue
+            try:
+                race, fetch = acquire_race(
+                    client,
+                    cache_root=cache_root,
+                    target_date=target_date,
+                    slug=slug,
+                    race_no=race_no,
+                )
+                official_by_race[race_no] = race
+                fetches.append(fetch)
+            except (RuntimeError, ValueError) as exc:
+                race_errors.append(f"race_{race_no:02d}:{type(exc).__name__}:{exc}")
+
+        coverage = sorted(official_by_race)
+        expected = sorted(race_numbers)
+        venue_report: dict[str, Any] = {
+            "held": True,
+            "status": "failed",
+            "officialCoverage": coverage,
+            "missingRaces": sorted(set(expected) - set(coverage)),
+            "completeOfficialCoverage": coverage == expected,
+            "fetches": sorted(fetches, key=lambda item: item["race"]),
+            "errors": race_errors,
+        }
+        if not race_errors and coverage == expected:
+            official_races = [official_by_race[number] for number in expected]
+            try:
+                baseline: dict[str, Any] | None = None
+                build_mode = "official_with_historical_supplements"
+                if baseline_path.is_file():
+                    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+                    candidate = merge_official_races(
+                        baseline, official_races, slug=slug, target_date=target_date
+                    )
+                    build_mode = "existing_same_date_baseline"
+                else:
+                    if supplement_indexes is None:
+                        supplement_indexes = build_supplement_indexes(
+                            baseline_root, target_date
+                        )
+                    candidate = build_candidate_from_official(
+                        official_races,
+                        slug=slug,
+                        target_date=target_date,
+                        supplement_indexes=supplement_indexes,
+                    )
+                candidate_errors = validate_candidate(
+                    baseline, candidate, requested_races=expected
+                )
+                if len(candidate.get("races") or []) != 12:
+                    candidate_errors.append(
+                        f"candidate_race_count:{len(candidate.get('races') or [])}"
+                    )
+                compatibility_error = existing_payload_error(candidate, {"reason": "ok"})
+                if compatibility_error:
+                    candidate_errors.append(f"engine_input:{compatibility_error}")
+                if candidate_errors:
+                    venue_report["errors"].extend(candidate_errors)
+                else:
+                    candidate_path = output_root / "candidates" / slug / f"{date_compact}.json"
+                    atomic_json(candidate_path, candidate)
+                    venue_report.update(
+                        {
+                            "status": "ok",
+                            "candidate": str(candidate_path),
+                            "engineInputCompatible": True,
+                            "buildMode": build_mode,
+                        }
+                    )
+                    if baseline is not None:
+                        venue_report["comparison"] = compare_core(baseline, official_races)
+            except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+                venue_report["errors"].append(f"candidate:{type(exc).__name__}:{exc}")
+        if venue_report["errors"]:
+            report["errors"].extend(f"{slug}:{item}" for item in venue_report["errors"])
+        report["venues"][slug] = venue_report
+
+    complete = [slug for slug in held if report["venues"].get(slug, {}).get("status") == "ok"]
+    network_seconds = sum(
+        fetch.get("elapsedSeconds", 0.0)
+        for venue in report["venues"].values()
+        for fetch in venue.get("fetches", [])
+        if fetch.get("source") == "network"
+    )
+    report["summary"] = {
+        "heldVenueCount": len(held),
+        "heldVenues": held,
+        "completeVenueCount": len(complete),
+        "completeVenues": complete,
+        "networkFetchSeconds": round(network_seconds, 3),
+        "wallSeconds": round(time.perf_counter() - started, 3),
+    }
+    report["status"] = "ok" if not report["errors"] and len(complete) == len(held) else "failed"
+    atomic_json(output_root / "report.json", report)
+    return report
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True, help="YYYY-MM-DD")
-    parser.add_argument("--venues", default="kiryu,tokoname")
-    parser.add_argument("--races", default="1,12")
+    parser.add_argument("--venues", default="all")
+    parser.add_argument("--races", default="all")
     parser.add_argument("--baseline-root", type=Path, default=Path("data/venues"))
     parser.add_argument("--output-root", type=Path, default=Path("work/official-morning"))
+    parser.add_argument("--cache-root", type=Path, default=Path("work/official-morning-cache"))
     parser.add_argument("--min-interval", type=float, default=1.0)
     parser.add_argument("--timeout", type=float, default=25.0)
     args = parser.parse_args()
 
     datetime.strptime(args.date, "%Y-%m-%d")
-    venues = parse_csv(args.venues, allowed=set(VENUES))
-    race_numbers = [int(item) for item in parse_csv(args.races)]
+    venues = list(VENUES) if args.venues == "all" else parse_csv(args.venues, allowed=set(VENUES))
+    race_numbers = list(range(1, 13)) if args.races == "all" else [int(item) for item in parse_csv(args.races)]
     if any(item not in range(1, 13) for item in race_numbers):
         raise ValueError("race selection must be 1 through 12")
 
-    client = OfficialClient(args.min_interval, args.timeout)
-    report: dict[str, Any] = {
-        "date": args.date,
-        "mode": "manual_validation_only",
-        "productionPublishEnabled": False,
-        "venues": {},
-        "errors": [],
-    }
-    date_compact = args.date.replace("-", "")
-    for slug in venues:
-        baseline_path = args.baseline_root / slug / f"{date_compact}.json"
-        if not baseline_path.is_file():
-            report["errors"].append(f"{slug}:baseline_missing:{baseline_path}")
-            continue
-        baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
-        official_races = []
-        fetches = []
-        try:
-            for race_no in race_numbers:
-                url = official_url(slug, args.date, race_no)
-                fetched = client.get(url)
-                official_races.append(
-                    parse_official_html(
-                        fetched.html,
-                        slug=slug,
-                        target_date=args.date,
-                        race_no=race_no,
-                        source_url=url,
-                    )
-                )
-                fetches.append(
-                    {
-                        "race": race_no,
-                        "url": url,
-                        "status": fetched.status,
-                        "elapsedSeconds": fetched.elapsed_seconds,
-                        "bytes": fetched.bytes_received,
-                    }
-                )
-            candidate = merge_official_races(
-                baseline, official_races, slug=slug, target_date=args.date
-            )
-            errors = validate_candidate(
-                baseline, candidate, requested_races=race_numbers
-            )
-            candidate_path = args.output_root / "candidates" / slug / f"{date_compact}.json"
-            atomic_json(candidate_path, candidate)
-            report["venues"][slug] = {
-                "status": "ok" if not errors else "invalid",
-                "candidate": str(candidate_path),
-                "officialCoverage": race_numbers,
-                "completeOfficialCoverage": sorted(race_numbers) == list(range(1, 13)),
-                "fetches": fetches,
-                "comparison": compare_core(baseline, official_races),
-                "errors": errors,
-            }
-            report["errors"].extend(f"{slug}:{item}" for item in errors)
-        except Exception as exc:
-            report["venues"][slug] = {
-                "status": "failed",
-                "fetches": fetches,
-                "errors": [f"{type(exc).__name__}:{exc}"],
-            }
-            report["errors"].append(f"{slug}:{type(exc).__name__}:{exc}")
-
-    report["status"] = "ok" if not report["errors"] else "failed"
-    atomic_json(args.output_root / "report.json", report)
+    report = run_validation(
+        target_date=args.date,
+        venues=venues,
+        race_numbers=race_numbers,
+        baseline_root=args.baseline_root,
+        output_root=args.output_root,
+        cache_root=args.cache_root,
+        client=OfficialClient(args.min_interval, args.timeout),
+    )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["status"] == "ok" else 1
 

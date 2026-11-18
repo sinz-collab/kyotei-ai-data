@@ -4,7 +4,9 @@ import copy
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
+import urllib.parse
 from pathlib import Path
 
 
@@ -13,6 +15,20 @@ sys.path.insert(0, str(ROOT / "automation"))
 
 import official_morning as official  # noqa: E402
 import validate_morning_vps_artifacts as existing_validator  # noqa: E402
+
+
+class FakeClient:
+    def __init__(self, failures: set[int] | None = None) -> None:
+        self.failures = failures or set()
+        self.calls: list[int] = []
+
+    def get(self, url: str) -> official.FetchResult:
+        race_no = int(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["rno"][0])
+        self.calls.append(race_no)
+        if race_no in self.failures:
+            raise RuntimeError(f"synthetic failure {race_no}")
+        body = official_fixture()
+        return official.FetchResult(url, 200, 0.01, len(body), body)
 
 
 def td(value: object = "", **attrs: object) -> str:
@@ -218,6 +234,74 @@ class OfficialMorningTests(unittest.TestCase):
                 )
                 comparison = official.compare_core(baseline, observed)
                 self.assertTrue(all(item["rate"] == 100.0 for item in comparison.values()))
+
+    def test_missing_race_retry_reuses_every_successful_cached_race(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            baseline = root / "baseline" / "kiryu" / "20261118.json"
+            baseline.parent.mkdir(parents=True)
+            baseline.write_text(
+                json.dumps(synthetic_payload(), ensure_ascii=False), encoding="utf-8"
+            )
+            cache = root / "cache"
+            first_client = FakeClient({7})
+            first = official.run_validation(
+                target_date="2026-11-18",
+                venues=["kiryu"],
+                race_numbers=list(range(1, 13)),
+                baseline_root=root / "baseline",
+                output_root=root / "first",
+                cache_root=cache,
+                client=first_client,
+            )
+            self.assertEqual(first["status"], "failed")
+            self.assertEqual(first["venues"]["kiryu"]["missingRaces"], [7])
+            self.assertFalse((root / "first/candidates/kiryu/20261118.json").exists())
+
+            retry_client = FakeClient()
+            second = official.run_validation(
+                target_date="2026-11-18",
+                venues=["kiryu"],
+                race_numbers=list(range(1, 13)),
+                baseline_root=root / "baseline",
+                output_root=root / "second",
+                cache_root=cache,
+                client=retry_client,
+            )
+            self.assertEqual(retry_client.calls, [7])
+            self.assertEqual(second["status"], "ok")
+            self.assertEqual(second["summary"]["completeVenueCount"], 1)
+            candidate = json.loads(
+                (root / "second/candidates/kiryu/20261118.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(existing_validator.payload_error(candidate, {"reason": "ok"}), "")
+
+    def test_no_same_date_baseline_builds_strict_candidate_from_history(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            history = root / "baseline" / "kiryu" / "20261117.json"
+            history.parent.mkdir(parents=True)
+            history.write_text(
+                json.dumps(synthetic_payload(), ensure_ascii=False), encoding="utf-8"
+            )
+            report = official.run_validation(
+                target_date="2026-11-18",
+                venues=["kiryu"],
+                race_numbers=list(range(1, 13)),
+                baseline_root=root / "baseline",
+                output_root=root / "output",
+                cache_root=root / "cache",
+                client=FakeClient(),
+            )
+            self.assertEqual(report["status"], "ok")
+            venue = report["venues"]["kiryu"]
+            self.assertEqual(venue["buildMode"], "official_with_historical_supplements")
+            candidate = json.loads(
+                (root / "output/candidates/kiryu/20261118.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(existing_validator.payload_error(candidate, {"reason": "ok"}), "")
+            self.assertNotIn("preds", candidate)
+            self.assertNotIn("live", candidate["races"][0])
 
 
 if __name__ == "__main__":

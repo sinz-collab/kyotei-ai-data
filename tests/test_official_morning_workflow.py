@@ -28,6 +28,11 @@ class OfficialMorningWorkflowTests(unittest.TestCase):
         self.assertNotIn("publish_morning_data.sh", self.workflow)
         self.assertNotIn("git push", self.workflow)
         self.assertNotIn("sinz-morning-gateway", self.workflow)
+        self.assertIn("--venues all", self.workflow)
+        self.assertIn("--races all", self.workflow)
+        self.assertIn("actions/cache/restore@v4", self.workflow)
+        self.assertIn("actions/cache/save@v4", self.workflow)
+        self.assertIn("official-morning-cache", self.workflow)
 
 
 if __name__ == "__main__":
