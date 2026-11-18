@@ -19,6 +19,45 @@ import validate_morning_vps_artifacts as validator  # noqa: E402
 
 
 class MorningVpsProductionTest(unittest.TestCase):
+    def test_complete_partial_cache_is_promoted_without_refetch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            races = root / "桐生" / "20261118" / "races"
+            races.mkdir(parents=True)
+            for race_no in range(1, 13):
+                (races / f"race_{race_no:02d}_entry.txt").write_text(
+                    "entry" * 101, encoding="utf-8"
+                )
+                (races / f"race_{race_no:02d}_data.txt").write_text(
+                    "data", encoding="utf-8"
+                )
+                (races / f"race_{race_no:02d}_motor.txt").write_text(
+                    "motor", encoding="utf-8"
+                )
+            with (
+                patch.object(sys, "argv", [
+                    "fetch_one.py", "--venue", "kiryu",
+                    "--date", "2026-11-18", "--root", str(root),
+                ]),
+                patch.object(
+                    fetch_one,
+                    "venue_is_open",
+                    return_value={"open": True, "reason": "race_page_found"},
+                ),
+                patch.object(fetch_one.subprocess, "run") as run,
+                patch.object(fetch_one, "fetch_tide") as tide,
+            ):
+                self.assertEqual(fetch_one.main(), 0)
+            run.assert_not_called()
+            tide.assert_not_called()
+            status = json.loads(
+                (root / "桐生" / "20261118" / "fetch_status.json").read_text(
+                    encoding="utf-8"
+                )
+            )
+            self.assertTrue(status["open"])
+            self.assertEqual(status["entryCount"], 12)
+
     def test_guard_status_is_artifact_compatible(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

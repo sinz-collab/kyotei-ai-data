@@ -263,6 +263,23 @@ def main() -> int:
         "2",
     ]
     start_race = first_incomplete_race(output_dir, venue["slug"])
+    if start_race > 12:
+        status.update(
+            {
+                "open": True,
+                "entryCount": 12,
+                "fetchReturnCode": 0,
+                "fetchAttempts": [],
+                "tide": {"status": "reused"},
+                "cacheReused": True,
+            }
+        )
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "fetch_status.json").write_text(
+            json.dumps(status, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+        print(json.dumps(status, ensure_ascii=False))
+        return 0
     if start_race <= 12:
         command.extend(["--start-race", str(start_race)])
         if start_race > 1:

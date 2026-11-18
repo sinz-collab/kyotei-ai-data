@@ -89,6 +89,7 @@ class MorningRecoveryTest(unittest.TestCase):
             "cpu_quota=25%",
             "memory_max=1024M",
             "venue_timeout=240",
+            "while true; do",
             "prepare_morning_recovery_cache.py",
             "--reason recovery_timeout --count-existing",
             'exit "$selection_rc"',
@@ -120,6 +121,32 @@ class MorningRecoveryTest(unittest.TestCase):
             with patch.object(cache, "cache_is_complete", return_value=True):
                 cache.copy_cached(source, destination)
             self.assertTrue((destination / "fetch_status.json").is_file())
+
+    def test_validated_timeout_cache_is_promoted_for_partial_publish(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            destination = Path(temporary)
+            status_path = destination / "fetch_status.json"
+            status_path.write_text(
+                json.dumps(
+                    {
+                        "slug": "kiryu",
+                        "name": "桐生",
+                        "date": "2026-11-18",
+                        "open": False,
+                        "entryCount": 12,
+                        "failure": {"reason": "recovery_timeout"},
+                    },
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+
+            cache.promote_validated_complete_status(destination)
+
+            promoted = json.loads(status_path.read_text(encoding="utf-8"))
+            self.assertTrue(promoted["open"])
+            self.assertEqual(promoted["entryCount"], 12)
+            self.assertNotIn("failure", promoted)
 
     def test_failed_scope_does_not_select_known_non_running_venue(self) -> None:
         self.assertFalse(

@@ -1232,9 +1232,11 @@ async def main():
         consecutive_empty_entries = 0
         for race_no in range(args.start_race, args.end_race + 1):
             print(f"\n========== {race_no}R ==========")
+            race_started = asyncio.get_running_loop().time()
 
             entry_result = await capture_entry_by_click(page, stadium_slug, actual_date, race_no, race_dir, wait_ms)
             log["entry_results"].append(entry_result)
+            entry_elapsed = asyncio.get_running_loop().time() - race_started
 
             if entry_result.get("analysis", {}).get("has_entry_core"):
                 consecutive_empty_entries = 0
@@ -1251,9 +1253,27 @@ async def main():
 
             data_result = await capture_data_page(page, stadium_slug, actual_date, race_no, race_dir, wait_ms, click_wait_ms)
             log["data_results"].append(data_result)
+            data_elapsed = asyncio.get_running_loop().time() - race_started - entry_elapsed
 
             motor_result = await capture_motor_page(page, stadium_slug, actual_date, race_no, race_dir, wait_ms)
             log["motor_results"].append(motor_result)
+            total_elapsed = asyncio.get_running_loop().time() - race_started
+            print(
+                "[RACE TIMING] "
+                + json.dumps(
+                    {
+                        "race": race_no,
+                        "entrySeconds": round(entry_elapsed, 3),
+                        "dataSeconds": round(data_elapsed, 3),
+                        "motorSeconds": round(
+                            total_elapsed - entry_elapsed - data_elapsed, 3
+                        ),
+                        "totalSeconds": round(total_elapsed, 3),
+                    },
+                    ensure_ascii=False,
+                ),
+                flush=True,
+            )
 
         await browser.close()
 

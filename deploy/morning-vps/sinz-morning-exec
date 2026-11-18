@@ -186,12 +186,13 @@ SAFETY
       echo '    exit "$selection_rc"'
       echo '  fi'
     fi
+    echo '  while true; do'
     echo '  remaining=$((deadline - $(date +%s)))'
     echo '  if [ "$remaining" -le 90 ]; then'
     printf '    reason=%q\n' "$([ -n "$recovery_scope" ] && echo recovery_timeout || echo cutoff_before_live)"
-    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason "$reason"\n' \
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason "$reason" --count-existing\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
-    echo '    continue'
+    echo '    break'
     echo '  fi'
     echo '  venue_timeout=$((remaining - 60))'
     if [ -n "$recovery_scope" ]; then
@@ -212,6 +213,13 @@ SAFETY
     printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason fetch_failed_without_status --if-missing\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
     echo '  fi'
+    echo '  if [ "$rc" -eq 0 ] || [ "$rc" -eq 86 ] || [ -z "$recovery_scope" ]; then break; fi'
+    echo '  if [ "$rc" -ne 124 ]; then break; fi'
+    echo '  if [ -e "$live_stop_file" ] || ! live_is_safe; then'
+    echo '    : > "$live_stop_file"'
+    echo '    break'
+    echo '  fi'
+    echo '  done'
     echo 'done'
   } >"$fetch_script"
   chown "$worker_user:$worker_group" "$fetch_script"

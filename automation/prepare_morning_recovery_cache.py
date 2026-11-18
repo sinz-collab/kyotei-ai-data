@@ -37,7 +37,6 @@ def cache_is_complete(source: Path, venue: dict, target_date: str) -> bool:
         status.get("slug") != venue["slug"]
         or status.get("name") != venue["name"]
         or status.get("date") != target_date
-        or status.get("open") is not True
         or status.get("entryCount") != 12
     ):
         return False
@@ -63,6 +62,25 @@ def copy_cached(source: Path, destination: Path) -> None:
     shutil.copytree(source, destination)
 
 
+def promote_validated_complete_status(destination: Path) -> None:
+    status_path = destination / "fetch_status.json"
+    status = load_status(destination)
+    if not status:
+        raise RuntimeError("validated cache status is missing")
+    status["open"] = True
+    status["entryCount"] = 12
+    status.pop("failure", None)
+    status["precheck"] = {
+        "open": True,
+        "reason": "recovery_cache_validated",
+        "source": "prepare_morning_recovery_cache",
+    }
+    status_path.write_text(
+        json.dumps(status, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--cache-root", type=Path, required=True)
@@ -83,6 +101,7 @@ def main() -> int:
 
     if cache_is_complete(source, venue, args.date):
         copy_cached(source, destination)
+        promote_validated_complete_status(destination)
         print(f"reuse_complete:{args.venue}")
         return 10
 
