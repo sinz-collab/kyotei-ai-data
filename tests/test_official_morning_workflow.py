@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import unittest
+import importlib.util
+import sys
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "automation"))
 WORKFLOW = ROOT / ".github/workflows/morning-data-official.yml"
 
 
@@ -29,6 +32,7 @@ class OfficialMorningWorkflowTests(unittest.TestCase):
         self.assertNotIn("git push", self.workflow)
         self.assertIn("sinz-morning-gateway", self.workflow)
         self.assertIn("supplement-version", self.workflow)
+        self.assertIn("browser_identity.py", self.workflow)
         self.assertIn('races="$(seq -s, 1 12)"', self.workflow)
         self.assertIn("validate_boaters_supplement.py", self.workflow)
         self.assertIn("--boaters-root", self.workflow)
@@ -46,8 +50,24 @@ class OfficialMorningWorkflowTests(unittest.TestCase):
         self.assertIn("maximum twelve", gateway)
         self.assertIn("maximum twelve", executor)
         self.assertIn("validate_boaters_supplement.py", executor)
+        self.assertIn('Environment=PYTHONPATH=$app_root/automation', executor)
+        self.assertIn("Supplement Python dependency preflight failed.", executor)
+        self.assertIn("browser_identity.py", gateway)
         self.assertIn("${missing[@]}", executor)
         self.assertIn(".replaced-invalid", executor)
+
+    def test_offline_audit_covers_exactly_the_twelve_vps_routes(self) -> None:
+        path = ROOT / "automation/audit_boaters_saved_artifacts.py"
+        spec = importlib.util.spec_from_file_location("boaters_offline_audit", path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        self.assertEqual(
+            set(module.VENUES),
+            {
+                "kiryu", "toda", "heiwajima", "tokoname", "biwako", "naruto",
+                "shimonoseki", "wakamatsu", "ashiya", "fukuoka", "karatsu", "omura",
+            },
+        )
 
 
 if __name__ == "__main__":

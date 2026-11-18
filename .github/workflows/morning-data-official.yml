@@ -91,9 +91,10 @@ jobs:
           TARGET_DATE: ${{ inputs.date }}
           HELD_VENUES: ${{ steps.detect.outputs.held }}
         run: |
-          expected="$(printf 'executor=%s\nboaters=%s\nsupplement_validator=%s\nkimarite_parser=%s\nmotor_parser=%s\n' \
+          expected="$(printf 'executor=%s\nboaters=%s\nbrowser_identity=%s\nsupplement_validator=%s\nkimarite_parser=%s\nmotor_parser=%s\n' \
             "$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')" \
             "$(sha256sum automation/boaters_fetch.py | awk '{print $1}')" \
+            "$(sha256sum automation/browser_identity.py | awk '{print $1}')" \
             "$(sha256sum automation/validate_boaters_supplement.py | awk '{print $1}')" \
             "$(sha256sum automation/enrich_all_venues_kimarite.py | awk '{print $1}')" \
             "$(sha256sum automation/enrich_motor_recent.py | awk '{print $1}')")"

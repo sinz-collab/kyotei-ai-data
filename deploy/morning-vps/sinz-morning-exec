@@ -60,6 +60,9 @@ if [ "$action" = fetch ]; then
 fi
 if [ "$action" = supplement ]; then
   [ "$target_date" = "$(TZ=Asia/Tokyo date +%F)" ] || die "Supplement target date must be today in JST." 69
+  PYTHONPATH="$app_root/automation" "$venv_python" -c \
+    'import boaters_fetch, browser_identity, enrich_all_venues_kimarite, enrich_motor_recent, validate_boaters_supplement' \
+    || die "Supplement Python dependency preflight failed." 70
 fi
 
 live_is_safe() {
@@ -113,6 +116,7 @@ common_properties=(
   --property="Group=$worker_group"
   --property="WorkingDirectory=$app_root"
   --property="Environment=HOME=$state_root"
+  --property="Environment=PYTHONPATH=$app_root/automation"
   --property="Environment=PLAYWRIGHT_BROWSERS_PATH=/opt/sinz-morning-fetch/playwright"
   --property="NoNewPrivileges=yes"
   --property="PrivateTmp=yes"
