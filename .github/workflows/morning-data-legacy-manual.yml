@@ -1,0 +1,283 @@
+name: 朝のレースデータ【旧式・手動専用】
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "JST当日 (YYYY-MM-DD)。空欄はJST当日。"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+# Share the production lock with morning-data.yml. Never overlap the VPS path.
+concurrency:
+  group: morning-race-data
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      target_date: ${{ steps.target.outputs.target_date }}
+    steps:
+      - name: Require a manual run from main
+        shell: bash
+        run: |
+          [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]
+          [ "$GITHUB_REF" = refs/heads/main ] || {
+            echo "This emergency workflow may run only from main." >&2
+            exit 1
+          }
+
+      - id: target
+        name: Restrict acquisition to JST today
+        shell: bash
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+        run: |
+          today_jst="$(TZ=Asia/Tokyo date +%F)"
+          target_date="${INPUT_DATE:-$today_jst}"
+          if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] || \
+             [ "$(date -d "$target_date" +%F 2>/dev/null)" != "$target_date" ]; then
+            echo "Invalid target date: $target_date" >&2
+            exit 1
+          fi
+          [ "$target_date" = "$today_jst" ] || {
+            echo "Legacy acquisition is restricted to JST today ($today_jst)." >&2
+            exit 1
+          }
+          echo "target_date=$target_date" >> "$GITHUB_OUTPUT"
+          echo "Target date: $target_date" >> "$GITHUB_STEP_SUMMARY"
+
+  fetch:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - shard: east
+            venues: "kiryu ashiya shimonoseki toda wakamatsu"
+          - shard: west
+            venues: "tokoname omura karatsu fukuoka heiwajima biwako naruto"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: automation/requirements.txt
+
+      # Restored from c02dc609: acquire directly on the GitHub-hosted runner.
+      - name: Install legacy runner runtime with retry
+        shell: bash
+        run: |
+          retry() {
+            local attempt
+            for attempt in 1 2 3; do
+              echo "Attempt ${attempt}: $*"
+              if "$@"; then
+                return 0
+              fi
+              if [ "$attempt" -lt 3 ]; then
+                sleep $((attempt * 20))
+              fi
+            done
+            return 1
+          }
+          retry python -m pip install -r automation/requirements.txt
+          retry python -m playwright install --with-deps chromium
+
+      - name: Fetch shard directly and stop on access blocking
+        shell: bash
+        env:
+          VENUES: ${{ matrix.venues }}
+        run: |
+          failed=0
+          blocked=0
+          for venue in $VENUES; do
+            echo "::group::Fetch ${venue} ${TARGET_DATE}"
+            set +e
+            python automation/fetch_one.py \
+              --venue "$venue" --date "$TARGET_DATE" 2>&1 \
+              | tee "$RUNNER_TEMP/fetch-${venue}.log"
+            rc=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+
+            if [ "$rc" -eq 86 ] || \
+               grep -Eqi 'http_403|HTTP Error 403|security_challenge|SECURITY_CHALLENGE' \
+                 "$RUNNER_TEMP/fetch-${venue}.log"; then
+              echo "Access blocking detected; stop this shard without publication." >&2
+              blocked=1
+              break
+            fi
+            if [ "$rc" -ne 0 ]; then
+              failed=1
+            fi
+          done
+          if [ "$blocked" -eq 1 ]; then
+            exit 86
+          fi
+          exit "$failed"
+
+      - name: Upload isolated shard data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-morning-${{ matrix.shard }}-${{ needs.prepare.outputs.target_date }}
+          path: |
+            work/races/**/fetch_status.json
+            work/races/**/tide_today.json
+            work/races/**/races/*_entry.txt
+            work/races/**/races/*_entry.html
+            work/races/**/races/*_data.txt
+            work/races/**/races/*_motor.txt
+            work/races/**/races/*_boaters_local_st.json
+          if-no-files-found: error
+          retention-days: 2
+
+  validate:
+    needs: [prepare, fetch]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            automation
+          sparse-checkout-cone-mode: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Download east shard
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy-morning-east-${{ needs.prepare.outputs.target_date }}
+          path: work/artifacts/east
+      - name: Download west shard
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy-morning-west-${{ needs.prepare.outputs.target_date }}
+          path: work/artifacts/west
+
+      - name: Stop safely on Cloudflare or HTTP 403
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          blocked = []
+          for path in Path("work/artifacts").rglob("fetch_status.json"):
+              status = json.loads(path.read_text(encoding="utf-8"))
+              precheck = status.get("precheck") or {}
+              failure = status.get("failure") or {}
+              if (
+                  precheck.get("httpStatus") == 403
+                  or "http_403" in str(precheck.get("reason", ""))
+                  or failure.get("reason") == "security_challenge"
+                  or status.get("fetchReturnCode") == 86
+              ):
+                  blocked.append(str(path))
+          if blocked:
+              raise SystemExit("Access blocking detected; publication stopped: " + ", ".join(blocked))
+          PY
+
+      - name: Merge, validate, and quarantine incomplete acquisitions
+        shell: bash
+        run: |
+          python automation/prepare_morning_artifacts.py \
+            --date "$TARGET_DATE" \
+            --east work/artifacts/east \
+            --west work/artifacts/west \
+            --output work/validated
+          python automation/validate_morning_vps_artifacts.py \
+            --date "$TARGET_DATE" --root work/validated
+
+      - name: Keep only successfully validated race files
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          ready = []
+          for path in Path("work/validated").rglob("fetch_status.json"):
+              status = json.loads(path.read_text(encoding="utf-8"))
+              if status.get("open") is True and status.get("entryCount") == 12:
+                  ready.append(status["slug"])
+                  continue
+              shutil.rmtree(path.parent / "races", ignore_errors=True)
+              (path.parent / "tide_today.json").unlink(missing_ok=True)
+          if not ready:
+              raise SystemExit("No successfully validated venue; publication stopped.")
+          print("Validated venues:", ", ".join(sorted(ready)))
+          PY
+
+      - name: Upload validated legacy acquisition
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-morning-validated-${{ needs.prepare.outputs.target_date }}
+          path: work/validated
+          if-no-files-found: error
+          retention-days: 2
+
+  publish:
+    needs: [prepare, validate]
+    if: needs.prepare.result == 'success' && needs.validate.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TARGET_DATE: ${{ needs.prepare.outputs.target_date }}
+      MORNING_RECOVERY_MODE: failed
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Restore official six-month course database
+        uses: actions/cache@v4
+        with:
+          path: data/player_course_6m/player_course_6m.sqlite
+          key: player-course-6m-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: |
+            player-course-6m-${{ runner.os }}-
+      - name: Install prediction dependencies
+        run: |
+          python -m pip install lxml==6.0.0
+          python -m pip install lhafile==0.3.1
+          python -m pip install catboost==1.2.10
+          python -m pip install -r engines/ashiya/ashiya_engine_v1_6/requirements.txt
+      - name: Download validated acquisition
+        uses: actions/download-artifact@v4
+        with:
+          name: legacy-morning-validated-${{ needs.prepare.outputs.target_date }}
+          path: work/races
+      - name: Run existing guarded publication
+        shell: bash
+        run: bash automation/publish_morning_data.sh "$TARGET_DATE"
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-morning-report-${{ needs.prepare.outputs.target_date }}
+          path: |
+            build-*.log
+            data/morning_report.json
+            work/races/**/fetch_status.json
+          if-no-files-found: warn
+          retention-days: 2
