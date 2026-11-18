@@ -881,6 +881,7 @@ def apply_boaters_cache(
                     )
                 )
                 if source_missing:
+                    racer["local_st"] = ""
                     racer["boaters_local_avg_st"] = ""
                     racer["boaters_local_st_status"] = "source_missing"
                     racer["boaters_local_st_missing_reason"] = "source_dash"

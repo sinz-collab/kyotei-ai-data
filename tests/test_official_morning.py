@@ -425,6 +425,7 @@ class OfficialMorningTests(unittest.TestCase):
             self.assertEqual(stats["localAvailable"], 5)
             self.assertEqual(stats["localSourceMissing"], 1)
             self.assertEqual(racers[1]["boaters_local_avg_st"], "")
+            self.assertEqual(racers[1]["local_st"], "")
             self.assertEqual(racers[1]["boaters_local_st_missing_reason"], "source_dash")
             self.assertEqual(
                 racers[0]["supplement_sources"]["local_st"]["match"], "registration_no"
