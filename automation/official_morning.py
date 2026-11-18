@@ -27,6 +27,8 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from bs4 import BeautifulSoup
+from enrich_all_venues_kimarite import parse_race_kimarite
+from enrich_motor_recent import parse_motor_recent_text
 from validate_morning_vps_artifacts import payload_error as existing_payload_error
 
 
@@ -513,11 +515,22 @@ def validate_candidate(
                         f"race_{race_no:02d}_lane_{racer.get('lane')}_season_run_incomplete"
                     )
             supplement_groups = {
-                "local_st": ("local_st", "boaters_local_avg_st"),
                 "motor_recent": ("motor_recent",),
                 "kimarite": ("boaters_kimarite_starts",),
                 "recent_course_6m": ("recent_course_6m",),
             }
+            local_available = any(
+                key in racer and racer.get(key) not in (None, "")
+                for key in ("local_st", "boaters_local_avg_st")
+            )
+            local_source_missing = (
+                racer.get("boaters_local_st_status") == "source_missing"
+                and racer.get("boaters_local_st_missing_reason") == "source_dash"
+            )
+            if not local_available and not local_source_missing:
+                errors.append(
+                    f"race_{race_no:02d}_lane_{racer.get('lane')}_supplement_missing:local_st"
+                )
             for label, keys in supplement_groups.items():
                 if not any(key in racer for key in keys):
                     errors.append(
@@ -705,25 +718,32 @@ def build_supplement_indexes(
             continue
         for race in payload.get("races") or []:
             for racer in race.get("racers") or []:
+                indexed = copy.deepcopy(racer)
+                indexed["_supplement_meta"] = {
+                    "source": "existing_public_history",
+                    "source_path": str(path),
+                    "fetched_at": _source_time(path),
+                    "missing_reason": "",
+                }
                 name = normalize_name(racer.get("name"))
                 lane = int(racer.get("lane") or 0)
                 motor_no = str(racer.get("motor_no") or "")
                 if not name:
                     continue
-                local_by_name.setdefault((slug, name), racer)
+                local_by_name.setdefault((slug, name), indexed)
                 if motor_no:
-                    motor_by_number.setdefault((slug, motor_no), racer)
+                    motor_by_number.setdefault((slug, motor_no), indexed)
                 existing_course = course_by_name.get(name)
                 if "recent_course_6m_by_course" in racer and (
                     existing_course is None
                     or "recent_course_6m_by_course" not in existing_course
                 ):
-                    course_by_name[name] = racer
+                    course_by_name[name] = indexed
                 elif "recent_course_6m" in racer and existing_course is None:
-                    course_by_name[name] = racer
+                    course_by_name[name] = indexed
                 if lane in range(1, 7):
-                    kimarite_by_name_lane.setdefault((slug, name, lane), racer)
-                    kimarite_by_name_lane.setdefault(("*", name, lane), racer)
+                    kimarite_by_name_lane.setdefault((slug, name, lane), indexed)
+                    kimarite_by_name_lane.setdefault(("*", name, lane), indexed)
     return local_by_name, motor_by_number, course_by_name, kimarite_by_name_lane
 
 
@@ -747,30 +767,189 @@ def supplement_official_racer(
     kimarite_source = kimarite_by_name_lane.get((slug, name, lane)) or kimarite_by_name_lane.get(
         ("*", name, lane), {}
     )
+    provenance = enriched.setdefault("supplement_sources", {})
     for key in ("local_st", "boaters_local_avg_st", "boaters_local_st_rank"):
         if key in local_source:
             enriched[key] = copy.deepcopy(local_source[key])
+    if any(key in local_source for key in ("local_st", "boaters_local_avg_st")):
+        provenance["local_st"] = copy.deepcopy(local_source.get("_supplement_meta", {}))
     if "motor_recent" in motor_source:
         enriched["motor_recent"] = copy.deepcopy(motor_source["motor_recent"])
         enriched["motor_recent"]["lane"] = lane
         enriched["motor_recent"]["motor_no"] = str(enriched["motor_no"])
+        provenance["motor_recent"] = copy.deepcopy(motor_source.get("_supplement_meta", {}))
     for key, value in kimarite_source.items():
         if key.startswith("boaters_") and key not in {
             "boaters_local_avg_st", "boaters_local_st_rank"
         }:
             enriched[key] = copy.deepcopy(value)
+    if "boaters_kimarite_starts" in kimarite_source:
+        provenance["kimarite"] = copy.deepcopy(kimarite_source.get("_supplement_meta", {}))
     by_course = course_source.get("recent_course_6m_by_course")
     if isinstance(by_course, dict):
         enriched["recent_course_6m_by_course"] = copy.deepcopy(by_course)
         selected = by_course.get(str(lane)) or by_course.get(lane)
         if selected:
             enriched["recent_course_6m"] = copy.deepcopy(selected)
+            provenance["recent_course_6m"] = copy.deepcopy(course_source.get("_supplement_meta", {}))
     elif isinstance(course_source.get("recent_course_6m"), dict):
         selected = course_source["recent_course_6m"]
         if selected.get("course") in (None, "", lane, str(lane)):
             enriched["recent_course_6m"] = copy.deepcopy(selected)
+            provenance["recent_course_6m"] = copy.deepcopy(course_source.get("_supplement_meta", {}))
     enriched["officialSupplementSource"] = "existing_public_history"
     return enriched
+
+
+def _source_time(path: Path) -> str:
+    return datetime.fromtimestamp(path.stat().st_mtime).astimezone().isoformat(timespec="seconds")
+
+
+def _boaters_race_dir(
+    boaters_root: Path, slug: str, target_date: str, race_no: int
+) -> Path | None:
+    marker = f"race_{race_no:02d}_boaters_local_st.json"
+    date_token = target_date.replace("-", "")
+    venue_name = VENUES[slug][1]
+    candidates = [
+        path.parent
+        for path in boaters_root.rglob(marker)
+        if date_token in str(path) and (slug in path.parts or venue_name in path.parts)
+    ]
+    return max(candidates, key=lambda item: (item / marker).stat().st_mtime) if candidates else None
+
+
+def apply_boaters_cache(
+    candidate: dict[str, Any], *, boaters_root: Path, slug: str, target_date: str
+) -> dict[str, Any]:
+    """Apply current-day BOATERS cache without performing network access."""
+    stats = {"races": 0, "localAvailable": 0, "localSourceMissing": 0,
+             "motorRecent": 0, "kimarite": 0, "matchFallbacks": 0}
+    for race in candidate.get("races") or []:
+        race_no = int(race.get("race") or 0)
+        race_dir = _boaters_race_dir(boaters_root, slug, target_date, race_no)
+        if race_dir is None:
+            continue
+        stats["races"] += 1
+        racers = race.get("racers") or []
+        local_path = race_dir / f"race_{race_no:02d}_boaters_local_st.json"
+        motor_path = race_dir / f"race_{race_no:02d}_motor.txt"
+        data_path = race_dir / f"race_{race_no:02d}_data.txt"
+        local_payload: dict[str, Any] = {}
+        if local_path.is_file():
+            try:
+                local_payload = json.loads(local_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                local_payload = {}
+        local_rows = local_payload.get("racers") or []
+        by_id = {
+            str(row.get("player_id") or "").strip(): row
+            for row in local_rows if str(row.get("player_id") or "").strip()
+        }
+        by_lane = {int(row.get("lane") or 0): row for row in local_rows}
+        motors = parse_motor_recent_text(motor_path) if motor_path.is_file() else {}
+        kimarite = (
+            parse_race_kimarite(data_path.read_text(encoding="utf-8", errors="replace"), racers)
+            if data_path.is_file() else {}
+        )
+        for racer in racers:
+            lane = int(racer.get("lane") or 0)
+            player_id = str(racer.get("player_id") or "").strip()
+            local = by_id.get(player_id)
+            match_method = "registration_no"
+            if local is None:
+                fallback = by_lane.get(lane)
+                if fallback and normalize_name(fallback.get("name")) == normalize_name(racer.get("name")):
+                    local = fallback
+                    match_method = "lane_and_name"
+                    stats["matchFallbacks"] += 1
+            provenance = racer.setdefault("supplement_sources", {})
+            if local is not None:
+                for key in (
+                    "boaters_local_avg_st", "boaters_local_st_rank",
+                    "boaters_local_st_status", "boaters_local_st_missing_reason",
+                    "boaters_local_st_source_value", "boaters_local_st_rank_source_value",
+                ):
+                    if key in local:
+                        racer[key] = copy.deepcopy(local[key])
+                source_missing = (
+                    local.get("boaters_local_st_status") == "source_missing"
+                    or local.get("boaters_local_st_source_value") == "-"
+                    or (
+                        local.get("boaters_local_avg_st") in (None, "")
+                        and local.get("boaters_local_st_rank") in (None, "")
+                    )
+                )
+                if source_missing:
+                    racer["boaters_local_avg_st"] = ""
+                    racer["boaters_local_st_status"] = "source_missing"
+                    racer["boaters_local_st_missing_reason"] = "source_dash"
+                    stats["localSourceMissing"] += 1
+                elif racer.get("boaters_local_avg_st"):
+                    racer["boaters_local_st_status"] = "available"
+                    stats["localAvailable"] += 1
+                provenance["local_st"] = {
+                    "source": local_payload.get("source") or "BOATERS local start ranking",
+                    "source_url": local_payload.get("source_url") or "",
+                    "fetched_at": local_payload.get("fetched_at") or _source_time(local_path),
+                    "match": match_method,
+                    "missing_reason": racer.get("boaters_local_st_missing_reason") or "",
+                }
+            motor = motors.get(lane)
+            if motor and str(motor.get("motor_no") or "") == str(racer.get("motor_no") or ""):
+                racer["motor_recent"] = copy.deepcopy(motor)
+                provenance["motor_recent"] = {
+                    "source": "BOATERS motor recent 10",
+                    "fetched_at": _source_time(motor_path),
+                    "match": "motor_no_and_lane",
+                    "missing_reason": "",
+                }
+                stats["motorRecent"] += 1
+            row = kimarite.get(lane)
+            if row:
+                racer.update(copy.deepcopy(row))
+                provenance["kimarite"] = {
+                    "source": "BOATERS six-month race data",
+                    "fetched_at": _source_time(data_path),
+                    "match": "registration_no_and_lane" if player_id else "lane_and_name",
+                    "missing_reason": "",
+                }
+                stats["kimarite"] += 1
+        if isinstance(race.get("entries"), list):
+            race["entries"] = copy.deepcopy(racers)
+    return stats
+
+
+def supplement_coverage(candidate: dict[str, Any]) -> dict[str, Any]:
+    racers = [
+        racer
+        for race in candidate.get("races") or []
+        for racer in race.get("racers") or []
+    ]
+    total = len(racers)
+    source_missing = sum(
+        racer.get("boaters_local_st_status") == "source_missing"
+        and racer.get("boaters_local_st_missing_reason") == "source_dash"
+        for racer in racers
+    )
+    available = {
+        "localAvgSt": sum(
+            bool(re.fullmatch(r"0?\.\d{2}", str(racer.get("boaters_local_avg_st") or racer.get("local_st") or "")))
+            for racer in racers
+        ),
+        "localStRank": sum(bool(racer.get("boaters_local_st_rank")) for racer in racers),
+        "motorRecent": sum(isinstance(racer.get("motor_recent"), dict) for racer in racers),
+        "kimarite": sum("boaters_kimarite_starts" in racer for racer in racers),
+    }
+    return {
+        "targetRacers": total,
+        "available": available,
+        "validSourceMissing": {"localAvgSt": source_missing, "localStRank": source_missing},
+        "missing": {
+            key: total - count - (source_missing if key in {"localAvgSt", "localStRank"} else 0)
+            for key, count in available.items()
+        },
+    }
 
 
 def build_candidate_from_official(
@@ -892,6 +1071,7 @@ def run_validation(
     output_root: Path,
     cache_root: Path,
     client: OfficialClient,
+    boaters_root: Path | None = None,
 ) -> dict[str, Any]:
     """Detect held venues, acquire requested races, and build isolated candidates."""
     started = time.perf_counter()
@@ -1001,6 +1181,15 @@ def run_validation(
                         target_date=target_date,
                         supplement_indexes=supplement_indexes,
                     )
+                venue_report["supplementCoverageBeforeBoatersCache"] = supplement_coverage(candidate)
+                if boaters_root is not None and boaters_root.is_dir():
+                    venue_report["boatersCache"] = apply_boaters_cache(
+                        candidate,
+                        boaters_root=boaters_root,
+                        slug=slug,
+                        target_date=target_date,
+                    )
+                venue_report["supplementCoverageAfterBoatersCache"] = supplement_coverage(candidate)
                 candidate_errors = validate_candidate(
                     baseline, candidate, requested_races=expected
                 )
@@ -1060,6 +1249,7 @@ def main() -> int:
     parser.add_argument("--baseline-root", type=Path, default=Path("data/venues"))
     parser.add_argument("--output-root", type=Path, default=Path("work/official-morning"))
     parser.add_argument("--cache-root", type=Path, default=Path("work/official-morning-cache"))
+    parser.add_argument("--boaters-root", type=Path)
     parser.add_argument("--min-interval", type=float, default=1.0)
     parser.add_argument("--timeout", type=float, default=25.0)
     args = parser.parse_args()
@@ -1078,6 +1268,7 @@ def main() -> int:
         output_root=args.output_root,
         cache_root=args.cache_root,
         client=OfficialClient(args.min_interval, args.timeout),
+        boaters_root=args.boaters_root,
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["status"] == "ok" else 1

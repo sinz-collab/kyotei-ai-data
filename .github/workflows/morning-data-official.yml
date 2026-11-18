@@ -8,6 +8,16 @@ on:
         required: true
         default: "2026-11-18"
         type: string
+      supplement_venue:
+        description: "Optional BOATERS supplement venue slug (one venue only)"
+        required: false
+        default: ""
+        type: string
+      supplement_races:
+        description: "Optional comma-separated missing races (maximum three)"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -35,6 +45,49 @@ jobs:
           test "$GITHUB_REF" = refs/heads/main
           [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
           test "$(date -d "$TARGET_DATE" +%F 2>/dev/null)" = "$TARGET_DATE"
+          if [ -n "${{ inputs.supplement_venue }}${{ inputs.supplement_races }}" ]; then
+            test -n "${{ inputs.supplement_venue }}"
+            [[ "${{ inputs.supplement_venue }}" =~ ^(kiryu|toda|heiwajima|tokoname|biwako|naruto|shimonoseki|wakamatsu|ashiya|fukuoka|karatsu|omura)$ ]]
+            [[ "${{ inputs.supplement_races }}" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,2}$ ]]
+          fi
+      - name: Configure pinned VPS SSH host for optional supplements
+        if: inputs.supplement_venue != ''
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+          VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.MORNING_VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_KEY" > "$HOME/.ssh/morning-vps"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/morning-vps" "$HOME/.ssh/known_hosts"
+          test -n "$VPS_HOST"
+          ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
+      - name: Retrieve only requested BOATERS supplements
+        if: inputs.supplement_venue != ''
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
+          TARGET_DATE: ${{ inputs.date }}
+          VENUE: ${{ inputs.supplement_venue }}
+          RACES: ${{ inputs.supplement_races }}
+        run: |
+          expected="$(printf 'executor=%s\nboaters=%s\n' \
+            "$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')" \
+            "$(sha256sum automation/boaters_fetch.py | awk '{print $1}')")"
+          actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
+            "sinz-morning-gateway@$VPS_HOST" supplement-version)"
+          [ "$actual" = "$expected" ]
+          mkdir -p work/official-boaters
+          timeout --signal=TERM --kill-after=20s 780s \
+            ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
+              -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
+              -o ServerAliveInterval=15 -o ServerAliveCountMax=2 \
+              "sinz-morning-gateway@$VPS_HOST" \
+              "supplement $TARGET_DATE $VENUE $RACES" > "$RUNNER_TEMP/official-boaters.tgz"
+          tar -xzf "$RUNNER_TEMP/official-boaters.tgz" -C work/official-boaters
       - name: Install parser dependency
         run: python -m pip install beautifulsoup4==4.13.4
       - name: Restore successful official race cache
@@ -58,6 +111,7 @@ jobs:
             --baseline-root data/venues \
             --output-root work/official-morning \
             --cache-root work/official-morning-cache \
+            --boaters-root work/official-boaters/work/races \
             --min-interval 1.0 \
             --timeout 25
           exit_code=$?

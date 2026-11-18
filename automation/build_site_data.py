@@ -341,6 +341,8 @@ def backfill_boaters_local_avg_st(racers: list[dict]) -> int:
     for racer in racers:
         if _valid_local_st(racer.get("boaters_local_avg_st")):
             continue
+        if racer.get("boaters_local_st_status") == "source_missing":
+            continue
         local_st = str(racer.get("local_st") or "").strip()
         if not _valid_local_st(local_st):
             continue
@@ -1284,6 +1286,14 @@ def build_payload(venue: dict, date: str, source_dir: Path) -> tuple[dict | None
                 local_rank = str(local_row.get("boaters_local_st_rank") or "").strip()
                 if local_rank:
                     racer["boaters_local_st_rank"] = local_rank
+                for key in (
+                    "boaters_local_st_status",
+                    "boaters_local_st_missing_reason",
+                    "boaters_local_st_source_value",
+                    "boaters_local_st_rank_source_value",
+                ):
+                    if key in local_row:
+                        racer[key] = local_row[key]
             if venue["slug"] == "shimonoseki":
                 merge_shimonoseki_local_st(racers, local_rows)
         backfill_boaters_local_avg_st(racers)

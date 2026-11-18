@@ -10,10 +10,15 @@ if [ "$original_command" = version ]; then
   printf 'validator=%s\n' "$(sha256sum /opt/sinz-morning-fetch/app/automation/validate_morning_vps_artifacts.py | awk '{print $1}')"
   exit 0
 fi
+if [ "$original_command" = supplement-version ]; then
+  printf 'executor=%s\n' "$(sha256sum "$executor" | awk '{print $1}')"
+  printf 'boaters=%s\n' "$(sha256sum /opt/sinz-morning-fetch/app/automation/boaters_fetch.py | awk '{print $1}')"
+  exit 0
+fi
 
 read -r -a command_parts <<<"$original_command"
-if [ "${#command_parts[@]}" -ne 3 ]; then
-  echo "Rejected: expected ACTION YYYY-MM-DD SHARD." >&2
+if [ "${#command_parts[@]}" -ne 3 ] && [ "${#command_parts[@]}" -ne 4 ]; then
+  echo "Rejected: expected ACTION YYYY-MM-DD TARGET [RACES]." >&2
   exit 64
 fi
 
@@ -22,16 +27,24 @@ target_date="${command_parts[1]}"
 shard="${command_parts[2]}"
 
 case "$action" in
-  dummy|fetch|recovery-all|recovery-failed) ;;
+  dummy|fetch|recovery-all|recovery-failed) [ "${#command_parts[@]}" -eq 3 ] || exit 64 ;;
+  supplement) [ "${#command_parts[@]}" -eq 4 ] || exit 64 ;;
   *) echo "Rejected: unsupported action." >&2; exit 64 ;;
 esac
 if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]; then
   echo "Rejected: invalid date." >&2
   exit 64
 fi
-case "$shard" in
-  east|west) ;;
-  *) echo "Rejected: invalid shard." >&2; exit 64 ;;
-esac
+if [ "$action" = supplement ]; then
+  [[ "$shard" =~ ^(kiryu|toda|heiwajima|tokoname|biwako|naruto|shimonoseki|wakamatsu|ashiya|fukuoka|karatsu|omura)$ ]] || {
+    echo "Rejected: invalid venue." >&2; exit 64;
+  }
+  races="${command_parts[3]}"
+  [[ "$races" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,2}$ ]] || {
+    echo "Rejected: invalid race list (maximum three)." >&2; exit 64;
+  }
+  exec sudo -n "$executor" "$action" "$target_date" "$shard" "$races"
+fi
+case "$shard" in east|west) ;; *) echo "Rejected: invalid shard." >&2; exit 64 ;; esac
 
 exec sudo -n "$executor" "$action" "$target_date" "$shard"

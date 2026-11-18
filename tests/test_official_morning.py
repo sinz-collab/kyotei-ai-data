@@ -384,6 +384,52 @@ class OfficialMorningTests(unittest.TestCase):
         self.assertEqual(enriched["recent_course_6m"]["course"], 2)
         self.assertEqual(enriched["boaters_kimarite_starts"], 20)
 
+    def test_source_dash_is_valid_missing_and_is_not_guessed(self) -> None:
+        candidate = synthetic_payload()
+        racer = candidate["races"][0]["racers"][0]
+        racer.pop("local_st", None)
+        racer.pop("boaters_local_avg_st", None)
+        racer["boaters_local_st_status"] = "source_missing"
+        racer["boaters_local_st_missing_reason"] = "source_dash"
+        errors = official.validate_candidate(None, candidate, requested_races=[1])
+        self.assertFalse(any("supplement_missing:local_st" in item for item in errors))
+        self.assertEqual(existing_validator.payload_error(candidate, {"reason": "ok"}), "")
+
+    def test_apply_boaters_cache_uses_registration_and_records_provenance(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            race_dir = root / "平和島" / "20261118" / "races"
+            race_dir.mkdir(parents=True)
+            candidate = synthetic_payload()
+            race = candidate["races"][0]
+            rows = []
+            for racer in race["racers"]:
+                lane = racer["lane"]
+                rows.append({
+                    "lane": lane,
+                    "name": racer["name"],
+                    "player_id": racer["player_id"],
+                    "boaters_local_avg_st": "" if lane == 2 else "0.15",
+                    "boaters_local_st_rank": "" if lane == 2 else "3.0位",
+                    "boaters_local_st_status": "source_missing" if lane == 2 else "available",
+                    "boaters_local_st_missing_reason": "source_dash" if lane == 2 else "",
+                })
+            (race_dir / "race_01_boaters_local_st.json").write_text(
+                json.dumps({"source": "BOATERS", "fetched_at": "2026-11-18T06:00:00+09:00", "racers": rows}, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            stats = official.apply_boaters_cache(
+                candidate, boaters_root=root, slug="heiwajima", target_date="2026-11-18"
+            )
+            racers = candidate["races"][0]["racers"]
+            self.assertEqual(stats["localAvailable"], 5)
+            self.assertEqual(stats["localSourceMissing"], 1)
+            self.assertEqual(racers[1]["boaters_local_avg_st"], "")
+            self.assertEqual(racers[1]["boaters_local_st_missing_reason"], "source_dash")
+            self.assertEqual(
+                racers[0]["supplement_sources"]["local_st"]["match"], "registration_no"
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -611,7 +611,12 @@ async def capture_data_page(page, slug: str, date: str, race_no: int, race_dir: 
 async def capture_boaters_local_start(page, race_dir: Path, race_no: int, click_wait_ms: int) -> Dict:
     """Capture BOATERS 枠別スタート順位 > 当地 without changing the saved data view."""
     out_path = race_dir / f"race_{race_no:02d}_boaters_local_st.json"
-    result = {"source": "BOATERS 枠別スタート順位 > 当地", "racers": []}
+    result = {
+        "source": "BOATERS 枠別スタート順位 > 当地",
+        "source_url": page.url,
+        "fetched_at": datetime.now(ZoneInfo("Asia/Tokyo")).isoformat(timespec="seconds"),
+        "racers": [],
+    }
     try:
         section = page.locator(".data-start-ranking-section")
         if await section.count() == 0:
@@ -635,6 +640,17 @@ async def capture_boaters_local_start(page, race_dir: Path, race_no: int, click_
                     """,
                     timeout=max(click_wait_ms, 3_000),
                 )
+                audit_base = race_dir / f"race_{race_no:02d}_boaters_local_st_clicked"
+                audit_base.with_suffix(".html").write_text(
+                    await page.content(), encoding="utf-8"
+                )
+                audit_base.with_suffix(".txt").write_text(
+                    await section.inner_text(), encoding="utf-8"
+                )
+                result["audit"] = {
+                    "html": str(audit_base.with_suffix(".html")),
+                    "text": str(audit_base.with_suffix(".txt")),
+                }
                 racers = await section.evaluate(
                     r"""
                     section => [...section.querySelectorAll('a[href^="/racer/"]')].map(a => {
@@ -648,8 +664,13 @@ async def capture_boaters_local_start(page, race_dir: Path, race_no: int, click_
                           return {
                             lane: Number(lane),
                             name: (a.innerText || '').trim(),
+                            player_id: ((a.getAttribute('href') || '').match(/\/racer\/(\d+)/) || [])[1] || '',
                             boaters_local_avg_st: avg === '-' ? '' : avg,
                             boaters_local_st_rank: rank === '-' ? '' : rank,
+                            boaters_local_st_status: avg === '-' ? 'source_missing' : 'available',
+                            boaters_local_st_missing_reason: avg === '-' ? 'source_dash' : '',
+                            boaters_local_st_source_value: avg,
+                            boaters_local_st_rank_source_value: rank,
                           };
                         }
                       }
@@ -1185,12 +1206,23 @@ async def main():
     parser.add_argument("--start-race", type=int, default=1)
     parser.add_argument("--end-race", type=int, default=12)
     parser.add_argument(
+        "--races",
+        help="Comma-separated race numbers. Used by the isolated supplement fetcher.",
+    )
+    parser.add_argument(
         "--abort-after-empty-entries",
         type=int,
         default=0,
         help="Abort after this many consecutive races without an entry table (0 disables).",
     )
     args = parser.parse_args()
+
+    selected_races = (
+        sorted({int(value) for value in args.races.split(",") if value.strip()})
+        if args.races else list(range(args.start_race, args.end_race + 1))
+    )
+    if not selected_races or any(race_no not in range(1, 13) for race_no in selected_races):
+        parser.error("race selection must be between 1 and 12")
 
     stadium_jp = normalize_stadium(args.stadium)
     stadium_slug = stadium_to_slug(args.stadium)
@@ -1230,7 +1262,7 @@ async def main():
         page = await context.new_page()
 
         consecutive_empty_entries = 0
-        for race_no in range(args.start_race, args.end_race + 1):
+        for race_no in selected_races:
             print(f"\n========== {race_no}R ==========")
             race_started = asyncio.get_running_loop().time()
 

@@ -15,24 +15,36 @@ die() {
 }
 
 [ "${EUID:-$(id -u)}" -eq 0 ] || die "Executor must run as root."
-[ "$#" -eq 3 ] || die "Expected ACTION YYYY-MM-DD SHARD." 64
+[ "$#" -eq 3 ] || [ "$#" -eq 4 ] || die "Expected ACTION YYYY-MM-DD TARGET [RACES]." 64
 action="$1"
 target_date="$2"
 shard="$3"
 
 case "$action" in
-  dummy|fetch|recovery-all|recovery-failed) ;;
+  dummy|fetch|recovery-all|recovery-failed|supplement) ;;
   *) die "Unsupported action." 64 ;;
 esac
 if [[ ! "$target_date" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] ||
   [ "$(date -d "$target_date" +%F 2>/dev/null || true)" != "$target_date" ]; then
   die "Invalid date." 64
 fi
-case "$shard" in
-  east) venues=(kiryu ashiya shimonoseki toda wakamatsu) ;;
-  west) venues=(tokoname omura karatsu fukuoka heiwajima biwako naruto) ;;
-  *) die "Invalid shard." 64 ;;
-esac
+supplement_races=
+if [ "$action" = supplement ]; then
+  [ "$#" -eq 4 ] || die "Supplement requires VENUE RACES." 64
+  venue="$shard"
+  supplement_races="$4"
+  [[ "$venue" =~ ^(kiryu|toda|heiwajima|tokoname|biwako|naruto|shimonoseki|wakamatsu|ashiya|fukuoka|karatsu|omura)$ ]] || die "Invalid venue." 64
+  [[ "$supplement_races" =~ ^([1-9]|1[0-2])(,([1-9]|1[0-2])){0,2}$ ]] || die "Invalid race list (maximum three)." 64
+  venues=("$venue")
+  case "$venue" in kiryu|ashiya|shimonoseki|toda|wakamatsu) shard=east ;; *) shard=west ;; esac
+else
+  [ "$#" -eq 3 ] || die "Unexpected fourth argument." 64
+  case "$shard" in
+    east) venues=(kiryu ashiya shimonoseki toda wakamatsu) ;;
+    west) venues=(tokoname omura karatsu fukuoka heiwajima biwako naruto) ;;
+    *) die "Invalid shard." 64 ;;
+  esac
+fi
 
 if [ "$action" = fetch ] || [[ "$action" == recovery-* ]]; then
   [ -f "$enable_file" ] || die "Production morning fetch is disabled." 69
@@ -45,6 +57,9 @@ if [ "$action" = fetch ]; then
   if [ $((10#$now_hm)) -lt 600 ] || [ $((10#$now_hm)) -gt 645 ]; then
     die "Production morning fetch may start only from 06:00 through 06:45 JST." 69
   fi
+fi
+if [ "$action" = supplement ]; then
+  [ "$target_date" = "$(TZ=Asia/Tokyo date +%F)" ] || die "Supplement target date must be today in JST." 69
 fi
 
 live_is_safe() {
@@ -59,7 +74,7 @@ live_is_safe() {
   awk -v load_one="$load_one" -v cpus="$cpu_count" 'BEGIN {exit !(load_one <= cpus)}'
 }
 
-if [[ "$action" == recovery-* ]]; then
+if [[ "$action" == recovery-* ]] || [ "$action" = supplement ]; then
   live_is_safe || die "LIVE safety preflight failed; recovery was not started." 78
 fi
 
@@ -67,7 +82,7 @@ install -d -o "$worker_user" -g "$worker_group" -m 0750 "$guard_root"
 readonly lock_file="$guard_root/${shard}.lock"
 exec 9>"$lock_file"
 flock -n 9 || die "Another morning fetch is already running for this shard." 75
-if [[ "$action" == recovery-* ]]; then
+if [[ "$action" == recovery-* ]] || [ "$action" = supplement ]; then
   exec 8>"$guard_root/recovery.lock"
   flock -n 8 || die "Another manual recovery is already running." 75
 fi
@@ -87,7 +102,7 @@ cpu_quota=50%
 memory_max=1536M
 nice_level=10
 io_weight=10
-if [[ "$action" == recovery-* ]]; then
+if [[ "$action" == recovery-* ]] || [ "$action" = supplement ]; then
   cpu_quota=25%
   memory_max=1024M
   nice_level=15
@@ -111,7 +126,7 @@ common_properties=(
   --property="IOWeight=$io_weight"
 )
 
-if [[ "$action" == recovery-* ]]; then
+if [[ "$action" == recovery-* ]] || [ "$action" = supplement ]; then
   common_properties+=(
     --property="ReadOnlyPaths=$cache_root"
   )
@@ -123,6 +138,33 @@ if [ "$action" = dummy ]; then
     --date "$target_date" --shard "$shard" --output "$run_dir"
   )
   timeout_value=5m
+elif [ "$action" = supplement ]; then
+  venue_name="$($venv_python -c 'import json,sys; p=json.load(open(sys.argv[1], encoding="utf-8")); print(next(v["name"] for v in p["venues"] if v["slug"] == sys.argv[2]))' "$app_root/automation/venues.json" "$venue")"
+  source="$cache_root/$venue_name/${target_date//-/}"
+  destination="$run_dir/work/races/$venue_name/${target_date//-/}"
+  install -d -o "$worker_user" -g "$worker_group" -m 0750 "$destination/races"
+  IFS=, read -r -a requested_races <<<"$supplement_races"
+  missing=()
+  for race_no in "${requested_races[@]}"; do
+    printf -v prefix 'race_%02d' "$race_no"
+    complete=true
+    for suffix in _boaters_local_st.json _data.txt _motor.txt; do
+      [ -f "$source/races/${prefix}${suffix}" ] || complete=false
+    done
+    if [ "$complete" = true ]; then
+      find "$source/races" -maxdepth 1 -type f -name "${prefix}_*" -exec cp -a -t "$destination/races" -- {} +
+    else
+      missing+=("$race_no")
+    fi
+  done
+  chown -R "$worker_user:$worker_group" "$run_dir/work"
+  if [ "${#missing[@]}" -eq 0 ]; then
+    command=(/usr/bin/true)
+  else
+    missing_csv="$(IFS=,; echo "${missing[*]}")"
+    command=("$venv_python" automation/boaters_fetch.py --stadium "$venue" --date "$target_date" --root "$run_dir/work/races" --races "$missing_csv" --wait 6 --click-wait 1.5)
+  fi
+  timeout_value=12m
 else
   recovery_scope=
   if [ "$action" = fetch ]; then
@@ -261,6 +303,9 @@ fi
 if [[ "$action" == recovery-* ]] && [ "$unit_rc" -ne 0 ]; then
   die "Recovery executor failed; cached artifacts were left unchanged." 70
 fi
+if [ "$action" = supplement ] && [ "$unit_rc" -ne 0 ]; then
+  die "Supplement executor stopped safely; cached artifacts were left unchanged." 70
+fi
 
 if [ "$action" = dummy ]; then
   tar --create --gzip --directory="$run_dir" --file=- work
@@ -271,7 +316,9 @@ else
       \( -name fetch_status.json -o -name tide_today.json \
       -o -name '*_entry.txt' -o -name '*_entry.html' \
       -o -name '*_data.txt' -o -name '*_motor.txt' \
-      -o -name '*_boaters_local_st.json' \) -print0 |
+      -o -name '*_boaters_local_st.json' \
+      -o -name '*_boaters_local_st_clicked.html' \
+      -o -name '*_boaters_local_st_clicked.txt' \) -print0 |
       tar --null --create --gzip --file=- --files-from=-
   )
 fi
