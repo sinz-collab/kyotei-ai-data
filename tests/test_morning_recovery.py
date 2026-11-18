@@ -16,9 +16,41 @@ sys.path.insert(0, str(AUTOMATION))
 
 import prepare_morning_recovery_cache as cache  # noqa: E402
 import protect_manual_recovery_predictions as protection  # noqa: E402
+import fetch_one  # noqa: E402
 
 
 class MorningRecoveryTest(unittest.TestCase):
+    def test_partial_cache_resumes_at_first_incomplete_race(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            races = output / "races"
+            races.mkdir()
+            for race_no in (1, 2):
+                prefix = races / f"race_{race_no:02d}"
+                prefix.with_name(prefix.name + "_entry.txt").write_text(
+                    "entry" * 101, encoding="utf-8"
+                )
+                prefix.with_name(prefix.name + "_data.txt").write_text(
+                    "data", encoding="utf-8"
+                )
+                prefix.with_name(prefix.name + "_motor.txt").write_text(
+                    "motor", encoding="utf-8"
+                )
+
+            self.assertEqual(fetch_one.first_incomplete_race(output), 3)
+
+    def test_partial_race_is_retried_instead_of_skipped(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            races = output / "races"
+            races.mkdir()
+            (races / "race_01_entry.txt").write_text(
+                "entry" * 101, encoding="utf-8"
+            )
+            (races / "race_01_data.txt").write_text("data", encoding="utf-8")
+
+            self.assertEqual(fetch_one.first_incomplete_race(output), 1)
+
     def test_workflow_keeps_automatic_schedule_and_adds_manual_scopes(self) -> None:
         workflow = (ROOT / ".github/workflows/morning-data.yml").read_text(
             encoding="utf-8"

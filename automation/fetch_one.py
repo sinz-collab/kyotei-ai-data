@@ -195,6 +195,28 @@ def count_entries(output_dir: Path, slug: str = "") -> int:
     return count
 
 
+def first_incomplete_race(output_dir: Path, slug: str = "") -> int:
+    """Resume after the validated contiguous prefix in a recovery cache."""
+    race_dir = output_dir / "races"
+    for race_no in range(1, 13):
+        entry_path = race_dir / f"race_{race_no:02d}_entry.txt"
+        entry_valid = (
+            biwako_entry_is_valid(entry_path)
+            if slug == "biwako"
+            else entry_path.is_file() and entry_path.stat().st_size > 500
+        )
+        companion_files = (
+            race_dir / f"race_{race_no:02d}_data.txt",
+            race_dir / f"race_{race_no:02d}_motor.txt",
+        )
+        if not entry_valid or any(
+            not path.is_file() or path.stat().st_size == 0
+            for path in companion_files
+        ):
+            return race_no
+    return 13
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--venue", required=True)
@@ -240,6 +262,14 @@ def main() -> int:
         "--abort-after-empty-entries",
         "2",
     ]
+    start_race = first_incomplete_race(output_dir, venue["slug"])
+    if start_race <= 12:
+        command.extend(["--start-race", str(start_race)])
+        if start_race > 1:
+            print(
+                f"[fetch resume] venue={venue['slug']} start_race={start_race}",
+                flush=True,
+            )
     entry_count = 0
     return_code = 1
     for attempt in range(1, 3):
