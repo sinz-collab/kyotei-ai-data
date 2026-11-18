@@ -9,6 +9,20 @@ from datetime import date
 from pathlib import Path
 
 
+def count_existing_races(output_dir: Path) -> int:
+    race_dir = output_dir / "races"
+    count = 0
+    for race_no in range(1, 13):
+        paths = (
+            race_dir / f"race_{race_no:02d}_entry.txt",
+            race_dir / f"race_{race_no:02d}_data.txt",
+            race_dir / f"race_{race_no:02d}_motor.txt",
+        )
+        if all(path.is_file() and path.stat().st_size > 0 for path in paths):
+            count += 1
+    return count
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--venue", required=True)
@@ -16,6 +30,7 @@ def main() -> int:
     parser.add_argument("--root", type=Path, required=True)
     parser.add_argument("--reason", required=True)
     parser.add_argument("--if-missing", action="store_true")
+    parser.add_argument("--count-existing", action="store_true")
     parser.add_argument(
         "--config", type=Path, default=Path(__file__).with_name("venues.json")
     )
@@ -41,7 +56,7 @@ def main() -> int:
         "name": venues[args.venue],
         "date": args.date,
         "open": False,
-        "entryCount": 0,
+        "entryCount": count_existing_races(output_dir) if args.count_existing else 0,
         "fetchAttempts": [],
         "precheck": {
             "open": False,

@@ -17,9 +17,24 @@ sys.path.insert(0, str(AUTOMATION))
 import prepare_morning_recovery_cache as cache  # noqa: E402
 import protect_manual_recovery_predictions as protection  # noqa: E402
 import fetch_one  # noqa: E402
+import write_morning_fetch_status as failure_status  # noqa: E402
 
 
 class MorningRecoveryTest(unittest.TestCase):
+    def test_timeout_status_counts_preserved_complete_race_triplets(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            races = output / "races"
+            races.mkdir()
+            for race_no in (1, 2):
+                for suffix in ("entry", "data", "motor"):
+                    (races / f"race_{race_no:02d}_{suffix}.txt").write_text(
+                        suffix, encoding="utf-8"
+                    )
+            (races / "race_03_entry.txt").write_text("entry", encoding="utf-8")
+
+            self.assertEqual(failure_status.count_existing_races(output), 2)
+
     def test_partial_cache_resumes_at_first_incomplete_race(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             output = Path(temporary)
@@ -75,6 +90,7 @@ class MorningRecoveryTest(unittest.TestCase):
             "memory_max=1024M",
             "venue_timeout=240",
             "prepare_morning_recovery_cache.py",
+            "--reason recovery_timeout --count-existing",
             'exit "$selection_rc"',
             "cached artifacts were left unchanged",
         ):

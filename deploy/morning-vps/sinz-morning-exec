@@ -205,8 +205,13 @@ SAFETY
     echo '  if [ "$rc" -eq 86 ]; then'
     echo '    : > "$challenge_file"'
     echo '  fi'
-    printf '  %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason fetch_failed_without_status --if-missing\n' \
+    echo '  if [ "$rc" -eq 124 ]; then'
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason recovery_timeout --count-existing\n' \
       "$venv_python" "$target_date" "$run_dir/work/races"
+    echo '  else'
+    printf '    %q automation/write_morning_fetch_status.py --venue "$venue" --date %q --root %q --reason fetch_failed_without_status --if-missing\n' \
+      "$venv_python" "$target_date" "$run_dir/work/races"
+    echo '  fi'
     echo 'done'
   } >"$fetch_script"
   chown "$worker_user:$worker_group" "$fetch_script"
