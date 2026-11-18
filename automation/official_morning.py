@@ -66,6 +66,10 @@ SUPPLEMENT_PREFIXES = ("boaters_",)
 SPECIAL_FINISHES = {"転", "妨", "落", "失", "不", "F", "L", "欠", "エ", "沈"}
 
 
+class NoMeetingError(ValueError):
+    """The requested venue/date has no official race-card tables."""
+
+
 def normalize_text(value: object) -> str:
     return unicodedata.normalize("NFKC", str(value or "")).strip()
 
@@ -169,8 +173,10 @@ def parse_official_html(
         None,
     )
     deadline_table = next((table for table in tables if "締切予定時刻" in cell_text(table)), None)
+    if entry_table is None and deadline_table is None:
+        raise NoMeetingError("official race-card tables not found")
     if entry_table is None or deadline_table is None:
-        raise ValueError("official race-card tables not found")
+        raise ValueError("official race-card page incomplete")
 
     deadline_values = re.findall(r"\b[0-9]{1,2}:[0-9]{2}\b", cell_text(deadline_table))
     if len(deadline_values) != 12:
@@ -241,7 +247,10 @@ def parse_official_html(
             }
             if not re.fullmatch(r"\d{1,2}R", run["race"]):
                 raise ValueError(f"official meeting race invalid: lane={lane} value={run['race']}")
-            if not re.fullmatch(r"[1-6]", run["course"]):
+            course_missing_for_accident = (
+                not run["course"] and run["finish"] in SPECIAL_FINISHES
+            )
+            if not re.fullmatch(r"[1-6]", run["course"]) and not course_missing_for_accident:
                 raise ValueError(f"official meeting course invalid: lane={lane} value={run['course']}")
             runs.append(run)
             grouped.setdefault(column // 2, []).append(copy.deepcopy(run))
@@ -682,11 +691,13 @@ def build_supplement_indexes(
 ) -> tuple[
     dict[tuple[str, str], dict[str, Any]],
     dict[tuple[str, str], dict[str, Any]],
+    dict[str, dict[str, Any]],
     dict[tuple[str, str, int], dict[str, Any]],
 ]:
     local_by_name: dict[tuple[str, str], dict[str, Any]] = {}
     motor_by_number: dict[tuple[str, str], dict[str, Any]] = {}
-    course_by_name_lane: dict[tuple[str, str, int], dict[str, Any]] = {}
+    course_by_name: dict[str, dict[str, Any]] = {}
+    kimarite_by_name_lane: dict[tuple[str, str, int], dict[str, Any]] = {}
     for slug, path in history_files(baseline_root, target_date):
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -702,10 +713,18 @@ def build_supplement_indexes(
                 local_by_name.setdefault((slug, name), racer)
                 if motor_no:
                     motor_by_number.setdefault((slug, motor_no), racer)
+                existing_course = course_by_name.get(name)
+                if "recent_course_6m_by_course" in racer and (
+                    existing_course is None
+                    or "recent_course_6m_by_course" not in existing_course
+                ):
+                    course_by_name[name] = racer
+                elif "recent_course_6m" in racer and existing_course is None:
+                    course_by_name[name] = racer
                 if lane in range(1, 7):
-                    course_by_name_lane.setdefault((slug, name, lane), racer)
-                    course_by_name_lane.setdefault(("*", name, lane), racer)
-    return local_by_name, motor_by_number, course_by_name_lane
+                    kimarite_by_name_lane.setdefault((slug, name, lane), racer)
+                    kimarite_by_name_lane.setdefault(("*", name, lane), racer)
+    return local_by_name, motor_by_number, course_by_name, kimarite_by_name_lane
 
 
 def supplement_official_racer(
@@ -714,7 +733,8 @@ def supplement_official_racer(
     slug: str,
     local_by_name: dict[tuple[str, str], dict[str, Any]],
     motor_by_number: dict[tuple[str, str], dict[str, Any]],
-    course_by_name_lane: dict[tuple[str, str, int], dict[str, Any]],
+    course_by_name: dict[str, dict[str, Any]],
+    kimarite_by_name_lane: dict[tuple[str, str, int], dict[str, Any]],
 ) -> dict[str, Any]:
     enriched = copy.deepcopy(racer)
     enriched["actual_course"] = enriched["lane"]
@@ -723,7 +743,8 @@ def supplement_official_racer(
     lane = int(enriched["lane"])
     local_source = local_by_name.get((slug, name), {})
     motor_source = motor_by_number.get((slug, str(enriched.get("motor_no") or "")), {})
-    course_source = course_by_name_lane.get((slug, name, lane)) or course_by_name_lane.get(
+    course_source = course_by_name.get(name, {})
+    kimarite_source = kimarite_by_name_lane.get((slug, name, lane)) or kimarite_by_name_lane.get(
         ("*", name, lane), {}
     )
     for key in ("local_st", "boaters_local_avg_st", "boaters_local_st_rank"):
@@ -733,7 +754,7 @@ def supplement_official_racer(
         enriched["motor_recent"] = copy.deepcopy(motor_source["motor_recent"])
         enriched["motor_recent"]["lane"] = lane
         enriched["motor_recent"]["motor_no"] = str(enriched["motor_no"])
-    for key, value in course_source.items():
+    for key, value in kimarite_source.items():
         if key.startswith("boaters_") and key not in {
             "boaters_local_avg_st", "boaters_local_st_rank"
         }:
@@ -760,10 +781,11 @@ def build_candidate_from_official(
     supplement_indexes: tuple[
         dict[tuple[str, str], dict[str, Any]],
         dict[tuple[str, str], dict[str, Any]],
+        dict[str, dict[str, Any]],
         dict[tuple[str, str, int], dict[str, Any]],
     ],
 ) -> dict[str, Any]:
-    local_by_name, motor_by_number, course_by_name_lane = supplement_indexes
+    local_by_name, motor_by_number, course_by_name, kimarite_by_name_lane = supplement_indexes
     races: list[dict[str, Any]] = []
     for official in sorted(official_races, key=lambda item: int(item["race"])):
         racers = [
@@ -772,7 +794,8 @@ def build_candidate_from_official(
                 slug=slug,
                 local_by_name=local_by_name,
                 motor_by_number=motor_by_number,
-                course_by_name_lane=course_by_name_lane,
+                course_by_name=course_by_name,
+                kimarite_by_name_lane=kimarite_by_name_lane,
             )
             for racer in official["racers"]
         ]
@@ -897,7 +920,7 @@ def run_validation(
                 race_no=1,
             )
             held.append(slug)
-        except ValueError as exc:
+        except NoMeetingError as exc:
             report["venues"][slug] = {
                 "held": False,
                 "status": "not_held",
@@ -905,7 +928,7 @@ def run_validation(
                 "errors": [],
                 "detection": str(exc),
             }
-        except RuntimeError as exc:
+        except (RuntimeError, ValueError) as exc:
             message = f"{slug}:detection_failed:{exc}"
             report["venues"][slug] = {
                 "held": None,
@@ -918,6 +941,7 @@ def run_validation(
     supplement_indexes: tuple[
         dict[tuple[str, str], dict[str, Any]],
         dict[tuple[str, str], dict[str, Any]],
+        dict[str, dict[str, Any]],
         dict[tuple[str, str, int], dict[str, Any]],
     ] | None = None
     for slug in held:

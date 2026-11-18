@@ -39,7 +39,12 @@ def td(value: object = "", **attrs: object) -> str:
     return f"<td {attributes}>{value}</td>"
 
 
-def official_fixture(*, special_finish: str = "2", missing_lane: int | None = None) -> bytes:
+def official_fixture(
+    *,
+    special_finish: str = "2",
+    missing_lane: int | None = None,
+    blank_course_for_first: bool = False,
+) -> bytes:
     deadline_rows = "".join(f"<td>{10 + race // 3:02d}:{race * 4 % 60:02d}</td>" for race in range(1, 13))
     entry_rows = [
         "<tr><th rowspan=3>枠</th><th>ボートレーサー</th><th>全国</th><th>当地</th><th>モーター</th></tr>",
@@ -50,7 +55,7 @@ def official_fixture(*, special_finish: str = "2", missing_lane: int | None = No
         if lane == missing_lane:
             continue
         history_race = ["1"] + [""] * 13
-        history_course = ["2"] + [""] * 13
+        history_course = ["" if blank_course_for_first and lane == 1 else "2"] + [""] * 13
         history_st = [".09"] + [""] * 13
         history_finish = [special_finish if lane == 1 else "2"] + [""] * 13
         fixed = [
@@ -186,6 +191,25 @@ class OfficialMorningTests(unittest.TestCase):
         })
         self.assertEqual(first["season_groups"][0]["day"], "初日")
 
+    def test_parser_accepts_blank_course_only_for_accident_finish(self) -> None:
+        race = official.parse_official_html(
+            official_fixture(special_finish="欠", blank_course_for_first=True),
+            slug="tokoname",
+            target_date="2026-11-18",
+            race_no=11,
+        )
+        self.assertEqual(
+            race["racers"][0]["season_runs"][0],
+            {"race": "1R", "course": "", "entry_course": "", "st": ".09", "finish": "欠"},
+        )
+        with self.assertRaisesRegex(ValueError, "meeting course invalid"):
+            official.parse_official_html(
+                official_fixture(blank_course_for_first=True),
+                slug="tokoname",
+                target_date="2026-11-18",
+                race_no=11,
+            )
+
     def test_parser_rejects_incomplete_entry(self) -> None:
         with self.assertRaisesRegex(ValueError, "racer count"):
             official.parse_official_html(
@@ -194,6 +218,40 @@ class OfficialMorningTests(unittest.TestCase):
                 target_date="2026-11-18",
                 race_no=1,
             )
+
+    def test_detection_distinguishes_no_meeting_from_parser_failure(self) -> None:
+        class StaticClient:
+            def __init__(self, body: bytes) -> None:
+                self.body = body
+
+            def get(self, url: str) -> official.FetchResult:
+                return official.FetchResult(url, 200, 0.01, len(self.body), self.body)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            not_held = official.run_validation(
+                target_date="2026-11-18",
+                venues=["kiryu"],
+                race_numbers=list(range(1, 13)),
+                baseline_root=root / "baseline",
+                output_root=root / "not-held",
+                cache_root=root / "cache-not-held",
+                client=StaticClient(b"<html><body>no races</body></html>"),
+            )
+            self.assertEqual(not_held["venues"]["kiryu"]["status"], "not_held")
+            self.assertEqual(not_held["status"], "ok")
+
+            broken = official.run_validation(
+                target_date="2026-11-18",
+                venues=["kiryu"],
+                race_numbers=list(range(1, 13)),
+                baseline_root=root / "baseline",
+                output_root=root / "broken",
+                cache_root=root / "cache-broken",
+                client=StaticClient(official_fixture(blank_course_for_first=True)),
+            )
+            self.assertEqual(broken["venues"]["kiryu"]["status"], "detection_failed")
+            self.assertEqual(broken["status"], "failed")
 
     def test_merge_preserves_live_predictions_supplements_and_entry_changes(self) -> None:
         baseline = synthetic_payload()
@@ -302,6 +360,29 @@ class OfficialMorningTests(unittest.TestCase):
             self.assertEqual(existing_validator.payload_error(candidate, {"reason": "ok"}), "")
             self.assertNotIn("preds", candidate)
             self.assertNotIn("live", candidate["races"][0])
+
+    def test_course_supplement_uses_all_course_map_without_historical_lane_match(self) -> None:
+        racer = synthetic_payload()["races"][0]["racers"][1]
+        racer["name"] = "別枠 選手"
+        source = {
+            "recent_course_6m_by_course": {
+                "2": {"status": "available", "course": 2, "starts": 20}
+            }
+        }
+        enriched = official.supplement_official_racer(
+            racer,
+            slug="kiryu",
+            local_by_name={("kiryu", "別枠選手"): {"local_st": ".15"}},
+            motor_by_number={
+                ("kiryu", racer["motor_no"]): {"motor_recent": racer["motor_recent"]}
+            },
+            course_by_name={"別枠選手": source},
+            kimarite_by_name_lane={
+                ("*", "別枠選手", 2): {"boaters_kimarite_starts": 20}
+            },
+        )
+        self.assertEqual(enriched["recent_course_6m"]["course"], 2)
+        self.assertEqual(enriched["boaters_kimarite_starts"], 20)
 
 
 if __name__ == "__main__":
