@@ -8,6 +8,8 @@ import re
 SECURITY_CHALLENGE_MARKERS = (
     "Performing security verification",
     "verifies you are not a bot",
+    "セキュリティ検証の実行",
+    "ボットではないことを確認している間",
 )
 
 

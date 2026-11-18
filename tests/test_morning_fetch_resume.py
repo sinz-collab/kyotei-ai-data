@@ -28,6 +28,11 @@ class MorningFetchResumeTest(unittest.TestCase):
                 "Performing security verification - verifies you are not a bot"
             )
         )
+        self.assertTrue(
+            browser_identity.is_security_challenge(
+                "セキュリティ検証の実行 このページは、Web サイトがボットではないことを確認している間に表示されます。"
+            )
+        )
         self.assertFalse(browser_identity.is_security_challenge("出走表 全国勝率 平均ST"))
 
     def test_retry_selects_only_scheduled_incomplete_venues(self) -> None:
