@@ -6,6 +6,7 @@ from pathlib import Path
 
 from automation.course_st_3m import CourseSt3m, subtract_months
 from automation.run_official_predictions import apply_official_course_st
+from automation.publish_official_course_st_3m import enrich
 
 
 class CourseSt3mTests(unittest.TestCase):
@@ -51,6 +52,15 @@ class CourseSt3mTests(unittest.TestCase):
             self.assertEqual(racers[1]["local_st"], "")
             self.assertEqual(racers[1]["official_course_st_3m"]["reason"], "insufficient_course_st")
             self.assertEqual(racers[2]["local_st"], "0.12")
+            original = {"races": [{"racers": [{"player_id": 5182, "lane": 1},
+                                                 {"player_id": 5454, "lane": 5}]}],
+                        "preds": {"1": {"prediction_history": {"live": ["preserve"]}}}}
+            updated, available = enrich(original, model)
+            self.assertEqual(available, 1)
+            self.assertEqual(updated["races"][0]["racers"][0]["official_course_st_3m"]["average_st"], .12)
+            self.assertIsNone(updated["races"][0]["racers"][1]["official_course_st_3m"]["average_st"])
+            self.assertEqual(updated["preds"], original["preds"])
+            self.assertNotIn("official_course_st_3m", original["races"][0]["racers"][0])
 
     def test_matches_official_toda_november_20_sample(self):
         # Regression against the six figures supplied from the official screen.

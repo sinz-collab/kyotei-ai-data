@@ -1,0 +1,62 @@
+name: 公式3か月コースSTのみ補完
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: official-course-st-3m-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Prepare today's isolated official results DB
+        run: |
+          set -euo pipefail
+          TARGET_DATE="$(TZ=Asia/Tokyo date +%F)"
+          echo "TARGET_DATE=$TARGET_DATE" >> "$GITHUB_ENV"
+          mkdir -p work/course-st-3m
+          cp data/player_course_6m/player_course_6m.sqlite work/course-st-3m/results.sqlite
+          START_DATE="$(python - "$TARGET_DATE" <<'PY'
+          from datetime import date
+          from automation.course_st_3m import subtract_months
+          import sys
+          print(subtract_months(date.fromisoformat(sys.argv[1]), 3))
+          PY
+          )"
+          END_DATE="$(TZ=Asia/Tokyo date -d "$TARGET_DATE -1 day" +%F)"
+          python automation/player_course_6m.py \
+            --db work/course-st-3m/results.sqlite \
+            --export work/course-st-3m/rolling.csv \
+            --status work/course-st-3m/status.json \
+            backfill --start "$START_DATE" --end "$END_DATE" --timeout 10 --retries 1
+      - name: Safely enrich current public racers only
+        run: |
+          set -euo pipefail
+          git pull --rebase origin main
+          python automation/publish_official_course_st_3m.py \
+            --date "$TARGET_DATE" --db work/course-st-3m/results.sqlite --apply \
+            | tee work/course-st-3m/publish-report.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: fill official course ST for $TARGET_DATE only"
+            git push origin HEAD:main
+          fi
+      - name: Upload reconciliation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: official-course-st-3m-recovery
+          path: work/course-st-3m/*json
+          if-no-files-found: warn
