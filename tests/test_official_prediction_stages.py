@@ -7,11 +7,17 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "automation"))
 from run_official_predictions import (
-    merge_missing, merge_supplement, missing_races, supplement_hash, supplement_races,
+    COMMANDS, merge_missing, merge_supplement, missing_races, supplement_hash, supplement_races,
 )
 
 
 class OfficialPredictionStageTests(unittest.TestCase):
+    def test_naruto_and_ashiya_reuse_frozen_venue_engines(self):
+        self.assertEqual(COMMANDS["naruto"], ("run_naruto_v5.py", "--stage", "morning"))
+        self.assertEqual(COMMANDS["ashiya"], ("run_ashiya_v16.py", "--stage", "pre"))
+        recovery = (Path(__file__).resolve().parents[1] / ".github/workflows/recover-official-predictions.yml").read_text()
+        self.assertIn("data/venues/naruto data/venues/ashiya", recovery)
+
     def setUp(self):
         self.payload = {
             "date": "2026-11-19", "venueId": "toda",

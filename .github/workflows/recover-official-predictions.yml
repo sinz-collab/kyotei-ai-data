@@ -12,6 +12,9 @@ on:
         required: false
         default: ""
         type: string
+  push:
+    paths:
+      - '.github/workflows/recover-official-predictions.yml'
 
 permissions:
   contents: write
@@ -22,6 +25,7 @@ concurrency:
 
 jobs:
   recover:
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[run-official-prediction-recovery]')
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -61,7 +65,8 @@ jobs:
             | tee work/event-label-recovery.json
           git add data/manifest.json data/morning_report.json \
             data/venues/kiryu data/venues/toda data/venues/heiwajima \
-            data/venues/biwako data/venues/fukuoka data/venues/omura
+            data/venues/biwako data/venues/naruto data/venues/ashiya \
+            data/venues/fukuoka data/venues/omura
           git diff --cached --check
           if ! git diff --cached --quiet; then
             git commit -m "data: recover missing official predictions for $TARGET_DATE"

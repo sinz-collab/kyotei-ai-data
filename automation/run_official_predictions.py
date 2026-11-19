@@ -29,6 +29,8 @@ COMMANDS = {
     "toda": ("apply_toda_v5.py",),
     "heiwajima": ("apply_heiwajima_v1.py",),
     "biwako": ("run_biwako_v1_2.py", "--stage", "preliminary"),
+    "naruto": ("run_naruto_v5.py", "--stage", "morning"),
+    "ashiya": ("run_ashiya_v16.py", "--stage", "pre"),
     "fukuoka": ("run_fukuoka_v1.py", "--stage", "preliminary"),
     "omura": ("apply_omura_v1.py",),
 }
