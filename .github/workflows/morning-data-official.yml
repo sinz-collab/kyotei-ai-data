@@ -32,6 +32,7 @@ jobs:
         id: scope
         env:
           REQUESTED_DATE: "${{ inputs.date }}"
+          UPSTREAM_BRANCH: "${{ github.event.workflow_run.head_branch }}"
         run: |
           test "$GITHUB_REF" = refs/heads/main
           TARGET_DATE="${REQUESTED_DATE:-$(TZ=Asia/Tokyo date +%F)}"
@@ -40,7 +41,7 @@ jobs:
           test "$TARGET_DATE" = "$(TZ=Asia/Tokyo date +%F)"
           TARGET_VENUES=all
           if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
-            if [ "${{ github.event.workflow_run.head_branch }}" != main ]; then
+            if [ "$UPSTREAM_BRANCH" != main ]; then
               echo "active=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
