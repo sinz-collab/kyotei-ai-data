@@ -1,6 +1,9 @@
 name: 朝のレースデータ【公式出走表】
 
 on:
+  schedule:
+    # 06:00 JST: official cards are the primary morning source.
+    - cron: "0 21 * * *"
   workflow_run:
     workflows: ["Morning race data"]
     types: [completed]
@@ -126,7 +129,9 @@ jobs:
             git push origin HEAD:main
           fi
       - name: Configure pinned VPS SSH host
-        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
+        if: steps.scope.outputs.active == 'true' && github.event_name != 'workflow_run'
+        id: vps_setup
+        continue-on-error: true
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
           VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
@@ -139,8 +144,9 @@ jobs:
           test -n "$VPS_HOST"
           ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
       - name: Reuse cache and retrieve only missing BOATERS races
-        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
+        if: steps.vps_setup.outcome == 'success'
         id: supplement
+        continue-on-error: true
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
           TARGET_DATE: ${{ env.TARGET_DATE }}
@@ -160,6 +166,11 @@ jobs:
           mkdir -p work/official-boaters
           failures=0
           for venue in $COMPLETE_VENUES; do
+            # Do not start a new supplement fetch after the morning hard stop.
+            if [ "$(TZ=Asia/Tokyo date +%H%M)" -ge 815 ]; then
+              echo "BOATERS morning deadline reached; keeping existing predictions." >&2
+              break
+            fi
             races="$(python - "$venue" <<'PY'
           import json,sys
           from pathlib import Path
@@ -170,7 +181,7 @@ jobs:
             [ -n "$races" ] || continue
             archive="$RUNNER_TEMP/official-boaters-${venue}.tgz"
             set +e
-            timeout --signal=TERM --kill-after=20s 2100s \
+            timeout --signal=TERM --kill-after=20s 240s \
               ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes -o IdentitiesOnly=yes \
                 -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
                 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 \
@@ -186,7 +197,7 @@ jobs:
           done
           echo "failure_count=$failures" >> "$GITHUB_OUTPUT"
       - name: Validate cached BOATERS additions without network
-        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
+        if: steps.supplement.outcome == 'success'
         run: |
           set +e
           python automation/official_morning.py \
@@ -199,7 +210,7 @@ jobs:
             --allow-partial-supplements --cache-only
           set -e
       - name: Publish individually validated BOATERS fields
-        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
+        if: steps.supplement.outcome == 'success'
         run: |
           git pull --rebase origin main
           python automation/publish_official_stages.py \
@@ -212,7 +223,7 @@ jobs:
             git push origin HEAD:main
           fi
       - name: Fill remaining predictions after BOATERS validation
-        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
+        if: steps.supplement.outcome == 'success'
         run: |
           python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
             | tee work/supplement-prediction-report.json
