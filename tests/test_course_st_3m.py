@@ -41,14 +41,16 @@ class CourseSt3mTests(unittest.TestCase):
             self.assertTrue(model.complete)
             payload = {"races": [{"racers": [
                 {"player_id": 5182, "lane": 1, "local_st": "0.19", "boaters_local_avg_st": "0.22"},
-                {"player_id": 5454, "lane": 5, "local_st": "0.14", "boaters_local_avg_st": "0.15"}
+                {"player_id": 5454, "lane": 5, "local_st": "0.14", "boaters_local_avg_st": "0.15"},
+                {"player_id": 5182, "lane": 2, "actual_course": 1, "local_st": "0.19"}
             ]}]}
-            self.assertEqual(apply_official_course_st(payload, model), 1)
+            self.assertEqual(apply_official_course_st(payload, model), 2)
             racers = payload["races"][0]["racers"]
             self.assertEqual(racers[0]["local_st"], "0.12")
             self.assertEqual(racers[0]["boaters_local_avg_st"], "0.12")
             self.assertEqual(racers[1]["local_st"], "")
             self.assertEqual(racers[1]["official_course_st_3m"]["reason"], "insufficient_course_st")
+            self.assertEqual(racers[2]["local_st"], "0.12")
 
     def test_matches_official_toda_november_20_sample(self):
         # Regression against the six figures supplied from the official screen.
