@@ -56,6 +56,9 @@ run_publication_pipeline() {
     | tee "build-after-engine-${log_suffix}.log"
   python automation/enrich_motor_recent.py --date "$TARGET_DATE"
   python automation/enrich_all_venues_kimarite.py --date "$TARGET_DATE"
+  # Official-first venues must not be replaced by the legacy VPS rebuild.
+  python automation/protect_official_morning.py \
+    --date "$TARGET_DATE" --before "$before_dir" --after data
   if [ -n "${MORNING_RECOVERY_MODE:-}" ]; then
     python automation/protect_manual_recovery_predictions.py \
       --date "$TARGET_DATE" \
