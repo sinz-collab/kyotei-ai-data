@@ -121,6 +121,14 @@ jobs:
       - name: Generate missing preliminary predictions from official cards
         if: steps.scope.outputs.active == 'true'
         run: |
+          # Tide is an independent morning domain, absent from official racelist.
+          python automation/restore_morning_tides.py --date "$TARGET_DATE" \
+            | tee work/official-tide-report.json
+          git add data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: restore morning tides for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
           python automation/run_official_predictions.py --date "$TARGET_DATE" \
             | tee work/official-prediction-report.json
           git add data/manifest.json data/morning_report.json data/venues
@@ -241,6 +249,7 @@ jobs:
             work/official-stage/report.json
             work/official-publish-report.json
             work/official-prediction-report.json
+            work/official-tide-report.json
             work/supplement-stage/report.json
             work/supplement-publish-report.json
             work/supplement-prediction-report.json
