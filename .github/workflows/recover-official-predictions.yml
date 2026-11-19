@@ -55,6 +55,8 @@ jobs:
             | tee work/prediction-recovery-official.json
           python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
             | tee work/prediction-recovery-supplement.json
+          python automation/repair_event_labels.py --date "$TARGET_DATE" \
+            | tee work/event-label-recovery.json
           git add data/manifest.json data/morning_report.json \
             data/venues/kiryu data/venues/toda data/venues/heiwajima \
             data/venues/biwako data/venues/fukuoka data/venues/omura
@@ -68,6 +70,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: official-prediction-recovery-${{ github.run_id }}
-          path: work/prediction-recovery-*.json
+          path: |
+            work/prediction-recovery-*.json
+            work/event-label-recovery.json
           if-no-files-found: ignore
           retention-days: 7
