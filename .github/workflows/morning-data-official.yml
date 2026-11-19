@@ -178,7 +178,7 @@ jobs:
       - name: Fill remaining predictions after BOATERS validation
         env: {TARGET_DATE: "${{ inputs.date }}"}
         run: |
-          python automation/run_official_predictions.py --date "$TARGET_DATE" \
+          python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
             | tee work/supplement-prediction-report.json
           git add data/manifest.json data/morning_report.json data/venues
           if ! git diff --cached --quiet; then
