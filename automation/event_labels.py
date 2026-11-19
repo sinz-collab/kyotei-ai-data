@@ -13,6 +13,15 @@ def normalize(value: object) -> str:
     return unicodedata.normalize("NFKC", str(value or "")).strip()
 
 
+def title_grade(title: str) -> str:
+    value = normalize(title).upper()
+    for token, grade in (("GIII", "G3"), ("GII", "G2"), ("GI", "G1"),
+                         ("SG", "SG"), ("G3", "G3"), ("G2", "G2"), ("G1", "G1")):
+        if re.search(rf"(?<![A-Z0-9]){token}(?![A-Z0-9])", value):
+            return grade
+    return ""
+
+
 def historical_grade(payload: dict, data_root: Path) -> str:
     slug = str(payload.get("venueId") or payload.get("venue") or "")
     date_value = str(payload.get("date") or "")
@@ -47,8 +56,7 @@ def historical_grade(payload: dict, data_root: Path) -> str:
 def event_metadata(payload: dict, data_root: Path) -> tuple[str, str]:
     title = normalize(payload.get("officialEventTitle"))
     existing = normalize(payload.get("eventLabel"))
-    grade_match = re.search(r"(?<![A-Z0-9])(SG|G[1-3])(?:\b|(?=[^A-Z0-9]))", title, re.I)
-    grade = (grade_match.group(1).upper() if grade_match else "") or historical_grade(payload, data_root)
+    grade = title_grade(title) or historical_grade(payload, data_root)
     if not grade:
         match = re.search(r"(?:^|[｜|])\s*(SG|G[1-3])(?:[｜|]|$)", existing)
         grade = match.group(1) if match else ""
