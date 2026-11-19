@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import subprocess
 import sys
@@ -26,21 +27,64 @@ COMMANDS = {
     "omura": ("apply_omura_v1.py",),
 }
 
+SUPPLEMENT_FIELDS = (
+    "boaters_local_avg_st", "boaters_local_st_rank", "motor_recent",
+    "boaters_kimarite_starts", "boaters_escape_rate", "boaters_sashare_rate",
+    "boaters_makurare_rate", "boaters_makurare_zashi_rate", "boaters_nigashi_rate",
+    "boaters_sashi_rate", "boaters_makuri_rate", "boaters_makuri_sashi_rate",
+)
+
+
+def supplement_hash(race: dict) -> str:
+    rows = [{key: racer.get(key) for key in SUPPLEMENT_FIELDS if key in racer}
+            for racer in race.get("racers") or []]
+    raw = json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+
+def still_open(payload: dict, race: dict, now: datetime) -> bool:
+    try:
+        cutoff = datetime.strptime(
+            f"{payload['date']} {race['deadline']}", "%Y-%m-%d %H:%M"
+        ).replace(tzinfo=ZoneInfo("Asia/Tokyo"))
+    except (ValueError, KeyError):
+        return False
+    return now < cutoff
+
 
 def missing_races(payload: dict, now: datetime) -> set[int]:
     existing = payload.get("preds") or {}
     result = set()
     for race in payload.get("races") or []:
         number = int(race.get("race") or 0)
-        deadline = str(race.get("deadline") or "")
-        if not number or not deadline or existing.get(str(number)) or race.get("prediction"):
+        if not number or existing.get(str(number)) or race.get("prediction"):
             continue
-        try:
-            cutoff = datetime.strptime(f"{payload['date']} {deadline}", "%Y-%m-%d %H:%M")
-            cutoff = cutoff.replace(tzinfo=ZoneInfo("Asia/Tokyo"))
-        except (ValueError, KeyError):
+        if still_open(payload, race, now):
+            result.add(number)
+    return result
+
+
+def supplement_races(payload: dict, now: datetime) -> set[int]:
+    if (payload.get("sourceStatus") or {}).get("official_morning", {}).get("status") != "published_supplement":
+        return set()
+    preds = payload.get("preds") or {}
+    result = set()
+    for race in payload.get("races") or []:
+        number = int(race.get("race") or 0)
+        old = preds.get(str(number)) or {}
+        if not number or not still_open(payload, race, now):
             continue
-        if now < cutoff:
+        # Only stage-one forecasts carrying a source hash may be recalculated.
+        if not old.get("officialSupplementHash") or old.get("officialPredictionStage") == "supplemented":
+            continue
+        if old.get("prediction_history", {}).get("live") or old.get("active_prediction_stage") == "live":
+            continue
+        stage = old.get("predictionStage") or {}
+        if isinstance(stage, dict) and stage.get("label") == "本予想":
+            continue
+        if str(stage).lower() in ("live", "final"):
+            continue
+        if supplement_hash(race) != old["officialSupplementHash"]:
             result.add(number)
     return result
 
@@ -56,7 +100,10 @@ def merge_missing(original: dict, generated: dict, eligible: set[int]) -> tuple[
         if not new_prediction and not source.get("prediction"):
             continue
         if new_prediction:
-            merged.setdefault("preds", {})[str(number)] = copy.deepcopy(new_prediction)
+            stamped = copy.deepcopy(new_prediction)
+            stamped["officialSupplementHash"] = supplement_hash(race)
+            stamped["officialPredictionStage"] = "preliminary"
+            merged.setdefault("preds", {})[str(number)] = stamped
         for key in ("prediction", "predictionPre", "predictionFinal"):
             if key in source and key not in race:
                 race[key] = copy.deepcopy(source[key])
@@ -75,13 +122,42 @@ def merge_missing(original: dict, generated: dict, eligible: set[int]) -> tuple[
     return merged, created
 
 
-def run(date: str, data_root: Path, now: datetime, venues: list[str]) -> dict:
+def merge_supplement(original: dict, generated: dict, eligible: set[int]) -> tuple[dict, int]:
+    merged = copy.deepcopy(original)
+    races = {int(row.get("race") or 0): row for row in merged.get("races") or []}
+    generated_races = {int(row.get("race") or 0): row for row in generated.get("races") or []}
+    corrected = 0
+    for number in sorted(eligible):
+        old = (merged.get("preds") or {}).get(str(number))
+        new = (generated.get("preds") or {}).get(str(number))
+        if not old or not new:
+            continue
+        updated = copy.deepcopy(new)
+        # Preserve the existing history; never rewrite an original morning or LIVE snapshot.
+        if "prediction_history" in old:
+            updated["prediction_history"] = copy.deepcopy(old["prediction_history"])
+        updated["officialSupplementHash"] = supplement_hash(races[number])
+        updated["officialPredictionStage"] = "supplemented"
+        updated["officialPreliminarySummary"] = {
+            key: copy.deepcopy(old[key]) for key in ("win", "second", "third", "tickets") if key in old
+        }
+        merged["preds"][str(number)] = updated
+        current_race = races[number]
+        new_race = generated_races.get(number, {})
+        for key in ("prediction", "predictionPre"):
+            if key in new_race and key in current_race:
+                current_race[key] = copy.deepcopy(new_race[key])
+        corrected += 1
+    return merged, corrected
+
+
+def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str = "official") -> dict:
     from official_morning import atomic_json
     from publish_official_stages import update_index_files
     from build_site_data import prediction_payload_gate
 
     published = {}
-    results = {"date": date, "venues": {}, "generated": 0}
+    results = {"date": date, "stage": stage, "venues": {}, "generated": 0}
     compact = date.replace("-", "")
     for slug in venues:
         path = data_root / "venues" / slug / f"{compact}.json"
@@ -90,7 +166,7 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str]) -> dict:
         original = json.loads(path.read_text(encoding="utf-8"))
         if original.get("date") != date:
             continue
-        eligible = missing_races(original, now)
+        eligible = missing_races(original, now) if stage == "official" else supplement_races(original, now)
         if not eligible:
             results["venues"][slug] = "no_eligible_races"
             continue
@@ -113,14 +189,18 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str]) -> dict:
             results["venues"][slug] = f"prediction_invalid:{reason}"
             continue
         # An engine may have a broader output contract. Only copy missing predictions.
-        merged, count = merge_missing(original, generated, eligible)
+        merge = merge_missing if stage == "official" else merge_supplement
+        merged, count = merge(original, generated, eligible)
         if count:
             atomic_json(path, merged)
             latest = path.parent / "latest.json"
             if latest.is_file():
                 latest_payload = json.loads(latest.read_text(encoding="utf-8"))
                 if latest_payload.get("date") == date:
-                    updated_latest, _ = merge_missing(latest_payload, generated, eligible)
+                    # Re-evaluate against the latest LIVE state before writing anything.
+                    latest_eligible = (missing_races(latest_payload, now) if stage == "official"
+                                       else supplement_races(latest_payload, now)) & eligible
+                    updated_latest, _ = merge(latest_payload, generated, latest_eligible)
                     atomic_json(latest, updated_latest)
             published[slug] = merged
         results["venues"][slug] = count
@@ -133,13 +213,14 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str]) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--date", required=True)
+    parser.add_argument("--stage", choices=("official", "supplement"), default="official")
     parser.add_argument("--data-root", type=Path, default=Path("data"))
     parser.add_argument("--venues", nargs="*", choices=sorted(COMMANDS), default=sorted(COMMANDS))
     args = parser.parse_args()
     now = datetime.now(ZoneInfo("Asia/Tokyo"))
     if args.date != now.date().isoformat():
         raise SystemExit("Only JST today is eligible")
-    print(json.dumps(run(args.date, args.data_root, now, args.venues), ensure_ascii=False))
+    print(json.dumps(run(args.date, args.data_root, now, args.venues, args.stage), ensure_ascii=False))
 
 
 if __name__ == "__main__":
