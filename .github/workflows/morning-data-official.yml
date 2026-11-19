@@ -1,12 +1,15 @@
 name: 朝のレースデータ【公式出走表】
 
 on:
+  workflow_run:
+    workflows: ["Morning race data"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       date:
         description: "Publish date (YYYY-MM-DD)"
-        required: true
-        default: "2026-11-18"
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -25,31 +28,62 @@ jobs:
         with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
-      - name: Guard manual input
-        env: {TARGET_DATE: "${{ inputs.date }}"}
+      - name: Select safe official fallback scope
+        id: scope
+        env:
+          REQUESTED_DATE: "${{ inputs.date }}"
+          UPSTREAM_BRANCH: "${{ github.event.workflow_run.head_branch }}"
         run: |
-          test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
+          TARGET_DATE="${REQUESTED_DATE:-$(TZ=Asia/Tokyo date +%F)}"
           [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
           test "$(date -d "$TARGET_DATE" +%F 2>/dev/null)" = "$TARGET_DATE"
           test "$TARGET_DATE" = "$(TZ=Asia/Tokyo date +%F)"
+          TARGET_VENUES=all
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then
+            if [ "$UPSTREAM_BRANCH" != main ]; then
+              echo "active=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            # Start only early enough that the whole fetch can finish before 08:15.
+            now_hm="$(TZ=Asia/Tokyo date +%H%M)"
+            if [ $((10#$now_hm)) -lt 600 ] || [ $((10#$now_hm)) -gt 715 ]; then
+              echo "active=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            TARGET_VENUES="$(python automation/select_official_recovery_venues.py --date "$TARGET_DATE")"
+            if [ -z "$TARGET_VENUES" ]; then
+              echo "active=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo "active=true" >> "$GITHUB_OUTPUT"
+          echo "TARGET_DATE=$TARGET_DATE" >> "$GITHUB_ENV"
+          echo "TARGET_VENUES=$TARGET_VENUES" >> "$GITHUB_ENV"
+          echo "Official target: $TARGET_DATE ($TARGET_VENUES)" >> "$GITHUB_STEP_SUMMARY"
       - name: Install official parsing and prediction dependencies
+        if: steps.scope.outputs.active == 'true'
         run: |
           python -m pip install beautifulsoup4==4.13.4
           python -m pip install lxml==6.0.0 lhafile==0.3.1 catboost==1.2.10
       - name: Restore successful official race cache
+        if: steps.scope.outputs.active == 'true'
         uses: actions/cache/restore@v4
         with:
           path: work/official-morning-cache
-          key: official-morning-${{ inputs.date }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: official-morning-${{ inputs.date }}-
+          key: official-morning-${{ env.TARGET_DATE }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: official-morning-${{ env.TARGET_DATE }}-
       - name: Acquire and validate official cards
+        if: steps.scope.outputs.active == 'true'
         id: official
-        env: {TARGET_DATE: "${{ inputs.date }}"}
         run: |
           set +e
-          python automation/official_morning.py \
-            --date "$TARGET_DATE" --venues all --races all \
+          deadline="$(TZ=Asia/Tokyo date -d "$TARGET_DATE 08:15" +%s)"
+          remaining=$((deadline - $(date +%s)))
+          test "$remaining" -gt 0
+          timeout --signal=TERM --kill-after=20s "${remaining}s" \
+            python automation/official_morning.py \
+            --date "$TARGET_DATE" --venues "$TARGET_VENUES" --races all \
             --baseline-root data/venues --output-root work/official-stage \
             --cache-root work/official-morning-cache \
             --course-db data/player_course_6m/player_course_6m.sqlite \
@@ -67,7 +101,7 @@ jobs:
           test -n "${{ steps.official.outputs.complete }}" || \
             test -n "$(find work/official-stage/candidates -name '*.json' -print -quit)"
       - name: Publish complete official venues first
-        env: {TARGET_DATE: "${{ inputs.date }}"}
+        if: steps.scope.outputs.active == 'true'
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -82,7 +116,7 @@ jobs:
             git push origin HEAD:main
           fi
       - name: Generate missing preliminary predictions from official cards
-        env: {TARGET_DATE: "${{ inputs.date }}"}
+        if: steps.scope.outputs.active == 'true'
         run: |
           python automation/run_official_predictions.py --date "$TARGET_DATE" \
             | tee work/official-prediction-report.json
@@ -92,6 +126,7 @@ jobs:
             git push origin HEAD:main
           fi
       - name: Configure pinned VPS SSH host
+        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
           VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
@@ -104,10 +139,11 @@ jobs:
           test -n "$VPS_HOST"
           ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
       - name: Reuse cache and retrieve only missing BOATERS races
+        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
         id: supplement
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
-          TARGET_DATE: ${{ inputs.date }}
+          TARGET_DATE: ${{ env.TARGET_DATE }}
           COMPLETE_VENUES: ${{ steps.official.outputs.complete }}
         run: |
           expected="$(printf 'executor=%s\nboaters=%s\nbrowser_identity=%s\nsupplement_validator=%s\nkimarite_parser=%s\nmotor_parser=%s\n' \
@@ -150,11 +186,11 @@ jobs:
           done
           echo "failure_count=$failures" >> "$GITHUB_OUTPUT"
       - name: Validate cached BOATERS additions without network
-        env: {TARGET_DATE: "${{ inputs.date }}"}
+        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
         run: |
           set +e
           python automation/official_morning.py \
-            --date "$TARGET_DATE" --venues all --races all \
+            --date "$TARGET_DATE" --venues "$TARGET_VENUES" --races all \
             --baseline-root data/venues --output-root work/supplement-stage \
             --cache-root work/official-morning-cache \
             --boaters-root work/official-boaters/work/races \
@@ -163,7 +199,7 @@ jobs:
             --allow-partial-supplements --cache-only
           set -e
       - name: Publish individually validated BOATERS fields
-        env: {TARGET_DATE: "${{ inputs.date }}"}
+        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
         run: |
           git pull --rebase origin main
           python automation/publish_official_stages.py \
@@ -176,7 +212,7 @@ jobs:
             git push origin HEAD:main
           fi
       - name: Fill remaining predictions after BOATERS validation
-        env: {TARGET_DATE: "${{ inputs.date }}"}
+        if: steps.scope.outputs.active == 'true' && github.event_name == 'workflow_dispatch'
         run: |
           python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
             | tee work/supplement-prediction-report.json
@@ -189,7 +225,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: morning-official-publication-${{ inputs.date }}
+          name: morning-official-publication-${{ env.TARGET_DATE }}
           path: |
             work/official-stage/report.json
             work/official-publish-report.json
@@ -202,8 +238,8 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Save successful official race cache
-        if: always()
+        if: always() && steps.scope.outputs.active == 'true'
         uses: actions/cache/save@v4
         with:
           path: work/official-morning-cache
-          key: official-morning-${{ inputs.date }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: official-morning-${{ env.TARGET_DATE }}-${{ github.run_id }}-${{ github.run_attempt }}
