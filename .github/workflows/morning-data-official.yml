@@ -33,7 +33,10 @@ jobs:
           [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
           test "$(date -d "$TARGET_DATE" +%F 2>/dev/null)" = "$TARGET_DATE"
           test "$TARGET_DATE" = "$(TZ=Asia/Tokyo date +%F)"
-      - run: python -m pip install beautifulsoup4==4.13.4
+      - name: Install official parsing and prediction dependencies
+        run: |
+          python -m pip install beautifulsoup4==4.13.4
+          python -m pip install lxml==6.0.0 lhafile==0.3.1 catboost==1.2.10
       - name: Restore successful official race cache
         uses: actions/cache/restore@v4
         with:
@@ -76,6 +79,16 @@ jobs:
           git add data/manifest.json data/morning_report.json data/venues
           if ! git diff --cached --quiet; then
             git commit -m "data: publish validated official cards for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
+      - name: Generate missing preliminary predictions from official cards
+        env: {TARGET_DATE: "${{ inputs.date }}"}
+        run: |
+          python automation/run_official_predictions.py --date "$TARGET_DATE" \
+            | tee work/official-prediction-report.json
+          git add data/manifest.json data/morning_report.json data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: fill missing official predictions for $TARGET_DATE"
             git push origin HEAD:main
           fi
       - name: Configure pinned VPS SSH host
@@ -162,6 +175,16 @@ jobs:
             git commit -m "data: add validated BOATERS fields for $TARGET_DATE"
             git push origin HEAD:main
           fi
+      - name: Fill remaining predictions after BOATERS validation
+        env: {TARGET_DATE: "${{ inputs.date }}"}
+        run: |
+          python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
+            | tee work/supplement-prediction-report.json
+          git add data/manifest.json data/morning_report.json data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: fill predictions after supplement for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
       - name: Upload publication diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -170,8 +193,10 @@ jobs:
           path: |
             work/official-stage/report.json
             work/official-publish-report.json
+            work/official-prediction-report.json
             work/supplement-stage/report.json
             work/supplement-publish-report.json
+            work/supplement-prediction-report.json
             work/official-morning-cache/**/*.json
             work/official-boaters/work/races/**
           if-no-files-found: warn
