@@ -16,6 +16,7 @@ class EventLabelTests(unittest.TestCase):
             self.assertEqual(event_metadata({"officialEventTitle": "AL・RB大宮アルディージャWOMENカップ"}, root), ("♥️", "women"))
             self.assertEqual(event_metadata({"officialEventTitle": "ルーキーシリーズ第23戦"}, root), ("🔰", "rookie"))
             self.assertEqual(event_metadata({"officialEventTitle": "G2 モーターボート大賞"}, root), ("G2", "unknown"))
+            self.assertEqual(event_metadata({"officialEventTitle": "開設74周年記念 GⅠびわこ大賞"}, root), ("G1", "unknown"))
 
     def test_reuses_grade_from_same_meeting_only(self):
         with tempfile.TemporaryDirectory() as d:
