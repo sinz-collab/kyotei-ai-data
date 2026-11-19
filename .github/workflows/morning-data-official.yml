@@ -76,6 +76,13 @@ jobs:
           path: work/official-morning-cache
           key: official-morning-${{ env.TARGET_DATE }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: official-morning-${{ env.TARGET_DATE }}-
+      - name: Restore official results DB cache for three-month ST
+        if: steps.scope.outputs.active == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: work/course-st-3m/results.sqlite
+          key: official-course-st-db-${{ env.TARGET_DATE }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: official-course-st-db-
       - name: Acquire and validate official cards
         if: steps.scope.outputs.active == 'true'
         id: official
@@ -118,6 +125,31 @@ jobs:
             git commit -m "data: publish validated official cards for $TARGET_DATE"
             git push origin HEAD:main
           fi
+      - name: Catch up official results for three-month ST
+        if: steps.scope.outputs.active == 'true'
+        continue-on-error: true
+        run: |
+          mkdir -p work/course-st-3m
+          if [ ! -s work/course-st-3m/results.sqlite ]; then
+            cp data/player_course_6m/player_course_6m.sqlite work/course-st-3m/results.sqlite
+          fi
+          START_DATE="$(python - <<'PY'
+          from datetime import date
+          import os
+          from automation.course_st_3m import subtract_months
+          print(subtract_months(date.fromisoformat(os.environ['TARGET_DATE']), 3))
+          PY
+          )"
+          END_DATE="$(date -d "$TARGET_DATE -1 day" +%F)"
+          python automation/player_course_6m.py \
+            --db work/course-st-3m/results.sqlite \
+            --export work/course-st-3m/rolling.csv \
+            --status work/course-st-3m/status.json \
+            backfill --start "$START_DATE" --end "$END_DATE" \
+            --timeout 10 --retries 1
+          python automation/player_course_6m.py \
+            --db work/course-st-3m/results.sqlite \
+            verify --start "$START_DATE" --end "$END_DATE"
       - name: Generate missing preliminary predictions from official cards
         if: steps.scope.outputs.active == 'true'
         run: |
@@ -130,6 +162,7 @@ jobs:
             git push origin HEAD:main
           fi
           python automation/run_official_predictions.py --date "$TARGET_DATE" \
+            --course-db work/course-st-3m/results.sqlite \
             | tee work/official-prediction-report.json
           git add data/manifest.json data/morning_report.json data/venues
           if ! git diff --cached --quiet; then
@@ -234,6 +267,7 @@ jobs:
         if: steps.supplement.outcome == 'success'
         run: |
           python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
+            --course-db work/course-st-3m/results.sqlite \
             | tee work/supplement-prediction-report.json
           git add data/manifest.json data/morning_report.json data/venues
           if ! git diff --cached --quiet; then
@@ -263,3 +297,23 @@ jobs:
         with:
           path: work/official-morning-cache
           key: official-morning-${{ env.TARGET_DATE }}-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: Save complete official results DB cache
+        id: st_db_verified
+        if: always() && steps.scope.outputs.active == 'true'
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          from datetime import date
+          import os
+          from pathlib import Path
+          from automation.course_st_3m import CourseSt3m
+          db=CourseSt3m(Path('work/course-st-3m/results.sqlite'), date.fromisoformat(os.environ['TARGET_DATE']))
+          if not db.complete:
+              raise SystemExit('Incomplete official result days; do not cache: '+db.reason)
+          PY
+      - name: Cache verified official results DB
+        if: steps.st_db_verified.outcome == 'success'
+        uses: actions/cache/save@v4
+        with:
+          path: work/course-st-3m/results.sqlite
+          key: official-course-st-db-${{ env.TARGET_DATE }}-${{ github.run_id }}-${{ github.run_attempt }}

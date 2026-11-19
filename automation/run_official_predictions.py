@@ -15,8 +15,14 @@ import subprocess
 import sys
 import tempfile
 from datetime import datetime
+from datetime import date as calendar_date
 from pathlib import Path
 from zoneinfo import ZoneInfo
+
+try:
+    from .course_st_3m import CourseSt3m
+except ImportError:
+    from course_st_3m import CourseSt3m
 
 COMMANDS = {
     "kiryu": ("run_kiryu_v1.py", "--stage", "morning"),
@@ -151,13 +157,47 @@ def merge_supplement(original: dict, generated: dict, eligible: set[int]) -> tup
     return merged, corrected
 
 
-def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str = "official") -> dict:
+def apply_official_course_st(race_payload: dict, model: CourseSt3m) -> int:
+    """Replace engine-local ST in an isolated input; never alter published racers."""
+    if not model.complete:
+        return 0
+    count = 0
+    for race in race_payload.get("races") or []:
+        for racer in race.get("racers") or []:
+            reg = racer.get("player_id") or racer.get("reg_no") or racer.get("registration_number")
+            course = (racer.get("actual_course") or racer.get("entry_course")
+                      or racer.get("course") or racer.get("lane"))
+            try:
+                selected = model.select(reg, int(course)) if reg and course else None
+            except (TypeError, ValueError):
+                selected = None
+            # Never silently fall back to the unrelated BOATERS local-ST metric.
+            value = (f"{selected['average_st']:.2f}" if selected and
+                     selected["average_st"] is not None else "")
+            racer["local_st"] = value
+            racer["boaters_local_avg_st"] = value
+            racer["official_course_st_3m"] = selected or {
+                "status": "unavailable", "average_st": None,
+                "reason": "racer_or_course_missing",
+            }
+            count += bool(value)
+    return count
+
+
+def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str = "official",
+        course_db: Path | None = None) -> dict:
     from official_morning import atomic_json
     from publish_official_stages import update_index_files
     from build_site_data import prediction_payload_gate
 
     published = {}
-    results = {"date": date, "stage": stage, "venues": {}, "generated": 0}
+    results = {"date": date, "stage": stage, "venues": {}, "generated": 0,
+               "courseSt3mCoverage": {}}
+    model = CourseSt3m(course_db, calendar_date.fromisoformat(date)) if course_db else None
+    results["officialCourseSt3m"] = {
+        "status": "ready" if model and model.complete else "unavailable",
+        "reason": model.reason if model else "not_configured",
+    }
     compact = date.replace("-", "")
     for slug in venues:
         path = data_root / "venues" / slug / f"{compact}.json"
@@ -174,7 +214,11 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str
             isolated = Path(directory)
             target = isolated / "venues" / slug / f"{compact}.json"
             target.parent.mkdir(parents=True)
-            atomic_json(target, original)
+            isolated_payload = copy.deepcopy(original)
+            if model and model.complete:
+                applied = apply_official_course_st(isolated_payload, model)
+                results["courseSt3mCoverage"][slug] = applied
+            atomic_json(target, isolated_payload)
             script, *flags = COMMANDS[slug]
             command = [sys.executable, str(Path(__file__).parent / script),
                        "--date", date, "--data-root", str(isolated), *flags]
@@ -215,12 +259,13 @@ def main() -> None:
     parser.add_argument("--date", required=True)
     parser.add_argument("--stage", choices=("official", "supplement"), default="official")
     parser.add_argument("--data-root", type=Path, default=Path("data"))
+    parser.add_argument("--course-db", type=Path)
     parser.add_argument("--venues", nargs="*", choices=sorted(COMMANDS), default=sorted(COMMANDS))
     args = parser.parse_args()
     now = datetime.now(ZoneInfo("Asia/Tokyo"))
     if args.date != now.date().isoformat():
         raise SystemExit("Only JST today is eligible")
-    print(json.dumps(run(args.date, args.data_root, now, args.venues, args.stage), ensure_ascii=False))
+    print(json.dumps(run(args.date, args.data_root, now, args.venues, args.stage, args.course_db), ensure_ascii=False))
 
 
 if __name__ == "__main__":
