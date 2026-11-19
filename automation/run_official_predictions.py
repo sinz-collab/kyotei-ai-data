@@ -165,7 +165,8 @@ def apply_official_course_st(race_payload: dict, model: CourseSt3m) -> int:
     for race in race_payload.get("races") or []:
         for racer in race.get("racers") or []:
             reg = racer.get("player_id") or racer.get("reg_no") or racer.get("registration_number")
-            course = racer.get("course") or racer.get("entry_course") or racer.get("lane")
+            course = (racer.get("actual_course") or racer.get("entry_course")
+                      or racer.get("course") or racer.get("lane"))
             if not reg or not course:
                 continue
             try:
