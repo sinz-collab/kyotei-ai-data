@@ -146,10 +146,24 @@ jobs:
             --export work/course-st-3m/rolling.csv \
             --status work/course-st-3m/status.json \
             backfill --start "$START_DATE" --end "$END_DATE" \
-            --timeout 10 --retries 1
+            --timeout 25 --retries 2
           python automation/player_course_6m.py \
             --db work/course-st-3m/results.sqlite \
             verify --start "$START_DATE" --end "$END_DATE"
+      - name: Publish official three-month course ST for display
+        if: steps.scope.outputs.active == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          git pull --rebase origin main
+          python automation/publish_official_course_st_3m.py \
+            --date "$TARGET_DATE" --db work/course-st-3m/results.sqlite --apply \
+            | tee work/official-course-st-3m-report.json
+          git add data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: publish official three-month course ST for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
       - name: Generate missing preliminary predictions from official cards
         if: steps.scope.outputs.active == 'true'
         run: |
@@ -284,6 +298,7 @@ jobs:
             work/official-publish-report.json
             work/official-prediction-report.json
             work/official-tide-report.json
+            work/official-course-st-3m-report.json
             work/supplement-stage/report.json
             work/supplement-publish-report.json
             work/supplement-prediction-report.json
