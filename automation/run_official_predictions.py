@@ -167,17 +167,19 @@ def apply_official_course_st(race_payload: dict, model: CourseSt3m) -> int:
             reg = racer.get("player_id") or racer.get("reg_no") or racer.get("registration_number")
             course = (racer.get("actual_course") or racer.get("entry_course")
                       or racer.get("course") or racer.get("lane"))
-            if not reg or not course:
-                continue
             try:
-                selected = model.select(reg, int(course))
+                selected = model.select(reg, int(course)) if reg and course else None
             except (TypeError, ValueError):
-                continue
+                selected = None
             # Never silently fall back to the unrelated BOATERS local-ST metric.
-            value = f"{selected['average_st']:.2f}" if selected["average_st"] is not None else ""
+            value = (f"{selected['average_st']:.2f}" if selected and
+                     selected["average_st"] is not None else "")
             racer["local_st"] = value
             racer["boaters_local_avg_st"] = value
-            racer["official_course_st_3m"] = selected
+            racer["official_course_st_3m"] = selected or {
+                "status": "unavailable", "average_st": None,
+                "reason": "racer_or_course_missing",
+            }
             count += bool(value)
     return count
 
@@ -189,7 +191,8 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str
     from build_site_data import prediction_payload_gate
 
     published = {}
-    results = {"date": date, "stage": stage, "venues": {}, "generated": 0}
+    results = {"date": date, "stage": stage, "venues": {}, "generated": 0,
+               "courseSt3mCoverage": {}}
     model = CourseSt3m(course_db, calendar_date.fromisoformat(date)) if course_db else None
     results["officialCourseSt3m"] = {
         "status": "ready" if model and model.complete else "unavailable",
@@ -214,7 +217,7 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str
             isolated_payload = copy.deepcopy(original)
             if model and model.complete:
                 applied = apply_official_course_st(isolated_payload, model)
-                results["venues"].setdefault(slug + "_course_st_3m_count", applied)
+                results["courseSt3mCoverage"][slug] = applied
             atomic_json(target, isolated_payload)
             script, *flags = COMMANDS[slug]
             command = [sys.executable, str(Path(__file__).parent / script),
