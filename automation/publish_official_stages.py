@@ -18,6 +18,7 @@ from official_morning import (
     supplement_item_state,
     validate_candidate,
 )
+from event_labels import event_metadata
 
 
 LOCAL_KEYS = {
@@ -179,6 +180,8 @@ def update_manifest_entry(entry: dict[str, Any], payload: dict[str, Any], date: 
         "predictionReason": pred_reason, "prediction_reason": pred_reason,
         "deadlines": deadlines, "eventDay": payload.get("eventDay"),
         "eventDayLabel": payload.get("eventDayLabel"),
+        "eventLabel": payload.get("eventLabel") or "",
+        "eventType": payload.get("eventType") or "unknown",
     })
 
 
@@ -214,7 +217,9 @@ def update_index_files(data_root: Path, date: str, published: dict[str, dict[str
             "predictionStatus": status, "predictionReason": reason, "entryCount": 12,
             "firstDeadline": deadlines[0]["deadline"], "deadlines": deadlines,
             "eventDay": payload.get("eventDay"), "eventDayLabel": payload.get("eventDayLabel"),
-            "eventLabel": payload.get("officialEventTitle") or "",
+            "eventLabel": payload.get("eventLabel") or "",
+            "eventType": payload.get("eventType") or "unknown",
+            "eventTitle": payload.get("officialEventTitle") or "",
             "detail": {"reason": "ok", "officialStage": stage},
         }
     atomic_json(report_path, report)
@@ -249,6 +254,7 @@ def publish(args: argparse.Namespace) -> dict[str, Any]:
             result["addedItems"] += merge_supplements(payload, candidate)
             if protected_projection(payload) != protected_before:
                 raise RuntimeError(f"protected_domain_changed:{slug}")
+        payload["eventLabel"], payload["eventType"] = event_metadata(payload, args.data_root)
         payload.setdefault("sourceStatus", {})["official_morning"] = source_status(
             payload, args.stage, state_payload=candidate if args.stage == "supplement" else None
         )
