@@ -48280,28 +48280,28 @@
         "engine_version": "toda_prediction_engine_v6_20260814_marginal_conditional_ticket",
         "probabilities": {
           "win": {
-            "1": 83.6,
+            "1": 71.4,
             "2": 1.5,
-            "3": 6.3,
-            "4": 2.8,
+            "3": 12.5,
+            "4": 8.4,
             "5": 1.7,
-            "6": 4.1
+            "6": 4.5
           },
           "second": {
-            "1": 13.2,
-            "2": 12.7,
-            "3": 33.0,
-            "4": 14.3,
-            "5": 9.9,
-            "6": 16.9
+            "1": 22.1,
+            "2": 11.1,
+            "3": 29.2,
+            "4": 13.3,
+            "5": 8.7,
+            "6": 15.6
           },
           "third": {
-            "1": 2.2,
-            "2": 18.5,
-            "3": 22.1,
-            "4": 20.5,
-            "5": 16.7,
-            "6": 20.0
+            "1": 4.5,
+            "2": 17.8,
+            "3": 21.4,
+            "4": 19.8,
+            "5": 16.0,
+            "6": 20.5
           }
         },
         "sab": "S",
@@ -48310,73 +48310,94 @@
             {
               "combo": "1-3-6",
               "role": "本線",
-              "prob": 8.9,
+              "prob": 7.8,
               "odds": "-"
             },
             {
               "combo": "1-3-4",
               "role": "本線",
-              "prob": 8.8,
+              "prob": 7.7,
               "odds": "-"
             },
             {
               "combo": "1-3-2",
               "role": "本線",
-              "prob": 7.7,
+              "prob": 6.5,
               "odds": "-"
             },
             {
               "combo": "1-3-5",
               "role": "本線",
-              "prob": 6.7,
+              "prob": 5.6,
               "odds": "-"
             },
             {
               "combo": "1-6-3",
               "role": "本線",
-              "prob": 6.1,
+              "prob": 5.4,
               "odds": "-"
             },
             {
               "combo": "1-4-3",
               "role": "本線",
-              "prob": 5.1,
+              "prob": 4.6,
               "odds": "-"
             },
             {
               "combo": "1-2-3",
               "role": "2着ズレ",
-              "prob": 4.4,
+              "prob": 3.7,
               "odds": "-"
             },
             {
               "combo": "1-6-4",
               "role": "3着ズレ",
-              "prob": 3.8,
+              "prob": 3.4,
               "odds": "-"
             },
             {
-              "combo": "1-6-2",
+              "combo": "3-1-6",
               "role": "シナリオ穴",
-              "prob": 3.4,
+              "prob": 3.0,
               "odds": "-",
-              "scenarioHead": 1,
+              "scenarioHead": 3,
               "scenarioIds": [
-                "IN_ESCAPE"
+                "LIVE_ATTACK_3"
               ]
             },
             {
-              "combo": "1-5-3",
+              "combo": "3-1-4",
               "role": "シナリオ穴",
-              "prob": 3.3,
+              "prob": 2.9,
               "odds": "-",
-              "scenarioHead": 1,
+              "scenarioHead": 3,
               "scenarioIds": [
-                "IN_ESCAPE"
+                "LIVE_ATTACK_3"
               ]
             }
           ],
-          "aiUpset": [],
+          "aiUpset": [
+            {
+              "combo": "4-1-3",
+              "role": "AI荒れ",
+              "prob": 2.4,
+              "odds": "-",
+              "scenarioHead": 4,
+              "scenarioIds": [
+                "LIVE_ATTACK_4"
+              ]
+            },
+            {
+              "combo": "4-1-6",
+              "role": "AI荒れ",
+              "prob": 1.7,
+              "odds": "-",
+              "scenarioHead": 4,
+              "scenarioIds": [
+                "LIVE_ATTACK_4"
+              ]
+            }
+          ],
           "tickets": [
             "1-3-6",
             "1-3-4",
@@ -48386,8 +48407,8 @@
             "1-4-3",
             "1-2-3",
             "1-6-4",
-            "1-6-2",
-            "1-5-3"
+            "3-1-6",
+            "3-1-4"
           ]
         },
         "probabilityReviewStatus": "reviewed",
@@ -48406,14 +48427,14 @@
           "color": "green"
         },
         "flyPrediction": {
-          "probability": 23.3,
+          "probability": 28.5,
           "threshold": 50.0,
           "isFly": false,
           "judgement": "逃げ優勢",
           "status": "final",
-          "rawFlyScore": 45.448381,
+          "rawFlyScore": 49.718381,
           "baseFly": 48.811279,
-          "currentP1": 83.6,
+          "currentP1": 71.4,
           "attackAdj": 7.98105,
           "resistanceAdj": 0.0,
           "currentP1Weight": 0.35,
@@ -48461,34 +48482,38 @@
           "sigmoidSlope": 0.06374919859354038,
           "oddsUsed": false,
           "mainHead": 3,
-          "secondHead": 6,
-          "developmentHead": 2,
+          "secondHead": 4,
+          "developmentHead": 4,
           "tickets": [
             {
               "combo": "3-1-6",
               "role": "条件付き確率上位",
               "head": 3,
               "pattern": "conditional_top8",
-              "prob": 1.4421,
-              "headConditionalProbability": 23.8001,
-              "scenarioIds": []
+              "prob": 1.7379,
+              "headConditionalProbability": 23.8369,
+              "scenarioIds": [
+                "LIVE_ATTACK_3"
+              ]
             },
             {
               "combo": "3-1-4",
               "role": "条件付き確率上位",
               "head": 3,
               "pattern": "conditional_top8",
-              "prob": 1.419,
-              "headConditionalProbability": 23.4177,
-              "scenarioIds": []
+              "prob": 1.712,
+              "headConditionalProbability": 23.4563,
+              "scenarioIds": [
+                "LIVE_ATTACK_3"
+              ]
             },
             {
               "combo": "6-1-3",
               "role": "条件付き確率上位",
               "head": 6,
               "pattern": "conditional_top8",
-              "prob": 1.2678,
-              "headConditionalProbability": 30.3282,
+              "prob": 1.2945,
+              "headConditionalProbability": 30.3861,
               "scenarioIds": []
             },
             {
@@ -48496,67 +48521,79 @@
               "role": "条件付き確率上位",
               "head": 3,
               "pattern": "conditional_top8",
-              "prob": 1.1009,
-              "headConditionalProbability": 18.1654,
-              "scenarioIds": []
+              "prob": 1.289,
+              "headConditionalProbability": 17.8575,
+              "scenarioIds": [
+                "LIVE_ATTACK_3"
+              ]
             },
             {
               "combo": "3-1-5",
               "role": "条件付き確率上位",
               "head": 3,
               "pattern": "conditional_top8",
-              "prob": 1.0726,
-              "headConditionalProbability": 17.7003,
-              "scenarioIds": []
-            },
-            {
-              "combo": "6-1-4",
-              "role": "条件付き確率上位",
-              "head": 6,
-              "pattern": "conditional_top8",
-              "prob": 0.8018,
-              "headConditionalProbability": 19.1811,
-              "scenarioIds": []
+              "prob": 1.2471,
+              "headConditionalProbability": 17.3493,
+              "scenarioIds": [
+                "LIVE_ATTACK_3"
+              ]
             },
             {
               "combo": "4-1-3",
               "role": "条件付き確率上位",
               "head": 4,
               "pattern": "conditional_top8",
-              "prob": 0.7127,
-              "headConditionalProbability": 27.843,
-              "scenarioIds": []
+              "prob": 1.028,
+              "headConditionalProbability": 27.898,
+              "scenarioIds": [
+                "LIVE_ATTACK_4"
+              ]
             },
             {
-              "combo": "6-1-2",
+              "combo": "6-1-4",
               "role": "条件付き確率上位",
               "head": 6,
               "pattern": "conditional_top8",
-              "prob": 0.7013,
-              "headConditionalProbability": 16.7773,
+              "prob": 0.8139,
+              "headConditionalProbability": 19.1126,
               "scenarioIds": []
             },
             {
-              "combo": "2-1-3",
-              "role": "展開シナリオ",
-              "head": 2,
-              "pattern": "scenario_top2",
-              "prob": 0.3986,
-              "headConditionalProbability": 28.0704,
-              "scenarioEstablishment": 0.0,
-              "scenarioScore": 0.0,
-              "scenarioIds": []
+              "combo": "4-1-6",
+              "role": "条件付き確率上位",
+              "head": 4,
+              "pattern": "conditional_top8",
+              "prob": 0.7497,
+              "headConditionalProbability": 20.5255,
+              "scenarioIds": [
+                "LIVE_ATTACK_4"
+              ]
             },
             {
-              "combo": "5-1-3",
+              "combo": "4-1-2",
               "role": "展開シナリオ",
-              "head": 5,
+              "head": 4,
               "pattern": "scenario_top2",
-              "prob": 0.4787,
-              "headConditionalProbability": 26.8953,
-              "scenarioEstablishment": 0.0,
-              "scenarioScore": 0.0,
-              "scenarioIds": []
+              "prob": 0.545,
+              "headConditionalProbability": 15.2771,
+              "scenarioEstablishment": 0.184722,
+              "scenarioScore": 2.552567,
+              "scenarioIds": [
+                "LIVE_ATTACK_4"
+              ]
+            },
+            {
+              "combo": "4-1-5",
+              "role": "展開シナリオ",
+              "head": 4,
+              "pattern": "scenario_top2",
+              "prob": 0.527,
+              "headConditionalProbability": 14.8394,
+              "scenarioEstablishment": 0.184722,
+              "scenarioScore": 2.441586,
+              "scenarioIds": [
+                "LIVE_ATTACK_4"
+              ]
             }
           ],
           "ticketStatus": "complete",
@@ -77144,135 +77181,175 @@
         "6": 4.9
       },
       "win": {
-        "1": 83.6,
+        "1": 71.4,
         "2": 1.5,
-        "3": 6.3,
-        "4": 2.8,
+        "3": 12.5,
+        "4": 8.4,
         "5": 1.7,
-        "6": 4.1
+        "6": 4.5
       },
       "second": {
-        "1": 13.2,
-        "2": 12.7,
-        "3": 33.0,
-        "4": 14.3,
-        "5": 9.9,
-        "6": 16.9
+        "1": 22.1,
+        "2": 11.1,
+        "3": 29.2,
+        "4": 13.3,
+        "5": 8.7,
+        "6": 15.6
       },
       "third": {
-        "1": 2.2,
-        "2": 18.5,
-        "3": 22.1,
-        "4": 20.5,
-        "5": 16.7,
-        "6": 20.0
+        "1": 4.5,
+        "2": 17.8,
+        "3": 21.4,
+        "4": 19.8,
+        "5": 16.0,
+        "6": 20.5
       },
       "secondByHead": {
         "1": {
           "1": 0.0,
-          "2": 14.5,
-          "3": 38.4,
-          "4": 16.4,
-          "5": 11.3,
-          "6": 19.4
+          "2": 14.1,
+          "3": 38.5,
+          "4": 16.9,
+          "5": 10.9,
+          "6": 19.6
         },
         "2": {
-          "1": 77.1,
+          "1": 73.0,
           "2": 0.0,
-          "3": 10.2,
-          "4": 4.5,
+          "3": 12.0,
+          "4": 5.6,
           "5": 3.1,
-          "6": 5.1
+          "6": 6.3
         },
         "3": {
-          "1": 82.7,
-          "2": 3.7,
+          "1": 79.7,
+          "2": 3.9,
           "3": 0.0,
-          "4": 4.8,
-          "5": 3.3,
-          "6": 5.5
+          "4": 6.2,
+          "5": 3.4,
+          "6": 6.8
         },
         "4": {
-          "1": 78.8,
-          "2": 3.6,
-          "3": 9.2,
+          "1": 75.1,
+          "2": 3.7,
+          "3": 11.3,
           "4": 0.0,
-          "5": 3.1,
-          "6": 5.3
+          "5": 3.2,
+          "6": 6.7
         },
         "5": {
-          "1": 78.3,
-          "2": 3.5,
-          "3": 9.1,
-          "4": 4.0,
+          "1": 73.6,
+          "2": 3.6,
+          "3": 11.2,
+          "4": 5.2,
           "5": 0.0,
-          "6": 5.1
+          "6": 6.4
         },
         "6": {
-          "1": 80.1,
-          "2": 3.6,
-          "3": 9.4,
-          "4": 4.1,
-          "5": 2.8,
+          "1": 76.4,
+          "2": 3.7,
+          "3": 11.6,
+          "4": 5.4,
+          "5": 2.9,
           "6": 0.0
         }
       },
       "thirdByHead": {
         "1": {
           "1": 0.0,
-          "2": 16.8,
-          "3": 30.2,
-          "4": 19.1,
-          "5": 14.5,
-          "6": 19.4
+          "2": 16.3,
+          "3": 30.8,
+          "4": 19.3,
+          "5": 14.0,
+          "6": 19.6
         },
         "2": {
-          "1": 58.7,
+          "1": 57.1,
           "2": 0.0,
-          "3": 15.0,
-          "4": 9.5,
-          "5": 7.2,
-          "6": 9.6
+          "3": 16.1,
+          "4": 9.9,
+          "5": 6.7,
+          "6": 10.2
         },
         "3": {
-          "1": 63.4,
-          "2": 8.1,
+          "1": 62.3,
+          "2": 7.9,
           "3": 0.0,
-          "4": 10.3,
-          "5": 7.8,
-          "6": 10.4
+          "4": 11.1,
+          "5": 7.5,
+          "6": 11.2
         },
         "4": {
-          "1": 61.1,
-          "2": 7.7,
-          "3": 13.7,
+          "1": 59.2,
+          "2": 7.5,
+          "3": 15.2,
           "4": 0.0,
-          "5": 7.5,
-          "6": 10.0
+          "5": 7.2,
+          "6": 10.9
         },
         "5": {
-          "1": 60.3,
-          "2": 7.6,
-          "3": 13.6,
-          "4": 8.6,
+          "1": 57.8,
+          "2": 7.4,
+          "3": 15.0,
+          "4": 9.2,
           "5": 0.0,
-          "6": 9.9
+          "6": 10.6
         },
         "6": {
-          "1": 62.5,
-          "2": 7.8,
-          "3": 14.1,
-          "4": 8.9,
-          "5": 6.7,
+          "1": 60.6,
+          "2": 7.6,
+          "3": 15.7,
+          "4": 9.6,
+          "5": 6.5,
           "6": 0.0
         }
       },
       "scenarios": [
         {
+          "id": "LIVE_ATTACK_3",
+          "label": "3直前攻め",
+          "head": 3,
+          "weight": 1.0,
+          "links": [
+            1,
+            2,
+            4,
+            5,
+            6
+          ],
+          "liveAttack": {
+            "headScore": 0.5822567750000001,
+            "residualScore": 0.7135,
+            "matchupScore": 0.18256775000000003,
+            "sumRank": 1,
+            "turnRank": 4,
+            "straightRank": 2,
+            "lapRank": 1,
+            "sumDifference": 0.0,
+            "historicalST": 0.2,
+            "exhibitionSTSupport": -0.2,
+            "kimarite": {
+              "headRate": 5.6,
+              "sashi": 0,
+              "makuri": 5.6,
+              "makuriSashi": 0,
+              "nigashi": 0,
+              "style": "3攻め"
+            }
+          },
+          "attackEstablishment": 1,
+          "kimariteMatchup": 0.18256775000000003,
+          "scenarioShareBeforeGuard": 0.05202261056198847,
+          "scenarioShareAfterConsensusGuard": 0.05202261056198847,
+          "scenarioShare": 0.05202261056198847,
+          "scenarioGuardSuppressed": false,
+          "scenarioGuardSuppressionRate": 0.0
+        },
+        {
           "id": "IN_ESCAPE",
           "label": "1逃げ",
           "head": 1,
-          "weight": 0.7621380612712064,
+          "weight": 0.9597501308312064,
           "links": [
             2,
             3,
@@ -77287,9 +77364,49 @@
             "makurareZashi": 15.8,
             "vulnerability": 42.2
           },
-          "scenarioShareBeforeGuard": 0.15,
-          "scenarioShareAfterConsensusGuard": 0.15,
-          "scenarioShare": 0.15,
+          "scenarioShareBeforeGuard": 0.04992870729304933,
+          "scenarioShareAfterConsensusGuard": 0.04992870729304933,
+          "scenarioShare": 0.04992870729304933,
+          "scenarioGuardSuppressed": false,
+          "scenarioGuardSuppressionRate": 0.0
+        },
+        {
+          "id": "LIVE_ATTACK_4",
+          "label": "4直前攻め",
+          "head": 4,
+          "weight": 0.9236115147991073,
+          "links": [
+            1,
+            2,
+            3,
+            5,
+            6
+          ],
+          "liveAttack": {
+            "headScore": 0.44401518883928576,
+            "residualScore": 0.34310000000000007,
+            "matchupScore": 0.33015188839285725,
+            "sumRank": 4,
+            "turnRank": 2,
+            "straightRank": 6,
+            "lapRank": 4,
+            "sumDifference": 0.0,
+            "historicalST": 0.183,
+            "exhibitionSTSupport": 0.25,
+            "kimarite": {
+              "headRate": 21.4,
+              "sashi": 0,
+              "makuri": 14.3,
+              "makuriSashi": 7.1,
+              "nigashi": 0,
+              "style": "4攻め"
+            }
+          },
+          "attackEstablishment": 0.9236115147991073,
+          "kimariteMatchup": 0.33015188839285725,
+          "scenarioShareBeforeGuard": 0.04804868214496221,
+          "scenarioShareAfterConsensusGuard": 0.04804868214496221,
+          "scenarioShare": 0.04804868214496221,
           "scenarioGuardSuppressed": false,
           "scenarioGuardSuppressionRate": 0.0
         }
@@ -77306,15 +77423,15 @@
       },
       "scenarioMix": {
         "maxShare": 0.15,
-        "appliedShare": 0.15,
+        "appliedShare": 0.15000000000000002,
         "strongAttack": false,
         "consensusLane": null,
         "guardSuppressedLanes": [],
         "headShares": {
-          "1": 0.15,
+          "1": 0.04992870729304933,
           "2": 0.0,
-          "3": 0.0,
-          "4": 0.0,
+          "3": 0.05202261056198847,
+          "4": 0.04804868214496221,
           "5": 0.0,
           "6": 0.0
         },
@@ -77327,20 +77444,20 @@
           "6": 1.0
         },
         "scenarioAdjustedBase": {
-          "1": 80.7,
+          "1": 78.1,
           "2": 1.8,
-          "3": 7.4,
-          "4": 3.3,
+          "3": 8.6,
+          "4": 4.2,
           "5": 2.0,
-          "6": 4.8
+          "6": 5.3
         },
         "correctionPoints": {
-          "1": 2.8999999999999915,
+          "1": -6.699999999999989,
           "2": -0.30000000000000004,
-          "3": -1.1000000000000005,
-          "4": -0.5,
+          "3": 3.9000000000000004,
+          "4": 4.2,
           "5": -0.30000000000000004,
-          "6": -0.7000000000000002
+          "6": -0.7999999999999998
         },
         "baseTop": 1,
         "scenarioTopBeforeFlipGuard": 1,
@@ -77365,73 +77482,94 @@
         {
           "combo": "1-3-6",
           "role": "本線",
-          "prob": 8.9,
+          "prob": 7.8,
           "odds": "-"
         },
         {
           "combo": "1-3-4",
           "role": "本線",
-          "prob": 8.8,
+          "prob": 7.7,
           "odds": "-"
         },
         {
           "combo": "1-3-2",
           "role": "本線",
-          "prob": 7.7,
+          "prob": 6.5,
           "odds": "-"
         },
         {
           "combo": "1-3-5",
           "role": "本線",
-          "prob": 6.7,
+          "prob": 5.6,
           "odds": "-"
         },
         {
           "combo": "1-6-3",
           "role": "本線",
-          "prob": 6.1,
+          "prob": 5.4,
           "odds": "-"
         },
         {
           "combo": "1-4-3",
           "role": "本線",
-          "prob": 5.1,
+          "prob": 4.6,
           "odds": "-"
         },
         {
           "combo": "1-2-3",
           "role": "2着ズレ",
-          "prob": 4.4,
+          "prob": 3.7,
           "odds": "-"
         },
         {
           "combo": "1-6-4",
           "role": "3着ズレ",
-          "prob": 3.8,
+          "prob": 3.4,
           "odds": "-"
         },
         {
-          "combo": "1-6-2",
+          "combo": "3-1-6",
           "role": "シナリオ穴",
-          "prob": 3.4,
+          "prob": 3.0,
           "odds": "-",
-          "scenarioHead": 1,
+          "scenarioHead": 3,
           "scenarioIds": [
-            "IN_ESCAPE"
+            "LIVE_ATTACK_3"
           ]
         },
         {
-          "combo": "1-5-3",
+          "combo": "3-1-4",
           "role": "シナリオ穴",
-          "prob": 3.3,
+          "prob": 2.9,
           "odds": "-",
-          "scenarioHead": 1,
+          "scenarioHead": 3,
           "scenarioIds": [
-            "IN_ESCAPE"
+            "LIVE_ATTACK_3"
           ]
         }
       ],
-      "aiUpset": [],
+      "aiUpset": [
+        {
+          "combo": "4-1-3",
+          "role": "AI荒れ",
+          "prob": 2.4,
+          "odds": "-",
+          "scenarioHead": 4,
+          "scenarioIds": [
+            "LIVE_ATTACK_4"
+          ]
+        },
+        {
+          "combo": "4-1-6",
+          "role": "AI荒れ",
+          "prob": 1.7,
+          "odds": "-",
+          "scenarioHead": 4,
+          "scenarioIds": [
+            "LIVE_ATTACK_4"
+          ]
+        }
+      ],
       "tickets": [
         "1-3-6",
         "1-3-4",
@@ -77441,8 +77579,8 @@
         "1-4-3",
         "1-2-3",
         "1-6-4",
-        "1-6-2",
-        "1-5-3"
+        "3-1-6",
+        "3-1-4"
       ],
       "sourceStatus": {
         "1": {
@@ -80098,14 +80236,14 @@
         "color": "green"
       },
       "flyPrediction": {
-        "probability": 23.3,
+        "probability": 28.5,
         "threshold": 50.0,
         "isFly": false,
         "judgement": "逃げ優勢",
         "status": "final",
-        "rawFlyScore": 45.448381,
+        "rawFlyScore": 49.718381,
         "baseFly": 48.811279,
-        "currentP1": 83.6,
+        "currentP1": 71.4,
         "attackAdj": 7.98105,
         "resistanceAdj": 0.0,
         "currentP1Weight": 0.35,
@@ -80153,34 +80291,38 @@
         "sigmoidSlope": 0.06374919859354038,
         "oddsUsed": false,
         "mainHead": 3,
-        "secondHead": 6,
-        "developmentHead": 2,
+        "secondHead": 4,
+        "developmentHead": 4,
         "tickets": [
           {
             "combo": "3-1-6",
             "role": "条件付き確率上位",
             "head": 3,
             "pattern": "conditional_top8",
-            "prob": 1.4421,
-            "headConditionalProbability": 23.8001,
-            "scenarioIds": []
+            "prob": 1.7379,
+            "headConditionalProbability": 23.8369,
+            "scenarioIds": [
+              "LIVE_ATTACK_3"
+            ]
           },
           {
             "combo": "3-1-4",
             "role": "条件付き確率上位",
             "head": 3,
             "pattern": "conditional_top8",
-            "prob": 1.419,
-            "headConditionalProbability": 23.4177,
-            "scenarioIds": []
+            "prob": 1.712,
+            "headConditionalProbability": 23.4563,
+            "scenarioIds": [
+              "LIVE_ATTACK_3"
+            ]
           },
           {
             "combo": "6-1-3",
             "role": "条件付き確率上位",
             "head": 6,
             "pattern": "conditional_top8",
-            "prob": 1.2678,
-            "headConditionalProbability": 30.3282,
+            "prob": 1.2945,
+            "headConditionalProbability": 30.3861,
             "scenarioIds": []
           },
           {
@@ -80188,67 +80330,79 @@
             "role": "条件付き確率上位",
             "head": 3,
             "pattern": "conditional_top8",
-            "prob": 1.1009,
-            "headConditionalProbability": 18.1654,
-            "scenarioIds": []
+            "prob": 1.289,
+            "headConditionalProbability": 17.8575,
+            "scenarioIds": [
+              "LIVE_ATTACK_3"
+            ]
           },
           {
             "combo": "3-1-5",
             "role": "条件付き確率上位",
             "head": 3,
             "pattern": "conditional_top8",
-            "prob": 1.0726,
-            "headConditionalProbability": 17.7003,
-            "scenarioIds": []
-          },
-          {
-            "combo": "6-1-4",
-            "role": "条件付き確率上位",
-            "head": 6,
-            "pattern": "conditional_top8",
-            "prob": 0.8018,
-            "headConditionalProbability": 19.1811,
-            "scenarioIds": []
+            "prob": 1.2471,
+            "headConditionalProbability": 17.3493,
+            "scenarioIds": [
+              "LIVE_ATTACK_3"
+            ]
           },
           {
             "combo": "4-1-3",
             "role": "条件付き確率上位",
             "head": 4,
             "pattern": "conditional_top8",
-            "prob": 0.7127,
-            "headConditionalProbability": 27.843,
-            "scenarioIds": []
+            "prob": 1.028,
+            "headConditionalProbability": 27.898,
+            "scenarioIds": [
+              "LIVE_ATTACK_4"
+            ]
           },
           {
-            "combo": "6-1-2",
+            "combo": "6-1-4",
             "role": "条件付き確率上位",
             "head": 6,
             "pattern": "conditional_top8",
-            "prob": 0.7013,
-            "headConditionalProbability": 16.7773,
+            "prob": 0.8139,
+            "headConditionalProbability": 19.1126,
             "scenarioIds": []
           },
           {
-            "combo": "2-1-3",
-            "role": "展開シナリオ",
-            "head": 2,
-            "pattern": "scenario_top2",
-            "prob": 0.3986,
-            "headConditionalProbability": 28.0704,
-            "scenarioEstablishment": 0.0,
-            "scenarioScore": 0.0,
-            "scenarioIds": []
+            "combo": "4-1-6",
+            "role": "条件付き確率上位",
+            "head": 4,
+            "pattern": "conditional_top8",
+            "prob": 0.7497,
+            "headConditionalProbability": 20.5255,
+            "scenarioIds": [
+              "LIVE_ATTACK_4"
+            ]
           },
           {
-            "combo": "5-1-3",
+            "combo": "4-1-2",
             "role": "展開シナリオ",
-            "head": 5,
+            "head": 4,
             "pattern": "scenario_top2",
-            "prob": 0.4787,
-            "headConditionalProbability": 26.8953,
-            "scenarioEstablishment": 0.0,
-            "scenarioScore": 0.0,
-            "scenarioIds": []
+            "prob": 0.545,
+            "headConditionalProbability": 15.2771,
+            "scenarioEstablishment": 0.184722,
+            "scenarioScore": 2.552567,
+            "scenarioIds": [
+              "LIVE_ATTACK_4"
+            ]
+          },
+          {
+            "combo": "4-1-5",
+            "role": "展開シナリオ",
+            "head": 4,
+            "pattern": "scenario_top2",
+            "prob": 0.527,
+            "headConditionalProbability": 14.8394,
+            "scenarioEstablishment": 0.184722,
+            "scenarioScore": 2.441586,
+            "scenarioIds": [
+              "LIVE_ATTACK_4"
+            ]
           }
         ],
         "ticketStatus": "complete",
@@ -80422,121 +80576,121 @@
         ]
       },
       "baseLiveWin": {
-        "1": 80.7,
+        "1": 78.1,
         "2": 1.8,
-        "3": 7.4,
-        "4": 3.3,
+        "3": 8.6,
+        "4": 4.2,
         "5": 2.0,
-        "6": 4.8
+        "6": 5.3
       },
       "probabilityReview": {
         "1": {
           "morningWin": 84.1,
           "morningSecond": 12.9,
           "morningThird": 2.1,
-          "win": 83.6,
-          "second": 13.2,
-          "third": 2.2,
-          "deltaWin": -0.5,
-          "deltaSecond": 0.3,
-          "deltaThird": 0.1
+          "win": 71.4,
+          "second": 22.1,
+          "third": 4.5,
+          "deltaWin": -12.7,
+          "deltaSecond": 9.2,
+          "deltaThird": 2.4
         },
         "2": {
           "morningWin": 1.4,
           "morningSecond": 12.7,
           "morningThird": 18.5,
           "win": 1.5,
-          "second": 12.7,
-          "third": 18.5,
+          "second": 11.1,
+          "third": 17.8,
           "deltaWin": 0.1,
-          "deltaSecond": 0.0,
-          "deltaThird": 0.0
+          "deltaSecond": -1.6,
+          "deltaThird": -0.7
         },
         "3": {
           "morningWin": 6.0,
           "morningSecond": 33.1,
           "morningThird": 22.1,
-          "win": 6.3,
-          "second": 33.0,
-          "third": 22.1,
-          "deltaWin": 0.3,
-          "deltaSecond": -0.1,
-          "deltaThird": 0.0
+          "win": 12.5,
+          "second": 29.2,
+          "third": 21.4,
+          "deltaWin": 6.5,
+          "deltaSecond": -3.9,
+          "deltaThird": -0.7
         },
         "4": {
           "morningWin": 2.5,
           "morningSecond": 14.3,
           "morningThird": 20.6,
-          "win": 2.8,
-          "second": 14.3,
-          "third": 20.5,
-          "deltaWin": 0.3,
-          "deltaSecond": 0.0,
-          "deltaThird": -0.1
+          "win": 8.4,
+          "second": 13.3,
+          "third": 19.8,
+          "deltaWin": 5.9,
+          "deltaSecond": -1.0,
+          "deltaThird": -0.8
         },
         "5": {
           "morningWin": 1.8,
           "morningSecond": 10.0,
           "morningThird": 16.6,
           "win": 1.7,
-          "second": 9.9,
-          "third": 16.7,
+          "second": 8.7,
+          "third": 16.0,
           "deltaWin": -0.1,
-          "deltaSecond": -0.1,
-          "deltaThird": 0.1
+          "deltaSecond": -1.3,
+          "deltaThird": -0.6
         },
         "6": {
           "morningWin": 4.2,
           "morningSecond": 17.0,
           "morningThird": 20.1,
-          "win": 4.1,
-          "second": 16.9,
-          "third": 20.0,
-          "deltaWin": -0.1,
-          "deltaSecond": -0.1,
-          "deltaThird": -0.1
+          "win": 4.5,
+          "second": 15.6,
+          "third": 20.5,
+          "deltaWin": 0.3,
+          "deltaSecond": -1.4,
+          "deltaThird": 0.4
         }
       },
       "insideBreakdown": {
-        "score": 0.141,
+        "score": 0.163,
         "winPenaltyPoints": 0.0,
         "legacyInsideBreakApplied": false,
-        "lane1Defense": 0.115,
+        "lane1Defense": 0.827,
         "attackers": [
           {
-            "lane": 4,
-            "headScore": 0.228
-          },
-          {
             "lane": 3,
-            "headScore": 0.155
+            "headScore": 0.646
           },
           {
-            "lane": 2,
-            "headScore": 0.066
-          },
-          {
-            "lane": 5,
-            "headScore": 0.0
+            "lane": 4,
+            "headScore": 0.56
           },
           {
             "lane": 6,
-            "headScore": 0.0
+            "headScore": 0.205
+          },
+          {
+            "lane": 2,
+            "headScore": 0.131
+          },
+          {
+            "lane": 5,
+            "headScore": 0.126
           }
         ]
       },
       "baseLiveGuard": {
         "baseLeader": 1,
-        "liveLeader": 4,
+        "liveLeader": 3,
         "activated": false,
         "consensusLane": null,
         "liveEvaluation": {
-          "1": 0.009,
-          "2": 0.07179999999999997,
-          "3": 0.39196000000000003,
-          "4": 0.41896928571428577,
-          "5": -0.13499999999999998,
-          "6": -0.018
+          "1": 1.1084,
+          "2": 0.2283,
+          "3": 2.03052195,
+          "4": 1.4877733991071431,
+          "5": -0.019450526704545418,
+          "6": 0.7359924577136364
         },
         "exhibitionStartUsedAlone": false
       },
@@ -80552,14 +80706,14 @@
       "liveAttackMeta": {
         "1": {
           "headScore": 0.0,
-          "residualScore": 0,
-          "defenseScore": 0.11542857142857144,
+          "residualScore": 0.879,
+          "defenseScore": 0.8274285714285715,
           "matchupScore": 0.0,
-          "sumRank": null,
-          "turnRank": null,
-          "straightRank": null,
-          "lapRank": null,
-          "sumDifference": 0,
+          "sumRank": 2,
+          "turnRank": 1,
+          "straightRank": 1,
+          "lapRank": 2,
+          "sumDifference": 0.0,
           "historicalST": 0.097,
           "exhibitionSTSupport": 0.5,
           "inside": {
@@ -80571,14 +80725,14 @@
           }
         },
         "2": {
-          "headScore": 0.0664,
-          "residualScore": 0.0488,
+          "headScore": 0.13140000000000002,
+          "residualScore": 0.1703,
           "matchupScore": 0,
-          "sumRank": null,
-          "turnRank": null,
-          "straightRank": null,
-          "lapRank": null,
-          "sumDifference": 0,
+          "sumRank": 5,
+          "turnRank": 6,
+          "straightRank": 3,
+          "lapRank": 5,
+          "sumDifference": 0.0,
           "historicalST": 0.21,
           "exhibitionSTSupport": 0.05,
           "kimarite": {
@@ -80591,14 +80745,14 @@
           }
         },
         "3": {
-          "headScore": 0.14022,
-          "residualScore": 0.06,
-          "matchupScore": 0.04220000000000001,
-          "sumRank": null,
-          "turnRank": null,
-          "straightRank": null,
-          "lapRank": null,
-          "sumDifference": 0,
+          "headScore": 0.5822567750000001,
+          "residualScore": 0.7135,
+          "matchupScore": 0.18256775000000003,
+          "sumRank": 1,
+          "turnRank": 4,
+          "straightRank": 2,
+          "lapRank": 1,
+          "sumDifference": 0.0,
           "historicalST": 0.2,
           "exhibitionSTSupport": -0.2,
           "kimarite": {
@@ -80611,14 +80765,14 @@
           }
         },
         "4": {
-          "headScore": 0.19077607142857145,
-          "residualScore": 0.025,
-          "matchupScore": 0.1077607142857143,
-          "sumRank": null,
-          "turnRank": null,
-          "straightRank": null,
-          "lapRank": null,
-          "sumDifference": 0,
+          "headScore": 0.44401518883928576,
+          "residualScore": 0.34310000000000007,
+          "matchupScore": 0.33015188839285725,
+          "sumRank": 4,
+          "turnRank": 2,
+          "straightRank": 6,
+          "lapRank": 4,
+          "sumDifference": 0.0,
           "historicalST": 0.183,
           "exhibitionSTSupport": 0.25,
           "kimarite": {
@@ -80631,14 +80785,14 @@
           }
         },
         "5": {
-          "headScore": 0,
-          "residualScore": 0.05741907857142857,
+          "headScore": 0.12604947329545457,
+          "residualScore": 0.1710386585,
           "matchupScore": 0.0,
-          "sumRank": null,
-          "turnRank": null,
-          "straightRank": null,
-          "lapRank": null,
-          "sumDifference": 0,
+          "sumRank": 6,
+          "turnRank": 5,
+          "straightRank": 4,
+          "lapRank": 6,
+          "sumDifference": 0.0,
           "historicalST": 0.18,
           "exhibitionSTSupport": 0.0,
           "kimarite": {
@@ -80649,17 +80803,17 @@
             "nigashi": 0,
             "style": "5外攻め"
           },
-          "attackChainScore": 0.22849232142857145
+          "attackChainScore": 0.6461554875000001
         },
         "6": {
-          "headScore": 0,
-          "residualScore": 0.03741907857142857,
+          "headScore": 0.2049924577136364,
+          "residualScore": 0.4475386585000001,
           "matchupScore": 0.0,
-          "sumRank": null,
-          "turnRank": null,
-          "straightRank": null,
-          "lapRank": null,
-          "sumDifference": 0,
+          "sumRank": 3,
+          "turnRank": 3,
+          "straightRank": 5,
+          "lapRank": 3,
+          "sumDifference": 0.0,
           "historicalST": 0.192,
           "exhibitionSTSupport": 0.25,
           "kimarite": {
@@ -80670,7 +80824,7 @@
             "nigashi": 0,
             "style": "6外攻め"
           },
-          "attackChainScore": 0.22849232142857145
+          "attackChainScore": 0.6461554875000001
         }
       },
       "probabilityReviewStatus": "reviewed",
@@ -80679,10 +80833,10 @@
         "oddsUsedForTickets": false,
         "oddsRequiredForReview": false,
         "exhibitionStartUsedAlone": false,
-        "originalExhibitionApplied": false,
-        "sumAndDifferenceApplied": false,
-        "turnApplied": false,
-        "straightApplied": false,
+        "originalExhibitionApplied": true,
+        "sumAndDifferenceApplied": true,
+        "turnApplied": true,
+        "straightApplied": true,
         "kimariteMatchupApplied": true,
         "insideBreakdownApplied": false,
         "scenarioMixAppliedOnce": true,
