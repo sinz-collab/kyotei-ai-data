@@ -16,24 +16,26 @@ class OfficialMorningWorkflowTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    def test_manual_only_and_read_only(self) -> None:
+    def test_manual_only_with_scoped_publish_permission(self) -> None:
         self.assertIn("name: 朝のレースデータ【公式出走表】", self.workflow)
         self.assertIn("workflow_dispatch:", self.workflow)
         self.assertNotIn("schedule:", self.workflow)
         self.assertNotIn("push:", self.workflow)
-        self.assertIn("contents: read", self.workflow)
-        self.assertNotIn("contents: write", self.workflow)
+        self.assertIn("contents: write", self.workflow)
 
-    def test_has_rate_limit_validation_and_artifact_but_no_publish(self) -> None:
+    def test_has_two_stage_cache_aware_publication(self) -> None:
         self.assertIn("--min-interval 1.0", self.workflow)
         self.assertIn("official_morning.py", self.workflow)
         self.assertIn("upload-artifact@v4", self.workflow)
         self.assertNotIn("publish_morning_data.sh", self.workflow)
-        self.assertNotIn("git push", self.workflow)
+        self.assertIn("publish_official_stages.py", self.workflow)
+        self.assertIn("--stage official", self.workflow)
+        self.assertIn("--stage supplement", self.workflow)
+        self.assertIn("git push", self.workflow)
         self.assertIn("sinz-morning-gateway", self.workflow)
         self.assertIn("supplement-version", self.workflow)
         self.assertIn("browser_identity.py", self.workflow)
-        self.assertIn('races="$(seq -s, 1 12)"', self.workflow)
+        self.assertIn("missingSupplementRaces", self.workflow)
         self.assertIn("validate_boaters_supplement.py", self.workflow)
         self.assertIn("--boaters-root", self.workflow)
         self.assertIn("--course-db", self.workflow)
@@ -43,6 +45,8 @@ class OfficialMorningWorkflowTests(unittest.TestCase):
         self.assertIn("actions/cache/save@v4", self.workflow)
         self.assertIn("official-morning-cache", self.workflow)
         self.assertIn("heldVenues", self.workflow)
+        self.assertIn("--cache-only", self.workflow)
+        self.assertIn("continue", self.workflow)
 
     def test_vps_supplement_accepts_twelve_and_never_overwrites_valid_cache(self) -> None:
         gateway = (ROOT / "deploy/morning-vps/sinz-morning-gateway").read_text(encoding="utf-8")

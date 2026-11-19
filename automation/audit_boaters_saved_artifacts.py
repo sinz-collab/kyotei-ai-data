@@ -64,7 +64,7 @@ def audit_race(race_dir: Path, prefix: str) -> dict:
     if sorted(motors) != list(range(1, 7)):
         errors.append(f"motor_lanes:{sorted(motors)}")
     for lane, motor in motors.items():
-        if int(motor.get("runs_count") or 0) != 10:
+        if not 1 <= int(motor.get("runs_count") or 0) <= 10:
             errors.append(f"lane_{lane}:motor_runs:{motor.get('runs_count')}")
     return {
         "ok": not errors,

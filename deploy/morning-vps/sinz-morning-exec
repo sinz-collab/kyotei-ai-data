@@ -294,13 +294,18 @@ if [ "$action" = supplement ] && [ "$unit_rc" -eq 0 ]; then
   "$venv_python" "$app_root/automation/validate_boaters_supplement.py" \
     --race-dir "$supplement_race_dir" --races "$supplement_races" \
     --report "$supplement_report" >&2
-  unit_rc=$?
+  validation_rc=$?
   set -e
-  if [ "$unit_rc" -eq 0 ]; then
+  if [ "$validation_rc" -eq 0 ] || [ "$validation_rc" -eq 2 ]; then
+    unit_rc=0
     cache_race_dir="$cache_root/$venue_name/${target_date//-/}/races"
     install -d -o "$worker_user" -g "$worker_group" -m 0750 "$cache_race_dir"
     for race_no in "${missing[@]}"; do
       printf -v prefix 'race_%02d' "$race_no"
+      race_status="$($venv_python -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["races"][str(int(sys.argv[2]))]["status"])' "$supplement_report" "$race_no")"
+      # A partial race is returned for item-level publication, but never
+      # replaces a previously valid raw cache.
+      [ "$race_status" = ok ] || continue
       backup_dir="$cache_root/.replaced-invalid/$(date +%Y%m%dT%H%M%S)/$venue_name/${prefix}"
       if find "$cache_race_dir" -maxdepth 1 -type f -name "${prefix}_*" -print -quit | grep -q .; then
         install -d -o root -g root -m 0700 "$backup_dir"
@@ -311,6 +316,8 @@ if [ "$action" = supplement ] && [ "$unit_rc" -eq 0 ]; then
         -exec cp -a -t "$cache_race_dir" -- {} +
     done
     chown -R "$worker_user:$worker_group" "$cache_race_dir"
+  else
+    unit_rc="$validation_rc"
   fi
 fi
 

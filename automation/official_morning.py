@@ -296,8 +296,15 @@ def parse_official_html(
     )
     heading = normalize_text(heading_node.get_text(" ", strip=True)) if heading_node else ""
     race_type = re.sub(r"\s*1800m.*$", "", heading).strip()
+    race_type_status = {"status": "available", "reason": ""}
     if not race_type:
-        raise ValueError("official race type missing")
+        # A structurally complete official card can precede its race heading.
+        # Preserve the source absence explicitly and never infer another type.
+        race_type = "-"
+        race_type_status = {
+            "status": "source_missing",
+            "reason": "official_race_type_not_present",
+        }
     event_title_node = soup.find("h2")
     event_day, event_day_label = event_day_from_page(soup, target_date)
     return {
@@ -305,6 +312,7 @@ def parse_official_html(
         "deadline": deadline_values[race_no - 1],
         "title": VENUES[slug][1],
         "type": race_type,
+        "officialFieldStatus": {"type": race_type_status},
         "entryFixed": "進入固定" in heading,
         "racers": racers,
         "eventDay": event_day,
@@ -437,6 +445,8 @@ def merge_official_races(
                 item["season_groups"] = copy.deepcopy(official_racer["season_groups"])
         for key in ("deadline", "title", "type", "entryFixed"):
             target[key] = copy.deepcopy(official[key])
+        if "officialFieldStatus" in official:
+            target["officialFieldStatus"] = copy.deepcopy(official["officialFieldStatus"])
         if isinstance(target.get("race_meta"), dict):
             target["race_meta"]["deadline"] = official["deadline"]
         if official.get("eventDay"):
@@ -463,6 +473,7 @@ def validate_candidate(
     candidate: dict[str, Any],
     *,
     requested_races: Iterable[int],
+    require_supplements: bool = True,
 ) -> list[str]:
     errors: list[str] = []
     if baseline is not None and protected_projection(baseline) != protected_projection(candidate):
@@ -481,7 +492,15 @@ def validate_candidate(
             errors.append(f"race_{race_no:02d}_lanes_invalid")
         if not re.fullmatch(r"[0-9]{1,2}:[0-9]{2}", str(race.get("deadline") or "")):
             errors.append(f"race_{race_no:02d}_deadline_invalid")
-        if not str(race.get("type") or "").strip():
+        type_status = ((race.get("officialFieldStatus") or {}).get("type") or {})
+        type_missing_at_source = (
+            race.get("type") == "-"
+            and type_status.get("status") == "source_missing"
+            and type_status.get("reason") == "official_race_type_not_present"
+        )
+        if not str(race.get("type") or "").strip() or (
+            race.get("type") == "-" and not type_missing_at_source
+        ):
             errors.append(f"race_{race_no:02d}_type_missing")
         for racer in racers:
             missing = [
@@ -518,15 +537,17 @@ def validate_candidate(
                 racer.get("boaters_local_st_status") == "source_missing"
                 and racer.get("boaters_local_st_missing_reason") == "source_dash"
             )
-            if not local_available and not local_source_missing:
+            if require_supplements and not local_available and not local_source_missing:
                 errors.append(
                     f"race_{race_no:02d}_lane_{racer.get('lane')}_supplement_missing:local_st"
                 )
-            if not racer.get("boaters_local_st_rank") and not local_source_missing:
+            if require_supplements and not racer.get("boaters_local_st_rank") and not local_source_missing:
                 errors.append(
                     f"race_{race_no:02d}_lane_{racer.get('lane')}_supplement_missing:local_st_rank"
                 )
             for label, keys in supplement_groups.items():
+                if not require_supplements:
+                    continue
                 if not any(key in racer for key in keys):
                     errors.append(
                         f"race_{race_no:02d}_lane_{racer.get('lane')}_supplement_missing:{label}"
@@ -948,6 +969,44 @@ def supplement_coverage(candidate: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def supplement_item_state(candidate: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return per-race/registration/item supplement state without guessing."""
+    states: list[dict[str, Any]] = []
+    for race in candidate.get("races") or []:
+        race_no = int(race.get("race") or 0)
+        for racer in race.get("racers") or []:
+            player_id = str(racer.get("player_id") or "")
+            lane = int(racer.get("lane") or 0)
+            source_missing = (
+                racer.get("boaters_local_st_status") == "source_missing"
+                and racer.get("boaters_local_st_missing_reason") == "source_dash"
+            )
+            local_avg = str(
+                racer.get("boaters_local_avg_st") or racer.get("local_st") or ""
+            )
+            values = {
+                "localAvgSt": bool(re.fullmatch(r"0?\.\d{2}", local_avg)),
+                "localStRank": bool(racer.get("boaters_local_st_rank")),
+                "motorRecent": isinstance(racer.get("motor_recent"), dict),
+                "kimarite": "boaters_kimarite_starts" in racer,
+            }
+            for item, available in values.items():
+                valid_missing = source_missing and item in {"localAvgSt", "localStRank"}
+                states.append({
+                    "race": race_no,
+                    "lane": lane,
+                    "playerId": player_id,
+                    "item": item,
+                    "status": "available" if available else (
+                        "source_missing" if valid_missing else "missing"
+                    ),
+                    "reason": "official_source_dash" if valid_missing else (
+                        "" if available else "not_acquired"
+                    ),
+                })
+    return states
+
+
 def build_candidate_from_official(
     official_races: list[dict[str, Any]],
     *,
@@ -981,6 +1040,7 @@ def build_candidate_from_official(
                 "title": official["title"],
                 "type": official["type"],
                 "entryFixed": official["entryFixed"],
+                "officialFieldStatus": copy.deepcopy(official.get("officialFieldStatus", {})),
                 "eventDay": official.get("eventDay"),
                 "eventDayLabel": official.get("eventDayLabel"),
                 "racers": racers,
@@ -1026,6 +1086,7 @@ def acquire_race(
     target_date: str,
     slug: str,
     race_no: int,
+    allow_network: bool = True,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     url = official_url(slug, target_date, race_no)
     cached = load_cached_race(cache_root, target_date, slug, race_no)
@@ -1038,6 +1099,8 @@ def acquire_race(
             "elapsedSeconds": 0.0,
             "bytes": cached_race_path(cache_root, target_date, slug, race_no).stat().st_size,
         }
+    if not allow_network:
+        raise RuntimeError(f"official_cache_missing:{slug}:{race_no:02d}")
     fetched = client.get(url)
     parsed = parse_official_html(
         fetched.html,
@@ -1069,12 +1132,14 @@ def run_validation(
     client: OfficialClient,
     boaters_root: Path | None = None,
     course_evaluator: CourseAptitudeEvaluator | None = None,
+    require_supplements: bool = True,
+    allow_network: bool = True,
 ) -> dict[str, Any]:
     """Detect held venues, acquire requested races, and build isolated candidates."""
     started = time.perf_counter()
     report: dict[str, Any] = {
         "date": target_date,
-        "mode": "manual_validation_only",
+        "mode": "supplement_validation" if require_supplements else "official_stage",
         "productionPublishEnabled": False,
         "requestedVenues": venues,
         "requestedRaces": race_numbers,
@@ -1095,6 +1160,7 @@ def run_validation(
                 target_date=target_date,
                 slug=slug,
                 race_no=1,
+                allow_network=allow_network,
             )
             held.append(slug)
         except NoMeetingError as exc:
@@ -1139,6 +1205,7 @@ def run_validation(
                     target_date=target_date,
                     slug=slug,
                     race_no=race_no,
+                    allow_network=allow_network,
                 )
                 official_by_race[race_no] = race
                 fetches.append(fetch)
@@ -1189,15 +1256,23 @@ def run_validation(
                 if course_evaluator is not None:
                     venue_report["recentCourse6m"] = course_evaluator.enrich_payload(candidate)
                 venue_report["supplementCoverageAfterBoatersCache"] = supplement_coverage(candidate)
+                item_state = supplement_item_state(candidate)
+                venue_report["supplementState"] = item_state
+                venue_report["missingSupplementRaces"] = sorted({
+                    item["race"] for item in item_state if item["status"] == "missing"
+                })
                 candidate_errors = validate_candidate(
-                    baseline, candidate, requested_races=expected
+                    baseline,
+                    candidate,
+                    requested_races=expected,
+                    require_supplements=require_supplements,
                 )
                 if len(candidate.get("races") or []) != 12:
                     candidate_errors.append(
                         f"candidate_race_count:{len(candidate.get('races') or [])}"
                     )
                 compatibility_error = existing_payload_error(candidate, {"reason": "ok"})
-                if compatibility_error:
+                if compatibility_error and require_supplements:
                     candidate_errors.append(f"engine_input:{compatibility_error}")
                 if candidate_errors:
                     venue_report["errors"].extend(candidate_errors)
@@ -1209,6 +1284,9 @@ def run_validation(
                             "status": "ok",
                             "candidate": str(candidate_path),
                             "engineInputCompatible": True,
+                            "supplementComplete": not any(
+                                item["status"] == "missing" for item in item_state
+                            ),
                             "buildMode": build_mode,
                         }
                     )
@@ -1261,6 +1339,8 @@ def main() -> int:
     )
     parser.add_argument("--min-interval", type=float, default=1.0)
     parser.add_argument("--timeout", type=float, default=25.0)
+    parser.add_argument("--allow-partial-supplements", action="store_true")
+    parser.add_argument("--cache-only", action="store_true")
     args = parser.parse_args()
 
     datetime.strptime(args.date, "%Y-%m-%d")
@@ -1285,6 +1365,8 @@ def main() -> int:
         client=OfficialClient(args.min_interval, args.timeout),
         boaters_root=args.boaters_root,
         course_evaluator=course_evaluator,
+        require_supplements=not args.allow_partial_supplements,
+        allow_network=not args.cache_only,
     )
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0 if report["status"] == "ok" else 1

@@ -4,74 +4,81 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: "Validation date (YYYY-MM-DD)"
+        description: "Publish date (YYYY-MM-DD)"
         required: true
         default: "2026-11-18"
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: morning-official-validation
+  group: morning-official-publish
   cancel-in-progress: false
 
 jobs:
-  validate:
-    name: Build isolated official candidates
+  publish:
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Guard manual validation input
-        shell: bash
-        env:
-          TARGET_DATE: ${{ inputs.date }}
+        with: {python-version: "3.12"}
+      - name: Guard manual input
+        env: {TARGET_DATE: "${{ inputs.date }}"}
         run: |
           test "$GITHUB_EVENT_NAME" = workflow_dispatch
           test "$GITHUB_REF" = refs/heads/main
           [[ "$TARGET_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
           test "$(date -d "$TARGET_DATE" +%F 2>/dev/null)" = "$TARGET_DATE"
           test "$TARGET_DATE" = "$(TZ=Asia/Tokyo date +%F)"
-      - name: Install parser dependency
-        run: python -m pip install beautifulsoup4==4.13.4
+      - run: python -m pip install beautifulsoup4==4.13.4
       - name: Restore successful official race cache
         uses: actions/cache/restore@v4
         with:
           path: work/official-morning-cache
           key: official-morning-${{ inputs.date }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: |
-            official-morning-${{ inputs.date }}-
-      - name: Detect held venues and cache all official cards
-        id: detect
-        shell: bash
-        env:
-          TARGET_DATE: ${{ inputs.date }}
+          restore-keys: official-morning-${{ inputs.date }}-
+      - name: Acquire and validate official cards
+        id: official
+        env: {TARGET_DATE: "${{ inputs.date }}"}
         run: |
           set +e
           python automation/official_morning.py \
             --date "$TARGET_DATE" --venues all --races all \
-            --baseline-root data/venues \
-            --output-root work/official-detection \
+            --baseline-root data/venues --output-root work/official-stage \
             --cache-root work/official-morning-cache \
             --course-db data/player_course_6m/player_course_6m.sqlite \
             --course-class-cache data/player_course_6m/racer_classes.json \
-            --min-interval 1.0 --timeout 25
+            --allow-partial-supplements --min-interval 1.0 --timeout 25
+          echo "validation_exit_code=$?" >> "$GITHUB_OUTPUT"
           set -e
-          held="$(python - <<'PY'
+          python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           from pathlib import Path
-          report = json.loads(Path('work/official-detection/report.json').read_text(encoding='utf-8'))
-          print(' '.join(report.get('summary', {}).get('heldVenues', [])))
+          r=json.loads(Path('work/official-stage/report.json').read_text(encoding='utf-8'))
+          print('held='+' '.join(r['summary']['heldVenues']))
+          print('complete='+' '.join(r['summary']['completeVenues']))
           PY
-          )"
-          test -n "$held"
-          echo "held=$held" >> "$GITHUB_OUTPUT"
+          test -n "${{ steps.official.outputs.complete }}" || \
+            test -n "$(find work/official-stage/candidates -name '*.json' -print -quit)"
+      - name: Publish complete official venues first
+        env: {TARGET_DATE: "${{ inputs.date }}"}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --rebase origin main
+          python automation/publish_official_stages.py \
+            --date "$TARGET_DATE" --stage official \
+            --candidate-root work/official-stage/candidates \
+            --report work/official-publish-report.json
+          git add data/manifest.json data/morning_report.json data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: publish validated official cards for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
       - name: Configure pinned VPS SSH host
-        shell: bash
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
           VPS_KEY: ${{ secrets.MORNING_VPS_SSH_KEY }}
@@ -83,78 +90,88 @@ jobs:
           chmod 0600 "$HOME/.ssh/morning-vps" "$HOME/.ssh/known_hosts"
           test -n "$VPS_HOST"
           ssh-keygen -F "$VPS_HOST" -f "$HOME/.ssh/known_hosts" >/dev/null
-      - name: Reuse cache and retrieve missing BOATERS races
+      - name: Reuse cache and retrieve only missing BOATERS races
         id: supplement
-        shell: bash
         env:
           VPS_HOST: ${{ secrets.MORNING_VPS_HOST }}
           TARGET_DATE: ${{ inputs.date }}
-          HELD_VENUES: ${{ steps.detect.outputs.held }}
+          COMPLETE_VENUES: ${{ steps.official.outputs.complete }}
         run: |
           expected="$(printf 'executor=%s\nboaters=%s\nbrowser_identity=%s\nsupplement_validator=%s\nkimarite_parser=%s\nmotor_parser=%s\n' \
-            "$(sha256sum deploy/morning-vps/sinz-morning-exec | awk '{print $1}')" \
-            "$(sha256sum automation/boaters_fetch.py | awk '{print $1}')" \
-            "$(sha256sum automation/browser_identity.py | awk '{print $1}')" \
-            "$(sha256sum automation/validate_boaters_supplement.py | awk '{print $1}')" \
-            "$(sha256sum automation/enrich_all_venues_kimarite.py | awk '{print $1}')" \
-            "$(sha256sum automation/enrich_motor_recent.py | awk '{print $1}')")"
-          actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
-            -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
+            "$(sha256sum deploy/morning-vps/sinz-morning-exec|awk '{print $1}')" \
+            "$(sha256sum automation/boaters_fetch.py|awk '{print $1}')" \
+            "$(sha256sum automation/browser_identity.py|awk '{print $1}')" \
+            "$(sha256sum automation/validate_boaters_supplement.py|awk '{print $1}')" \
+            "$(sha256sum automation/enrich_all_venues_kimarite.py|awk '{print $1}')" \
+            "$(sha256sum automation/enrich_motor_recent.py|awk '{print $1}')")"
+          actual="$(ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
             "sinz-morning-gateway@$VPS_HOST" supplement-version)"
           test "$actual" = "$expected"
           mkdir -p work/official-boaters
-          races="$(seq -s, 1 12)"
-          supplement_rc=0
-          for venue in $HELD_VENUES; do
+          failures=0
+          for venue in $COMPLETE_VENUES; do
+            races="$(python - "$venue" <<'PY'
+          import json,sys
+          from pathlib import Path
+          r=json.loads(Path('work/official-stage/report.json').read_text(encoding='utf-8'))
+          print(','.join(map(str,r['venues'][sys.argv[1]].get('missingSupplementRaces',[]))))
+          PY
+            )"
+            [ -n "$races" ] || continue
             archive="$RUNNER_TEMP/official-boaters-${venue}.tgz"
             set +e
             timeout --signal=TERM --kill-after=20s 2100s \
-              ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes \
-                -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
+              ssh -i "$HOME/.ssh/morning-vps" -o BatchMode=yes -o IdentitiesOnly=yes \
+                -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
                 -o ServerAliveInterval=15 -o ServerAliveCountMax=2 \
-                "sinz-morning-gateway@$VPS_HOST" \
-                "supplement $TARGET_DATE $venue $races" > "$archive"
+                "sinz-morning-gateway@$VPS_HOST" "supplement $TARGET_DATE $venue $races" > "$archive"
             rc=$?
             set -e
             if [ "$rc" -ne 0 ] || ! tar -tzf "$archive" >/dev/null 2>&1; then
-              echo "BOATERS supplement stopped safely: venue=$venue rc=$rc" >&2
-              supplement_rc="${rc:-70}"
-              break
+              echo "BOATERS stopped safely: venue=$venue rc=$rc" >&2
+              failures=$((failures+1))
+              continue
             fi
             tar -xzf "$archive" -C work/official-boaters
           done
-          echo "exit_code=$supplement_rc" >> "$GITHUB_OUTPUT"
-      - name: Build and validate final isolated candidates
-        id: final
-        shell: bash
-        env:
-          TARGET_DATE: ${{ inputs.date }}
+          echo "failure_count=$failures" >> "$GITHUB_OUTPUT"
+      - name: Validate cached BOATERS additions without network
+        env: {TARGET_DATE: "${{ inputs.date }}"}
         run: |
           set +e
           python automation/official_morning.py \
             --date "$TARGET_DATE" --venues all --races all \
-            --baseline-root data/venues \
-            --output-root work/official-morning \
+            --baseline-root data/venues --output-root work/supplement-stage \
             --cache-root work/official-morning-cache \
             --boaters-root work/official-boaters/work/races \
             --course-db data/player_course_6m/player_course_6m.sqlite \
             --course-class-cache data/player_course_6m/racer_classes.json \
-            --min-interval 1.0 --timeout 25
-          exit_code=$?
-          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Confirm repository data was not modified
-        shell: bash
-        run: test -z "$(git status --short -- data automation .github)"
-      - name: Upload isolated validation artifact
+            --allow-partial-supplements --cache-only
+          set -e
+      - name: Publish individually validated BOATERS fields
+        env: {TARGET_DATE: "${{ inputs.date }}"}
+        run: |
+          git pull --rebase origin main
+          python automation/publish_official_stages.py \
+            --date "$TARGET_DATE" --stage supplement \
+            --candidate-root work/supplement-stage/candidates \
+            --report work/supplement-publish-report.json
+          git add data/manifest.json data/morning_report.json data/venues
+          if ! git diff --cached --quiet; then
+            git commit -m "data: add validated BOATERS fields for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
+      - name: Upload publication diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: morning-official-validation-${{ inputs.date }}
+          name: morning-official-publication-${{ inputs.date }}
           path: |
-            work/official-detection/report.json
-            work/official-morning/report.json
-            work/official-morning/candidates/**/*.json
+            work/official-stage/report.json
+            work/official-publish-report.json
+            work/supplement-stage/report.json
+            work/supplement-publish-report.json
             work/official-morning-cache/**/*.json
             work/official-boaters/work/races/**
           if-no-files-found: warn
@@ -165,6 +182,3 @@ jobs:
         with:
           path: work/official-morning-cache
           key: official-morning-${{ inputs.date }}-${{ github.run_id }}-${{ github.run_attempt }}
-      - name: Fail incomplete validation after preserving diagnostics
-        if: always() && (steps.supplement.outputs.exit_code != '0' || steps.final.outputs.exit_code != '0')
-        run: exit 1

@@ -220,6 +220,17 @@ class OfficialMorningTests(unittest.TestCase):
                 race_no=1,
             )
 
+    def test_parser_marks_missing_race_type_without_guessing(self) -> None:
+        body = official_fixture().replace(b"<h3>\xe4\xba\x88\xe9\x81\xb8 1800m</h3>", b"")
+        race = official.parse_official_html(
+            body, slug="naruto", target_date="2026-11-18", race_no=3
+        )
+        self.assertEqual(race["type"], "-")
+        self.assertEqual(
+            race["officialFieldStatus"]["type"],
+            {"status": "source_missing", "reason": "official_race_type_not_present"},
+        )
+
     def test_parser_treats_target_day_cancellation_as_not_held(self) -> None:
         cancelled = official_fixture().replace(
             "11月18日2日目".encode(), "11月18日中止".encode()
@@ -407,6 +418,19 @@ class OfficialMorningTests(unittest.TestCase):
         errors = official.validate_candidate(None, candidate, requested_races=[1])
         self.assertFalse(any("supplement_missing:local_st" in item for item in errors))
         self.assertEqual(existing_validator.payload_error(candidate, {"reason": "ok"}), "")
+
+    def test_official_stage_allows_missing_supplements_only_in_lenient_mode(self) -> None:
+        candidate = synthetic_payload()
+        racer = candidate["races"][0]["racers"][0]
+        for key in ("local_st", "boaters_local_avg_st", "boaters_local_st_rank",
+                    "motor_recent", "boaters_kimarite_starts"):
+            racer.pop(key, None)
+        strict = official.validate_candidate(None, candidate, requested_races=[1])
+        lenient = official.validate_candidate(
+            None, candidate, requested_races=[1], require_supplements=False
+        )
+        self.assertTrue(any("supplement_missing" in item for item in strict))
+        self.assertFalse(any("supplement_missing" in item for item in lenient))
 
     def test_existing_course_database_enricher_is_applied(self) -> None:
         class FakeCourseEvaluator:
