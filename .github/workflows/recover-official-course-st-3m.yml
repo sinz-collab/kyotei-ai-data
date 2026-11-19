@@ -2,6 +2,9 @@ name: 公式3か月コースSTのみ補完
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/recover-official-course-st-3m.yml'
 
 permissions:
   contents: write
@@ -12,6 +15,7 @@ concurrency:
 
 jobs:
   recover:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-course-st-recovery]')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
