@@ -1149,6 +1149,8 @@ def probability_map_valid(
 def validate_final_payload(
     payload: dict,
     expected_date: str,
+    *,
+    allow_partial: bool = False,
 ) -> None:
     """
     ファイルへ書く直前の最終ゲート。
@@ -1180,30 +1182,21 @@ def validate_final_payload(
         "preds"
     )
 
+    expected_keys = {str(i) for i in range(1, 13)}
     if (
-        not isinstance(
-            predictions,
-            dict,
+        not isinstance(predictions, dict)
+        or not predictions
+        or (
+            not set(predictions).issubset(expected_keys)
+            if allow_partial
+            else set(predictions) != expected_keys
         )
-        or set(
-            predictions
-        )
-        != {
-            str(i)
-            for i in range(
-                1,
-                13,
-            )
-        }
     ):
         raise RuntimeError(
             "ashiya_final_predictions_invalid"
         )
 
-    for race_no in range(
-        1,
-        13,
-    ):
+    for race_no in (sorted(map(int, predictions)) if allow_partial else range(1, 13)):
         prediction = predictions[
             str(
                 race_no
