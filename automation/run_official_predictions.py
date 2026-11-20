@@ -229,6 +229,8 @@ def run(date: str, data_root: Path, now: datetime, venues: list[str], stage: str
                 generated = json.loads(target.read_text(encoding="utf-8"))
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, OSError) as exc:
                 results["venues"][slug] = f"engine_failed:{type(exc).__name__}"
+                if isinstance(exc, subprocess.CalledProcessError):
+                    results.setdefault("engineErrors", {})[slug] = (exc.stderr or exc.stdout or "")[-1500:]
                 continue
         valid, reason = prediction_payload_gate(generated, date)
         if not valid:

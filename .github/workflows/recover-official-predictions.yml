@@ -47,6 +47,7 @@ jobs:
         run: |
           python -m pip install beautifulsoup4==4.13.4 lxml==6.0.0
           python -m pip install lhafile==0.3.1 catboost==1.2.10
+          python -m pip install lightgbm==4.6.0 scikit-learn==1.8.0
       - name: Verify replay protections
         run: python -m unittest tests.test_official_prediction_stages tests.test_official_morning -q
       - name: Generate only predictions for open races
@@ -59,6 +60,15 @@ jobs:
             | tee work/tide-recovery.json
           python automation/run_official_predictions.py --date "$TARGET_DATE" --stage official \
             | tee work/prediction-recovery-official.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('work/prediction-recovery-official.json').read_text())
+          failed={name:status for name,status in result['venues'].items()
+                  if name in ('naruto','ashiya') and str(status).startswith(('engine_failed:', 'prediction_invalid:'))}
+          if failed:
+              raise SystemExit(f'Official prediction engines failed: {failed}')
+          PY
           python automation/run_official_predictions.py --date "$TARGET_DATE" --stage supplement \
             | tee work/prediction-recovery-supplement.json
           python automation/repair_event_labels.py --date "$TARGET_DATE" \
