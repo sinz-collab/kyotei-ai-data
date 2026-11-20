@@ -17,6 +17,10 @@ class OfficialPredictionStageTests(unittest.TestCase):
         self.assertEqual(COMMANDS["ashiya"], ("run_ashiya_v16.py", "--stage", "pre"))
         recovery = (Path(__file__).resolve().parents[1] / ".github/workflows/recover-official-predictions.yml").read_text()
         self.assertIn("data/venues/naruto data/venues/ashiya", recovery)
+        self.assertIn("lightgbm==4.6.0 scikit-learn==1.8.0", recovery)
+        self.assertIn("Official prediction engines failed", recovery)
+        morning = (Path(__file__).resolve().parents[1] / ".github/workflows/morning-data-official.yml").read_text()
+        self.assertIn("lightgbm==4.6.0 scikit-learn==1.8.0", morning)
 
     def setUp(self):
         self.payload = {
