@@ -392,12 +392,15 @@ def main() -> int:
 
     payload["engine"] = ENGINE_NAME
     payload["engineVersion"] = ENGINE_VERSION
-    payload["predictionStatus"] = "ready"
+    payload["predictionStatus"] = (
+        "ready" if len(predictions) == 12 else "partial"
+    )
     payload["predictionReason"] = ""
 
     validate_final_payload(
         payload,
         args.date,
+        allow_partial=True,
     )
 
     changed = {
