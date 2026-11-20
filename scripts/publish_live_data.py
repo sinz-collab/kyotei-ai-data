@@ -35,6 +35,39 @@ def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, cwd=cwd, text=True, capture_output=True, check=False)
 
 
+def repository_is_clean(repo_root: Path) -> bool:
+    status = run(
+        ["git", "status", "--porcelain", "--untracked-files=no"],
+        repo_root,
+    )
+    if status.returncode:
+        raise RuntimeError(f"git_status_failed: {status.stderr.strip()}")
+    return not status.stdout.strip()
+
+
+def rebase_onto_origin_main(repo_root: Path) -> tuple[bool, str]:
+    """Rebase a clean, committed publisher state and abort on any conflict."""
+    if not repository_is_clean(repo_root):
+        return False, "publisher_worktree_not_clean_before_rebase"
+
+    fetched = run(["git", "fetch", "origin", "main"], repo_root)
+    if fetched.returncode:
+        return False, fetched.stderr.strip() or "publisher_fetch_failed"
+
+    rebased = run(["git", "rebase", "origin/main"], repo_root)
+    if rebased.returncode == 0:
+        return True, rebased.stdout.strip()
+
+    conflict_message = (rebased.stdout + rebased.stderr).strip()
+    aborted = run(["git", "rebase", "--abort"], repo_root)
+    if aborted.returncode:
+        return False, (
+            "publisher_rebase_conflict_and_abort_failed: "
+            f"{conflict_message}; {aborted.stderr.strip()}"
+        )
+    return False, f"publisher_rebase_conflict_aborted: {conflict_message}"
+
+
 def copy_changed_live_files(
     source_root: Path,
     repo_root: Path,
@@ -408,10 +441,22 @@ def main() -> int:
             print(f"Publisher repository is not initialized: {publish_repo}")
             return 2
         if args.push:
-            pulled = run(["git", "pull", "--rebase", "--autostash", "origin", "main"], publish_repo)
-            if pulled.returncode:
-                print(pulled.stderr)
-                return pulled.returncode
+            try:
+                clean_before_publish = repository_is_clean(publish_repo)
+            except RuntimeError as exc:
+                print(str(exc), file=sys.stderr)
+                return 1
+            if clean_before_publish:
+                pulled = run(["git", "pull", "--ff-only", "origin", "main"], publish_repo)
+                if pulled.returncode:
+                    print(pulled.stderr, file=sys.stderr)
+                    return pulled.returncode
+            else:
+                print(
+                    "Publisher has local generated changes; deferring upstream "
+                    "sync until after the local commit.",
+                    file=sys.stderr,
+                )
         selected_venues = list(dict.fromkeys(args.venue or []))
         copied = sum(
             copy_changed_live_files(live_root, publish_repo, venue)
@@ -455,9 +500,15 @@ def main() -> int:
                 print(staged.stderr)
                 return staged.returncode
         try:
-            isolate_invalid_staged_json(publish_repo)
+            invalid_messages = isolate_invalid_staged_json(publish_repo)
         except RuntimeError as exc:
             print(str(exc), file=sys.stderr)
+            return 1
+        if invalid_messages:
+            print(
+                "Publish aborted because staged JSON is invalid.",
+                file=sys.stderr,
+            )
             return 1
         if run(["git", "diff", "--cached", "--quiet"], publish_repo).returncode == 0:
             print("No publishable data changes.")
@@ -480,15 +531,19 @@ def main() -> int:
             print(commit.stderr)
             return commit.returncode
         if args.push:
+            rebased, rebase_message = rebase_onto_origin_main(publish_repo)
+            if not rebased:
+                print(rebase_message, file=sys.stderr)
+                return 1
             pushed = run(["git", "push", "origin", "HEAD:main"], publish_repo)
             if pushed.returncode:
-                pulled = run(["git", "pull", "--rebase", "--autostash", "origin", "main"], publish_repo)
-                if pulled.returncode:
-                    print(pulled.stderr)
-                    return pulled.returncode
+                rebased, rebase_message = rebase_onto_origin_main(publish_repo)
+                if not rebased:
+                    print(rebase_message, file=sys.stderr)
+                    return 1
                 pushed = run(["git", "push", "origin", "HEAD:main"], publish_repo)
                 if pushed.returncode:
-                    print(pushed.stderr)
+                    print(pushed.stderr, file=sys.stderr)
                     return pushed.returncode
     return 0
 

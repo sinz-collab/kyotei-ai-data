@@ -8,16 +8,16 @@ from typing import Any
 
 
 def serialize_public_json(payload: Any) -> str:
-    """Serialize public payloads without changing their JSON data model."""
+    """Serialize public payloads in the repository's stable, mergeable format."""
     return json.dumps(
         payload,
         ensure_ascii=False,
-        separators=(",", ":"),
+        indent=2,
     ) + "\n"
 
 
 def write_public_json_atomic(path: Path, payload: Any) -> None:
-    """Atomically write a compact public JSON document with fsync."""
+    """Atomically write formatted public JSON with fsync."""
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temporary_name = tempfile.mkstemp(
         prefix=f".{path.name}.",

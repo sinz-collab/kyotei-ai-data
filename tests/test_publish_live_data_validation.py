@@ -12,7 +12,11 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-from publish_live_data import isolate_invalid_staged_json, validate_staged_json
+from publish_live_data import (
+    isolate_invalid_staged_json,
+    rebase_onto_origin_main,
+    validate_staged_json,
+)
 
 
 class StagedJsonValidationTest(unittest.TestCase):
@@ -127,6 +131,66 @@ class StagedJsonValidationTest(unittest.TestCase):
                 Path(temporary),
                 '{"value": }\n',
                 "json_parse_error:",
+            )
+
+    def test_rebase_conflict_is_aborted_without_leaving_markers(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            remote = root / "remote.git"
+            local = root / "local"
+            upstream = root / "upstream"
+            subprocess.run(
+                ["git", "init", "--bare", remote],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            for clone in (local, upstream):
+                subprocess.run(
+                    ["git", "clone", remote, clone],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                )
+                self.run_git(clone, "config", "user.name", "test")
+                self.run_git(clone, "config", "user.email", "test@example.com")
+
+            payload = local / "payload.json"
+            payload.write_text('{\n  "value": "base"\n}\n', encoding="utf-8")
+            self.run_git(local, "add", "payload.json")
+            self.run_git(local, "commit", "-m", "base")
+            self.run_git(local, "push", "origin", "HEAD:main")
+            self.run_git(upstream, "fetch", "origin", "main")
+            self.run_git(upstream, "checkout", "-B", "main", "origin/main")
+
+            payload.write_text('{\n  "value": "local"\n}\n', encoding="utf-8")
+            self.run_git(local, "add", "payload.json")
+            self.run_git(local, "commit", "-m", "local")
+
+            upstream_payload = upstream / "payload.json"
+            upstream_payload.write_text(
+                '{\n  "value": "upstream"\n}\n',
+                encoding="utf-8",
+            )
+            self.run_git(upstream, "add", "payload.json")
+            self.run_git(upstream, "commit", "-m", "upstream")
+            self.run_git(upstream, "push", "origin", "HEAD:main")
+
+            succeeded, message = rebase_onto_origin_main(local)
+
+            self.assertFalse(succeeded)
+            self.assertIn("publisher_rebase_conflict_aborted", message)
+            self.assertFalse((local / ".git" / "rebase-merge").exists())
+            self.assertNotIn("<<<<<<<", payload.read_text(encoding="utf-8"))
+            self.assertEqual(
+                subprocess.run(
+                    ["git", "status", "--porcelain"],
+                    cwd=local,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout,
+                "",
             )
 
 

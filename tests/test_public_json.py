@@ -23,13 +23,13 @@ class PublicJsonTests(unittest.TestCase):
             "result": {"order": [1, 2, 3]},
         }
 
-    def test_compact_serialization_preserves_structure(self) -> None:
+    def test_formatted_serialization_preserves_structure(self) -> None:
         serialized = serialize_public_json(self.payload)
 
         self.assertEqual(json.loads(serialized), self.payload)
         self.assertTrue(serialized.endswith("\n"))
-        self.assertNotIn("\n  ", serialized)
-        self.assertNotIn(": ", serialized)
+        self.assertIn("\n  ", serialized)
+        self.assertIn(": ", serialized)
 
     def test_atomic_write_preserves_structure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
