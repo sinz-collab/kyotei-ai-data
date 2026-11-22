@@ -48,9 +48,9 @@ jobs:
               echo "active=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
-            # Start only early enough that the whole fetch can finish before 08:15.
+            # Allow recovery after 06:00 JST whenever upstream finishes.
             now_hm="$(TZ=Asia/Tokyo date +%H%M)"
-            if [ $((10#$now_hm)) -lt 600 ] || [ $((10#$now_hm)) -gt 715 ]; then
+            if [ $((10#$now_hm)) -lt 600 ]; then
               echo "active=false" >> "$GITHUB_OUTPUT"
               exit 0
             fi
@@ -89,13 +89,8 @@ jobs:
         id: official
         run: |
           set +e
-          deadline="$(TZ=Asia/Tokyo date -d "$TARGET_DATE 08:15" +%s)"
-          remaining=$((deadline - $(date +%s)))
-          if [ "$remaining" -le 0 ]; then
-            echo "Official card acquisition deadline (08:15 JST) has passed; no new fetch started." >&2
-            exit 1
-          fi
-          timeout --signal=TERM --kill-after=20s "${remaining}s" \
+          # Bound this command independently of the job; no JST cutoff.
+          timeout --signal=TERM --kill-after=20s 60m \
             python automation/official_morning.py \
             --date "$TARGET_DATE" --venues "$TARGET_VENUES" --races all \
             --baseline-root data/venues --output-root work/official-stage \
@@ -229,11 +224,7 @@ jobs:
           mkdir -p work/official-boaters
           failures=0
           for venue in $COMPLETE_VENUES; do
-            # Do not start a new supplement fetch after the morning hard stop.
-            if [ "$(TZ=Asia/Tokyo date +%H%M)" -ge 815 ]; then
-              echo "BOATERS morning deadline reached; keeping existing predictions." >&2
-              break
-            fi
+            # Every supplement remains individually limited to 240s.
             races="$(python - "$venue" <<'PY'
           import json,sys
           from pathlib import Path
