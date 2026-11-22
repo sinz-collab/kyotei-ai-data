@@ -91,7 +91,10 @@ jobs:
           set +e
           deadline="$(TZ=Asia/Tokyo date -d "$TARGET_DATE 08:15" +%s)"
           remaining=$((deadline - $(date +%s)))
-          test "$remaining" -gt 0
+          if [ "$remaining" -le 0 ]; then
+            echo "Official card acquisition deadline (08:15 JST) has passed; no new fetch started." >&2
+            exit 1
+          fi
           timeout --signal=TERM --kill-after=20s "${remaining}s" \
             python automation/official_morning.py \
             --date "$TARGET_DATE" --venues "$TARGET_VENUES" --races all \
@@ -102,6 +105,10 @@ jobs:
             --allow-partial-supplements --min-interval 1.0 --timeout 25
           echo "validation_exit_code=$?" >> "$GITHUB_OUTPUT"
           set -e
+          if [ ! -s work/official-stage/report.json ]; then
+            echo "Official acquisition did not generate work/official-stage/report.json; publishing stopped safely." >&2
+            exit 1
+          fi
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
           from pathlib import Path
