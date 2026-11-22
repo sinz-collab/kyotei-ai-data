@@ -6,7 +6,9 @@ distribution.  Entry changes disable both transforms.
 """
 from __future__ import annotations
 
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 
@@ -14,6 +16,7 @@ from kiryu_v1_engine import A, B, C, PERMS, _softmax
 
 
 MODEL_VERSION = "kiryu_live_wind_st_v1_20261106"
+THIRD_ASSET = Path(__file__).resolve().parent / "models/kiryu_v1/outer_third_live_20261122.json"
 WIND_STRAIGHT_SECOND_COEFFICIENT = 0.150
 LEFT_ST_SECOND_COEFFICIENT = 0.100
 NORMAL_ENTRY = list(range(1, 7))
@@ -91,6 +94,65 @@ def _national_st_wall(racers):
     return st, wall
 
 
+def _third_live_scores(racers, boats):
+    """Frozen Sep-Oct OOF-tested weak outsider-third likelihood correction.
+
+    Returns score changes for boat labels, not entry-course labels. Never
+    computes a 1st or 2nd change. The model asset is numeric and requires no
+    runtime sklearn dependency.
+    """
+    model = json.loads(THIRD_ASSET.read_text(encoding="utf-8"))
+    names = ("half_lap_time", "turn_time", "straight_time", "exhibition_time")
+    measures = {}
+    for name in names:
+        vals = [_number(row.get(name)) for row in boats]
+        present = [x for x in vals if x is not None]
+        if len(present) < 4:
+            return np.zeros(6), False
+        center = sum(present) / len(present)
+        measures[name] = [None if x is None else x - center for x in vals]
+
+    def score(kind,values):
+        fitted = model["models"][kind]
+        x = np.array([fitted["median"][i] if values.get(field) is None else values[field]
+                      for i,field in enumerate(fitted["fields"])],float)
+        z = (x - fitted["mean"]) / fitted["scale"]
+        return float(fitted["intercept"] + z @ np.asarray(fitted["coef"],float))
+
+    changes = np.zeros(6)
+    for lane in (5, 6):
+        r = racers[lane-1]
+        fields = {
+            "lane":lane,
+            "pre_national_3ren_rate":_number(r.get("nat_3")),
+            "pre_local_3ren_rate":_number(r.get("local_3")),
+            "pre_motor_3ren_rate":_number(r.get("motor_3")),
+            "pre_average_st":_number(r.get("avg_st")),
+        }
+        for name in names:
+            fields["pre_"+name+"_rel"] = measures[name][lane-1]
+        amount=(score("live",fields)-score("pre",fields))*model["strength"][str(lane)]
+        changes[lane-1]=float(np.clip(amount,-model["max_abs_log_odds_delta"],
+                              model["max_abs_log_odds_delta"]))
+    return changes, True
+
+
+def _apply_third_scores(joint, scores):
+    """Preserve P(first, second) exactly while reweighting 5/6 as third."""
+    output=np.asarray(joint,float).copy()
+    output*=np.exp(np.asarray(scores,float)[C])
+    for first in range(6):
+        for second in range(6):
+            pair=(A==first)&(B==second)
+            if not pair.any():continue
+            output[pair]*=joint[pair].sum()/max(output[pair].sum(),1e-30)
+    if not np.allclose([joint[(A==a)&(B==b)].sum() for a in range(6) for b in range(6)],
+                       [output[(A==a)&(B==b)].sum() for a in range(6) for b in range(6)],
+                       atol=1e-14,rtol=1e-12):
+        raise RuntimeError("Kiryu third LIVE correction changed first-second probabilities")
+    return output
+
+
 def apply_live_corrections(base_joint, racers, live_input):
     """Apply wind×straight then left-neighbor national-ST correction."""
     racers = sorted(racers, key=lambda row: int(row.get("lane") or 99))
@@ -116,6 +178,12 @@ def apply_live_corrections(base_joint, racers, live_input):
             wind_applied = True
         joint = _apply_second_score(joint, LEFT_ST_SECOND_COEFFICIENT * wall)
         left_applied = True
+    third_scores=np.zeros(6)
+    third_applied=False
+    if not entry_changed:
+        third_scores,third_applied=_third_live_scores(racers,boats)
+        if third_applied:
+            joint=_apply_third_scores(joint,third_scores)
     if not np.isclose(joint.sum(), 1.0, atol=1e-12):
         raise RuntimeError("Kiryu LIVE corrected probabilities are not normalized")
     return joint, {
@@ -137,6 +205,14 @@ def apply_live_corrections(base_joint, racers, live_input):
             "condition": "second-place conditional only",
             "nationalStAfterNeutralFill": [float(value) for value in national_st],
             "wall": [float(value) for value in wall],
+        },
+        "outerThirdLive": {
+            "modelVersion":"kiryu_outer_third_live_20261122",
+            "applied":third_applied,
+            "condition":"normal entry; at least four values per LIVE timing feature",
+            "lane5LogOddsDelta":float(third_scores[4]),
+            "lane6LogOddsDelta":float(third_scores[5]),
+            "preservesFirstSecond":True,
         },
         "probabilitySum": float(joint.sum()),
     }

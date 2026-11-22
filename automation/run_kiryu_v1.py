@@ -295,7 +295,7 @@ def main():
             attach_live_display(race,documents)
         else:
             pred=engine.predict(race,a.date,a.stage)
-        pred["modelVersion"]="kiryu_v2_entry_tickets_20261122"
+        pred["modelVersion"]="kiryu_v2_outerthird_20261122"
         if not kiryu_v1_prediction_is_complete(
             pred,
             allow_legacy_frozen_fly=a.stage == "live",
@@ -307,7 +307,7 @@ def main():
             race["predictionFinal"]=deepcopy(pred)
         race["prediction"]=pred; preds[str(rn)]=pred
     if a.stage=="morning" and set(preds)!=set(map(str,range(1,13))): raise RuntimeError("Kiryu morning prediction requires all 12 races")
-    payload["preds"]=preds; payload["engine"]="kiryu_v2"; payload["modelVersion"]="kiryu_v2_entry_tickets_20261122"
+    payload["preds"]=preds; payload["engine"]="kiryu_v2"; payload["modelVersion"]="kiryu_v2_outerthird_20261122"
     all_complete = set(preds)==set(map(str,range(1,13))) and all(
         kiryu_v1_prediction_is_complete(
             preds[str(rn)],

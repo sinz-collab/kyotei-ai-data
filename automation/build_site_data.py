@@ -735,7 +735,7 @@ def kiryu_v1_prediction_is_complete(
     """Validate Kiryu C-improved/D and variable fly public output."""
     if not isinstance(prediction, dict):
         return False
-    if prediction.get("modelVersion") not in {"kiryu_v1_20261104", "kiryu_v2_entry_tickets_20261122"}:
+    if prediction.get("modelVersion") not in {"kiryu_v1_20261104", "kiryu_v2_entry_tickets_20261122", "kiryu_v2_outerthird_20261122"}:
         return False
     stage = prediction.get("predictionStage")
     if stage not in {"morning", "live"}:
