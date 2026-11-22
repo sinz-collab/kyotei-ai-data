@@ -15,6 +15,9 @@ def normalize(value: object) -> str:
 
 def title_grade(title: str) -> str:
     value = normalize(title).upper()
+    # Official race cards omit the grade from some G3 meeting titles.
+    if re.search(r"マスターズリーグ", value):
+        return "G3"
     for token, grade in (("GIII", "G3"), ("GII", "G2"), ("GI", "G1"),
                          ("SG", "SG"), ("G3", "G3"), ("G2", "G2"), ("G1", "G1")):
         if re.search(rf"(?<![A-Z0-9]){token}(?![A-Z0-9])", value):
