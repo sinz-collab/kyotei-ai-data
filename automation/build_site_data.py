@@ -735,7 +735,7 @@ def kiryu_v1_prediction_is_complete(
     """Validate Kiryu C-improved/D and variable fly public output."""
     if not isinstance(prediction, dict):
         return False
-    if prediction.get("modelVersion") != "kiryu_v1_20261104":
+    if prediction.get("modelVersion") not in {"kiryu_v1_20261104", "kiryu_v2_entry_tickets_20261122"}:
         return False
     stage = prediction.get("predictionStage")
     if stage not in {"morning", "live"}:
@@ -823,7 +823,7 @@ def prediction_payload_gate(payload: dict, expected_date: str) -> tuple[bool, st
             naruto_v5_prediction_is_complete(prediction)
             if engine == "naruto_v5"
             else kiryu_v1_prediction_is_complete(prediction)
-            if engine == "kiryu_v1"
+            if engine in {"kiryu_v1", "kiryu_v2"}
             else _prediction_is_complete(prediction)
         )
         if not complete:

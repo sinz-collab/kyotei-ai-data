@@ -24,7 +24,8 @@ def _softmax(z):
     z=np.asarray(z,float); z=z-np.max(z); e=np.exp(z); return e/e.sum()
 
 class KiryuV1:
-    def __init__(self):
+    def __init__(self, v2=False):
+        self.v2=bool(v2)
         z=zipfile.ZipFile(ASSET/"kiryu_ai_v1_7097r_handoff.zip")
         h=pd.read_csv(z.open("kiryu_7097r_boat_rows.csv"),low_memory=False)
         h["win"]=(h.outcome_finish_rank==1).astype(int); h["second"]=(h.outcome_finish_rank==2).astype(int); h["third"]=(h.outcome_finish_rank==3).astype(int); h["top3"]=h.outcome_finish_rank.isin([1,2,3]).astype(int)
@@ -56,9 +57,11 @@ class KiryuV1:
         racers=sorted(race["racers"],key=lambda r:int(r.get("lane",99))); assert len(racers)==6
         year=int(date[:4]); rows=[]
         for r in racers:
-            lane=int(r["lane"]); rc=r.get("recent_course_6m") or {}; reg=str(r.get("player_id") or rc.get("registration_no") or "")
-            row={"pre_lane":lane,"race_no":int(race["race"]),"event_day":int(race.get("eventDay") or 1),"month":int(date[5:7])}
-            keys={"ath":reg,"course":reg+"_"+str(lane),"motor":f"{year}_{r.get('motor_no')}","boat":f"{year}_{r.get('boat_no')}"}
+            lane=int(r["lane"]); course=int(r.get("entry_course") or lane) if self.v2 else lane
+            if course not in range(1,7): raise ValueError("invalid Kiryu entry course")
+            rc=r.get("recent_course_6m") or {}; reg=str(r.get("player_id") or rc.get("registration_no") or "")
+            row={"pre_lane":course,"race_no":int(race["race"]),"event_day":int(race.get("eventDay") or 1),"month":int(date[5:7])}
+            keys={"ath":reg,"course":reg+"_"+str(course),"motor":f"{year}_{r.get('motor_no')}","boat":f"{year}_{r.get('boat_no')}"}
             for p,key in keys.items():
                 try: s=self.lookups[p].loc[key]; n=float(s.n)
                 except KeyError: s=None; n=0
@@ -109,12 +112,12 @@ class KiryuV1:
             ex=[ll]+[col(leader,k) for k in ("ath_win","course_win","motor_win")]+[col(base,k)-col(leader,k) for k in ("ath_win","motor_win")]
             if runner is not None: ex += [rl]+[col(runner,k) for k in ("ath_win","course_win","motor_win")]+[col(base,k)-col(runner,k) for k in ("ath_win","motor_win")]
             return np.concatenate([base,np.asarray(ex,float)])
-        z2=np.stack([ctx(X[BB[j]],X[AA[j]],AA[j]+1) for j in range(30)]); raw=self.second.predict_proba(z2)[:,1]
+        z2=np.stack([ctx(X[BB[j]],X[AA[j]],int(X[AA[j],idx['pre_lane']]) if self.v2 else AA[j]+1) for j in range(30)]); raw=self.second.predict_proba(z2)[:,1]
         p2=np.zeros((6,6))
         for a in range(6):
             js=np.where(AA==a)[0]; v=np.maximum(raw[js],1e-8); v/=v.sum()
             for j,q in zip(js,v): p2[a,BB[j]]=q
-        z3=np.stack([ctx(X[C[j]],X[A[j]],A[j]+1,X[B[j]],B[j]+1) for j in range(120)]); rr=self.third.predict_proba(z3)[:,1]
+        z3=np.stack([ctx(X[C[j]],X[A[j]],int(X[A[j],idx['pre_lane']]) if self.v2 else A[j]+1,X[B[j]],int(X[B[j],idx['pre_lane']]) if self.v2 else B[j]+1) for j in range(120)]); rr=self.third.predict_proba(z3)[:,1]
         p3=np.zeros(120)
         for a in range(6):
             for b in range(6):
@@ -166,7 +169,26 @@ class KiryuV1:
         for j in ranked:
             if int(j) not in normal:normal.append(int(j))
             if len(normal)>=10:break
-        return normal[:10]
+        if not self.v2: return normal[:10]
+        first_eight=normal[:8]
+        main_heads={int(A[j]) for j in normal[:6]}
+        phead=np.array([joint[A==h].sum() for h in range(6)])
+        eligible=sorted((h for h in range(6) if h not in main_heads and phead[h]>=.10),
+                        key=lambda h:(-phead[h],h))
+        outside=[]
+        for h in eligible[:2]:
+            for j in ranked:
+                if int(A[j])==h and int(j) not in first_eight:
+                    outside.append(int(j));break
+        if len(outside)<2 and len(eligible)==1:
+            for j in ranked:
+                if int(A[j])==eligible[0] and int(j) not in first_eight+outside:
+                    outside.append(int(j))
+                    if len(outside)==2:break
+        for j in normal[8:]+ranked.tolist():
+            if len(outside)==2:break
+            if int(j) not in first_eight+outside: outside.append(int(j))
+        return first_eight+outside[:2]
 
     @staticmethod
     def select_fly_indices(fly_joint, first_probabilities):
@@ -232,19 +254,22 @@ class KiryuV1:
                 js=np.where((A==a)&(B==b))[0]
                 if len(js): p3n[js]=_softmax(z[js])
         joint=p1[A]*p2n[A,B]*p3n; joint/=joint.sum()
-        ranked=np.argsort(-joint,kind="stable"); normal=ranked[:6].tolist()
-        for j in np.argsort(-(joint*np.exp(.25*self.prior_rel)),kind="stable"):
-            if int(j) not in normal:normal.append(int(j))
-            if len(normal)>=8:break
-        cand=normal[:6]
-        for _ in range(4):
-            used={A[j] for j in cand}; score=np.array([joint[j]*(1.3 if A[j] not in used else 1) for j in range(120)]); score[cand]=-1; cand.append(int(np.argmax(score)))
-        for j in cand:
-            if j not in normal:normal.append(j)
-            if len(normal)>=10:break
-        for j in ranked:
-            if int(j) not in normal:normal.append(int(j))
-            if len(normal)>=10:break
+        if self.v2:
+            normal=self.select_normal_indices(joint)
+        else:
+            ranked=np.argsort(-joint,kind="stable"); normal=ranked[:6].tolist()
+            for j in np.argsort(-(joint*np.exp(.25*self.prior_rel)),kind="stable"):
+                if int(j) not in normal:normal.append(int(j))
+                if len(normal)>=8:break
+            cand=normal[:6]
+            for _ in range(4):
+                used={A[j] for j in cand}; score=np.array([joint[j]*(1.3 if A[j] not in used else 1) for j in range(120)]); score[cand]=-1; cand.append(int(np.argmax(score)))
+            for j in cand:
+                if j not in normal:normal.append(j)
+                if len(normal)>=10:break
+            for j in ranked:
+                if int(j) not in normal:normal.append(int(j))
+                if len(normal)>=10:break
         f=CFG["fly"]; vals=[]
         mapping=("nat_win","local_win","nat_2","local_2","motor_2","motor_3")
         for key,sc in zip(mapping,f["scales"][:6]):

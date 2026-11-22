@@ -237,7 +237,7 @@ def main():
     from build_site_data import kiryu_v1_prediction_is_complete
     ap=argparse.ArgumentParser(); ap.add_argument("--date",required=True); ap.add_argument("--stage",choices=("morning","live"),default="morning"); ap.add_argument("--race",type=int); ap.add_argument("--data-root",default="data"); ap.add_argument("--live-root")
     a=ap.parse_args(); compact=a.date.replace("-",""); dated=Path(a.data_root)/"venues"/"kiryu"/(compact+".json")
-    payload=json.loads(dated.read_text(encoding="utf-8")); engine=KiryuV1(); preds=payload.get("preds") if isinstance(payload.get("preds"),dict) else {}
+    payload=json.loads(dated.read_text(encoding="utf-8")); engine=KiryuV1(v2=True); preds=payload.get("preds") if isinstance(payload.get("preds"),dict) else {}
     races=payload.get("races") or []
     for race in races:
         rn=int(race.get("race") or 0)
@@ -252,15 +252,38 @@ def main():
             if not morning or morning.get("predictionStage") != "morning": raise RuntimeError("Kiryu morning prediction unavailable")
             live_input,input_hash=build_live_calculation_input(documents,race.get("racers") or [])
             model_race=deepcopy(race)
+            entry=list(live_input["actual_entry"])
+            course_by_lane={int(lane):course for course,lane in enumerate(entry,1)}
             for racer in model_race.get("racers") or []:
-                racer["entry_course"]=int(racer["lane"]); racer["actual_course"]=int(racer["lane"])
+                lane=int(racer["lane"])
+                racer["entry_course"]=course_by_lane[lane]
+                racer["actual_course"]=course_by_lane[lane]
             base_joint=engine.normal_joint(model_race,a.date)
             corrected_joint,correction=apply_live_corrections(base_joint,model_race.get("racers") or [],live_input)
             pred=deepcopy(morning)
             pred.update(normal_prediction_fields(engine,corrected_joint))
             pred["predictionStage"]="live"
+            from kiryu_v1_engine import A, PERMS
+            import numpy as np
+            first_probs=np.array([corrected_joint[A==h].sum() for h in range(6)])
+            fly_rate=round(float((1-first_probs[0])*100),10)
+            pred["lane1FlyRate"]=fly_rate
+            pred["lane1FlyProbability"]=fly_rate
+            pred["lane1Fly"]=bool(fly_rate>=50)
+            fly_indices,allocation,heads=engine.select_fly_indices(corrected_joint,first_probs)
             pred["flyPrediction"]=deepcopy(morning["flyPrediction"])
-            pred["flyPrediction"]["status"]="live"
+            pred["flyPrediction"].update({
+                "status":"live",
+                "allocation":allocation,
+                "headCandidates":heads,
+                "probability":fly_rate,
+                "isFly":bool(fly_rate>=50),
+                "tickets":[{
+                    "combo":"-".join(str(x+1) for x in PERMS[j]),
+                    "probability":round(float(corrected_joint[j]*100),8),
+                } for j in fly_indices],
+            })
+            correction["entryCourses"]={str(k):v for k,v in course_by_lane.items()}
             calculation={
                 "executed":True,
                 "status":"success",
@@ -272,6 +295,7 @@ def main():
             attach_live_display(race,documents)
         else:
             pred=engine.predict(race,a.date,a.stage)
+        pred["modelVersion"]="kiryu_v2_entry_tickets_20261122"
         if not kiryu_v1_prediction_is_complete(
             pred,
             allow_legacy_frozen_fly=a.stage == "live",
@@ -283,7 +307,7 @@ def main():
             race["predictionFinal"]=deepcopy(pred)
         race["prediction"]=pred; preds[str(rn)]=pred
     if a.stage=="morning" and set(preds)!=set(map(str,range(1,13))): raise RuntimeError("Kiryu morning prediction requires all 12 races")
-    payload["preds"]=preds; payload["engine"]="kiryu_v1"; payload["modelVersion"]="kiryu_v1_20261104"
+    payload["preds"]=preds; payload["engine"]="kiryu_v2"; payload["modelVersion"]="kiryu_v2_entry_tickets_20261122"
     all_complete = set(preds)==set(map(str,range(1,13))) and all(
         kiryu_v1_prediction_is_complete(
             preds[str(rn)],

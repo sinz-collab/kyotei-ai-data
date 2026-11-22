@@ -41,6 +41,15 @@ def prediction() -> dict:
 
 
 class KiryuPublishGateTests(unittest.TestCase):
+    def test_accepts_v2_and_rejects_unknown_engine_output(self) -> None:
+        value=prediction()
+        value['modelVersion']='kiryu_v2_entry_tickets_20261122'
+        payload={'date':'2026-11-05','engine':'kiryu_v2',
+                 'preds':{str(i):copy.deepcopy(value) for i in range(1,13)}}
+        self.assertEqual(prediction_payload_gate(payload,'2026-11-05'),(True,'ok'))
+        payload['preds']['1']['modelVersion']='unknown'
+        self.assertNotEqual(prediction_payload_gate(payload,'2026-11-05')[0],True)
+
     def test_accepts_complete_independent_variable_allocation(self) -> None:
         value = prediction()
         self.assertTrue(kiryu_v1_prediction_is_complete(value))
