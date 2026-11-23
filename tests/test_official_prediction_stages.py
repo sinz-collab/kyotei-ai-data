@@ -9,9 +9,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "automation"))
 from run_official_predictions import (
     COMMANDS, merge_missing, merge_supplement, missing_races, supplement_hash, supplement_races,
 )
+from replay_official_recovery import replay
 
 
 class OfficialPredictionStageTests(unittest.TestCase):
+    def test_recovery_replay_preserves_newer_live_data(self):
+        before = {"preds": {}, "races": [{"race": 8}]}
+        generated = {"preds": {"8": {"win": {"1": 60}}},
+                     "races": [{"race": 8, "prediction": {"stage": "preliminary"}}]}
+        current = {"preds": {}, "races": [{"race": 8, "live": {"odds": 17}}]}
+        self.assertEqual(replay(before, generated, current), 1)
+        self.assertEqual(current["races"][0]["live"], {"odds": 17})
+        self.assertEqual(current["preds"]["8"]["win"]["1"], 60)
+        self.assertEqual(replay(before, generated, current), 0)
+
+    def test_recovery_replay_never_replaces_existing_live_prediction(self):
+        before = {"preds": {"8": {"win": {"1": 50}}}}
+        generated = {"preds": {"8": {"win": {"1": 60}}}}
+        current = {"preds": {"8": {"win": {"1": 50}, "prediction_history": {"live": [1]}}}}
+        self.assertEqual(replay(before, generated, current), 0)
+
     def test_naruto_and_ashiya_reuse_frozen_venue_engines(self):
         self.assertEqual(COMMANDS["naruto"], ("run_naruto_v5.py", "--stage", "morning"))
         self.assertEqual(COMMANDS["ashiya"], ("run_ashiya_v16.py", "--stage", "pre"))

@@ -80,7 +80,27 @@ jobs:
           git diff --cached --check
           if ! git diff --cached --quiet; then
             git commit -m "data: recover missing official predictions for $TARGET_DATE"
-            git push origin HEAD:main
+            RECOVERY_COMMIT="$(git rev-parse HEAD)"
+            published=false
+            for attempt in 1 2 3; do
+              git fetch origin main
+              git switch --detach origin/main
+              python automation/replay_official_recovery.py \
+                --candidate "$RECOVERY_COMMIT" --date "$TARGET_DATE"
+              git add data/manifest.json data/morning_report.json data/venues
+              git diff --cached --check
+              if git diff --cached --quiet; then
+                published=true
+                break
+              fi
+              git commit -m "data: safely replay recovered predictions for $TARGET_DATE"
+              if git push origin HEAD:main; then
+                published=true
+                break
+              fi
+              echo "LIVE advanced during recovery publication; replaying on latest main (attempt $attempt)"
+            done
+            test "$published" = true
           fi
       - name: Upload recovery diagnostics
         if: always()
