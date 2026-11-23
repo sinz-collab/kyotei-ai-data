@@ -49,7 +49,7 @@ class ShimonosekiSiteEngineV61:
             x=direct_by_lane.get(i(racer.get("lane")))
             if x and x.get("player_id"): racer["player_id"]=x["player_id"]
         out=self.core.predict_final(race,exhibition,original,direct,tide_events)
-        out["engine"]=ENGINE_ID; out["engineVersion"]=ENGINE_VERSION
+        out["engine"]=ENGINE_ID; out["engineVersion"]=ENGINE_VERSION; out["predictionStage"]="final"
         out["predictionPre"]={k:deepcopy(prediction_pre[k]) for k in ("win","second","third")}
         out["probabilityReview"]=_probability_review(prediction_pre,out)
         out["probabilityReviewStatus"]="reviewed"

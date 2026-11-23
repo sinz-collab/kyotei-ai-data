@@ -80,8 +80,13 @@ def main():
         for n,d in docs.items():
             if d.get('complete') is not True or d.get('status')!='complete': raise RuntimeError(f'{n}.json incomplete')
         payload=eng.apply_final_race(payload,a.race,docs['direct'],docs['exhibition'],docs['original_exhibition'])
-    ok,reason=eng.validate_payload(payload,True)
+    # Official-card recovery can produce a valid partial-day forecast.  A LIVE
+    # update must validate the available races without requiring closed races
+    # that were deliberately never backfilled.
+    ok,reason=eng.validate_payload(payload,a.stage=='preliminary')
     if not ok: raise RuntimeError(f'v6.1 payload invalid: {reason}')
+    if a.stage=='final' and (payload.get('preds') or {}).get(str(a.race),{}).get('predictionStage')!='final':
+        raise RuntimeError('v6.1 target race final prediction missing')
     atomic_write(dated,payload)
     if not a.no_latest: atomic_write(data/'venues'/'shimonoseki'/'latest.json',payload)
     print(json.dumps({'venue':'shimonoseki','date':a.date,'stage':a.stage,'race':a.race,'engine':ENGINE_ID,'engineVersion':ENGINE_VERSION,'status':'complete'},ensure_ascii=False))
