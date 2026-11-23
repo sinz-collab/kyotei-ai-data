@@ -125,6 +125,15 @@ def parse_event_label(lines: list[str]) -> str:
             break
 
     header_text = "\n".join(header)
+    # The Challenge Cup and Ladies Challenge Cup share one meeting, but the
+    # first race's entry header can advertise only the G2 side.
+    ladies_cup = r"レディース\s*(?:チャレンジ\s*(?:カップ|CC)|CC)"
+    mixed_challenge_cup = bool(
+        re.search(ladies_cup, header_text, re.IGNORECASE)
+        and re.search(r"チャレンジ\s*カップ", re.sub(ladies_cup, "", header_text, flags=re.IGNORECASE))
+    )
+    if mixed_challenge_cup:
+        return "SG・G2"
     categories = []
     if re.search(r"新人|ルーキー|ヤング", header_text):
         categories.append("🔰")
