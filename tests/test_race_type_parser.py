@@ -55,6 +55,23 @@ class RaceTypeParserTests(unittest.TestCase):
                 )
 
     def test_event_type_uses_explicit_header_mapping(self):
+        self.assertEqual(
+            MODULE.parse_event_label([
+                "常滑", "G2", "第29回チャレンジカップ／G2レディースCC", "1R",
+            ]),
+            "SG・G2",
+        )
+        self.assertEqual(
+            MODULE.parse_event_label([
+                "常滑", "SG", "第29回チャレンジカップ／G2レディースチャレンジカップ", "1R",
+            ]),
+            "SG・G2",
+        )
+        self.assertEqual(
+            MODULE.parse_event_label(["常滑", "G2", "レディースチャレンジカップ", "1R"]),
+            "G2｜♥️",
+        )
+
         cases = (
             (["若松", "一般", "通常開催", "1R"], "general"),
             (["若松", "一般", "ルーキーシリーズ", "1R"], "rookie"),
