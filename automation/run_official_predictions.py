@@ -33,6 +33,7 @@ COMMANDS = {
     "ashiya": ("run_ashiya_v16.py", "--stage", "pre"),
     "fukuoka": ("run_fukuoka_v1.py", "--stage", "preliminary"),
     "omura": ("apply_omura_v1.py",),
+    "shimonoseki": ("run_shimonoseki_v6_1.py", "--stage", "preliminary"),
 }
 
 SUPPLEMENT_FIELDS = (

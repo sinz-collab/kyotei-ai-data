@@ -15,8 +15,10 @@ class OfficialPredictionStageTests(unittest.TestCase):
     def test_naruto_and_ashiya_reuse_frozen_venue_engines(self):
         self.assertEqual(COMMANDS["naruto"], ("run_naruto_v5.py", "--stage", "morning"))
         self.assertEqual(COMMANDS["ashiya"], ("run_ashiya_v16.py", "--stage", "pre"))
+        self.assertEqual(COMMANDS["shimonoseki"], ("run_shimonoseki_v6_1.py", "--stage", "preliminary"))
         recovery = (Path(__file__).resolve().parents[1] / ".github/workflows/recover-official-predictions.yml").read_text()
         self.assertIn("data/venues/naruto data/venues/ashiya", recovery)
+        self.assertIn("data/venues/omura data/venues/shimonoseki", recovery)
         self.assertIn("lightgbm==4.6.0 scikit-learn==1.8.0", recovery)
         self.assertIn("Official prediction engines failed", recovery)
         morning = (Path(__file__).resolve().parents[1] / ".github/workflows/morning-data-official.yml").read_text()

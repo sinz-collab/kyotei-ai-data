@@ -65,7 +65,7 @@ jobs:
           from pathlib import Path
           result=json.loads(Path('work/prediction-recovery-official.json').read_text())
           failed={name:status for name,status in result['venues'].items()
-                  if name in ('naruto','ashiya') and str(status).startswith(('engine_failed:', 'prediction_invalid:'))}
+                  if name in ('naruto','ashiya','shimonoseki') and str(status).startswith(('engine_failed:', 'prediction_invalid:'))}
           if failed:
               raise SystemExit(f'Official prediction engines failed: {failed}')
           PY
@@ -76,7 +76,7 @@ jobs:
           git add data/manifest.json data/morning_report.json \
             data/venues/kiryu data/venues/toda data/venues/heiwajima \
             data/venues/biwako data/venues/naruto data/venues/ashiya \
-            data/venues/fukuoka data/venues/omura
+            data/venues/fukuoka data/venues/omura data/venues/shimonoseki
           git diff --cached --check
           if ! git diff --cached --quiet; then
             git commit -m "data: recover missing official predictions for $TARGET_DATE"
