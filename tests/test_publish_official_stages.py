@@ -92,5 +92,44 @@ class PublishOfficialStagesTests(unittest.TestCase):
             )
 
 
+    def test_official_publish_preserves_newer_live_data_and_supplements(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            data = root / "data"
+            venue_dir = data / "venues/kiryu"
+            venue_dir.mkdir(parents=True)
+            candidates = root / "candidates"
+            candidates.mkdir()
+            existing = payload(True)
+            existing["preds"] = {"live_revision": 2}
+            existing["races"][0]["result"] = {"finish": "1-2-3"}
+            existing["races"][0]["odds"] = {"123": 10.5}
+            existing["races"][0]["deadline"] = "10:00"
+            before = official.protected_projection(existing)
+            (venue_dir / "20261118.json").write_text(
+                json.dumps(existing, ensure_ascii=False), encoding="utf-8"
+            )
+            candidate = payload(False)
+            candidate["preds"] = {"live_revision": 1}
+            candidate["races"][0]["deadline"] = "10:05"
+            (candidates / "kiryu.json").write_text(
+                json.dumps(candidate, ensure_ascii=False), encoding="utf-8"
+            )
+            args = argparse.Namespace(
+                date="2026-11-18", stage="official",
+                candidate_root=candidates, data_root=data, report=None,
+            )
+            result = publisher.publish(args)
+            published = json.loads(
+                (venue_dir / "20261118.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual(result["publishedRaces"], 12)
+            self.assertEqual(official.protected_projection(published), before)
+            self.assertEqual(published["races"][0]["deadline"], "10:05")
+            self.assertEqual(
+                published["races"][0]["racers"][0]["motor_recent"]["runs_count"], 10
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
