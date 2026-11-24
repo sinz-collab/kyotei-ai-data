@@ -34,6 +34,26 @@ def _live_inputs_missing(
     return False
 
 
+def _omura_original_missing(
+    date_value: str, race_no: int, output_root: Path,
+) -> bool:
+    import json
+
+    race_dir = output_root / date_value / "omura" / f"{race_no:02d}"
+    documents = {}
+    for name in ("direct", "exhibition", "original_exhibition"):
+        try:
+            documents[name] = json.loads(
+                (race_dir / f"{name}.json").read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            return False
+    return (
+        all(documents[name].get("complete") is True for name in ("direct", "exhibition"))
+        and documents["original_exhibition"].get("complete") is not True
+    )
+
+
 def _naruto_final_missing(
     payload: dict[str, Any],
     race: dict[str, Any],
@@ -113,6 +133,14 @@ def select_target_races(
                 payload["date"], "karatsu", race_no, output_root
             )
         )
+        # Omura: recover only missing original-exhibition values for 15 minutes.
+        # The source may never publish lap time when a stabilizer is fitted.
+        omura_original_backfill = (
+            venue["slug"] == "omura"
+            and output_root is not None
+            and close_at <= current < close_at + timedelta(minutes=15)
+            and _omura_original_missing(payload["date"], race_no, output_root)
+        )
         # Naruto morning data can arrive after an early race has closed. Keep
         # polling its LIVE inputs in the existing result window until a
         # verified final prediction has actually been written.
@@ -121,6 +149,7 @@ def select_target_races(
             or naruto_live_backfill
             or kiryu_live_backfill
             or karatsu_live_backfill
+            or omura_original_backfill
         )
         result_path = (
             output_root / payload["date"] / venue["slug"] / f"{race_no:02d}" / "result.json"
@@ -153,6 +182,7 @@ def select_target_races(
                     "naruto_live_backfill": naruto_live_backfill,
                     "kiryu_live_backfill": kiryu_live_backfill,
                     "karatsu_live_backfill": karatsu_live_backfill,
+                    "original_only": omura_original_backfill,
                 }
             )
     if venue["slug"] == "naruto":
