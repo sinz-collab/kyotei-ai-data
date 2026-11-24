@@ -15,6 +15,7 @@ from official_morning import (
     VENUES,
     atomic_json,
     protected_projection,
+    merge_official_races,
     supplement_item_state,
     validate_candidate,
 )
@@ -242,9 +243,17 @@ def publish(args: argparse.Namespace) -> dict[str, Any]:
         dated_path = venue_root / f"{args.date.replace('-', '')}.json"
         existing = load_json(dated_path)
         if args.stage == "official":
-            payload = copy.deepcopy(candidate)
-            if existing is not None and protected_projection(existing) != protected_projection(payload):
-                raise RuntimeError(f"protected_domain_mismatch:{slug}")
+            if existing is not None:
+                # LIVE publication can advance after the candidate was built.
+                # Merge official card fields into the newest saved payload so
+                # predictions, LIVE data, results and supplements survive.
+                payload = merge_official_races(
+                    existing, candidate["races"], slug=slug, target_date=args.date
+                )
+                if protected_projection(existing) != protected_projection(payload):
+                    raise RuntimeError(f"protected_domain_mismatch:{slug}")
+            else:
+                payload = copy.deepcopy(candidate)
         else:
             if existing is None or existing.get("date") != args.date:
                 result["skipped"].append({"venue": slug, "reason": "official_stage_not_published"})
