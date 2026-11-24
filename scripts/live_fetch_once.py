@@ -763,14 +763,28 @@ async def apply_omura_live_prediction(
     if target.get("venue") != "omura" or fetch_result.get("error"):
         return
 
-    items = fetch_result.get("items") or {}
-    required = ("direct", "exhibition", "original_exhibition")
+    # Saved documents remain authoritative even on cycles that only refresh odds.
+    saved = {}
+    for name in ("direct", "exhibition", "original_exhibition"):
+        try:
+            saved[name] = json.loads((race_dir / f"{name}.json").read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
     if not all(
-        (items.get(name) or {}).get("complete") is True
-        and (items.get(name) or {}).get("status") == "complete"
-        for name in required
+        saved[name].get("complete") is True and saved[name].get("status") == "complete"
+        for name in ("direct", "exhibition")
     ):
         return
+    original = saved["original_exhibition"]
+    if not (original.get("complete") is True and original.get("status") == "complete"):
+        entries = (original.get("data") or {}).get("entries") or []
+        if original.get("status") != "partial" or len(entries) != 6 or any(
+            not isinstance(row, dict)
+            or row.get("straight_time") is None
+            or row.get("turn_time") is None
+            for row in entries
+        ):
+            return
 
     process = await asyncio.create_subprocess_exec(
         sys.executable,
