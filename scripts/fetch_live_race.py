@@ -298,6 +298,46 @@ class LiveSourceClient:
         finally:
             await page.close()
 
+    async def fetch_original_only(self, target: dict[str, Any]) -> dict[str, Any]:
+        """Bounded recovery of a missing original-exhibition document only."""
+        page = await self.context.new_page()
+        source = (
+            f"{self.config['source_base_url'].rstrip('/')}/race/"
+            f"{target['venue']}/{target['date']}/{target['race_no']}R/last-minute"
+        )
+        try:
+            await self._goto(page, source, target, "original_exhibition")
+            clicked = False
+            for selector in (
+                "button:has-text('オリジナル展示')",
+                "a:has-text('オリジナル展示')",
+                "text=オリジナル展示",
+            ):
+                locator = page.locator(selector).first
+                if await locator.count():
+                    try:
+                        await locator.click(timeout=5000)
+                        await page.wait_for_timeout(700)
+                        clicked = True
+                        break
+                    except Exception:
+                        continue
+            parsed = parse_original_exhibition(
+                await page.content(), await page.locator("body").inner_text(),
+                target["race_no"],
+            )
+            parsed["tab_clicked"] = clicked
+            document = _base_document(
+                target, source,
+                _status(parsed.pop("_published"), parsed.pop("_complete")),
+                False, parsed, None, self.config,
+            )
+            document["complete"] = document["status"] == "complete"
+            document["content_hash"] = content_hash(document)
+            return {"original_exhibition": document}
+        finally:
+            await page.close()
+
     async def fetch_result(self, target: dict[str, Any]) -> dict[str, Any]:
         page = await self.context.new_page()
         source = official_result_url(
@@ -337,7 +377,7 @@ async def fetch_and_save_race(
         documents = {}
         if target.get("fetch_live", True):
             documents.update(await asyncio.wait_for(
-                client.fetch(target),
+                client.fetch_original_only(target) if target.get("original_only") else client.fetch(target),
                 timeout=config["race_timeout_seconds"],
             ))
         if target.get("fetch_result"):
@@ -388,9 +428,9 @@ async def fetch_and_save_race(
             extra={"event": "race_failed", "venue": target["venue"], "race_no": target["race_no"]},
         )
         failed_items = (
-            ("direct", "exhibition", "original_exhibition", "odds")
-            if target.get("fetch_live", True)
-            else ()
+            ("original_exhibition",) if target.get("original_only")
+            else ("direct", "exhibition", "original_exhibition", "odds")
+            if target.get("fetch_live", True) else ()
         )
         if target.get("fetch_result"):
             failed_items = (*failed_items, "result")
