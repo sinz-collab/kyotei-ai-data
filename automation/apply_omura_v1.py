@@ -58,6 +58,21 @@ def normalize_name(value: Any) -> str:
     return re.sub(r"[\s\u3000・･]+", "", text)
 
 
+def original_partial_usable(data: Any) -> bool:
+    if not isinstance(data, dict):
+        return False
+    entries = data.get("entries") or []
+    if not isinstance(entries, list) or len(entries) != 6:
+        return False
+    lanes = {safe_int(row.get("lane")) for row in entries if isinstance(row, dict)}
+    return lanes == set(range(1, 7)) and all(
+        isinstance(row, dict)
+        and math.isfinite(safe_float(row.get("straight_time"), math.inf))
+        and math.isfinite(safe_float(row.get("turn_time"), math.inf))
+        for row in entries
+    )
+
+
 def load_complete_live_document(
     path: Path,
     target_date: str,
@@ -69,8 +84,11 @@ def load_complete_live_document(
         return None
     if (
         not isinstance(document, dict)
-        or document.get("complete") is not True
-        or document.get("status") != "complete"
+        or (document.get("complete") is not True and not (
+            path.stem == "original_exhibition"
+            and document.get("status") == "partial"
+            and original_partial_usable(document.get("data"))
+        ))
         or document.get("date") != target_date
         or document.get("venue") != "omura"
         or safe_int(document.get("race_no")) != race_no
@@ -438,7 +456,16 @@ def apply_live_documents_to_race(
     if set(exhibition) != set(range(1, 7)):
         raise RuntimeError("live_exhibition_entries_must_be_6")
 
-    original_ranks = rank_entries(original, "sum")
+    if all(math.isfinite(safe_float(row.get("sum"), math.inf)) for row in original.values()):
+        original_ranks = rank_entries(original, "sum")
+    else:
+        # Partial source: compare measured straight/turn ranks without inventing lap times.
+        straight_ranks = rank_entries(original, "straight_time")
+        turn_ranks = rank_entries(original, "turn_time")
+        ordered = sorted(original, key=lambda lane: (
+            straight_ranks[lane] + turn_ranks[lane], turn_ranks[lane], lane
+        ))
+        original_ranks = {lane: rank for rank, lane in enumerate(ordered, 1)}
     actual_entry = [safe_int(lane) for lane in direct.get("actual_entry") or []]
     if sorted(actual_entry) != list(range(1, 7)):
         raise RuntimeError("live_actual_entry_must_be_permutation_1_to_6")
@@ -671,6 +698,11 @@ def apply_omura_live_race(
     player_index = load_player_index()
     result = engine.predict(build_engine_input(candidate, race, player_index))
     prediction = mark_final_prediction(site_prediction(result))
+    if documents["original_exhibition"].get("status") == "partial":
+        prediction["sourceSummary"]["originalExhibitionFallback"] = "measured_straight_turn_ranks"
+        prediction["predictionStage"]["statusText"] = (
+            "大村v1.9：直前・展示を反映。独自展示は直線・回り足の実測順位で補完"
+        )
     if not prediction_complete(prediction):
         raise RuntimeError("prediction_output_incomplete")
 
