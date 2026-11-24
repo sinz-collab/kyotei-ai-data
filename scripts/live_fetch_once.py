@@ -760,6 +760,9 @@ async def apply_omura_live_prediction(
     fetch_result: dict[str, Any],
     logger: Any,
 ) -> None:
+    # Post-deadline recovery is for data completeness, never a new prediction.
+    if target.get("original_only"):
+        return
     if target.get("venue") != "omura" or fetch_result.get("error"):
         return
 
