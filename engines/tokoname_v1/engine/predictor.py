@@ -305,7 +305,35 @@ def sab_grade(p1,scores,data_complete=True):
     score=max(0,min(100,round(score)))
     return ('S' if score>=80 else 'A' if score>=65 else 'B'),score
 
-def predict(payload,model_dir,*,st_blend_weight=0.0):
+def course_six_month_adjust(payload,p1,p2,p3,strength):
+    """Research correction using shrunk six-month actual-course residuals.
+
+    Only records dated before the race, with at least ten starts and a
+    comparable course baseline, contribute to the correction.
+    """
+    changes=[[],[],[]]
+    for racer in payload['race']['racers']:
+        course=int(racer.get('actual_course') or racer.get('entry_course') or racer['lane'])
+        stat=(racer.get('recent_course_6m_by_course') or {}).get(str(course)) or {}
+        starts=stat.get('starts') or 0
+        as_of=stat.get('as_of') or ''
+        base=stat.get('comparison_mean') or {}
+        usable=(stat.get('status')=='available' and starts>=10
+                and bool(as_of) and as_of<payload['date']
+                and all(isinstance(stat.get(k),(int,float)) and isinstance(base.get(k),(int,float))
+                        for k in ('win_rate','top2_rate','top3_rate')))
+        if not usable:
+            for row in changes:row.append(0.0)
+            continue
+        shrink=starts/(starts+30.0)
+        rates=[stat['win_rate'],stat['top2_rate']-stat['win_rate'],stat['top3_rate']-stat['top2_rate']]
+        means=[base['win_rate'],base['top2_rate']-base['win_rate'],base['top3_rate']-base['top2_rate']]
+        for i,(rate,mean) in enumerate(zip(rates,means)):
+            changes[i].append(float(np.clip(100.0*(rate-mean)*shrink*0.5*strength,-3.0,3.0)))
+    return tuple(normalize(np.asarray(probs)+np.asarray(delta))
+                 for probs,delta in zip((p1,p2,p3),changes))
+
+def predict(payload,model_dir,*,st_blend_weight=0.0,course_6m_strength=0.0):
     """Predict with an optional research-only neutral-ST model blend.
 
     The default of zero preserves the deployed v1.6 calculation exactly.
@@ -313,6 +341,8 @@ def predict(payload,model_dir,*,st_blend_weight=0.0):
     """
     if not 0.0 <= st_blend_weight <= 1.0:
         raise ValueError('st_blend_weight must be between 0 and 1')
+    if not 0.0 <= course_6m_strength <= 2.0:
+        raise ValueError('course_6m_strength must be between 0 and 2')
     X,st_ranks,et_ranks=build_features(payload)
     features=joblib.load(Path(model_dir)/FEATURES_FILE)
     models={k:joblib.load(Path(model_dir)/v) for k,v in MODEL_FILES.items()}
@@ -333,6 +363,8 @@ def predict(payload,model_dir,*,st_blend_weight=0.0):
         p1=[(1-weight)*a+weight*b for a,b in zip(p1,n1)]
         p2=[(1-weight)*a+weight*b for a,b in zip(p2,n2)]
         p3=[(1-weight)*a+weight*b for a,b in zip(p3,n3)]
+    if course_6m_strength:
+        p1,p2,p3=course_six_month_adjust(payload,p1,p2,p3,course_6m_strength)
     scores=ticket_scores(p1,p2,p3); main,dev,upset=select_tickets(scores,p1,p2,p3)
     complete_count=sum([bool(payload.get('direct')),bool(payload.get('exhibition')),bool(payload.get('original_exhibition')),bool(payload['race'].get('setsukan')),bool(payload.get('tide'))])
     grade,sab_score=sab_grade(p1,scores,complete_count>=4)
