@@ -27,3 +27,15 @@ def test_st_blend_research_option():
   pass
  else:
   assert False, 'invalid blend weight should be rejected'
+
+def test_six_month_course_research_option():
+ p=json.loads((ROOT/'samples/tokoname_20260730_R01_input.json').read_text(encoding='utf-8'))
+ baseline=predict(p,ROOT/'models')
+ assert baseline==predict(p,ROOT/'models',course_6m_strength=0.0)
+ assert baseline==predict(p,ROOT/'models',course_6m_strength=1.0)
+ try:
+  predict(p,ROOT/'models',course_6m_strength=-0.1)
+ except ValueError:
+  pass
+ else:
+  assert False, 'invalid course strength should be rejected'
