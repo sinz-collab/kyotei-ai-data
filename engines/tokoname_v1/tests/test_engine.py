@@ -28,6 +28,16 @@ def test_st_blend_research_option():
  else:
   assert False, 'invalid blend weight should be rejected'
 
+def test_historical_joint_ten_ticket_contract():
+ p=json.loads((ROOT/'samples/tokoname_20260730_R01_input.json').read_text(encoding='utf-8'))
+ baseline=predict(p,ROOT/'models',st_blend_weight=.5)
+ joint=predict(p,ROOT/'models',st_blend_weight=.5,historical_joint_tickets=True)
+ assert baseline['probabilities']==joint['probabilities']
+ assert baseline['scenario']==joint['scenario']
+ tickets=[ticket['combination'] for bucket in joint['tickets'].values() for ticket in bucket]
+ assert len(tickets)==len(set(tickets))==10
+ assert [len(joint['tickets'][k]) for k in ('main','deviation','upset')]==[6,2,2]
+
 def test_six_month_course_research_option():
  p=json.loads((ROOT/'samples/tokoname_20260730_R01_input.json').read_text(encoding='utf-8'))
  baseline=predict(p,ROOT/'models')

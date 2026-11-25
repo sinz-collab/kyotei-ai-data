@@ -249,6 +249,24 @@ def ticket_scores(p1,p2,p3):
     z=sum(s for s,_ in scores)
     return sorted([(s/z*100,t) for s,t in scores],reverse=True)
 
+def historical_joint_scores(scores, model_dir):
+    """Re-rank finish permutations using only pre-2026-03-13 history."""
+    stats=json.loads((Path(model_dir)/'historical_joint_2015_20260313.json').read_text(encoding='utf-8'))
+    n=stats['sample_size']; heads=stats['heads']; seconds=stats['seconds']; thirds=stats['thirds']
+    pairs=stats['pairs']; triples=stats['triples']; adjusted=[]
+    for score,ticket in scores:
+        a,b,c=map(str,ticket); pair_count=pairs.get(f'{a}-{b}',0)
+        pab=(pair_count+20)/(heads.get(a,0)+100)
+        pb=(seconds.get(b,0)+20)/(n+120)
+        pabc=(triples.get(f'{a}-{b}-{c}',0)+12)/(pair_count+48)
+        pc=(thirds.get(c,0)+20)/(n+120)
+        factor=max(.5,min(2,pab/pb))**.5 * max(.5,min(2,pabc/pc))**.5
+        adjusted.append((score*factor,ticket))
+    return sorted(adjusted,reverse=True)
+
+def ranked_ten_tickets(scores):
+    return scores[:6],scores[6:8],scores[8:10]
+
 def scenario_name(head): return {1:'1逃げ中心',2:'2差し中心',3:'3攻め中心',4:'4攻め・差し中心',5:'5まくり差し中心',6:'6外残り中心'}[head]
 
 def select_tickets(scores,p1,p2,p3):
@@ -333,7 +351,7 @@ def course_six_month_adjust(payload,p1,p2,p3,strength):
     return tuple(normalize(np.asarray(probs)+np.asarray(delta))
                  for probs,delta in zip((p1,p2,p3),changes))
 
-def predict(payload,model_dir,*,st_blend_weight=0.0,course_6m_strength=0.0,course_6m_mode='all'):
+def predict(payload,model_dir,*,st_blend_weight=0.0,course_6m_strength=0.0,course_6m_mode='all',historical_joint_tickets=False):
     """Predict with an optional research-only neutral-ST model blend.
 
     The default of zero preserves the deployed v1.6 calculation exactly.
@@ -379,7 +397,12 @@ def predict(payload,model_dir,*,st_blend_weight=0.0,course_6m_strength=0.0,cours
             c1,c2,c3=course_six_month_adjust(payload,p1,p2,p3,course_6m_strength)
             if course_6m_mode=='all':p1=c1
             p2,p3=c2,c3
-    scores=ticket_scores(p1,p2,p3); main,dev,upset=select_tickets(scores,p1,p2,p3)
+    scores=ticket_scores(p1,p2,p3)
+    if historical_joint_tickets:
+        scores=historical_joint_scores(scores,model_dir)
+        main,dev,upset=ranked_ten_tickets(scores)
+    else:
+        main,dev,upset=select_tickets(scores,p1,p2,p3)
     complete_count=sum([bool(payload.get('direct')),bool(payload.get('exhibition')),bool(payload.get('original_exhibition')),bool(payload['race'].get('setsukan')),bool(payload.get('tide'))])
     grade,sab_score=sab_grade(p1,scores,complete_count>=4)
     if complete_count<4:
