@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 MODEL_VERSION = "tokoname_fly_tickets_v4"
+IMPROVED_MODEL_VERSION = "tokoname_fly_tickets_v5"
 STAGE = "post_exhibition"
 ARTIFACT_DIRECTORY = "tokoname_fly_tickets_v4"
 LANES = tuple(range(1, 7))
@@ -248,6 +249,8 @@ def predict(
     direct: dict,
     exhibition: dict,
     model_dir: Path,
+    *,
+    ranking_mode: str = 'base',
 ) -> dict:
     import numpy as np
 
@@ -296,7 +299,25 @@ def predict(
             raise FlyTicketsUnavailable("conditional_probability_zero")
         conditional[indices] = head[head_index] * linked / total
 
-    top = np.argsort(-conditional)[:10]
+    if ranking_mode not in ('base','swap'):
+        raise ValueError('invalid_fly_ranking_mode')
+    ranks = list(np.argsort(-conditional))
+    if ranking_mode == 'swap':
+        top=list(ranks[:8]); used=set(top)
+        # Preserve the eight highest-scoring original tickets; the other two
+        # explicitly guard against second/third place inversion.
+        candidate_map={tuple(map(int,option)):i for i,option in enumerate(options)}
+        for index in ranks:
+            a,b,c=map(int,options[index]); swapped=(a,c,b)
+            candidate=candidate_map.get(swapped)
+            if candidate is not None and candidate not in used:
+                top.append(candidate);used.add(candidate)
+            if len(top)==10:break
+        for index in ranks:
+            if len(top)==10:break
+            if index not in used:top.append(index);used.add(index)
+    else:
+        top=ranks[:10]
     tickets = [
         {
             "combo": "-".join(str(int(lane)) for lane in options[index]),
@@ -309,7 +330,7 @@ def predict(
     return {
         "status": "complete",
         "reason": None,
-        "modelVersion": MODEL_VERSION,
+        "modelVersion": IMPROVED_MODEL_VERSION if ranking_mode == 'swap' else MODEL_VERSION,
         "stage": STAGE,
         "condition": "lane1_not_first",
         "tickets": tickets,
@@ -335,7 +356,7 @@ def predict(
 
 
 def validate_prediction(value: dict, *, allow_waiting: bool = True) -> None:
-    if value.get("modelVersion") != MODEL_VERSION:
+    if value.get("modelVersion") not in (MODEL_VERSION,IMPROVED_MODEL_VERSION):
         raise ValueError("tokoname_fly_v4_model_invalid")
     status = value.get("status")
     if status == "waiting" and allow_waiting:

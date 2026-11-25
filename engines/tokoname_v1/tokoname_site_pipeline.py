@@ -27,7 +27,11 @@ def default_predictor(payload: dict, model_dir: Path) -> dict:
         from .engine.predictor import predict
     else:
         from engine.predictor import predict
-    return predict(payload, model_dir)
+    # Morning predictions stay compatible; normal final tickets use the
+    # tested calibrated scoring. The independent fly selection is unchanged.
+    if payload.get('preliminary'):
+        return predict(payload, model_dir)
+    return predict(payload, model_dir, st_blend_weight=.5, historical_joint_tickets=True)
 
 
 def attach_morning_lane1_fly(
@@ -83,6 +87,7 @@ def attach_final_fly_tickets_v4(
         live_documents["direct"],
         live_documents["exhibition"],
         model_dir,
+        ranking_mode='swap',
     )
     validate_prediction(fly_prediction, allow_waiting=False)
     prediction["flyPrediction"] = fly_prediction

@@ -249,6 +249,24 @@ def ticket_scores(p1,p2,p3):
     z=sum(s for s,_ in scores)
     return sorted([(s/z*100,t) for s,t in scores],reverse=True)
 
+def historical_joint_scores(scores, model_dir):
+    """Re-rank finish permutations using only pre-2026-03-13 history."""
+    stats=json.loads((Path(model_dir)/'historical_joint_2015_20260313.json').read_text(encoding='utf-8'))
+    n=stats['sample_size']; heads=stats['heads']; seconds=stats['seconds']; thirds=stats['thirds']
+    pairs=stats['pairs']; triples=stats['triples']; adjusted=[]
+    for score,ticket in scores:
+        a,b,c=map(str,ticket); pair_count=pairs.get(f'{a}-{b}',0)
+        pab=(pair_count+20)/(heads.get(a,0)+100)
+        pb=(seconds.get(b,0)+20)/(n+120)
+        pabc=(triples.get(f'{a}-{b}-{c}',0)+12)/(pair_count+48)
+        pc=(thirds.get(c,0)+20)/(n+120)
+        factor=max(.5,min(2,pab/pb))**.5 * max(.5,min(2,pabc/pc))**.5
+        adjusted.append((score*factor,ticket))
+    return sorted(adjusted,reverse=True)
+
+def ranked_ten_tickets(scores):
+    return scores[:6],scores[6:8],scores[8:10]
+
 def scenario_name(head): return {1:'1逃げ中心',2:'2差し中心',3:'3攻め中心',4:'4攻め・差し中心',5:'5まくり差し中心',6:'6外残り中心'}[head]
 
 def select_tickets(scores,p1,p2,p3):
@@ -305,15 +323,86 @@ def sab_grade(p1,scores,data_complete=True):
     score=max(0,min(100,round(score)))
     return ('S' if score>=80 else 'A' if score>=65 else 'B'),score
 
-def predict(payload,model_dir):
+def course_six_month_adjust(payload,p1,p2,p3,strength):
+    """Research correction using shrunk six-month actual-course residuals.
+
+    Only records dated before the race, with at least ten starts and a
+    comparable course baseline, contribute to the correction.
+    """
+    changes=[[],[],[]]
+    for racer in payload['race']['racers']:
+        course=int(racer.get('actual_course') or racer.get('entry_course') or racer['lane'])
+        stat=(racer.get('recent_course_6m_by_course') or {}).get(str(course)) or {}
+        starts=stat.get('starts') or 0
+        as_of=stat.get('as_of') or ''
+        base=stat.get('comparison_mean') or {}
+        usable=(stat.get('status')=='available' and starts>=10
+                and bool(as_of) and as_of<payload['date']
+                and all(isinstance(stat.get(k),(int,float)) and isinstance(base.get(k),(int,float))
+                        for k in ('win_rate','top2_rate','top3_rate')))
+        if not usable:
+            for row in changes:row.append(0.0)
+            continue
+        shrink=starts/(starts+30.0)
+        rates=[stat['win_rate'],stat['top2_rate']-stat['win_rate'],stat['top3_rate']-stat['top2_rate']]
+        means=[base['win_rate'],base['top2_rate']-base['win_rate'],base['top3_rate']-base['top2_rate']]
+        for i,(rate,mean) in enumerate(zip(rates,means)):
+            changes[i].append(float(np.clip(100.0*(rate-mean)*shrink*0.5*strength,-3.0,3.0)))
+    return tuple(normalize(np.asarray(probs)+np.asarray(delta))
+                 for probs,delta in zip((p1,p2,p3),changes))
+
+def predict(payload,model_dir,*,st_blend_weight=0.0,course_6m_strength=0.0,course_6m_mode='all',historical_joint_tickets=False):
+    """Predict with an optional research-only neutral-ST model blend.
+
+    The default of zero preserves the deployed v1.6 calculation exactly.
+    Do not enable the experimental blend in production without holdout tests.
+    """
+    if not 0.0 <= st_blend_weight <= 1.0:
+        raise ValueError('st_blend_weight must be between 0 and 1')
+    if not 0.0 <= course_6m_strength <= 2.0:
+        raise ValueError('course_6m_strength must be between 0 and 2')
+    if course_6m_mode not in ('all','places','entry_only'):
+        raise ValueError('invalid course_6m_mode')
     X,st_ranks,et_ranks=build_features(payload)
     features=joblib.load(Path(model_dir)/FEATURES_FILE)
     models={k:joblib.load(Path(model_dir)/v) for k,v in MODEL_FILES.items()}
-    raw={k:m.predict_proba(X[features])[:,1] for k,m in models.items()}
-    exact=[isotonic_triplet(*v) for v in zip(raw['win'],raw['top2'],raw['top3'])]
-    p1=normalize([x[0] for x in exact]); p2=normalize([x[1]-x[0] for x in exact]); p3=normalize([x[2]-x[1] for x in exact])
-    p1,p2,p3,reasons=apply_corrections(payload,p1,p2,p3,st_ranks,et_ranks)
-    scores=ticket_scores(p1,p2,p3); main,dev,upset=select_tickets(scores,p1,p2,p3)
+    def evaluate(frame):
+        raw={k:m.predict_proba(frame[features])[:,1] for k,m in models.items()}
+        exact=[isotonic_triplet(*v) for v in zip(raw['win'],raw['top2'],raw['top3'])]
+        a=normalize([x[0] for x in exact]); b=normalize([x[1]-x[0] for x in exact]); c=normalize([x[2]-x[1] for x in exact])
+        return apply_corrections(payload,a,b,c,st_ranks,et_ranks)
+    p1,p2,p3,reasons=evaluate(X)
+    if st_blend_weight:
+        neutral=X.copy()
+        for name in ('st','st_mean_in_race','race_st_mean','race_st_min','race_st_max'):
+            neutral[name]=0.20
+        neutral['st_diff_from_race_mean']=0.0
+        neutral['st_rank_in_race']=3.5
+        n1,n2,n3,_=evaluate(neutral)
+        weight=st_blend_weight
+        p1=[(1-weight)*a+weight*b for a,b in zip(p1,n1)]
+        p2=[(1-weight)*a+weight*b for a,b in zip(p2,n2)]
+        p3=[(1-weight)*a+weight*b for a,b in zip(p3,n3)]
+    if course_6m_strength:
+        if course_6m_mode=='entry_only':
+            entry=(payload.get('direct') or {}).get('data',{}).get('actual_entry')
+            changed=(isinstance(entry,list) and len(entry)==6
+                     and [int(v) for v in entry]!=list(range(1,7)))
+            if not changed:
+                changed=any(int(r.get('actual_course') or r['lane'])!=int(r['lane'])
+                            for r in payload['race']['racers'])
+            if changed:
+                p1,p2,p3=course_six_month_adjust(payload,p1,p2,p3,course_6m_strength*1.5)
+        else:
+            c1,c2,c3=course_six_month_adjust(payload,p1,p2,p3,course_6m_strength)
+            if course_6m_mode=='all':p1=c1
+            p2,p3=c2,c3
+    scores=ticket_scores(p1,p2,p3)
+    if historical_joint_tickets:
+        scores=historical_joint_scores(scores,model_dir)
+        main,dev,upset=ranked_ten_tickets(scores)
+    else:
+        main,dev,upset=select_tickets(scores,p1,p2,p3)
     complete_count=sum([bool(payload.get('direct')),bool(payload.get('exhibition')),bool(payload.get('original_exhibition')),bool(payload['race'].get('setsukan')),bool(payload.get('tide'))])
     grade,sab_score=sab_grade(p1,scores,complete_count>=4)
     if complete_count<4:
