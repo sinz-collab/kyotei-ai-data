@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+[[ $EUID -eq 0 && $# -eq 2 ]] || { echo 'root and venue SHA required' >&2; exit 64; }
+venue=$1
+requested_sha=$2
+[[ $venue =~ ^[a-z][a-z0-9_-]{1,24}$ && $requested_sha =~ ^[a-f0-9]{40}$ ]] || exit 64
+
+app=/opt/sinz-edge
+manifest="/etc/sinz-engine-release/manifests/${venue}.txt"
+service=sinz-live-fetch.service
+repository=https://github.com/sinz-collab/kyotei-ai-data.git
+[[ -f $manifest && -x $app/.venv/bin/python ]] || { echo 'venue not enabled' >&2; exit 65; }
+
+# Only start within the conservative post-race maintenance window.
+hour=$(TZ=Asia/Tokyo date +%H)
+(( 10#$hour >= 23 || 10#$hour < 6 )) || { echo 'maintenance window closed (23:00-06:00 JST)' >&2; exit 75; }
+systemctl is-active --quiet "$service" || { echo 'LIVE service not active' >&2; exit 75; }
+
+exec 9>/run/lock/sinz-engine-release.lock
+flock -n 9 || { echo 'another engine release is running' >&2; exit 75; }
+work=$(mktemp -d /var/tmp/sinz-engine-release.XXXXXXXX)
+backup="$app/backups/engine-release-${venue}-$(date -u +%Y%m%dT%H%M%SZ)"
+installed=0
+rollback() {
+  if (( installed )); then
+    echo 'reverting engine files' >&2
+    while IFS= read -r relative; do
+      [[ -n $relative ]] || continue
+      if [[ -f $backup/files/$relative ]]; then
+        install -m 0644 "$backup/files/$relative" "$app/$relative"
+      elif [[ -f $backup/new/$relative ]]; then
+        rm -f -- "$app/$relative"
+      fi
+    done < "$manifest"
+    systemctl restart "$service" || true
+  fi
+}
+cleanup() { rm -rf -- "$work"; }
+trap cleanup EXIT
+trap 'rollback' ERR
+
+git clone --quiet --depth 1 --filter=blob:none --no-checkout --branch main "$repository" "$work/repo"
+actual_sha=$(git -C "$work/repo" rev-parse HEAD)
+[[ $actual_sha == "$requested_sha" ]] || { echo 'main moved; pin a new release SHA' >&2; exit 75; }
+
+install -d -m 0750 "$backup/files" "$backup/new"
+while IFS= read -r relative; do
+  [[ -n $relative ]] || continue
+  # Manifest is installed by root, not taken from the repository commit.
+  [[ $relative =~ ^(engines|automation|scripts)/[a-zA-Z0-9_./-]+$ && $relative != *'..'* ]] || exit 65
+  [[ ! -L $app/$relative ]] || { echo 'symlink destination rejected' >&2; exit 65; }
+  if [[ -d $app/.git ]] && git -c "safe.directory=$app" -C "$app" ls-files --error-unmatch "$relative" >/dev/null 2>&1; then
+    git -c "safe.directory=$app" -C "$app" diff --quiet -- "$relative" || {
+      echo "local modifications exist: $relative" >&2
+      exit 75
+    }
+  fi
+  git -C "$work/repo" cat-file -e "${requested_sha}:${relative}" || exit 65
+  install -d -m 0755 "$work/stage/$(dirname "$relative")" "$backup/files/$(dirname "$relative")" "$backup/new/$(dirname "$relative")"
+  git -C "$work/repo" show "${requested_sha}:${relative}" > "$work/stage/$relative"
+  if [[ $relative == *.py ]]; then
+    "$app/.venv/bin/python" -m py_compile "$work/stage/$relative"
+  fi
+  if [[ -f $app/$relative ]]; then
+    cp -p -- "$app/$relative" "$backup/files/$relative"
+  else
+    touch "$backup/new/$relative"
+  fi
+done < "$manifest"
+
+installed=1
+while IFS= read -r relative; do
+  [[ -n $relative ]] || continue
+  install -m 0644 "$work/stage/$relative" "$app/$relative"
+done < "$manifest"
+systemctl restart "$service"
+systemctl is-active --quiet "$service"
+installed=0
+printf 'engine_release_success venue=%s sha=%s backup=%s\n' "$venue" "$requested_sha" "$backup"

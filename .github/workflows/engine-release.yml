@@ -1,0 +1,72 @@
+name: Engine release to VPS
+
+on:
+  push:
+    branches:
+      - 'engine-deploy/**'
+  workflow_dispatch:
+    inputs:
+      venue:
+        description: 'Allowlisted venue'
+        required: true
+        type: choice
+        options: [tokoname]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engine-release-vps
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: engine-release
+    steps:
+      - name: Pin main commit and venue
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VENUE: ${{ inputs.venue }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = push ]; then
+            venue="${REF_NAME#engine-deploy/}"
+          else
+            venue="$INPUT_VENUE"
+          fi
+          case "$venue" in tokoname) ;; *) exit 64 ;; esac
+          main_sha="$(git ls-remote https://github.com/sinz-collab/kyotei-ai-data.git refs/heads/main | cut -f1)"
+          [ "$CURRENT_SHA" = "$main_sha" ] || {
+            echo 'Deployment must point to current main HEAD' >&2
+            exit 75
+          }
+          echo "VENUE=$venue" >> "$GITHUB_ENV"
+          echo "DEPLOY_SHA=$main_sha" >> "$GITHUB_ENV"
+      - name: Configure restricted VPS key
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.ENGINE_VPS_HOST }}
+          VPS_SSH_KEY: ${{ secrets.ENGINE_VPS_SSH_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.ENGINE_VPS_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          test -n "$VPS_HOST" && test -n "$VPS_SSH_KEY" && test -n "$VPS_KNOWN_HOSTS"
+          install -d -m 0700 "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/engine-release-key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 0600 "$HOME/.ssh/engine-release-key" "$HOME/.ssh/known_hosts"
+      - name: Deploy allowlisted engine files
+        shell: bash
+        env:
+          VPS_HOST: ${{ secrets.ENGINE_VPS_HOST }}
+        run: |
+          set -euo pipefail
+          ssh -i "$HOME/.ssh/engine-release-key" \
+            -o BatchMode=yes -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
+            "sinz-engine-gateway@$VPS_HOST" "apply $VENUE $DEPLOY_SHA"
