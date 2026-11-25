@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+[[ $EUID -eq 0 && $# -eq 2 ]] || { echo 'root and venue SHA required' >&2; exit 64; }
+venue=$1
+requested_sha=$2
+[[ $venue =~ ^[a-z][a-z0-9_-]{1,24}$ && $requested_sha =~ ^[a-f0-9]{40}$ ]] || exit 64
+
+app=/opt/sinz-edge
+manifest="/etc/sinz-engine-release/manifests/${venue}.txt"
+state="/etc/sinz-engine-release/state/${venue}.tsv"
+service=sinz-live-fetch.service
+repository=https://github.com/sinz-collab/kyotei-ai-data.git
+[[ -f $manifest && -f $state && -x $app/.venv/bin/python ]] || { echo 'venue not enabled' >&2; exit 65; }
+[[ $(stat -c '%U:%G:%a' "$manifest") == root:root:644 ]] || { echo 'unsafe manifest ownership or mode' >&2; exit 65; }
+[[ $(stat -c '%U:%G:%a' "$state") == root:root:600 ]] || { echo 'unsafe state ownership or mode' >&2; exit 65; }
+
+# Only start within the conservative post-race maintenance window.
+hour=$(TZ=Asia/Tokyo date +%H)
+(( 10#$hour >= 23 || 10#$hour < 6 )) || { echo 'maintenance window closed (23:00-06:00 JST)' >&2; exit 75; }
+systemctl is-active --quiet "$service" || { echo 'LIVE service not active' >&2; exit 75; }
+
+exec 9>/run/lock/sinz-engine-release.lock
+flock -n 9 || { echo 'another engine release is running' >&2; exit 75; }
+work=$(mktemp -d /var/tmp/sinz-engine-release.XXXXXXXX)
+backup="$app/backups/engine-release-${venue}-$(date -u +%Y%m%dT%H%M%SZ)"
+[[ $(realpath -m -- "$app/backups") == "$app"/* ]] || { echo 'unsafe backup path' >&2; exit 65; }
+installed=0
+rollback() {
+  if (( installed )); then
+    echo 'reverting engine files' >&2
+    for relative in "${paths[@]}"; do
+      if [[ -f $backup/files/$relative ]]; then
+        cp -a -- "$backup/files/$relative" "$app/$relative" || true
+      elif [[ -f $backup/new/$relative ]]; then
+        rm -f -- "$app/$relative"
+      fi
+    done
+    systemctl restart "$service" || true
+  fi
+}
+cleanup() { rm -rf -- "$work"; }
+trap cleanup EXIT
+trap 'rollback' ERR
+
+git clone --quiet --depth 1 --filter=blob:none --no-checkout --branch main "$repository" "$work/repo"
+actual_sha=$(git -C "$work/repo" rev-parse HEAD)
+[[ $actual_sha == "$requested_sha" ]] || { echo 'main moved; pin a new release SHA' >&2; exit 75; }
+
+mapfile -t paths < "$manifest"
+[[ ${#paths[@]} -gt 0 ]] || { echo 'empty manifest' >&2; exit 65; }
+declare -A expected=()
+while IFS=$'\t' read -r hash relative extra; do
+  [[ -n $hash && -n $relative && -z ${extra:-} && -z ${expected[$relative]+x} ]] || {
+    echo 'invalid release state' >&2; exit 65;
+  }
+  [[ $hash == - || $hash =~ ^[a-f0-9]{64}$ ]] || { echo 'invalid release state hash' >&2; exit 65; }
+  expected[$relative]=$hash
+done < "$state"
+
+# Complete all validation and staging before creating a backup or changing the
+# live tree. State hashes detect manual edits independently of Git metadata.
+declare -A deploy_mode=()
+for relative in "${paths[@]}"; do
+  [[ -n $relative && $relative != *$'\r'* ]] || { echo 'invalid manifest line' >&2; exit 65; }
+  [[ $relative =~ ^(engines|automation|scripts)/[a-zA-Z0-9_./-]+$ && $relative != *'..'* ]] || exit 65
+  [[ -n ${expected[$relative]+x} ]] || { echo "missing release state: $relative" >&2; exit 65; }
+  target=$(realpath -m -- "$app/$relative")
+  [[ $target == "$app"/* && ! -L $app/$relative ]] || { echo "unsafe destination: $relative" >&2; exit 65; }
+  if [[ ${expected[$relative]} == - ]]; then
+    [[ ! -e $target ]] || { echo "unmanaged file exists: $relative" >&2; exit 75; }
+  else
+    [[ -f $target ]] || { echo "managed file missing: $relative" >&2; exit 75; }
+    current_hash=$(sha256sum -- "$target" | cut -d' ' -f1)
+    [[ $current_hash == "${expected[$relative]}" ]] || {
+      echo "local modifications exist: $relative" >&2; exit 75;
+    }
+  fi
+  git -C "$work/repo" cat-file -e "${requested_sha}:${relative}" || exit 65
+  mode=$(git -C "$work/repo" ls-tree "$requested_sha" -- "$relative" | awk '{print $1}')
+  case "$mode" in 100644) deploy_mode[$relative]=0644 ;; 100755) deploy_mode[$relative]=0755 ;; *) exit 65 ;; esac
+  install -d -m 0755 "$work/stage/$(dirname "$relative")"
+  git -C "$work/repo" show "${requested_sha}:${relative}" > "$work/stage/$relative"
+  if [[ $relative == *.py ]]; then
+    "$app/.venv/bin/python" -m py_compile "$work/stage/$relative"
+  fi
+done
+
+install -d -m 0750 "$backup/files" "$backup/new"
+for relative in "${paths[@]}"; do
+  install -d -m 0755 "$backup/files/$(dirname "$relative")" "$backup/new/$(dirname "$relative")"
+  if [[ -f $app/$relative ]]; then
+    cp -a -- "$app/$relative" "$backup/files/$relative"
+  else
+    touch "$backup/new/$relative"
+  fi
+done
+
+installed=1
+for relative in "${paths[@]}"; do
+  install -m "${deploy_mode[$relative]}" "$work/stage/$relative" "$app/$relative"
+done
+systemctl restart "$service"
+systemctl is-active --quiet "$service"
+
+state_tmp=$(mktemp /etc/sinz-engine-release/state/."${venue}".XXXXXXXX)
+for relative in "${paths[@]}"; do
+  printf '%s\t%s\n' "$(sha256sum -- "$app/$relative" | cut -d' ' -f1)" "$relative" >> "$state_tmp"
+done
+chown root:root "$state_tmp"
+chmod 0600 "$state_tmp"
+mv -f -- "$state_tmp" "$state"
+installed=0
+printf 'engine_release_success venue=%s sha=%s backup=%s\n' "$venue" "$requested_sha" "$backup"
