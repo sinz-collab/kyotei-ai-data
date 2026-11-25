@@ -22,8 +22,14 @@ the current main SHA**. This triggers the workflow. `workflow_dispatch` is also
 available from GitHub Actions. The workflow rejects non-main commits.
 
 The VPS script refuses to run outside 23:00–06:00 JST, accepts only a trusted,
-root-installed venue manifest, stages files before copying, backs up originals,
-restarts only `sinz-live-fetch.service`, and rolls back if deployment fails.
+root-installed venue manifest, and records a root-owned checksum baseline during
+bootstrap. A release refuses to overwrite any file changed outside the gateway,
+stages and compiles files before copying, backs up originals, restarts only
+`sinz-live-fetch.service`, and rolls back if deployment or the health check fails.
+
+The installer adds an sshd `Match User` restriction and reloads (does not
+restart) SSH after `sshd -t` succeeds. It does not modify the existing morning
+data account, key, authorized keys, or forced command.
 
 Do not configure secrets or publish a deploy branch until the VPS bootstrap is
 completed. Other venues require an administrator-installed allowlist manifest

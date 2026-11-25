@@ -56,6 +56,10 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$VPS_HOST" && test -n "$VPS_SSH_KEY" && test -n "$VPS_KNOWN_HOSTS"
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]] || {
+            echo 'ENGINE_VPS_HOST has an invalid format' >&2
+            exit 64
+          }
           install -d -m 0700 "$HOME/.ssh"
           printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/engine-release-key"
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
@@ -70,3 +74,7 @@ jobs:
             -o BatchMode=yes -o IdentitiesOnly=yes \
             -o StrictHostKeyChecking=yes -o ConnectTimeout=10 \
             "sinz-engine-gateway@$VPS_HOST" "apply $VENUE $DEPLOY_SHA"
+      - name: Remove runner SSH material
+        if: always()
+        shell: bash
+        run: rm -f -- "$HOME/.ssh/engine-release-key" "$HOME/.ssh/known_hosts"
