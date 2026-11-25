@@ -33,9 +33,17 @@ def test_six_month_course_research_option():
  baseline=predict(p,ROOT/'models')
  assert baseline==predict(p,ROOT/'models',course_6m_strength=0.0)
  assert baseline==predict(p,ROOT/'models',course_6m_strength=1.0)
+ assert baseline==predict(p,ROOT/'models',course_6m_strength=1.0,course_6m_mode='places')
+ assert baseline==predict(p,ROOT/'models',course_6m_strength=1.0,course_6m_mode='entry_only')
  try:
   predict(p,ROOT/'models',course_6m_strength=-0.1)
  except ValueError:
   pass
  else:
   assert False, 'invalid course strength should be rejected'
+ try:
+  predict(p,ROOT/'models',course_6m_mode='unrecognized')
+ except ValueError:
+  pass
+ else:
+  assert False, 'invalid course mode should be rejected'
