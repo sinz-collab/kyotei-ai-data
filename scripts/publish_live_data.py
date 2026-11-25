@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -29,6 +30,12 @@ TOKONAME_LANE1_FLY_KEYS = (
     "lane1FlyStage",
     "lane1FlyDetail",
 )
+
+
+def venue_slug(value: str) -> str:
+    if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", value):
+        raise argparse.ArgumentTypeError(f"invalid venue slug: {value}")
+    return value
 
 
 def run(command: list[str], cwd: Path) -> subprocess.CompletedProcess[str]:
@@ -425,7 +432,7 @@ def main() -> int:
     parser.add_argument(
         "--venue",
         action="append",
-        choices=("ashiya", "fukuoka", "karatsu", "naruto", "tokoname", "wakamatsu", "kiryu"),
+        type=venue_slug,
         help="Publish only the selected venue; repeat for an atomic multi-venue run.",
     )
     args = parser.parse_args()

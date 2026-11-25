@@ -29,12 +29,14 @@ from select_target_races import select_target_races
 from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
 from live_fetch_once import (
+    changed_live_venues,
     apply_naruto_live_prediction,
     changed_priority_display_venues,
     fukuoka_display_data_changed,
     publish_priority_display_data,
     shimonoseki_final_inputs_complete,
     venue_batches_by_priority,
+    wait_for_publisher_lock,
 )
 
 AUTOMATION = Path(__file__).resolve().parents[1] / "automation"
@@ -103,6 +105,41 @@ class ShimonosekiFinalTriggerTests(unittest.TestCase):
 
 
 class FukuokaImmediatePublishTests(unittest.TestCase):
+    def test_prediction_generation_waits_for_the_git_publisher_lock(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            lock_path = Path(temporary) / "publisher.lock"
+            with process_lock(lock_path) as acquired:
+                self.assertTrue(acquired)
+
+                async def blocked() -> None:
+                    async with wait_for_publisher_lock(
+                        lock_path,
+                        attempts=1,
+                        delay_seconds=0,
+                    ):
+                        self.fail("the shared publisher lock must not overlap")
+
+                with self.assertRaises(TimeoutError):
+                    asyncio.run(blocked())
+
+            async def available() -> None:
+                async with wait_for_publisher_lock(
+                    lock_path,
+                    attempts=1,
+                    delay_seconds=0,
+                ):
+                    return
+
+            asyncio.run(available())
+
+    def test_all_changed_venues_are_immediately_publishable(self) -> None:
+        changed = changed_live_venues([
+            {"target": {"venue": "heiwajima"}, "changed": True},
+            {"target": {"venue": "biwako"}, "prediction_changed": True},
+            {"target": {"venue": "omura"}, "changed": False},
+        ])
+        self.assertEqual(changed, ["biwako", "heiwajima"])
+
     def test_changed_priority_venues_use_one_publisher_process(self) -> None:
         process = Mock(returncode=0)
         process.communicate = AsyncMock(return_value=(b"published", b""))

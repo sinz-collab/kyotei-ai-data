@@ -7,6 +7,7 @@ import os
 import random
 import sys
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -1077,6 +1078,39 @@ def changed_priority_display_venues(
     )
 
 
+def changed_live_venues(results: list[dict[str, Any]]) -> list[str]:
+    """Return every venue whose public LIVE tree may need publishing."""
+    return sorted(
+        {
+            str(result.get("target", {}).get("venue"))
+            for result in results
+            if result.get("target", {}).get("venue")
+            and (
+                result.get("changed") is True
+                or result.get("prediction_changed") is True
+            )
+        }
+    )
+
+
+@asynccontextmanager
+async def wait_for_publisher_lock(
+    lock_path: Path,
+    *,
+    attempts: int = 60,
+    delay_seconds: float = 0.5,
+):
+    """Serialize prediction writes with both scheduled and immediate Git publishes."""
+    for attempt in range(1, attempts + 1):
+        with process_lock(lock_path) as acquired:
+            if acquired:
+                yield
+                return
+        if attempt < attempts:
+            await asyncio.sleep(delay_seconds)
+    raise TimeoutError("live publisher lock remained busy")
+
+
 def venue_batches_by_priority(
     by_venue: dict[str, list[dict[str, Any]]],
     priority_venues: str | set[str],
@@ -1192,6 +1226,8 @@ async def run_once(
     for target in targets:
         by_venue[target["venue"]].append(target)
     semaphore = asyncio.Semaphore(config["max_parallel_venues"])
+    publisher_mutation_lock = asyncio.Lock()
+    publish_lock_path = resolve_root(config, "publish_lock_path")
     throttle = DomainThrottle(float(config["domain_interval_seconds"]))
     results = []
 
@@ -1223,91 +1259,36 @@ async def run_once(
                                     / target["venue"]
                                     / f"{target['race_no']:02d}"
                                 )
-                                tokoname_staging = stage_tokoname_results(
-                                    config,
-                                    today,
-                                    target_root,
-                                    [result],
-                                    logger,
-                                )
-                                if tokoname_staging is not None:
-                                    result["tokoname_prediction_staging"] = tokoname_staging
-                                    if (
-                                        tokoname_staging.get("written") is True
-                                        and tokoname_staging.get("engine_invoked_races")
-                                        and target_root == resolve_root(config, "live_output_root")
-                                    ):
-                                        result["tokoname_immediate_publish"] = (
-                                            await publish_priority_display_data(
-                                                logger,
-                                                ["tokoname"],
-                                            )
+                                # All prediction generators write into the publisher
+                                # repository.  Share its process lock so scheduled Git
+                                # publishing can never commit a half-written prediction.
+                                async with publisher_mutation_lock:
+                                    async with wait_for_publisher_lock(publish_lock_path):
+                                        tokoname_staging = stage_tokoname_results(
+                                            config, today, target_root, [result], logger
                                         )
-                                await apply_heiwajima_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                if await apply_karatsu_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                ):
-                                    result["prediction_changed"] = True
-                                if await apply_kiryu_live_prediction(target, race_dir, result, logger):
-                                    result["prediction_changed"] = True
-                                naruto_prediction_changed = await apply_naruto_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                if naruto_prediction_changed:
-                                    result["prediction_changed"] = True
-                                await apply_ashiya_live_data(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                await apply_toda_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                await apply_wakamatsu_live_prediction(
-                                    target,
-                                    result,
-                                    logger,
-                                )
-                                await apply_biwako_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                await apply_fukuoka_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                await apply_omura_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
-                                await apply_omura_live_odds(target, race_dir, logger)
-                                await apply_shimonoseki_live_prediction(
-                                    target,
-                                    race_dir,
-                                    result,
-                                    logger,
-                                )
+                                        if tokoname_staging is not None:
+                                            result["tokoname_prediction_staging"] = tokoname_staging
+                                            if (
+                                                tokoname_staging.get("written") is True
+                                                and tokoname_staging.get("engine_invoked_races")
+                                            ):
+                                                result["prediction_changed"] = True
+                                        await apply_heiwajima_live_prediction(target, race_dir, result, logger)
+                                        if await apply_karatsu_live_prediction(target, race_dir, result, logger):
+                                            result["prediction_changed"] = True
+                                        if await apply_kiryu_live_prediction(target, race_dir, result, logger):
+                                            result["prediction_changed"] = True
+                                        if await apply_naruto_live_prediction(target, race_dir, result, logger):
+                                            result["prediction_changed"] = True
+                                        await apply_ashiya_live_data(target, race_dir, result, logger)
+                                        await apply_toda_live_prediction(target, race_dir, result, logger)
+                                        await apply_wakamatsu_live_prediction(target, result, logger)
+                                        await apply_biwako_live_prediction(target, race_dir, result, logger)
+                                        await apply_fukuoka_live_prediction(target, race_dir, result, logger)
+                                        await apply_omura_live_prediction(target, race_dir, result, logger)
+                                        await apply_omura_live_odds(target, race_dir, logger)
+                                        await apply_shimonoseki_live_prediction(target, race_dir, result, logger)
                         finally:
                             await context.close()
 
@@ -1339,26 +1320,15 @@ async def run_once(
     ]
     if tokoname_staging:
         response["tokoname_prediction_staging"] = tokoname_staging
-    configured_priority_venues = config.get("priority_venues")
-    if configured_priority_venues is None:
-        configured_priority_venues = [config.get("priority_venue")]
-    priority_venues = {
-        str(venue).strip()
-        for venue in configured_priority_venues
-        if str(venue or "").strip()
-    }
-    changed_priority_venues = changed_priority_display_venues(
-        results,
-        priority_venues,
-    )
+    changed_venues = changed_live_venues(results)
     if (
         config.get("priority_immediate_publish") is True
         and target_root == resolve_root(config, "live_output_root")
-        and changed_priority_venues
+        and changed_venues
     ):
         response["priority_immediate_publish"] = await publish_priority_display_data(
             logger,
-            changed_priority_venues,
+            changed_venues,
         )
     return response
 
