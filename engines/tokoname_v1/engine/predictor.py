@@ -305,14 +305,34 @@ def sab_grade(p1,scores,data_complete=True):
     score=max(0,min(100,round(score)))
     return ('S' if score>=80 else 'A' if score>=65 else 'B'),score
 
-def predict(payload,model_dir):
+def predict(payload,model_dir,*,st_blend_weight=0.0):
+    """Predict with an optional research-only neutral-ST model blend.
+
+    The default of zero preserves the deployed v1.6 calculation exactly.
+    Do not enable the experimental blend in production without holdout tests.
+    """
+    if not 0.0 <= st_blend_weight <= 1.0:
+        raise ValueError('st_blend_weight must be between 0 and 1')
     X,st_ranks,et_ranks=build_features(payload)
     features=joblib.load(Path(model_dir)/FEATURES_FILE)
     models={k:joblib.load(Path(model_dir)/v) for k,v in MODEL_FILES.items()}
-    raw={k:m.predict_proba(X[features])[:,1] for k,m in models.items()}
-    exact=[isotonic_triplet(*v) for v in zip(raw['win'],raw['top2'],raw['top3'])]
-    p1=normalize([x[0] for x in exact]); p2=normalize([x[1]-x[0] for x in exact]); p3=normalize([x[2]-x[1] for x in exact])
-    p1,p2,p3,reasons=apply_corrections(payload,p1,p2,p3,st_ranks,et_ranks)
+    def evaluate(frame):
+        raw={k:m.predict_proba(frame[features])[:,1] for k,m in models.items()}
+        exact=[isotonic_triplet(*v) for v in zip(raw['win'],raw['top2'],raw['top3'])]
+        a=normalize([x[0] for x in exact]); b=normalize([x[1]-x[0] for x in exact]); c=normalize([x[2]-x[1] for x in exact])
+        return apply_corrections(payload,a,b,c,st_ranks,et_ranks)
+    p1,p2,p3,reasons=evaluate(X)
+    if st_blend_weight:
+        neutral=X.copy()
+        for name in ('st','st_mean_in_race','race_st_mean','race_st_min','race_st_max'):
+            neutral[name]=0.20
+        neutral['st_diff_from_race_mean']=0.0
+        neutral['st_rank_in_race']=3.5
+        n1,n2,n3,_=evaluate(neutral)
+        weight=st_blend_weight
+        p1=[(1-weight)*a+weight*b for a,b in zip(p1,n1)]
+        p2=[(1-weight)*a+weight*b for a,b in zip(p2,n2)]
+        p3=[(1-weight)*a+weight*b for a,b in zip(p3,n3)]
     scores=ticket_scores(p1,p2,p3); main,dev,upset=select_tickets(scores,p1,p2,p3)
     complete_count=sum([bool(payload.get('direct')),bool(payload.get('exhibition')),bool(payload.get('original_exhibition')),bool(payload['race'].get('setsukan')),bool(payload.get('tide'))])
     grade,sab_score=sab_grade(p1,scores,complete_count>=4)
