@@ -34,6 +34,8 @@ COMMANDS = {
     "fukuoka": ("run_fukuoka_v1.py", "--stage", "preliminary"),
     "omura": ("apply_omura_v1.py",),
     "shimonoseki": ("run_shimonoseki_v6_1.py", "--stage", "preliminary"),
+    "wakamatsu": ("apply_wakamatsu_v2_3.py",),
+    "karatsu": ("run_karatsu_official.py",),
 }
 
 SUPPLEMENT_FIELDS = (
