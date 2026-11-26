@@ -1,8 +1,9 @@
 """Fail-closed race-calendar gate for the shared SINZ LIVE service.
 
-The publisher's same-day venue manifest must be current, complete and past
-every active venue's last deadline. Filesystem locks are handled separately
-by the privileged deployment wrapper.
+The publisher's venue manifest must be current and complete. Releases are
+allowed before every active venue's first deadline, or after every active
+venue's last deadline, with a quiet buffer. Filesystem locks are handled
+separately by the privileged deployment wrapper.
 """
 from __future__ import annotations
 
@@ -50,6 +51,7 @@ def validate_safe_window(manifest: dict, now: datetime, quiet_minutes: int = 45)
     if not active:
         # A missing morning publication must not be mistaken for a rest day.
         return False, "no_verified_open_venue"
+    first = None
     last = None
     for venue in active:
         if venue.get("date") != date.isoformat() or venue.get("entryCount") != 12:
@@ -70,8 +72,15 @@ def validate_safe_window(manifest: dict, now: datetime, quiet_minutes: int = 45)
             except (KeyError, TypeError, ValueError):
                 return False, "invalid_race_deadline"
             deadline = datetime.combine(date, hm, tzinfo=JST)
+            if first is None or deadline < first:
+                first = deadline
             if last is None or deadline > last:
                 last = deadline
+    # The shared LIVE service restarts during deployment. Its quiet window
+    # must cover every active venue, not just the requested engine's venue.
+    # Never use yesterday's timetable to infer today's pre-race safety.
+    if date == now.date() and first is not None and now <= first - timedelta(minutes=quiet_minutes):
+        return True, "all_venues_before_first_deadline_and_quiet"
     if last is None or now < last + timedelta(minutes=quiet_minutes):
         return False, "races_not_safely_finished"
     return True, "all_races_finished_and_quiet"
