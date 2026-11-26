@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from automation.official_morning import atomic_json
 from automation.publish_official_stages import update_index_files
-from engines.tokoname_v1.tokoname_site_pipeline import (
-    apply_tokoname_preliminary_predictions,
-    tokoname_native_predictions_are_complete,
-)
+from automation.build_site_data import tokoname_native_predictions_are_complete
+from engines.tokoname_v1.tokoname_site_pipeline import apply_tokoname_preliminary_predictions
 
 
 def run(date: str, data_root: Path) -> str:
