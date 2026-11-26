@@ -664,7 +664,7 @@ class TokonameRuntimeStagingTests(unittest.TestCase):
         optional_original_pending["items"]["original_exhibition"]["complete"] = False
         optional_original_pending["items"]["original_exhibition"]["status"] = "pending"
         with patch(
-            "stage_tokoname_predictions.stage_tokoname_predictions"
+            "live_fetch_once.run_tokoname_prediction_worker"
         ) as staging:
             staging.return_value = {"status": "updated", "written": True}
             result = stage_tokoname_results(
@@ -805,7 +805,7 @@ class TokonameMorningStagingHookTests(unittest.TestCase):
             }
 
             with patch(
-                "stage_tokoname_predictions.stage_tokoname_predictions",
+                "live_fetch_once.run_tokoname_prediction_worker",
                 return_value=report,
             ) as staging:
                 result = stage_tokoname_preliminary_after_morning_sync(
@@ -822,10 +822,13 @@ class TokonameMorningStagingHookTests(unittest.TestCase):
 
             self.assertEqual(result, report)
             staging.assert_called_once_with(
+                {
+                    "morning_data_root": str(morning_root),
+                    "live_output_root": str(live_root),
+                },
                 DATE,
-                morning_root=morning_root,
-                live_root=live_root,
-                output_root=output_root,
+                live_root,
+                output_root,
             )
 
 

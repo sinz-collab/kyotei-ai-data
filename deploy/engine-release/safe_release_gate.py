@@ -1,9 +1,9 @@
-"""Fail-closed race-calendar gate for the shared SINZ LIVE service.
+"""Fail-closed race-calendar gate for engine release.
 
-The publisher's venue manifest must be current and complete. Releases are
-allowed before every active venue's first deadline, or after every active
-venue's last deadline, with a quiet buffer. Filesystem locks are handled
-separately by the privileged deployment wrapper.
+The publisher's venue manifest must be current and complete. Legacy callers can
+still require a system-wide quiet window. Venue-scoped callers use only the
+requested venue's verified schedule, with the same quiet buffer. Filesystem
+locks are handled separately by the privileged deployment wrapper.
 """
 from __future__ import annotations
 
@@ -16,7 +16,12 @@ from zoneinfo import ZoneInfo
 JST = ZoneInfo("Asia/Tokyo")
 
 
-def validate_safe_window(manifest: dict, now: datetime, quiet_minutes: int = 45) -> tuple[bool, str]:
+def validate_safe_window(
+    manifest: dict,
+    now: datetime,
+    quiet_minutes: int = 45,
+    venue: str | None = None,
+) -> tuple[bool, str]:
     if now.tzinfo is None or quiet_minutes < 30:
         return False, "invalid_time_or_quiet_period"
     now = now.astimezone(JST)
@@ -47,16 +52,24 @@ def validate_safe_window(manifest: dict, now: datetime, quiet_minutes: int = 45)
     names = [v.get("slug") for v in venues]
     if len(set(names)) != len(names) or any(not v for v in names):
         return False, "invalid_venue_list"
+    target = None
+    if venue is not None:
+        matches = [item for item in venues if item.get("slug") == venue]
+        if len(matches) != 1:
+            return False, "target_venue_missing"
+        target = matches[0]
+        if target.get("open") not in (True, False):
+            return False, "target_venue_state_unknown"
     active = [v for v in venues if v.get("open") is True]
-    if not active:
+    if not active and target is None:
         # A missing morning publication must not be mistaken for a rest day.
         return False, "no_verified_open_venue"
     first = None
     last = None
-    for venue in active:
-        if venue.get("date") != date.isoformat() or venue.get("entryCount") != 12:
+    for active_venue in active:
+        if active_venue.get("date") != date.isoformat() or active_venue.get("entryCount") != 12:
             return False, "active_venue_not_verified"
-        deadlines = venue.get("deadlines")
+        deadlines = active_venue.get("deadlines")
         if not isinstance(deadlines, list) or len(deadlines) != 12:
             return False, "race_deadlines_incomplete"
         seen = set()
@@ -72,28 +85,47 @@ def validate_safe_window(manifest: dict, now: datetime, quiet_minutes: int = 45)
             except (KeyError, TypeError, ValueError):
                 return False, "invalid_race_deadline"
             deadline = datetime.combine(date, hm, tzinfo=JST)
-            if first is None or deadline < first:
-                first = deadline
-            if last is None or deadline > last:
-                last = deadline
-    # The shared LIVE service restarts during deployment. Its quiet window
-    # must cover every active venue, not just the requested engine's venue.
+            if target is None or active_venue.get("slug") == target.get("slug"):
+                if first is None or deadline < first:
+                    first = deadline
+                if last is None or deadline > last:
+                    last = deadline
+    if target is not None and target.get("open") is False:
+        if target.get("availabilityReason") != "not_scheduled":
+            return False, "target_venue_availability_unverified"
+        return True, "target_venue_not_running"
     # Never use yesterday's timetable to infer today's pre-race safety.
     if date == now.date() and first is not None and now <= first - timedelta(minutes=quiet_minutes):
-        return True, "all_venues_before_first_deadline_and_quiet"
+        reason = (
+            "target_venue_before_first_deadline_and_quiet"
+            if target
+            else "all_venues_before_first_deadline_and_quiet"
+        )
+        return True, reason
     if last is None or now < last + timedelta(minutes=quiet_minutes):
         return False, "races_not_safely_finished"
-    return True, "all_races_finished_and_quiet"
+    reason = (
+        "target_venue_finished_and_quiet"
+        if target
+        else "all_races_finished_and_quiet"
+    )
+    return True, reason
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--quiet-minutes", type=int, default=45)
+    parser.add_argument("--venue")
     args = parser.parse_args()
     try:
         data = json.loads(args.manifest.read_text(encoding="utf-8"))
-        allowed, reason = validate_safe_window(data, datetime.now(JST), args.quiet_minutes)
+        allowed, reason = validate_safe_window(
+            data,
+            datetime.now(JST),
+            args.quiet_minutes,
+            args.venue,
+        )
     except (OSError, ValueError, json.JSONDecodeError):
         allowed, reason = False, "manifest_unavailable"
     print(f"engine_release_gate={'allow' if allowed else 'deny'} reason={reason}")

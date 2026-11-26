@@ -56,6 +56,70 @@ class SafeReleaseTests(unittest.TestCase):
         self.assertEqual(validate_safe_window(self.data, self.now)[1],
                          "races_not_safely_finished")
 
+    def test_tokoname_release_allows_other_venue_to_keep_running(self):
+        self.now = self.now.replace(hour=9, minute=0)
+        self.data = sample(self.now)
+        self.data["venues"][1] = {
+            "slug": "karatsu", "open": True,
+            "date": self.now.strftime("%Y-%m-%d"), "entryCount": 12,
+            "deadlines": [{"race": i, "deadline": f"{8+i//2:02d}:{(i%2)*30:02d}"}
+                          for i in range(1, 13)],
+        }
+        self.assertEqual(
+            validate_safe_window(self.data, self.now, venue="tokoname"),
+            (True, "target_venue_before_first_deadline_and_quiet"),
+        )
+
+    def test_finished_tokoname_allows_other_venue_to_keep_running(self):
+        self.data["venues"][1] = {
+            "slug": "kiryu", "open": True,
+            "date": self.now.strftime("%Y-%m-%d"), "entryCount": 12,
+            "deadlines": [{"race": i, "deadline": f"{17+i//2:02d}:{(i%2)*30:02d}"}
+                          for i in range(1, 13)],
+        }
+        self.assertEqual(
+            validate_safe_window(self.data, self.now, venue="tokoname"),
+            (True, "target_venue_finished_and_quiet"),
+        )
+
+    def test_tokoname_release_rejected_during_tokoname_racing(self):
+        self.now = self.now.replace(hour=12, minute=0)
+        self.data = sample(self.now)
+        self.assertEqual(
+            validate_safe_window(self.data, self.now, venue="tokoname")[1],
+            "races_not_safely_finished",
+        )
+
+    def test_closed_tokoname_allows_release_while_other_venue_runs(self):
+        self.now = self.now.replace(hour=12, minute=0)
+        self.data = sample(self.now)
+        self.data["venues"][0]["open"] = False
+        self.data["venues"][0]["availabilityReason"] = "not_scheduled"
+        self.data["venues"][1] = {
+            "slug": "karatsu", "open": True,
+            "date": self.now.strftime("%Y-%m-%d"), "entryCount": 12,
+            "deadlines": [{"race": i, "deadline": f"{8+i//2:02d}:{(i%2)*30:02d}"}
+                          for i in range(1, 13)],
+        }
+        self.assertEqual(
+            validate_safe_window(self.data, self.now, venue="tokoname"),
+            (True, "target_venue_not_running"),
+        )
+
+    def test_closed_tokoname_without_not_scheduled_proof_is_rejected(self):
+        self.data["venues"][0]["open"] = False
+        self.assertEqual(
+            validate_safe_window(self.data, self.now, venue="tokoname")[1],
+            "target_venue_availability_unverified",
+        )
+
+    def test_tokoname_target_must_exist_and_have_known_state(self):
+        self.data["venues"][0]["slug"] = "missing"
+        self.assertEqual(
+            validate_safe_window(self.data, self.now, venue="tokoname")[1],
+            "target_venue_missing",
+        )
+
     def test_upcoming_race_rejected(self):
         self.now = self.now.replace(hour=15, minute=45)
         self.data = sample(self.now)

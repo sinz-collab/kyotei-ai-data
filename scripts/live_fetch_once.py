@@ -5,6 +5,7 @@ import asyncio
 import json
 import os
 import random
+import subprocess
 import sys
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -52,9 +53,70 @@ NARUTO_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_naruto_v5.py"
 NARUTO_DATA_ROOT = PUBLISHER_REPO / "data"
 KIRYU_LIVE_RUNNER = PUBLISHER_REPO / "automation" / "run_kiryu_v1.py"
 KIRYU_DATA_ROOT = PUBLISHER_REPO / "data"
+TOKONAME_PREDICTION_WORKER = ROOT / "scripts" / "tokoname_prediction_worker.py"
 
 SHIMONOSEKI_LIVE_APPLIER = PUBLISHER_REPO / "automation" / "apply_shimonoseki_live_v6_1.py"
 SHIMONOSEKI_DATA_ROOT = PUBLISHER_REPO / "data"
+
+
+def run_tokoname_prediction_worker(
+    config: dict[str, Any],
+    target_date: str,
+    live_root: Path,
+    output_root: Path,
+    *,
+    race_numbers: list[int] | None = None,
+) -> dict[str, Any]:
+    """Run one Tokoname prediction in a fresh interpreter.
+
+    Keeping all Tokoname engine imports in this child guarantees that the next
+    prediction after an atomic engine release observes the newly installed
+    code and model files.  The child owns the engine lock for its whole run.
+    """
+    command = [
+        sys.executable,
+        str(TOKONAME_PREDICTION_WORKER),
+        "--date",
+        target_date,
+        "--morning-root",
+        str(resolve_root(config, "morning_data_root")),
+        "--live-root",
+        str(live_root),
+        "--output-root",
+        str(output_root),
+        "--lock-path",
+        str(ROOT / "run" / "venues" / "tokoname-engine.lock"),
+    ]
+    if race_numbers:
+        command.extend(("--races", ",".join(str(number) for number in race_numbers)))
+    environment = os.environ.copy()
+    environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONIOENCODING"] = "utf-8"
+    completed = subprocess.run(
+        command,
+        cwd=ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=150,
+        check=False,
+    )
+    try:
+        report = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            "tokoname_worker_invalid_output: "
+            f"exit={completed.returncode} stderr={completed.stderr.strip()}"
+        ) from exc
+    if completed.returncode == 75 and report.get("status") == "busy":
+        return report
+    if completed.returncode != 0:
+        raise RuntimeError(
+            "tokoname_worker_failed: "
+            f"exit={completed.returncode} report={report} stderr={completed.stderr.strip()}"
+        )
+    return report
 
 
 def shimonoseki_final_inputs_complete(
@@ -111,13 +173,11 @@ def stage_tokoname_preliminary_after_morning_sync(
         if not data_path or not (morning_root / data_path).is_file():
             return None
 
-        from stage_tokoname_predictions import stage_tokoname_predictions
-
-        report = stage_tokoname_predictions(
+        report = run_tokoname_prediction_worker(
+            config,
             target_date,
-            morning_root=morning_root,
-            live_root=live_root,
-            output_root=output_root,
+            live_root,
+            output_root,
         )
         if report.get("status") == "preliminary":
             logger.info(
@@ -995,13 +1055,11 @@ def stage_tokoname_results(
     if not race_numbers:
         return None
     try:
-        from stage_tokoname_predictions import stage_tokoname_predictions
-
-        report = stage_tokoname_predictions(
+        report = run_tokoname_prediction_worker(
+            config,
             target_date,
-            morning_root=resolve_root(config, "morning_data_root"),
-            live_root=live_root,
-            output_root=ROOT / "runtime" / "predictions",
+            live_root,
+            ROOT / "runtime" / "predictions",
             race_numbers=race_numbers,
         )
         if report.get("engine_invoked_races"):
@@ -1190,7 +1248,8 @@ async def run_once(
     target_root = output_root or resolve_root(config, "live_output_root")
     manifest = manifest_path or ensure_current_morning_data(config, today, logger)
     if not dry_run:
-        stage_tokoname_preliminary_after_morning_sync(
+        await asyncio.to_thread(
+            stage_tokoname_preliminary_after_morning_sync,
             config,
             today,
             manifest,
@@ -1264,7 +1323,8 @@ async def run_once(
                                 # publishing can never commit a half-written prediction.
                                 async with publisher_mutation_lock:
                                     async with wait_for_publisher_lock(publish_lock_path):
-                                        tokoname_staging = stage_tokoname_results(
+                                        tokoname_staging = await asyncio.to_thread(
+                                            stage_tokoname_results,
                                             config, today, target_root, [result], logger
                                         )
                                         if tokoname_staging is not None:
