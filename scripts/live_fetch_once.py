@@ -1248,7 +1248,8 @@ async def run_once(
     target_root = output_root or resolve_root(config, "live_output_root")
     manifest = manifest_path or ensure_current_morning_data(config, today, logger)
     if not dry_run:
-        stage_tokoname_preliminary_after_morning_sync(
+        await asyncio.to_thread(
+            stage_tokoname_preliminary_after_morning_sync,
             config,
             today,
             manifest,
@@ -1322,7 +1323,8 @@ async def run_once(
                                 # publishing can never commit a half-written prediction.
                                 async with publisher_mutation_lock:
                                     async with wait_for_publisher_lock(publish_lock_path):
-                                        tokoname_staging = stage_tokoname_results(
+                                        tokoname_staging = await asyncio.to_thread(
+                                            stage_tokoname_results,
                                             config, today, target_root, [result], logger
                                         )
                                         if tokoname_staging is not None:
