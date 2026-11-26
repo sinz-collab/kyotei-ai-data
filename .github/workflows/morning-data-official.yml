@@ -183,6 +183,18 @@ jobs:
             git commit -m "data: fill missing official predictions for $TARGET_DATE"
             git push origin HEAD:main
           fi
+      - name: Restore native Tokoname morning predictions
+        if: steps.scope.outputs.active == 'true'
+        run: |
+          set -euo pipefail
+          git pull --rebase origin main
+          python automation/recover_tokoname_morning.py --date "$TARGET_DATE" \
+            | tee work/tokoname-prediction-report.json
+          git add data/manifest.json data/morning_report.json data/venues/tokoname
+          if ! git diff --cached --quiet; then
+            git commit -m "data: publish native Tokoname morning predictions for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
       - name: Configure pinned VPS SSH host
         if: steps.scope.outputs.active == 'true' && github.event_name != 'workflow_run'
         id: vps_setup
