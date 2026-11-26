@@ -11,17 +11,24 @@ manifest="/etc/sinz-engine-release/manifests/${venue}.txt"
 state="/etc/sinz-engine-release/state/${venue}.tsv"
 service=sinz-live-fetch.service
 repository=https://github.com/sinz-collab/kyotei-ai-data.git
+transaction_lib=/usr/local/libexec/sinz-engine-release/file_transaction.sh
 [[ -f $manifest && -f $state && -x $app/.venv/bin/python ]] || { echo 'venue not enabled' >&2; exit 65; }
 [[ $(stat -c '%U:%G:%a' "$manifest") == root:root:644 ]] || { echo 'unsafe manifest ownership or mode' >&2; exit 65; }
 [[ $(stat -c '%U:%G:%a' "$state") == root:root:600 ]] || { echo 'unsafe state ownership or mode' >&2; exit 65; }
+[[ -f $transaction_lib && $(stat -c '%U:%G:%a' "$transaction_lib") == root:root:644 ]] || {
+  echo 'unsafe transaction library' >&2; exit 65;
+}
+source "$transaction_lib"
 
 systemctl is-active --quiet "$service" || { echo 'LIVE service not active' >&2; exit 75; }
+main_pid_before=$(systemctl show --property MainPID --value "$service")
+[[ $main_pid_before =~ ^[1-9][0-9]*$ ]] || { echo 'LIVE MainPID unavailable' >&2; exit 75; }
 
 exec 9>/run/lock/sinz-engine-release.lock
 flock -n 9 || { echo 'another engine release is running' >&2; exit 75; }
 
-# Coordinate with every venue prediction and the shared GitHub publisher.
-# Both paths use the same advisory flock mechanism as the LIVE code.
+# Coordinate only with Tokoname prediction/fetch and the shared publisher.
+# Other venue locks are deliberately not acquired: their LIVE work continues.
 lock_root="$app/run"
 install -d -o sinz-edge -g sinz-edge -m 0755 "$lock_root/venues"
 if [[ ! -e $lock_root/live_publish.lock ]]; then
@@ -30,8 +37,7 @@ fi
 [[ -f $lock_root/live_publish.lock && ! -L $lock_root/live_publish.lock ]] || exit 75
 exec {publisher_fd}>>"$lock_root/live_publish.lock"
 flock -n "$publisher_fd" || { echo 'publisher is busy' >&2; exit 75; }
-venue_locks=(kiryu toda heiwajima tokoname biwako naruto shimonoseki wakamatsu ashiya fukuoka karatsu omura)
-for name in "${venue_locks[@]}"; do
+for name in tokoname tokoname-engine; do
   lock="$lock_root/venues/$name.lock"
   if [[ ! -e $lock ]]; then
     install -o sinz-edge -g sinz-edge -m 0644 /dev/null "$lock"
@@ -43,28 +49,34 @@ done
 
 /usr/bin/python3 /usr/local/libexec/sinz-engine-release/safe_release_gate.py \
   --manifest "$app/runtime/publisher-repo/data/manifest.json" \
+  --venue "$venue" \
   --quiet-minutes 45 || exit 75
 
 work=$(mktemp -d /var/tmp/sinz-engine-release.XXXXXXXX)
 backup="$app/backups/engine-release-${venue}-$(date -u +%Y%m%dT%H%M%SZ)"
 [[ $(realpath -m -- "$app/backups") == "$app"/* ]] || { echo 'unsafe backup path' >&2; exit 65; }
 installed=0
+self_check_lock=
 rollback() {
   if (( installed )); then
     echo 'reverting engine files' >&2
-    for relative in "${paths[@]}"; do
-      if [[ -f $backup/files/$relative ]]; then
-        cp -a -- "$backup/files/$relative" "$app/$relative" || true
-      elif [[ -f $backup/new/$relative ]]; then
-        rm -f -- "$app/$relative"
-      fi
-    done
-    systemctl restart "$service" || true
+    restore_engine_files "$app" "$backup" "${paths[@]}" || \
+      echo 'rollback restoration or hash verification failed' >&2
+    installed=0
   fi
 }
-cleanup() { rm -rf -- "$work"; }
-trap cleanup EXIT
-trap 'rollback' ERR
+cleanup() {
+  [[ -z $self_check_lock ]] || rm -f -- "$self_check_lock"
+  rm -rf -- "$work"
+}
+on_exit() {
+  status=$?
+  trap - EXIT
+  if (( status != 0 )); then rollback; fi
+  cleanup
+  exit "$status"
+}
+trap on_exit EXIT
 
 git clone --quiet --depth 1 --filter=blob:none --no-checkout --branch main "$repository" "$work/repo"
 actual_sha=$(git -C "$work/repo" rev-parse HEAD)
@@ -84,6 +96,7 @@ done < "$state"
 # Complete all validation and staging before creating a backup or changing the
 # live tree. State hashes detect manual edits independently of Git metadata.
 declare -A deploy_mode=()
+declare -A staged_hash=()
 for relative in "${paths[@]}"; do
   [[ -n $relative && $relative != *$'\r'* ]] || { echo 'invalid manifest line' >&2; exit 65; }
   [[ $relative =~ ^(engines|automation|scripts)/[a-zA-Z0-9_./-]+$ && $relative != *'..'* ]] || exit 65
@@ -104,6 +117,7 @@ for relative in "${paths[@]}"; do
   case "$mode" in 100644) deploy_mode[$relative]=0644 ;; 100755) deploy_mode[$relative]=0755 ;; *) exit 65 ;; esac
   install -d -m 0755 "$work/stage/$(dirname "$relative")"
   git -C "$work/repo" show "${requested_sha}:${relative}" > "$work/stage/$relative"
+  staged_hash[$relative]=$(sha256sum -- "$work/stage/$relative" | cut -d' ' -f1)
   if [[ $relative == *.py ]]; then
     "$app/.venv/bin/python" -m py_compile "$work/stage/$relative"
   fi
@@ -114,6 +128,10 @@ for relative in "${paths[@]}"; do
   install -d -m 0755 "$backup/files/$(dirname "$relative")" "$backup/new/$(dirname "$relative")"
   if [[ -f $app/$relative ]]; then
     cp -a -- "$app/$relative" "$backup/files/$relative"
+    backup_hash=$(sha256sum -- "$backup/files/$relative" | cut -d' ' -f1)
+    [[ $backup_hash == "${expected[$relative]}" ]] || {
+      echo "backup hash mismatch: $relative" >&2; exit 75;
+    }
   else
     touch "$backup/new/$relative"
   fi
@@ -123,8 +141,26 @@ installed=1
 for relative in "${paths[@]}"; do
   install -m "${deploy_mode[$relative]}" "$work/stage/$relative" "$app/$relative"
 done
-systemctl restart "$service"
 systemctl is-active --quiet "$service"
+main_pid_after=$(systemctl show --property MainPID --value "$service")
+[[ $main_pid_after == "$main_pid_before" ]] || { echo 'LIVE MainPID changed during release' >&2; exit 75; }
+for relative in "${paths[@]}"; do
+  installed_hash=$(sha256sum -- "$app/$relative" | cut -d' ' -f1)
+  [[ $installed_hash == "${staged_hash[$relative]}" ]] || {
+    echo "post-install hash mismatch: $relative" >&2; exit 75;
+  }
+done
+
+# Import the engine, normal-ticket code and fly-ticket code in a fresh process.
+# Use a private check lock because the real Tokoname engine lock remains held
+# until state commit, preventing a prediction from seeing a partial release.
+self_check_lock="$lock_root/venues/.tokoname-self-check.$$"
+install -o sinz-edge -g sinz-edge -m 0644 /dev/null "$self_check_lock"
+runuser -u sinz-edge -- env PYTHONDONTWRITEBYTECODE=1 \
+  "$app/.venv/bin/python" "$app/scripts/tokoname_prediction_worker.py" \
+  --self-check --lock-path "$self_check_lock" > "$work/self-check.json"
+grep -q '"status": "ok"' "$work/self-check.json"
+rm -f -- "$self_check_lock"
 
 state_tmp=$(mktemp /etc/sinz-engine-release/state/."${venue}".XXXXXXXX)
 for relative in "${paths[@]}"; do
@@ -134,4 +170,5 @@ chown root:root "$state_tmp"
 chmod 0600 "$state_tmp"
 mv -f -- "$state_tmp" "$state"
 installed=0
-printf 'engine_release_success venue=%s sha=%s backup=%s\n' "$venue" "$requested_sha" "$backup"
+printf 'engine_release_success venue=%s sha=%s backup=%s main_pid=%s self_check=%s\n' \
+  "$venue" "$requested_sha" "$backup" "$main_pid_after" "$(cat "$work/self-check.json")"

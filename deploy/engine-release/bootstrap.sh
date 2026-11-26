@@ -24,6 +24,10 @@ random_password=$(openssl rand -hex 48)
 usermod --password "$(openssl passwd -6 "$random_password")" "$gateway"
 unset random_password
 
+install -d -o root -g root -m 0755 /usr/local/libexec/sinz-engine-release
+install -o root -g root -m 0644 \
+  deploy/engine-release/file_transaction.sh \
+  /usr/local/libexec/sinz-engine-release/file_transaction.sh
 install -o root -g root -m 0755 deploy/engine-release/sinz-engine-gateway /usr/local/sbin/sinz-engine-gateway
 install -o root -g root -m 0755 deploy/engine-release/sinz-engine-apply /usr/local/sbin/sinz-engine-apply
 install -d -o root -g root -m 0755 /etc/sinz-engine-release/manifests
