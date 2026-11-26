@@ -1,0 +1,40 @@
+name: Recover Tokoname morning predictions
+
+on:
+  push:
+    paths:
+      - '.github/workflows/recover-tokoname-morning.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: morning-official-publish
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Install native Tokoname engine dependencies
+        run: |
+          python -m pip install catboost==1.2.10 lightgbm==4.6.0 scikit-learn==1.8.0
+      - name: Recover only today's unpredicted Tokoname races
+        run: |
+          set -euo pipefail
+          TARGET_DATE="$(TZ=Asia/Tokyo date +%F)"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git pull --rebase origin main
+          python automation/recover_tokoname_morning.py --date "$TARGET_DATE"
+          git add data/manifest.json data/morning_report.json data/venues/tokoname
+          if ! git diff --cached --quiet; then
+            git commit -m "data: recover Tokoname native morning predictions for $TARGET_DATE"
+            git push origin HEAD:main
+          fi
