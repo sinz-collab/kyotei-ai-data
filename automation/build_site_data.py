@@ -970,7 +970,10 @@ def tokoname_race_prediction_is_complete(prediction: object) -> bool:
     ):
         return False
     fly = prediction.get("flyPrediction")
-    if not isinstance(fly, dict) or fly.get("modelVersion") != "tokoname_fly_tickets_v4":
+    if not isinstance(fly, dict) or fly.get("modelVersion") not in {
+        "tokoname_fly_tickets_v4",
+        "tokoname_fly_tickets_v5",
+    }:
         return False
     if prediction.get("prediction_phase") == "preliminary":
         return fly.get("status") == "waiting" and fly.get("tickets") == []
