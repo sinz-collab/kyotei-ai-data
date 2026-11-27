@@ -168,6 +168,33 @@ class LiveSourceClient:
                 await asyncio.sleep(backoff)
         raise RuntimeError(f"{item} fetch failed: {last_error}")
 
+    async def _read_original_exhibition(self, page: Any, target: dict[str, Any]) -> dict[str, Any]:
+        """Allow the exhibition tab's asynchronously rendered data to settle.
+
+        A successful click only indicates that the tab changed; BOATERS may
+        populate originalTenjis later. Never invent missing measurements.
+        """
+        parsed: dict[str, Any] = {}
+        for attempt in range(3):
+            parsed = parse_original_exhibition(
+                await page.content(), await page.locator("body").inner_text(),
+                target["race_no"],
+            )
+            if parsed["_complete"] or attempt == 2:
+                break
+            await page.wait_for_timeout(700)
+        if not parsed["_complete"]:
+            self.logger.info(
+                "original exhibition remains incomplete after tab hydration retry",
+                extra={
+                    "event": "original_exhibition_pending_after_retry",
+                    "venue": target["venue"],
+                    "race_no": target["race_no"],
+                    "entry_count": len(parsed.get("entries") or []),
+                },
+            )
+        return parsed
+
     async def fetch(self, target: dict[str, Any]) -> dict[str, Any]:
         page = await self.context.new_page()
         base = self.config["source_base_url"].rstrip("/")
@@ -240,9 +267,7 @@ class LiveSourceClient:
                         break
                     except Exception:
                         continue
-            original_html = await page.content()
-            original_text = await page.locator("body").inner_text()
-            original = parse_original_exhibition(original_html, original_text, target["race_no"])
+            original = await self._read_original_exhibition(page, target)
             original["tab_clicked"] = clicked
             original_source = source_last
             if target["venue"] == "kiryu":
@@ -322,10 +347,7 @@ class LiveSourceClient:
                         break
                     except Exception:
                         continue
-            parsed = parse_original_exhibition(
-                await page.content(), await page.locator("body").inner_text(),
-                target["race_no"],
-            )
+            parsed = await self._read_original_exhibition(page, target)
             parsed["tab_clicked"] = clicked
             document = _base_document(
                 target, source,
