@@ -1151,6 +1151,12 @@ def changed_live_venues(results: list[dict[str, Any]]) -> list[str]:
     )
 
 
+def completed_original_exhibition_changed(result: dict[str, Any]) -> bool:
+    """Prioritize only newly saved, verified original exhibition measurements."""
+    item = (result.get("items") or {}).get("original_exhibition") or {}
+    return item.get("changed") is True and item.get("complete") is True
+
+
 @asynccontextmanager
 async def wait_for_publisher_lock(
     lock_path: Path,
@@ -1349,6 +1355,16 @@ async def run_once(
                                         await apply_omura_live_prediction(target, race_dir, result, logger)
                                         await apply_omura_live_odds(target, race_dir, logger)
                                         await apply_shimonoseki_live_prediction(target, race_dir, result, logger)
+                                    # The prediction lock above must be released before
+                                    # invoking the publisher, which acquires that lock.
+                                    if (
+                                        config.get("priority_immediate_publish") is True
+                                        and target_root == resolve_root(config, "live_output_root")
+                                        and completed_original_exhibition_changed(result)
+                                    ):
+                                        result["original_exhibition_immediate_publish"] = (
+                                            await publish_priority_display_data(logger, [venue])
+                                        )
                         finally:
                             await context.close()
 
