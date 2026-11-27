@@ -294,6 +294,30 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
 
 
 class NarutoLiveTriggerTests(unittest.TestCase):
+    def test_complete_inputs_retry_failed_prediction_without_new_source_change(self) -> None:
+        process = Mock(returncode=0)
+        process.communicate = AsyncMock(return_value=(b"live", b""))
+        target = {"venue": "naruto", "date": "2026-11-28", "race_no": 1}
+        fetch_result = {"items": {name: {"changed": False} for name in (
+            "direct", "exhibition", "original_exhibition"
+        )}}
+        with tempfile.TemporaryDirectory() as temp, patch(
+            "live_fetch_once.asyncio.create_subprocess_exec",
+            AsyncMock(return_value=process),
+        ) as create_process:
+            race_dir = Path(temp)
+            for name in ("direct", "exhibition", "original_exhibition"):
+                (race_dir / f"{name}.json").write_text(
+                    json.dumps({"status": "complete", "complete": True}), encoding="utf-8"
+                )
+            self.assertTrue(asyncio.run(
+                apply_naruto_live_prediction(target, race_dir, fetch_result, Mock())
+            ))
+            self.assertFalse(asyncio.run(
+                apply_naruto_live_prediction(target, race_dir, fetch_result, Mock())
+            ))
+        self.assertEqual(create_process.await_count, 1)
+
     def test_verified_live_update_runs_live_before_result_evaluation(self) -> None:
         processes = []
         for output in (b"live", b"result"):
