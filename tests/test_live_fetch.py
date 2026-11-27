@@ -30,6 +30,7 @@ from sync_morning_data import ensure_current_morning_data
 from validate_live_data import validate_live_data
 from live_fetch_once import (
     changed_live_venues,
+    completed_original_exhibition_changed,
     apply_naruto_live_prediction,
     changed_priority_display_venues,
     fukuoka_display_data_changed,
@@ -139,6 +140,16 @@ class FukuokaImmediatePublishTests(unittest.TestCase):
             {"target": {"venue": "omura"}, "changed": False},
         ])
         self.assertEqual(changed, ["biwako", "heiwajima"])
+
+    def test_original_exhibition_early_publish_requires_new_completion(self) -> None:
+        self.assertTrue(completed_original_exhibition_changed({
+            "items": {"original_exhibition": {"changed": True, "complete": True}}
+        }))
+        for changed, complete in ((False, True), (True, False), (False, False)):
+            self.assertFalse(completed_original_exhibition_changed({
+                "items": {"original_exhibition": {"changed": changed, "complete": complete}}
+            }))
+        self.assertFalse(completed_original_exhibition_changed({"items": {}}))
 
     def test_changed_priority_venues_use_one_publisher_process(self) -> None:
         process = Mock(returncode=0)
