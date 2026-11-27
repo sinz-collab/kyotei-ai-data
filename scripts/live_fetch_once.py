@@ -448,7 +448,22 @@ async def apply_naruto_live_prediction(
         for name in required
     )
     live_updated = any((items.get(name) or {}).get("changed") is True for name in required)
-    if live_complete and (live_updated or target.get("naruto_live_backfill") is True):
+    marker_path = race_dir / "prediction_status.json"
+    marker_complete = False
+    try:
+        marker = json.loads(marker_path.read_text(encoding="utf-8"))
+        marker_complete = (
+            marker.get("date") == str(target["date"])
+            and marker.get("venue") == "naruto"
+            and marker.get("race_no") == int(target["race_no"])
+            and marker.get("stage") == "live"
+            and marker.get("status") == "complete"
+        )
+    except (OSError, ValueError, TypeError):
+        pass
+    # Retry a failed LIVE prediction on the next cycle even when the three
+    # source documents have not changed.  The completion marker stops repeats.
+    if live_complete and (live_updated or not marker_complete):
         process = await asyncio.create_subprocess_exec(
             sys.executable,
             str(NARUTO_LIVE_RUNNER),
@@ -487,7 +502,6 @@ async def apply_naruto_live_prediction(
             "stage": "live",
             "status": "complete",
         }
-        marker_path = race_dir / "prediction_status.json"
         temporary_marker = marker_path.with_suffix(".json.tmp")
         temporary_marker.write_text(
             json.dumps(marker, ensure_ascii=False, indent=2) + "\n",
