@@ -35,8 +35,11 @@ jobs:
           git pull --ff-only origin main
       - name: Check missing supplement regression
         run: python -m unittest discover -s tests -p test_toda_optional_supplements.py -v
+      - name: Install official parser dependency
+        run: python -m pip install beautifulsoup4==4.13.4
       - name: Generate Toda predictions only for races still open
         run: |
+          set -euo pipefail
           mkdir -p work
           python automation/run_official_predictions.py \
             --date "$TARGET_DATE" --stage official --venues toda \
