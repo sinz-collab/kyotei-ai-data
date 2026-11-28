@@ -1,0 +1,88 @@
+name: 戸田の未締切予想のみ再生成
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/recover-toda-predictions.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: morning-official-publish
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    if: github.event_name != 'push' || contains(github.event.head_commit.message, '[run-toda-predictions]')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Ensure JST today and current main
+        run: |
+          test "$GITHUB_REF" = refs/heads/main
+          TARGET_DATE="$(TZ=Asia/Tokyo date +%F)"
+          echo "TARGET_DATE=$TARGET_DATE" >> "$GITHUB_ENV"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git pull --ff-only origin main
+      - name: Check missing supplement regression
+        run: python -m unittest discover -s tests -p test_toda_optional_supplements.py -v
+      - name: Generate Toda predictions only for races still open
+        run: |
+          mkdir -p work
+          python automation/run_official_predictions.py \
+            --date "$TARGET_DATE" --stage official --venues toda \
+            | tee work/toda-prediction-recovery.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result = json.loads(Path('work/toda-prediction-recovery.json').read_text())
+          status = result['venues'].get('toda')
+          if status is None or str(status).startswith(('engine_failed:', 'prediction_invalid:')):
+              raise SystemExit(f'Toda prediction recovery failed: {status}')
+          print(f'Toda prediction recovery: {status}')
+          PY
+      - name: Publish generated forecasts without replacing newer LIVE data
+        run: |
+          git add data/venues/toda data/manifest.json data/morning_report.json
+          git diff --cached --check
+          if git diff --cached --quiet; then
+            echo 'No open, missing Toda races; nothing to publish.'
+            exit 0
+          fi
+          git commit -m "data: prepare missing Toda forecasts for $TARGET_DATE"
+          RECOVERY_COMMIT="$(git rev-parse HEAD)"
+          for attempt in 1 2 3; do
+            git fetch origin main
+            git switch --detach origin/main
+            python automation/replay_official_recovery.py \
+              --candidate "$RECOVERY_COMMIT" --date "$TARGET_DATE"
+            git add data/venues/toda data/manifest.json data/morning_report.json
+            git diff --cached --check
+            if git diff --cached --quiet; then
+              echo 'Forecasts already present on latest main.'
+              exit 0
+            fi
+            git commit -m "data: safely publish Toda forecasts for $TARGET_DATE"
+            if git push origin HEAD:main; then
+              echo 'Published Toda missing predictions.'
+              exit 0
+            fi
+            echo "Main advanced; replaying latest LIVE data (attempt $attempt)"
+          done
+          exit 1
+      - name: Upload Toda recovery diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: toda-prediction-recovery-${{ github.run_id }}
+          path: work/toda-prediction-recovery.json
+          if-no-files-found: ignore
