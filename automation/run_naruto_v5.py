@@ -73,6 +73,54 @@ def live_entries(exhibition: dict, original: dict) -> list[dict]:
     ]
 
 
+def verified_entry_order(direct: dict, exhibition: dict) -> list[int]:
+    """Verify course order against two independently captured LIVE fields."""
+    order = (direct.get("data") or {}).get("actual_entry") or []
+    if not isinstance(order, list) or sorted(order) != list(range(1, 7)):
+        raise ValueError("naruto_live_entry_order_unverified")
+    entries = (exhibition.get("data") or {}).get("entries") or []
+    courses = {int(row.get("lane") or 0): int(row.get("exhibition_course") or 0) for row in entries}
+    if set(courses) != set(range(1, 7)) or any(
+        courses[boat] != course for course, boat in enumerate(order, 1)
+    ):
+        raise ValueError("naruto_live_entry_course_mismatch")
+    # The trained model's flying-ticket allocation assumes boat 1 is on the
+    # inside. Never apply that assumption to a displaced first boat.
+    if order[0] != 1:
+        raise ValueError("naruto_live_lane1_course_change_unverified")
+    return order
+
+
+def remap_prediction_to_boats(prediction: NarutoPrediction, order: list[int]) -> NarutoPrediction:
+    """Convert course-indexed model outputs back into original boat numbers."""
+    def remap_combo(combo: str) -> str:
+        return "-".join(str(order[int(part) - 1]) for part in combo.split("-"))
+
+    def remap_tickets(rows: list[dict]) -> list[dict]:
+        return [{**row, "combo": remap_combo(row["combo"])} for row in rows]
+
+    def remap_roles(values: list[float]) -> list[float]:
+        by_boat = [0.0] * 6
+        for course, boat in enumerate(order, 1):
+            by_boat[boat - 1] = values[course - 1]
+        return by_boat
+
+    return NarutoPrediction(
+        model_version=prediction.model_version,
+        generated_at=prediction.generated_at,
+        stage=prediction.stage,
+        probabilities=remap_tickets(prediction.probabilities),
+        first=remap_roles(prediction.first),
+        second=remap_roles(prediction.second),
+        third=remap_roles(prediction.third),
+        normal_tickets=remap_tickets(prediction.normal_tickets),
+        fly_tickets=remap_tickets(prediction.fly_tickets),
+        fly_probability=prediction.fly_probability,
+        input_snapshot={**prediction.input_snapshot, "actualEntry": order, "entryChanged": True,
+                        "exhibitionStApplied": False, "courseMapped": True},
+    )
+
+
 def percent(value: float) -> float:
     return round(100 * float(value), 6)
 
@@ -295,19 +343,35 @@ def run_live(engine: NarutoV5Engine, payload: dict, race_no: int, live_root: Pat
     actual_entry = direct.get("data", {}).get("actual_entry") or []
     if incomplete:
         raise ValueError("naruto_live_inputs_incomplete:" + ",".join(incomplete))
-    if direct.get("data", {}).get("entry_changed") is True or actual_entry != [1, 2, 3, 4, 5, 6]:
+    order = verified_entry_order(direct, exhibition)
+    entry_changed = order != [1, 2, 3, 4, 5, 6]
+    if direct.get("data", {}).get("entry_changed") is True and not entry_changed:
         raise ValueError("naruto_live_entry_change_unverified")
     if (previous or {}).get("resultEvaluation", {}).get("status") == "complete":
         raise ValueError("naruto_result_already_complete")
 
+    racers = normalize_racers(race.get("racers") or [], direct)
+    entries = live_entries(exhibition, original)
+    if entry_changed:
+        course_by_boat = {boat: course for course, boat in enumerate(order, 1)}
+        racers = [{**row, "lane": course_by_boat[int(row["lane"])]} for row in racers]
+        entries = [
+            {**row, "lane": course_by_boat[int(row["lane"])],
+             "exhibition_course": course_by_boat[int(row["lane"])],
+             "exhibition_st": None}
+            for row in entries
+        ]
     predicted = engine.predict_live(
         date=payload["date"],
         race_no=race_no,
-        racers=normalize_racers(race.get("racers") or [], direct),
-        live_entries=live_entries(exhibition, original),
+        racers=racers,
+        live_entries=entries,
         wind_speed_mps=direct.get("data", {}).get("wind_speed"),
         wave_height_cm=direct.get("data", {}).get("wave_height"),
+        allow_reference_missing=entry_changed,
     )
+    if entry_changed:
+        predicted = remap_prediction_to_boats(predicted, order)
     current = append_history(previous, prediction_payload(predicted), "live")
     current["realtime"] = {
         "direct": direct.get("data"),
