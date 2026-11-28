@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -12,6 +14,28 @@ if str(ENGINE_DIR) not in sys.path:
 
 from toda_prediction_engine_v5 import ENGINE_ID, TodaPredictionEngineV5
 from toda_fly_prediction_v5 import build_fly_prediction
+
+
+FLY_ATTACK_RATE_KEYS = (
+    "boaters_sashare_rate", "boaters_sashi_rate", "boaters_makurare_rate",
+    "boaters_makuri_rate", "boaters_makurare_zashi_rate",
+    "boaters_makuri_sashi_rate",
+)
+def fly_racers_without_missing_supplements(racers: list[dict]) -> list[dict]:
+    """Treat unusable optional BOATERS rates like absent keys for the fly calculation."""
+    sanitized = copy.deepcopy(racers)
+    for racer in sanitized:
+        for key in FLY_ATTACK_RATE_KEYS:
+            value = racer.get(key)
+            if value is None or value == "":
+                continue
+            try:
+                usable = math.isfinite(float(value))
+            except (TypeError, ValueError, OverflowError):
+                usable = False
+            if not usable:
+                racer.pop(key)
+    return sanitized
 
 
 def atomic_write_json(path: Path, payload: dict) -> None:
@@ -74,7 +98,9 @@ def apply_toda_v5(payload: dict, target_date: str) -> dict:
             if not prediction_complete(prediction):
                 raise RuntimeError("prediction_output_incomplete")
             racers = (prediction.get("modelInputs") or {}).get("racers") or []
-            prediction["flyPrediction"] = build_fly_prediction(prediction, racers, status="pre")
+            prediction["flyPrediction"] = build_fly_prediction(
+                prediction, fly_racers_without_missing_supplements(racers), status="pre"
+            )
             predictions[str(race_no)] = prediction
         except Exception as exc:
             failures.append({"race": race_no, "error": f"{type(exc).__name__}: {exc}"})
