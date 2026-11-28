@@ -19,6 +19,7 @@ from run_naruto_v5 import (  # noqa: E402
     run_morning,
     run_result,
     update_first60_metrics,
+    verified_entry_order,
 )
 from build_site_data import prediction_payload_gate  # noqa: E402
 
@@ -194,6 +195,49 @@ class NarutoV5EngineTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "naruto_live_inputs_incomplete:original_exhibition"):
                 run_live(self.engines["late"], payload, row["race"], live_root)
         self.assertEqual(json.dumps(payload, sort_keys=True), frozen)
+
+    def test_verified_entry_changes_remap_probabilities_without_strong_st(self) -> None:
+        row = self.rows[-1]
+        for order in ([1, 2, 3, 4, 6, 5], [1, 4, 2, 3, 5, 6]):
+            with self.subTest(entry=order), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                course = {boat: position for position, boat in enumerate(order, 1)}
+                documents = {
+                    "direct": {"complete": True, "data": {
+                        "actual_entry": order, "entry_changed": False,
+                        "wind_speed": row["wind_speed_mps"], "wave_height": row["wave_height_cm"],
+                    }},
+                    "exhibition": {"complete": True, "data": {"entries": [
+                        {"lane": entry["lane"], "exhibition_course": course[entry["lane"]],
+                         "start_time": entry["exhibition_st"], "exhibition_time": entry["exhibition_time"]}
+                        for entry in row["live_entries"]
+                    ]}},
+                    "original_exhibition": {"complete": True, "data": {"entries": [
+                        {"lane": entry["lane"], "lap_time": entry["lap_time"],
+                         "turn_time": entry["turn_time"], "straight_time": entry["straight_time"]}
+                        for entry in row["live_entries"]
+                    ]}},
+                }
+                for name, doc in documents.items():
+                    (root / f"{name}.json").write_text(json.dumps(doc), encoding="utf-8")
+                payload = {"venueId": "naruto", "date": row["date"],
+                           "races": [{"race": row["race"], "racers": row["racers"]}], "preds": {}}
+                prediction = run_live(self.engines["late"], payload, row["race"], root)["preds"][str(row["race"])]
+                self.assertEqual(prediction["predictionStage"], "live")
+                self.assertEqual(prediction["inputSnapshot"]["actualEntry"], order)
+                self.assertFalse(prediction["inputSnapshot"]["exhibitionStApplied"])
+                self.assertAlmostEqual(sum(prediction["win"].values()), 100, places=4)
+                self.assertAlmostEqual(sum(row["probability"] for row in prediction["trifectaProbabilities"]), 100, places=4)
+                self.assertEqual(len({entry["combo"] for entry in prediction["trifectaProbabilities"]}), 120)
+                self.assertTrue(all(not entry["combo"].startswith("1-") for entry in prediction["flyPrediction"]["tickets"]))
+
+    def test_mismatched_course_data_is_rejected(self) -> None:
+        direct = {"data": {"actual_entry": [1, 2, 3, 4, 6, 5]}}
+        exhibition = {"data": {"entries": [
+            {"lane": lane, "exhibition_course": lane} for lane in range(1, 7)
+        ]}}
+        with self.assertRaisesRegex(ValueError, "naruto_live_entry_course_mismatch"):
+            verified_entry_order(direct, exhibition)
 
     def test_result_evaluation_does_not_rewrite_prediction_snapshot(self) -> None:
         racers = self.rows[-1]["racers"]
